@@ -87,6 +87,10 @@
         <div class="section-head"><h2>Site and sky timeline</h2><button id="load-sky" type="button" class="action">Read stored Sun &amp; Earth samples</button></div>
         <p class="muted">This is a direct data readout, not interpolated observations. The 3D globe and LOLA terrain are in the <a href="../lab.html">Polar Lab</a>.</p>
         <div class="tile-grid"><article class="tile"><small>SITE</small><strong id="explore-site">—</strong></article><article class="tile"><small>SERIES PROVENANCE</small><strong id="explore-status">—</strong></article><article class="tile"><small>RESOLUTION</small><strong id="explore-step">—</strong></article></div>
+        <div class="two-cols" aria-label="Next native-grid visibility transitions">
+          <article class="tile"><small>FROM SELECTED UTC · SUN</small><strong id="sun-transition">—</strong><p id="sun-transition-note">No transition search loaded.</p></article>
+          <article class="tile"><small>FROM SELECTED UTC · EARTH</small><strong id="earth-transition">—</strong><p id="earth-transition-note">No transition search loaded.</p></article>
+        </div>
         <div class="table-scroll"><table><caption>Stored sky samples, earliest results first</caption><thead><tr><th>UTC epoch</th><th>Sun elevation</th><th>Earth elevation</th><th>Sun visible</th><th>Earth visible</th></tr></thead><tbody id="sky-body"><tr><td colspan="5">No API sky samples loaded.</td></tr></tbody></table></div>
         <p class="small" id="sky-source">No terrain provenance available.</p>
       </section>
