@@ -1,0 +1,284 @@
+package main
+
+import (
+	"bytes"
+	"embed"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/fs"
+	"math"
+	"os"
+	"path"
+	"regexp"
+	"sort"
+	"sync"
+	"time"
+)
+
+//go:embed sitedata
+var embeddedSiteData embed.FS
+
+const moonRadiusKm = 1737.4
+
+var siteIDPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,63}$`)
+
+var scienceStatuses = map[string]bool{"SYNTHETIC": true, "UNVERIFIED": true, "VALIDATED": true}
+
+type coordinate struct {
+	LatitudeDeg     float64 `json:"latitude_deg"`
+	LongitudeDeg    float64 `json:"longitude_deg"`
+	Role            string  `json:"role"`
+	Frame           string  `json:"frame"`
+	Source          string  `json:"source"`
+	Inventory       string  `json:"inventory,omitempty"`
+	SourceAccuracyM string  `json:"source_accuracy_m,omitempty"`
+}
+
+type site struct {
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	Kind       string      `json:"kind"`
+	Coordinate *coordinate `json:"coordinate,omitempty"`
+	Nearby     []string    `json:"nearby,omitempty"`
+	SeriesFile string      `json:"series_file,omitempty"`
+	Note       string      `json:"note,omitempty"`
+}
+
+type siteCatalog struct {
+	Schema string `json:"schema"`
+	Note   string `json:"note"`
+	Sites  []site `json:"sites"`
+}
+
+type seriesProvenance struct {
+	TerrainDatasetID string `json:"terrain_dataset_id"`
+	TerrainSHA256    string `json:"terrain_sha256,omitempty"`
+	EphemerisID      string `json:"ephemeris_id"`
+	Frame            string `json:"frame"`
+	Generator        string `json:"generator"`
+	Note             string `json:"note,omitempty"`
+}
+
+type seriesSample struct {
+	Sun   direction `json:"sun"`
+	Earth direction `json:"earth"`
+}
+
+// siteSeries is the server-side input for one site: its terrain horizon and
+// Sun/Earth look angles on a fixed time grid. Produced offline by the science
+// pipeline; the API never accepts these values from clients.
+type siteSeries struct {
+	Schema          string           `json:"schema"`
+	SiteID          string           `json:"site_id"`
+	ScienceStatus   string           `json:"science_status"`
+	Provenance      seriesProvenance `json:"provenance"`
+	ObserverHeightM float64          `json:"observer_height_m"`
+	TerrainHorizon  []horizonSample  `json:"terrain_horizon"`
+	StartUTC        string           `json:"start_utc"`
+	StepSeconds     int              `json:"step_seconds"`
+	Samples         []seriesSample   `json:"samples"`
+
+	start time.Time
+	step  time.Duration
+}
+
+func (s *siteSeries) end() time.Time { return s.start.Add(time.Duration(len(s.Samples)) * s.step) }
+
+func (s *siteSeries) epoch(i int) time.Time { return s.start.Add(time.Duration(i) * s.step) }
+
+type siteStore struct {
+	sites  []site
+	byID   map[string]*site
+	series map[string]*siteSeries
+}
+
+func (st *siteStore) site(id string) (*site, bool) { s, ok := st.byID[id]; return s, ok }
+
+func (st *siteStore) seriesFor(id string) (*siteSeries, bool) { s, ok := st.series[id]; return s, ok }
+
+func loadStore(fsys fs.FS) (*siteStore, error) {
+	raw, err := fs.ReadFile(fsys, "catalog.json")
+	if err != nil {
+		return nil, fmt.Errorf("read catalog: %w", err)
+	}
+	var cat siteCatalog
+	if err := decodeStrict(raw, &cat); err != nil {
+		return nil, fmt.Errorf("parse catalog: %w", err)
+	}
+	if cat.Schema != "braspace.site-catalog.v1" {
+		return nil, fmt.Errorf("unsupported catalog schema %q", cat.Schema)
+	}
+	st := &siteStore{sites: cat.Sites, byID: map[string]*site{}, series: map[string]*siteSeries{}}
+	for i := range st.sites {
+		s := &st.sites[i]
+		if !siteIDPattern.MatchString(s.ID) || s.Name == "" {
+			return nil, fmt.Errorf("catalog entry %d: invalid id or name", i)
+		}
+		if _, dup := st.byID[s.ID]; dup {
+			return nil, fmt.Errorf("catalog: duplicate site %q", s.ID)
+		}
+		if c := s.Coordinate; c != nil && (!finite(c.LatitudeDeg) || !finite(c.LongitudeDeg) || c.LatitudeDeg < -90 || c.LatitudeDeg > 90 || c.LongitudeDeg < -180 || c.LongitudeDeg > 360 || c.Source == "") {
+			return nil, fmt.Errorf("site %q: invalid coordinate or missing source", s.ID)
+		}
+		st.byID[s.ID] = s
+	}
+	for i := range st.sites {
+		s := &st.sites[i]
+		for _, n := range s.Nearby {
+			if _, ok := st.byID[n]; !ok || n == s.ID {
+				return nil, fmt.Errorf("site %q: unknown nearby site %q", s.ID, n)
+			}
+		}
+		if s.SeriesFile == "" {
+			continue
+		}
+		ser, err := loadSeries(fsys, s.SeriesFile)
+		if err != nil {
+			return nil, fmt.Errorf("site %q: %w", s.ID, err)
+		}
+		if ser.SiteID != s.ID {
+			return nil, fmt.Errorf("site %q: series file belongs to %q", s.ID, ser.SiteID)
+		}
+		st.series[s.ID] = ser
+	}
+	return st, nil
+}
+
+func loadSeries(fsys fs.FS, name string) (*siteSeries, error) {
+	raw, err := fs.ReadFile(fsys, path.Clean(name))
+	if err != nil {
+		return nil, fmt.Errorf("read series: %w", err)
+	}
+	var s siteSeries
+	if err := decodeStrict(raw, &s); err != nil {
+		return nil, fmt.Errorf("parse series: %w", err)
+	}
+	if s.Schema != "braspace.site-series.v1" {
+		return nil, fmt.Errorf("unsupported series schema %q", s.Schema)
+	}
+	if !scienceStatuses[s.ScienceStatus] {
+		return nil, fmt.Errorf("invalid science_status %q", s.ScienceStatus)
+	}
+	p := s.Provenance
+	if p.TerrainDatasetID == "" || p.EphemerisID == "" || p.Frame != "MOON_ME" || p.Generator == "" {
+		return nil, errors.New("series provenance incomplete (terrain, ephemeris, MOON_ME frame, generator)")
+	}
+	if !finite(s.ObserverHeightM) || s.ObserverHeightM < 0 || s.ObserverHeightM > 100 {
+		return nil, errors.New("observer_height_m out of range")
+	}
+	if s.start, err = time.Parse(time.RFC3339, s.StartUTC); err != nil {
+		return nil, errors.New("start_utc must be RFC3339")
+	}
+	if s.StepSeconds < 60 || s.StepSeconds > 86400 {
+		return nil, errors.New("step_seconds must be 60..86400")
+	}
+	s.step = time.Duration(s.StepSeconds) * time.Second
+	if len(s.Samples) < 2 || len(s.Samples) > 200000 {
+		return nil, errors.New("samples must contain 2..200000 entries")
+	}
+	for i, smp := range s.Samples {
+		if !validDirection(smp.Sun) || !validDirection(smp.Earth) {
+			return nil, fmt.Errorf("sample %d: invalid look angle", i)
+		}
+	}
+	probe := visibilityRequest{SiteID: s.SiteID, EpochUTC: s.StartUTC, Sun: s.Samples[0].Sun, Earth: s.Samples[0].Earth,
+		TerrainHorizon: s.TerrainHorizon, Provenance: provenance{TerrainDatasetID: p.TerrainDatasetID, EphemerisID: p.EphemerisID, Frame: p.Frame}}
+	if err := validate(probe); err != nil {
+		return nil, fmt.Errorf("series rejected by engine contract: %w", err)
+	}
+	return &s, nil
+}
+
+func decodeStrict(raw []byte, v any) error {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	return dec.Decode(v)
+}
+
+// greatCircleKm uses a spherical Moon (R = 1737.4 km, the LOLA reference radius).
+func greatCircleKm(a, b coordinate) float64 {
+	la1, la2 := a.LatitudeDeg*math.Pi/180, b.LatitudeDeg*math.Pi/180
+	dla, dlo := la2-la1, (b.LongitudeDeg-a.LongitudeDeg)*math.Pi/180
+	h := math.Sin(dla/2)*math.Sin(dla/2) + math.Cos(la1)*math.Cos(la2)*math.Sin(dlo/2)*math.Sin(dlo/2)
+	return 2 * moonRadiusKm * math.Asin(math.Min(1, math.Sqrt(h)))
+}
+
+type nearbySite struct {
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	DistanceKm *float64 `json:"distance_km,omitempty"`
+	HasSeries  bool     `json:"has_series"`
+}
+
+// nearby returns explicitly linked sites first, then the closest catalog sites
+// by great-circle distance between source feature centers.
+func (st *siteStore) nearby(id string, limit int, onlyWithSeries bool) []nearbySite {
+	s, ok := st.byID[id]
+	if !ok {
+		return nil
+	}
+	var out []nearbySite
+	seen := map[string]bool{id: true}
+	add := func(o *site, dist *float64) {
+		_, has := st.series[o.ID]
+		if seen[o.ID] || (onlyWithSeries && !has) {
+			return
+		}
+		seen[o.ID] = true
+		out = append(out, nearbySite{ID: o.ID, Name: o.Name, DistanceKm: dist, HasSeries: has})
+	}
+	for _, n := range s.Nearby {
+		add(st.byID[n], nil)
+	}
+	if s.Coordinate != nil {
+		type cand struct {
+			s *site
+			d float64
+		}
+		var cands []cand
+		for i := range st.sites {
+			o := &st.sites[i]
+			if o.Coordinate != nil && o.ID != id {
+				cands = append(cands, cand{o, greatCircleKm(*s.Coordinate, *o.Coordinate)})
+			}
+		}
+		sort.Slice(cands, func(i, j int) bool {
+			if cands[i].d != cands[j].d {
+				return cands[i].d < cands[j].d
+			}
+			return cands[i].s.ID < cands[j].s.ID
+		})
+		for _, c := range cands {
+			d := math.Round(c.d*100) / 100
+			add(c.s, &d)
+		}
+	}
+	if len(out) > limit {
+		out = out[:limit]
+	}
+	return out
+}
+
+var (
+	defaultStoreOnce sync.Once
+	defaultStore     *siteStore
+	defaultStoreErr  error
+)
+
+// loadDefaultStore reads SITE_DATA_DIR when set, otherwise the embedded data.
+func loadDefaultStore() (*siteStore, error) {
+	defaultStoreOnce.Do(func() {
+		var fsys fs.FS
+		if dir := os.Getenv("SITE_DATA_DIR"); dir != "" {
+			fsys = os.DirFS(dir)
+		} else {
+			fsys, defaultStoreErr = fs.Sub(embeddedSiteData, "sitedata")
+			if defaultStoreErr != nil {
+				return
+			}
+		}
+		defaultStore, defaultStoreErr = loadStore(fsys)
+	})
+	return defaultStore, defaultStoreErr
+}

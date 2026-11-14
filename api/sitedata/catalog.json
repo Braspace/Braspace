@@ -1,0 +1,208 @@
+{
+  "schema": "braspace.site-catalog.v1",
+  "note": "Region names are ~15x15 km areas; coordinates are source feature centers, not touchdown points or landing recommendations.",
+  "sites": [
+    {
+      "id": "malapert-massif",
+      "name": "Malapert Massif",
+      "kind": "artemis_iii_candidate_region",
+      "coordinate": {
+        "latitude_deg": -85.9948,
+        "longitude_deg": -0.23578,
+        "role": "feature_center",
+        "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R23",
+        "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
+        "source_accuracy_m": "5-10"
+      }
+    },
+    {
+      "id": "haworth",
+      "name": "Haworth",
+      "kind": "artemis_iii_candidate_region",
+      "coordinate": {
+        "latitude_deg": -86.7639,
+        "longitude_deg": -22.777,
+        "role": "feature_center",
+        "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row Haworth",
+        "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
+        "source_accuracy_m": "5-10"
+      }
+    },
+    {
+      "id": "nobile-rim-1",
+      "name": "Nobile Rim 1",
+      "kind": "artemis_iii_candidate_region",
+      "coordinate": {
+        "latitude_deg": -85.4381,
+        "longitude_deg": 37.36667,
+        "role": "feature_center",
+        "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R06",
+        "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
+        "source_accuracy_m": "5-10"
+      }
+    },
+    {
+      "id": "nobile-rim-2",
+      "name": "Nobile Rim 2",
+      "kind": "artemis_iii_candidate_region",
+      "coordinate": {
+        "latitude_deg": -83.954,
+        "longitude_deg": 58.82206,
+        "role": "feature_center",
+        "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row DM2",
+        "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
+        "source_accuracy_m": "5-10"
+      }
+    },
+    {
+      "id": "peak-near-shackleton",
+      "name": "Peak Near Shackleton",
+      "kind": "artemis_iii_candidate_region",
+      "coordinate": {
+        "latitude_deg": -88.811,
+        "longitude_deg": 123.6901,
+        "role": "feature_center",
+        "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R07",
+        "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
+        "source_accuracy_m": "5-10"
+      }
+    },
+    {
+      "id": "connecting-ridge",
+      "name": "Connecting Ridge",
+      "kind": "artemis_iii_candidate_region",
+      "coordinate": {
+        "latitude_deg": -89.4632,
+        "longitude_deg": -137.49,
+        "role": "feature_center",
+        "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R01",
+        "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
+        "source_accuracy_m": "5-10"
+      }
+    },
+    {
+      "id": "connecting-ridge-extension",
+      "name": "Connecting Ridge Extension",
+      "kind": "artemis_iii_candidate_region",
+      "coordinate": {
+        "latitude_deg": -89.0324,
+        "longitude_deg": -101.999,
+        "role": "feature_center",
+        "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row SL3",
+        "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
+        "source_accuracy_m": "5-10"
+      }
+    },
+    {
+      "id": "de-gerlache-rim-1",
+      "name": "de Gerlache Rim 1",
+      "kind": "artemis_iii_candidate_region",
+      "coordinate": {
+        "latitude_deg": -88.6834,
+        "longitude_deg": -67.9321,
+        "role": "feature_center",
+        "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R11",
+        "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
+        "source_accuracy_m": "5-10"
+      }
+    },
+    {
+      "id": "de-gerlache-rim-2",
+      "name": "de Gerlache Rim 2",
+      "kind": "artemis_iii_candidate_region",
+      "coordinate": {
+        "latitude_deg": -88.23,
+        "longitude_deg": -64.6284,
+        "role": "feature_center",
+        "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row SL2",
+        "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
+        "source_accuracy_m": "5-10"
+      }
+    },
+    {
+      "id": "de-gerlache-kocher-massif",
+      "name": "de Gerlache-Kocher Massif",
+      "kind": "artemis_iii_candidate_region",
+      "coordinate": {
+        "latitude_deg": -85.8296,
+        "longitude_deg": -116.322,
+        "role": "feature_center",
+        "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R42",
+        "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
+        "source_accuracy_m": "5-10"
+      }
+    },
+    {
+      "id": "leibnitz-beta-plateau",
+      "name": "Leibnitz Beta Plateau",
+      "kind": "artemis_iii_candidate_region",
+      "coordinate": {
+        "latitude_deg": -85.4266,
+        "longitude_deg": 31.74276,
+        "role": "feature_center",
+        "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R20",
+        "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
+        "source_accuracy_m": "5-10"
+      }
+    },
+    {
+      "id": "faustini-rim-a",
+      "name": "Faustini Rim A",
+      "kind": "artemis_iii_candidate_region",
+      "coordinate": {
+        "latitude_deg": -87.8897,
+        "longitude_deg": 90.0,
+        "role": "feature_center",
+        "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row LM7",
+        "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
+        "source_accuracy_m": "5-10"
+      }
+    },
+    {
+      "id": "amundsen-rim",
+      "name": "Amundsen Rim",
+      "kind": "artemis_iii_candidate_region",
+      "coordinate": {
+        "latitude_deg": -84.2287,
+        "longitude_deg": 69.44396,
+        "role": "feature_center",
+        "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row DM1",
+        "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
+        "source_accuracy_m": "5-10"
+      }
+    },
+    {
+      "id": "synthetic-demo-a",
+      "name": "Synthetic demo site A",
+      "kind": "synthetic_test_fixture",
+      "nearby": [
+        "synthetic-demo-b"
+      ],
+      "series_file": "series/synthetic-demo-a.json",
+      "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location."
+    },
+    {
+      "id": "synthetic-demo-b",
+      "name": "Synthetic demo site B",
+      "kind": "synthetic_test_fixture",
+      "nearby": [
+        "synthetic-demo-a"
+      ],
+      "series_file": "series/synthetic-demo-b.json",
+      "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location."
+    }
+  ]
+}
