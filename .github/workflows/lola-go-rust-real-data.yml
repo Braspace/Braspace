@@ -49,7 +49,7 @@ jobs:
           j=json.load(open(os.environ['RUNNER_TEMP']+'/site.json'))
           s=j['site']
           assert s['id']=='connecting-ridge'
-          assert s['series']['science_status']=='UNVERIFIED'
+          assert s["series"]["science_status"]=="PRELIMINARY"
           assert s['series']['step_seconds']==3600
           assert s['series']['observer_height_m']==2
           print('REAL NASA series loaded in Go store; UNVERIFIED scientific status')
@@ -64,7 +64,7 @@ jobs:
           s=d['results'][0]
           m=s['evaluation']['metrics']
           assert s['site']['id']=='connecting-ridge'
-          assert s['science_status']=='UNVERIFIED'
+          assert s["science_status"]=="PRELIMINARY"
           assert s['engine_science_status']=='UNVERIFIED_INPUTS'
           assert m['sample_count']==72
           assert m['sun_visible_fraction']==1.0
@@ -82,7 +82,7 @@ jobs:
           import json,os
           d=json.load(open(os.environ['RUNNER_TEMP']+'/onboard.json'))
           assert d['scientifically_validated'] is False
-          assert d['candidates'][0]['science_status']=='UNVERIFIED'
+          assert d["candidates"][0]["science_status"]=="PRELIMINARY"
           assert d['onboard']['science_status']=='UNVERIFIED_INPUTS'
           assert d['onboard']['no_flight_recommendation'] is True
           print('Onboard resource calculation consumed preliminary NASA source-derived series; NOT flight recommendation')
