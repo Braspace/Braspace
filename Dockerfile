@@ -8,8 +8,7 @@ RUN cargo build --release
 
 FROM golang:1.23-alpine AS gobuilder
 WORKDIR /build/api
-COPY api/go.mod ./
-COPY api/main.go ./
+COPY api/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o /out/api .
 
 FROM alpine:3.21
