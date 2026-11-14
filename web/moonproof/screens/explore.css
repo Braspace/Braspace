@@ -47,3 +47,45 @@
 @media (min-width:701px){ .ex-right{bottom:118px} .ex-left{max-height:calc(100vh - 254px)} }
 @media (min-width:701px) and (max-width:1300px){ .ex-left,.ex-right{top:120px} .ex-right{width:290px} .ex-left{width:250px} .ex-left{max-height:calc(100vh - 238px)} }
 #card-horizon .mp-layer-answer{font-size:15px;font-weight:700}
+/* M1 · Explorar no celular (390x844). Design: Mobile.dc.html. Screen-level overrides only; core is untouched.
+   Shell gives the top bar (12..66), the context bar (74..128) and the bottom nav (766..832). Touch targets >= 44 px. */
+@media (max-width:700px){
+  /* layer pills: one row under the context bar, scroll sideways, never widen the page */
+  .ex-chips{top:128px;left:12px;right:12px;gap:8px;padding:0 2px;overflow-x:auto;overflow-y:hidden;max-width:calc(100vw - 24px);box-sizing:border-box;scroll-snap-type:x proximity;overscroll-behavior-x:contain}
+  .ex-chips .mp-pill{min-height:44px;min-width:44px;padding:0 16px;font-size:13px;font-weight:600;scroll-snap-align:start;background:rgba(12,15,18,.6)}
+  .ex-chips .mp-pill[aria-pressed="true"]{background:var(--jade);font-weight:700}
+  /* context bar: the sheet already has "Comparar" (same link), so the long CTA gives its room back to the site name */
+  .mp-context .mp-pill{display:none}
+  .mp-context{box-sizing:border-box;padding-right:14px}
+  /* map: only the selected marker is named (jade label), a little larger */
+  .mp-marker:not([aria-pressed="true"]) .mp-marker-label{display:none}
+  .mp-marker[aria-pressed="true"]{width:48px;height:48px;margin:-24px 0 0 -24px}
+  .mp-marker[aria-pressed="true"] .mp-marker-label{top:56px;max-width:min(240px,64vw);overflow:hidden;text-overflow:ellipsis}
+  /* sheet: sits 12 px above the bottom nav; default height keeps its top below half the screen so the map frames around it */
+  .ex-sheet{box-sizing:border-box;left:12px;right:12px;bottom:90px;height:38vh;max-height:calc(100vh - 230px);border-radius:30px;background:rgba(12,15,18,.78);padding:0 16px 0;overscroll-behavior:contain}
+  .ex-sheet .mc-handle{height:44px;margin-bottom:-14px;min-height:44px;background:linear-gradient(rgba(14,17,20,.96) 62%,transparent)}
+  #sheet-body{gap:10px;padding:14px 0 16px}
+  #sheet-body .mp-card{padding:0;background:transparent;border:0;border-radius:0}
+  /* action row right under the tiles (design order), the horizon card follows below it */
+  #sheet-body #card-horizon{position:relative;padding:60px 0 0;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+  #sheet-body #card-horizon .mp-layer-head{padding-top:12px;border-top:1px solid var(--line)}
+  /* site head: number 34 / name 17 800 / coordinates mono */
+  #m-card-site .ex-site-head{gap:10px}
+  #m-card-site .ex-site-head h3{font-size:17px;font-weight:800}
+  #m-card-site .ex-site-head .mp-coord{font-size:11.5px}
+  /* Sol / Terra / Maior noite as three tiles (value over label), as in the design */
+  #m-card-site h4{margin:12px 0 8px}
+  #m-card-site .ex-rows,#m-card-site .ex-rows tbody{display:block}
+  #m-card-site .ex-rows tbody{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  #m-card-site .ex-rows tr{display:flex;flex-direction:column-reverse;align-items:center;justify-content:center;gap:2px;min-width:0;padding:10px 4px;border-radius:18px;background:rgba(255,255,255,.07);text-align:center}
+  #m-card-site .ex-rows th{padding:0;text-align:center;font-size:11px;font-weight:700;color:var(--text-2);overflow-wrap:anywhere}
+  #m-card-site .ex-rows td{padding:0;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:22px;font-weight:800;line-height:1.1}
+  #m-card-site .ex-rows .mp-seal{height:20px;padding:0 6px;font-size:10.5px}
+  /* layer chips inside the card (Resposta / Por que / Prova) and the action row */
+  #sheet-body .mp-chip{min-height:44px;min-width:44px;padding:0 16px;font-size:13px}
+  #sheet-body .mp-chips{flex-wrap:wrap}
+  #sheet-body .ex-horizon{max-width:100%}
+  #sheet-body #card-horizon .ex-actions{position:absolute;top:0;left:0;right:0;margin:0;gap:8px}
+  #sheet-body #card-horizon .ex-actions .mp-pill{min-height:48px;font-size:15px;font-weight:700}
+  #sheet-body #card-horizon .ex-actions .is-sim{flex:none;min-width:96px}
+}
