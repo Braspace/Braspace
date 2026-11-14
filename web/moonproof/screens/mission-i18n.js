@@ -2,6 +2,7 @@
 import { register } from "../core/i18n.js";
 register({
   en: {
+    "mc.dir.0": "N", "mc.dir.1": "NE", "mc.dir.2": "E", "mc.dir.3": "SE", "mc.dir.4": "S", "mc.dir.5": "SW", "mc.dir.6": "W", "mc.dir.7": "NW", "mc.window": "Window length",
     "mc.overview": "Overview", "mc.worse": "worse of the two", "mc.notes": "Notes", "mc.battery": "Reference battery: H1 (hypothetical)",
     "mc.sunVisible": "Sun visible", "mc.earth": "Earth", "mc.nights": "nights", "mc.longest": "longest", "mc.set": "set", "mc.rise": "rise",
     "mc.losses": "losses", "mc.loss": "goes", "mc.back": "back", "mc.altitude": "Altitude", "mc.slope": "Slope",
@@ -40,6 +41,7 @@ register({
     "ex.outside": "Outside the LOLA grid",
   },
   "pt-BR": {
+    "mc.dir.0": "N", "mc.dir.1": "NE", "mc.dir.2": "L", "mc.dir.3": "SE", "mc.dir.4": "S", "mc.dir.5": "SO", "mc.dir.6": "O", "mc.dir.7": "NO", "mc.window": "Duração da janela",
     "mc.overview": "Visão geral", "mc.worse": "pior dos dois", "mc.notes": "Notas", "mc.battery": "Bateria de referência: H1 (hipotética)",
     "mc.sunVisible": "Sol visível", "mc.earth": "Terra", "mc.nights": "noites", "mc.longest": "maior", "mc.set": "pôr", "mc.rise": "nasce",
     "mc.losses": "perdas", "mc.loss": "some", "mc.back": "volta", "mc.altitude": "Altitude", "mc.slope": "Declividade",

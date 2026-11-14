@@ -124,3 +124,9 @@ export const RAMPS = {
 };
 export const rampColor = (name, t) => ramp(RAMPS[name], t);
 export const rampCss = name => `linear-gradient(90deg, ${RAMPS[name].map(c => `rgb(${c})`).join(", ")})`;
+
+/** 8-point compass index (0 = N, 1 = NE … 7 = NW) of an azimuth in degrees clockwise from north; null when missing. */
+export function compassIndex(azDeg) {
+  if (!Number.isFinite(azDeg)) return null;
+  return Math.round((((azDeg % 360) + 360) % 360) / 45) % 8;
+}

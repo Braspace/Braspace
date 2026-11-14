@@ -65,6 +65,7 @@
 | Nº de noites / perdas / D pôr / D nasce | Calculado no cliente a partir de `web/data/sites/<id>.json` (série horária) ou `GET /api/sites/{id}/sky` | `PRE` ou `SIM` | `—` (`N/D`) |
 | Energia, autonomia e folga (H1) | `POST /api/onboard/evaluate` ou `POST /api/onboard/site-evaluate` | `SIM` | `—` (`N/D`) |
 | Agora no local (próxima transição) | `GET /api/sites/{id}/sky` → `next_transitions` | `SIM` (se `synthetic-*`) ou `PRE` | `—` (`N/D`) |
+| Bússola da Terra (`TERRA / N / <azimute>°`) | azimute da Terra no início da janela, da série horária gravada (`series.at(t0).earthAz`); direção = ponto cardeal de 8 (`mc.dir.0..7`, em pt-BR `L`/`O` para leste/oeste); ausente = `—` | `PRE` (série) | `—` (`N/D`) |
 | Azimute e elevação Sol/Terra agora | `GET /api/sites/{id}/sky` → `sun` / `earth` (ou último ponto da série) | `SIM` ou `PRE` | `—` (`N/D`) |
 
 ## Interações
@@ -106,3 +107,11 @@ Aplicando as 8 regras de integridade do contrato:
 - **Agora no local:** `GET /api/sites/{id}/sky?start=&hours=` → `next_transitions.sun`; selo pelo `science_status` da resposta. Os cinco sítios do `web/data` não têm série na API de hoje (404 `NO_SERIES_DATA`): a tela usa `SiteSeries.nextChange` da série gravada (selo `PRE`) e escreve "API fora: série horária gravada".
 - **Linhas de Sol e Terra:** saem do sítio na direção do azimute local (norte local aponta para longe do polo), com o rótulo da margem sobre o horizonte do relevo ("Sol x° acima/abaixo"); ficam dentro da área livre do mapa.
 - Pílula ativa na navegação: "Explorar" (A não tem pílula própria no núcleo).
+
+## Geometria medida (passe 14/11/2026, 1440×900, ferramenta `audit-geom` contra a prancha Main)
+- IoU médio das caixas da prancha: **0,46 → 0,86** (barra superior e bordas do `shell` não entram: são do núcleo).
+- Coluna esquerda a 1301+ px: abas 30 px de altura (área de toque 46 px por `::after`), pílula da bateria 40 px, halos dos círculos 142 px (o próprio elemento tem a borda/vidro, satélites em cruz sobre ele), pílulas Altitude/Declividade 46 px com 12 px de intervalo, cartão Energia a y=566.
+- Coluna direita a 1301+ px: largura 342 px; cartão `em números` com título curto `Local N`, seletor de janela (`7/14/28 dias` + a atual, recalcula a tela via `state.hours`), subtítulo `Janelas · horas` com seletor `vs. N`; proveniência numa linha (texto completo no `title`); `Agora no local` compacto com ícone tracejado do Sol (a origem API/série fica no `title`; o rodapé da barra de contexto já diz `offline`); bússola 100 px.
+- Dock: `‹ › Local N · nome − +` (ordem da prancha), seletor com 172 px e reticências.
+- 701–1300 px: círculos reduzidos (halo 96 px) para caberem na coluna de 300 px; antes se sobrepunham e a Terra era cortada.
+- Pedido ao núcleo: a barra de contexto (`mp-context`) é mais larga que a prancha (nome real do sítio + "offline" + "Abrir em") e o `Alterar` da prancha não existe; os botões da nav têm 44 px em vez de 46 px e a nav tem itens extra (Debrief, Aula, Planejar).
