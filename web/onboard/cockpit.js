@@ -183,7 +183,7 @@
   const VIEWS = {};
 
   VIEWS.entrada = () => {
-    const sites = Object.entries(M.SITES).map(([id, s]) => h("option", { value: id, selected: id === S.site }, id + " · " + s.name));
+    const sites = siteOptions().map(o => h("option", { value: o.id, selected: o.id === S.site, disabled: !o.ok }, o.label));
     const latInvalid = S.lat !== "" && !(Number(S.lat) >= -90 && Number(S.lat) <= 90);
     const lonInvalid = S.lon !== "" && !(Number(S.lon) >= -180 && Number(S.lon) <= 180);
     const field = (key, label, type, extra) => h("label", {}, label,
@@ -225,6 +225,7 @@
 
   VIEWS.geometria = () => {
     const tr = timeline();
+    if (!tr.length) return [noDataState("02 · Geometria do Sol e da Terra")];
     if (S.t >= tr.length) S.t = 0;
     const cur = tr[S.t] || tr[0];
     const stepM = stepOf(tr);
@@ -289,23 +290,78 @@
   S.series = null;      // { key, points } from the API
   S.loadingKey = null;
   function seriesKey() { return S.site + "|" + S.startLocal + "|" + S.durationH; }
+  // Sky (API): GET /api/sites/{id}/sky gives the stored terrain horizon and, per stored sample,
+  // Sun and Earth azimuth/elevation with their visibility. Values are read-only, never interpolated.
+  S.sky = {};          // siteId -> { status: "ok" | "erro", data | error }
+  S.skyLoading = {};
+  const norm360 = a => ((a % 360) + 360) % 360;
+  function loadSky(id) {
+    if (S.skyLoading[id] || S.sky[id]) return;
+    S.skyLoading[id] = true;
+    OnboardApi.sky(id).then(r => {
+      S.sky[id] = r.ok ? { status: "ok", data: r.data } : { status: "erro", error: r.error || ("HTTP " + r.status) };
+      delete S.skyLoading[id];
+      renderTab();
+    });
+  }
+  function skyData() {
+    const e = S.sky[S.site];
+    return e && e.status === "ok" ? e.data : null;
+  }
+  // Horizon altitude at an azimuth, from the stored terrain profile (linear between samples).
+  function hAt(az) {
+    const sky = skyData();
+    if (!sky || !sky.terrain_horizon || sky.terrain_horizon.length < 2) return M.horizonAt(az, M.SITES[S.site]);
+    const pts = sky.terrain_horizon.slice().sort((p, q) => p.azimuth_deg - q.azimuth_deg);
+    const wrapped = pts.concat([{ azimuth_deg: pts[0].azimuth_deg + 360, elevation_deg: pts[0].elevation_deg }]);
+    const a = norm360(az) < wrapped[0].azimuth_deg ? norm360(az) + 360 : norm360(az);
+    for (let i = 0; i < wrapped.length - 1; i++) {
+      const p = wrapped[i], q = wrapped[i + 1];
+      if (a >= p.azimuth_deg && a <= q.azimuth_deg) {
+        const t = (a - p.azimuth_deg) / ((q.azimuth_deg - p.azimuth_deg) || 1);
+        return p.elevation_deg + t * (q.elevation_deg - p.elevation_deg);
+      }
+    }
+    return wrapped[wrapped.length - 1].elevation_deg;
+  }
+  // Timeline for the current place and window: API samples when the place has a sky series,
+  // otherwise the local model (only for the three synthetic places that exist in the browser).
   function timeline() {
-    const key = seriesKey();
-    if (!(S.series && S.series.key === key) && S.loadingKey !== key) {
-      S.loadingKey = key;
-      loadSeries(key);
-    }
-    if (S.series && S.series.key === key && S.series.points && S.series.points.length) {
-      const site = M.SITES[S.site];
-      return S.series.points.map((p, i) => {
-        const ms = Date.parse(p.epoch_utc), tH = ms / 3600e3, b = M.bodiesAt(tH);
-        // Elevation is rebuilt from the server margin, so the angle and the visibility flag agree.
-        const sunEl = M.horizonAt(b.sunAz, site) + p.sun_margin_deg, earthEl = M.horizonAt(b.earthAz, site) + p.earth_margin_deg;
-        return { i, ms, tH, src: "api", sunAz: b.sunAz, sunEl, earthAz: b.earthAz, earthEl,
-          sun_visible: p.sun_visible, earth_visible: p.earth_visible, sun_margin: p.sun_margin_deg, earth_margin: p.earth_margin_deg, site };
+    if (!S.sky[S.site] && !S.skyLoading[S.site]) loadSky(S.site);
+    const sky = skyData();
+    if (sky && sky.samples && sky.samples.length) {
+      const t0 = startMs(), t1 = t0 + S.durationH * 3600e3;
+      const rows = [];
+      sky.samples.forEach(s => {
+        const ms = Date.parse(s.epoch_utc);
+        if (!(ms >= t0 && ms <= t1)) return;
+        rows.push({ ms, tH: ms / 3600e3, src: "api",
+          sunAz: s.sun.azimuth_deg, sunEl: s.sun.elevation_deg, earthAz: s.earth.azimuth_deg, earthEl: s.earth.elevation_deg,
+          sun_visible: s.sun_visible, earth_visible: s.earth_visible, sun_margin: s.sun_margin_deg, earth_margin: s.earth_margin_deg });
       });
+      return rows.map((r, i) => ({ ...r, i }));
     }
-    return track(0).map((s, i) => ({ ...s, i, ms: startMs() + i * S.stepMin * 60e3, src: "local" }));
+    if (M.SITES[S.site] && (!S.sky[S.site] || S.sky[S.site].status === "erro")) {
+      return track(0).map((s, i) => ({ ...s, i, ms: startMs() + i * S.stepMin * 60e3, src: "local" }));
+    }
+    return [];   // loading, or no data for this place in the chosen window
+  }
+  // Shown instead of a chart when the window has no data.
+  function noDataState(what) {
+    const e = S.sky[S.site];
+    const ok = e && e.status === "ok" ? e.data : null;
+    const msg = e && e.status === "erro" ? "A API não respondeu: " + e.error : (S.skyLoading[S.site] ? "Carregando a série do lugar…" : "Sem dados desta janela para o lugar escolhido.");
+    const children = [h("strong", { text: msg })];
+    if (ok && ok.start_utc && ok.end_utc) {
+      const hours = Math.round((Date.parse(ok.end_utc) - Date.parse(ok.start_utc)) / 3600e3);
+      children.push(h("span", { text: "Cobertura da série deste lugar: " + fmt(Date.parse(ok.start_utc)) + " até " + fmt(Date.parse(ok.end_utc)) + " (" + hours + " h)." }));
+      children.push(h("button", { type: "button", class: "go", style: "justify-self:start", onclick: () => {
+        S.startLocal = ok.start_utc.slice(0, 16);
+        S.durationH = Math.max(1, Math.min(720, hours));
+        S.t = 0; S.api = null; renderAlarm(); renderTab();
+      } }, "USAR A COBERTURA DA SÉRIE"));
+    }
+    return h("section", { class: "panel span2" }, h("h2", {}, what), h("div", { class: "empty" }, ...children));
   }
   function stepOf(tr) {
     return tr.length > 1 ? Math.round((tr[1].ms - tr[0].ms) / 60000) : S.stepMin;
@@ -340,13 +396,14 @@
   // whole window; the solid markers show the current time, with a drop line to the horizon.
   VIEWS.horizonte = () => {
     const tr = timeline();
+    if (!tr.length) return [noDataState("03 · Horizonte do lugar")];
     if (S.t >= tr.length) S.t = 0;
     const cur = tr[S.t] || tr[0];
     const site = M.SITES[S.site];
     const W = 640, H = 260, L = 46, R = 16, T = 14, B = 34;
     // vertical scale fits the values in the window (display only), so no curve is cut off
     const vals = [];
-    tr.forEach((s, i) => { if (i % Math.max(1, Math.ceil(tr.length / 240)) === 0) vals.push(s.sunEl, s.earthEl, M.horizonAt(s.sunAz, site), M.horizonAt(s.earthAz, site)); });
+    tr.forEach((s, i) => { if (i % Math.max(1, Math.ceil(tr.length / 240)) === 0) vals.push(s.sunEl, s.earthEl, hAt(s.sunAz), hAt(s.earthAz)); });
     const lo = Math.min(...vals), hi = Math.max(...vals);
     const span = Math.max(4, hi - lo);
     const tickStep = span > 12 ? 4 : 2;
@@ -375,7 +432,7 @@
 
     // horizon area
     let d = "";
-    for (let a = 0; a <= 360; a += 2) d += (a === 0 ? "M" : "L") + x(a).toFixed(1) + "," + y(M.horizonAt(a, site)).toFixed(1) + " ";
+    for (let a = 0; a <= 360; a += 2) d += (a === 0 ? "M" : "L") + x(a).toFixed(1) + "," + y(hAt(a)).toFixed(1) + " ";
     box.append(svg("path", { d: d + "L" + x(360) + "," + y(EMIN) + " L" + x(0) + "," + y(EMIN) + " Z", fill: "#263241", "fill-opacity": ".9", stroke: "#6f8b7c", "stroke-width": "1.5" }));
 
     // whole-window paths as dots (no lines: azimuth wraps at 0/360)
@@ -387,7 +444,7 @@
     });
 
     // current instant: drop lines and markers
-    const hs = M.horizonAt(cur.sunAz, site), he = M.horizonAt(cur.earthAz, site);
+    const hs = hAt(cur.sunAz), he = hAt(cur.earthAz);
     box.append(svg("line", { x1: x(cur.sunAz), x2: x(cur.sunAz), y1: y(cur.sunEl), y2: y(hs), stroke: "#ffb020", "stroke-dasharray": "2 2" }));
     box.append(svg("line", { x1: x(cur.earthAz), x2: x(cur.earthAz), y1: y(cur.earthEl), y2: y(he), stroke: "#5fd8ff", "stroke-dasharray": "2 2" }));
     box.append(svg("circle", { cx: x(cur.sunAz), cy: y(cur.sunEl), r: 6, fill: "#ffb020", stroke: "#0f1720", "stroke-width": 2 }));
@@ -1377,10 +1434,116 @@
     return apiPanelFrame("API · Relatório (/api/onboard/report)", "Gera HTML a partir das amostras sintéticas. Não é documento de submissão.", button, body);
   }
 
-  const API_EXTRA = { replan: delayPanel, visual: comparePanel, energia: siteEvalPanel, historico: reportPanel };
+  // ---------- More API panels: nearby places, media, layers, site report ----------
+  S.nearby = {}; S.media = {}; S.layers = null; S.layersLoading = false;
+  function loadNearby(id) {
+    if (S.nearby[id]) return;
+    S.nearby[id] = { loading: true };
+    OnboardApi.site(id).then(r => {
+      S.nearby[id] = r.ok ? { ok: true, nearby: (r.data.nearby || []) } : { ok: false, error: r.error || ("HTTP " + r.status) };
+      renderTab();
+    });
+  }
+  function nearbyPanel() {
+    const c = S.nearby[S.site];
+    if (!c) loadNearby(S.site);
+    let body = h("p", { class: "dim", text: "Carregando lugares próximos…" });
+    if (c && c.ok) {
+      body = c.nearby.length
+        ? h("div", { class: "scroll" }, h("table", { class: "table" },
+            h("thead", {}, h("tr", {}, h("th", { text: "lugar" }), h("th", { class: "n", text: "distância (km)" }), h("th", { text: "série" }))),
+            h("tbody", {}, c.nearby.map(n => h("tr", {}, h("td", { text: n.name || n.id }), h("td", { class: "n", text: f1(n.distance_km, 0) }),
+              h("td", {}, tag(n.has_series ? "SIM" : "PEND"), " ", h("span", { class: "dim", text: n.has_series ? "com série" : "sem série" })))))))
+        : h("p", { class: "dim", text: "Nenhum lugar próximo no catálogo." });
+    }
+    if (c && !c.ok) body = apiError(c);
+    return apiPanelFrame("API · Lugares próximos (/api/sites/{id})", "Vizinhos do catálogo por distância. Só lugares com série podem ser avaliados.", h("span"), body);
+  }
+
+  function loadMedia(id) {
+    if (S.media[id]) return;
+    S.media[id] = { loading: true };
+    OnboardApi.media(id).then(r => {
+      S.media[id] = r.ok ? { ok: true, data: r.data } : { ok: false, error: r.error || ("HTTP " + r.status) };
+      renderTab();
+    });
+  }
+  function mediaPanel() {
+    const c = S.media[S.site];
+    if (!c) loadMedia(S.site);
+    let body = h("p", { class: "dim", text: "Carregando galeria do lugar…" });
+    if (c && c.ok) {
+      const items = c.data.media || [];
+      body = items.length
+        ? h("div", { class: "grid three" }, items.map(m => h("div", { class: "panel" },
+            h("strong", { text: m.title }),
+            h("div", { class: "dim", style: "margin-top:4px", text: m.region || "" }),
+            h("p", { class: "note", text: "Crédito: " + (m.credit || "—") }),
+            m.coordinate_note ? h("p", { class: "note", text: m.coordinate_note }) : null,
+            m.illustrative_only ? h("div", { style: "margin-top:8px" }, tag("SINT"), " ", h("span", { class: "dim", text: "ilustrativo, não é dado" })) : null,
+            m.page_url ? h("a", { href: m.page_url, target: "_blank", rel: "noopener", text: "abrir fonte" }) : null)))
+        : h("p", { class: "dim", text: "Sem mídia relacionada a este lugar." });
+      if (c.data.terms_url) body = h("div", {}, body, h("p", { class: "note" }, "Termos: ", h("a", { href: c.data.terms_url, target: "_blank", rel: "noopener", text: c.data.terms_url })));
+    }
+    if (c && !c.ok) body = apiError(c);
+    return apiPanelFrame("API · Galeria do lugar (/api/sites/{id}/media)", "Links e créditos. Imagens não são copiadas para o protótipo.", h("span"), body);
+  }
+
+  function loadLayers() {
+    if (S.layers || S.layersLoading) return;
+    S.layersLoading = true;
+    OnboardApi.layers().then(r => {
+      S.layers = r.ok ? { ok: true, data: r.data } : { ok: false, error: r.error || ("HTTP " + r.status) };
+      S.layersLoading = false;
+      renderTab();
+    });
+  }
+  function layersPanel() {
+    if (!S.layers) loadLayers();
+    let body = h("p", { class: "dim", text: "Carregando camadas…" });
+    if (S.layers && S.layers.ok) {
+      body = h("div", { class: "scroll" }, h("table", { class: "table" },
+        h("thead", {}, h("tr", {}, h("th", { text: "camada" }), h("th", { text: "papel científico" }), h("th", { text: "resolução" }), h("th", { text: "direitos" }), h("th", { text: "entrega" }))),
+        h("tbody", {}, (S.layers.data.layers || []).map(l => h("tr", {},
+          h("td", {}, h("strong", { text: l.title }), h("div", { class: "dim", text: l.attribution || "" })),
+          h("td", { text: l.scientific_role || "—" }),
+          h("td", { text: l.resolution_m_per_px ? l.resolution_m_per_px + " m/px" : (l.resolution_km_per_px_equator ? l.resolution_km_per_px_equator + " km/px" : "—") }),
+          h("td", {}, tag(l.redistribution_status === "ALLOWED" ? "SIM" : "PEND"), " ", h("span", { class: "dim", text: l.redistribution_status || "—" })),
+          h("td", { text: l.delivery || "—" }))))));
+    }
+    if (S.layers && !S.layers.ok) body = apiError(S.layers);
+    return apiPanelFrame("API · Camadas do mapa (/api/layers)", "Fonte, direitos e atribuição de cada camada. Só as liberadas podem ser usadas em produção.", h("span"), body);
+  }
+
+  // Site-level printable report: same input as the site evaluation, one place, one candidate.
+  function siteReportPanel() {
+    const r = S.apiResults.siteReport;
+    const button = callButton("RELATÓRIO DO LUGAR (API)", async () => {
+      const body = {
+        mission_id: "cockpit-report-" + S.site, start_utc: iso(startMs()), duration_hours: S.durationH,
+        candidates: [{ id: "planejado", site_id: S.site, delay_hours: 0 }],
+        power: { battery_capacity_wh: S.power.battery_capacity_wh, initial_charge_wh: S.power.initial_charge_wh, reserve_wh: S.power.reserve_wh, solar_generation_w: S.power.solar_generation_w, load_w: S.power.load_w },
+        max_comm_blackout_hours: S.power.max_comm_blackout_hours
+      };
+      const res = await OnboardApi.siteReport(body);
+      S.apiResults.siteReport = res;
+      if (res.ok) window.open(URL.createObjectURL(new Blob([res.data], { type: "text/html" })), "_blank", "noopener");
+    });
+    let body = h("p", { class: "dim", text: "Relatório imprimível do lugar, com o cálculo combinado e os consumíveis (/api/onboard/site-report). Protótipo, não é documento de submissão." });
+    if (r && !r.ok) body = apiError(r);
+    if (r && r.ok) body = h("p", { class: "note", text: "Relatório do lugar gerado e aberto em nova aba." });
+    return apiPanelFrame("API · Relatório do lugar (/api/onboard/site-report)", "Um lugar, um candidato. Só para lugares com série.", button, body);
+  }
+
+  const API_EXTRA = {
+    replan: () => [delayPanel(), nearbyPanel()],
+    visual: () => [comparePanel(), mediaPanel(), layersPanel()],
+    energia: () => [siteEvalPanel()],
+    historico: () => [reportPanel(), siteReportPanel()]
+  };
   for (const k of Object.keys(API_EXTRA)) {
     const base = VIEWS[k];
-    VIEWS[k] = () => [API_EXTRA[k](), ...base()];
+    VIEWS[k] = () => [].concat(API_EXTRA[k](), base());
   }
 
   async function loadHealth() {
@@ -1393,6 +1556,25 @@
   async function loadSites() {
     const r = await OnboardApi.sites();
     if (r.ok) S.sitesApi = (r.data.sites || []).map(s => ({ id: s.id, name: s.name, series: !!s.series }));
+    rebuildTop();
+    if (S.tab === "entrada") renderTab();
+  }
+  // Places: a place can be selected when the API has its series AND the browser has its local model.
+  function siteOptions() {
+    const api = S.sitesApi || [];
+    const byId = Object.fromEntries(api.map(s => [s.id, s]));
+    const ids = [...new Set([...Object.keys(M.SITES), ...api.map(s => s.id)])];
+    return ids.map(id => {
+      const a = byId[id], local = M.SITES[id];
+      const name = (local && local.name) || (a && a.name) || id;
+      const ok = !!(a && a.series) && !!local;
+      return { id, ok, label: id + " · " + name + (ok ? "" : " (sem série)") };
+    });
+  }
+  function rebuildTop() {
+    const top = document.getElementById("top-site");
+    if (!top) return;
+    top.replaceChildren(...siteOptions().map(o => h("option", { value: o.id, text: o.label, disabled: !o.ok, selected: o.id === S.site })));
   }
 
   // ---------- rendering ----------
@@ -1437,8 +1619,8 @@
     if (fab) fab.addEventListener("click", calculate);
     const top = document.getElementById("top-site");
     if (top) {
-      top.replaceChildren(...Object.entries(M.SITES).map(([id, s]) => h("option", { value: id, text: id + " · " + s.name })));
-      top.addEventListener("change", e => { S.site = e.target.value; S.api = null; renderAlarm(); renderTab(); });
+      rebuildTop();
+      top.addEventListener("change", e => { if (!e.target.selectedOptions[0].disabled) { S.site = e.target.value; S.api = null; renderAlarm(); renderTab(); } });
     }
     renderAlarm();
     renderTab();
