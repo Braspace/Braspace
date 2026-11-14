@@ -1,0 +1,78 @@
+# H-evidence · Evidências
+
+**Pergunta que a tela responde**
+De onde vem cada número, o que é dado real, o que é simulação, o que assumimos e quanto confiar?
+
+**Quem usa e em que camada abre**
+- Público-alvo: todos os perfis, especialmente planejadores e professores conferindo proveniência.
+- Camada em que abre: **3 Prova** (proveniência completa, premissas, fontes de dados, níveis de confiança e exportação JSON).
+
+**Layout**
+- **Desktop (1440×900):**
+  - **Topo:** Barra de navegação global (`Evidências` ativo em jade) + barra de contexto (`Passaporte do cenário <id> • calculado <data> • versão <commit>`, selo `PRE` ou `SIM`, `Alterar`, CTA `Baixar JSON`).
+  - **Coluna esquerda:** Menu vertical de 6 pílulas (`Passaporte` ativo, `Fontes de dados`, `Hipóteses`, `Limites`, `Lições`, `Missões guiadas`).
+  - **Coluna central:** Cartão principal `Evidências — De onde vem cada número?` com 2 subcartões lado a lado (`Dado real` com selo `PRE` e `Simulação` com hachura lilás e selo `SIM`) e seção numerada `O que assumimos` (4 itens).
+  - **Coluna direita:** 2 cartões empilhados — `Fontes de dados` (lista com nome, especificação/resolução e selo `PRE`/`SIM`/`N/D`) e `Quanto confiar` (4 barras segmentadas de 4 blocos).
+- **Celular (390×844):**
+  - Navegação de subseções em pílulas roláveis horizontalmente; cartões empilhados em coluna única sem rolagem lateral.
+
+**Componentes**
+- `ShellNav` + `BarraContexto`: com botão `Baixar JSON` funcional.
+- `MenuLateralEvidencias`: 6 subseções clicáveis. Estados: ativo (jade), inativo.
+- `CartaoOrigemNumeros`: explicação + subcartões `Dado real` e `Simulação` + lista `O que assumimos`.
+- `CartaoFontesDados`: lista dinâmica de fontes com selos `PRE`, `SIM`, `N/D`.
+- `CartaoQuantoConfiar`: 4 medidores segmentados (Sol visível, Terra visível, Inclinação, Bateria).
+
+**Textos**
+| pt-BR | en |
+|---|---|
+| Evidências | Evidence |
+| Passaporte do cenário | Scenario passport |
+| Baixar JSON | Download JSON |
+| De onde vem cada número? | Where does each number come from? |
+| Dado real / Simulação | Real data / Simulation |
+| O que assumimos | What we assume |
+| Fontes de dados | Data sources |
+| Quanto confiar | How much to trust |
+| Sol visível / Terra visível / Inclinação / Bateria | Sun visible / Earth visible / Slope / Battery |
+
+**Dados**
+| Elemento | Fonte exata (arquivo ou rota e campo) | Selo | O que mostrar sem dado |
+|---|---|---|---|
+| Registro de fontes e licenças | `data/ASSET_REGISTRY.json` (`assets[].asset_id`, `file_id`, `author_credit`, `scientific_role`) e `docs/ASSET_LICENSE_MATRIX.md` | `PRE` | `N/D` |
+| Metadados do sítio e séries | `web/data/sites.json` (`generated_utc`, `science_status`, `series_window`) e `web/data/sites/<id>.json` (`series.sha256`, `science_status`) | `PRE` | `—` com selo `N/D` |
+| Estado da API e capacidades | `GET /readyz`, `GET /v1/capabilities`, `GET /api/layers` | `PRE` / `SIM` | `offline · precomputed` |
+| Pedras < 20 m | sem fonte: N/D | `N/D` | `sem fonte ainda` (`N/D`) |
+
+**Interações**
+- Clique nas 6 pílulas laterais filtra/rola para a seção correspondente.
+- Clique em `Baixar JSON` gera download do passaporte do cenário atual em JSON.
+- Clique em `?` em `Quanto confiar` exibe explicação dos níveis de confiança.
+
+**Ligações**
+- Acessível de qualquer tela pela barra superior (`Evidências`) ou pelo link de lição em `debrief.html`.
+
+**Diferenças entre o desenho e a tela real**
+1. **Nenhum número fixo:** `a41c9e2`, `14 nov 2026 · 17:32 UTC` vêm de `web/data/sites.json` (`generated_utc`) ou da API.
+2. **Selo `VAL`:** o desenho mostra `VAL` em LOLA, LROC WAC e JPL DE440; na tela real usa-se `PRE` ("PRELIMINARY not NASA-reviewed"), nunca `VAL`.
+3. **Locais reais:** passaporte referencia o sítio real selecionado em `web/data/sites.json`.
+4. **Bateria H1:** explicitamente marcada como `SIM` (hipotética).
+5. **Regras:** limites assumidos documentados na aba `Limites`.
+6. **Sem domínio inventado:** sem URLs externas fictícias.
+7. **Resolução real:** LOLA é 80 m reamostrado (conforme `.json` em `web/data/`), não "20 m/px".
+8. **Landing Lab:** listado como modelo educativo (`SIM`) em `Fontes de dados`.
+
+**Critérios de aceite**
+- Lista fontes reais de `data/ASSET_REGISTRY.json` e `web/data/sites.json`.
+- Nenhum selo `VAL` ou texto "20 m/px" aparece na página.
+- Botão `Baixar JSON` baixa arquivo JSON válido.
+- Funciona em `1440×900` e `390×844` sem rolagem horizontal.
+
+## Correções feitas pela implementação (BR79)
+- **Passaporte:** `Passaporte do cenário <n>` usa o número do marcador do sítio (nunca "B"); `calculado` é a hora do navegador ao abrir; `versão` vem do commit em `config.js` (`BRASPACE_COMMIT`) se a instalação publicar um, senão de `api_version` em `GET /api/health`, senão `—`.
+- **Fontes de dados:** relevo = `web/data/region/south_pole_400m.json` (grade 400 m, fonte de 80 m, `PRE`); posição do Sol e da Terra e horizonte = `provenance` de `web/data/sites/<id>.json` (`PRE`); bateria e pouso `SIM`; pedras < 20 m `N/D` sem fonte. A imagem da superfície mostra o estado do registro (`redistribution_status` de `data/ASSET_REGISTRY.json` via `GET /api/layers`), que NÃO é selo de dado.
+- **Registro e licenças:** a aba `Fontes de dados` lista os 16 ativos de `data/ASSET_REGISTRY.json` com estado e papel científico. Como página estática não lê o repositório, `screens/evidence-registry.js` é uma cópia e o teste `evidence-model` falha se ela se afastar do registro ou da matriz `docs/ASSET_LICENSE_MATRIX.md`.
+- **Quanto confiar:** escala nossa por selo de origem (VAL 4, PRE 3, EST 2, SIM 1, N/D 0), explicada no `?`. Inclinação: sem fonte → 0 de 4 e `N/D` (o desenho mostra 2 de 4 "estimado"; não há dado de declividade no repositório).
+- **Baixar JSON:** gera `moonproof-passaporte-<sítio>.json` com cenário, regras (`assumed limit`), versão, estado da API, origem e selo de cada número e referências do registro.
+- **Lições** e **Missões guiadas:** sem fonte hoje; abas mostram `N/D`, não texto inventado.
+- Sem `VAL`, sem "20 m/px", sem domínio inventado.

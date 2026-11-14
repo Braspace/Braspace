@@ -1,0 +1,73 @@
+# D-recover · Replanejar (Atraso em 4 passos e saídas)
+
+## Pergunta que a tela responde
+**pt-BR:** Se o pouso atrasar, o que quebra e qual é a melhor saída?  
+**en:** If landing is delayed, what breaks and what is the best recovery option?
+
+## Quem usa e em que camada abre
+- **Público geral / Planejadores:** abre em **1 · Resposta** (qual saída resolve o atraso), com **2 · Por quê** (linha do tempo `Sol nos 14 dias`) e **3 · Prova** (cálculo de atraso via `/api/scenarios/delay`).
+
+## Layout
+- **Desktop (1440×900):**
+  - Fundo *full-bleed*: mapa lunar com marcador do sítio atual (`B`) e rota pontilhada até o sítio alternativo (`D`).
+  - **Topo:** Barra de navegação (`Replanejar` ativo em Jade) + barra de contexto (`Cenário B · <sítio> • pouso adiado • <duração>`, selo `PRE`/`SIM`, `Alterar`, alerta `N REGRAS VIOLADAS` em coral).
+  - **Coluna esquerda:** Passo 1 (dial circular de atraso `+12`, `+24`, `+48`, `+72`, `+96` horas + 2 pílulas brancas `Novo pouso` e `Fim da missão`) e Passo 2 (cartão `o que mudou` com valores riscados → novos valores).
+  - **Centro:** Mapa com marcador `B` (selo coral `noite de X h`), linha pontilhada `Saída D · trocar de local`, marcador `D`.
+  - **Coluna direita:** Passo 3 (`escolha uma saída`: 3 cartões `B'`, `D`, `B''` com folga estimada + botão `Passo 4 · comparar e decidir`).
+  - **Rodapé central:** Barra horizontal `Sol nos 14 dias` comparando `Planejado` vs. `+<atraso> h` (noite que quebra a regra contornada em coral).
+- **Celular (390×844):**
+  - Mapa no topo; folha inferior com Passos 1–3 empilhados; barra de navegação inferior fixa.
+
+## Componentes
+- **Dial de atraso (Passo 1):** Centro Jade com `+48 horas` e 4 satélites (`+12`, `+24`, `+72`, `+96`).
+- **Pílulas de data (2 brancas):** `Novo pouso` e `Fim da missão`.
+- **Cartão `Passo 2 · o que mudou`:** 4 linhas (`Maior noite`, `Folga da bateria`, `Terra visível`, `Maior perda da Terra`) com valor original riscado e novo valor colorido (coral se violar regra).
+- **Cartão `Passo 3 · escolha uma saída`:** 3 opções (`B'` esperar janela, `D` trocar de local, `B''` reduzir missão) + CTA `Passo 4 · comparar e decidir`.
+- **Linha do tempo `Sol nos 14 dias`:** 2 faixas (`Planejado` e `+<atraso> h`) com blocos solares em amarelo e noites críticas em coral.
+
+## Textos
+| Elemento | pt-BR | en |
+|---|---|---|
+| Alerta contexto | 2 REGRAS VIOLADAS | 2 RULES VIOLATED |
+| Passo 1 | Passo 1 · quanto o pouso atrasou? · horas | Step 1 · how long is the delay? · hours |
+| Datas | Novo pouso · Fim da missão · fixo em D14 | New landing · Mission end · fixed at D14 |
+| Passo 2 | Passo 2 · o que mudou | Step 2 · what changed |
+| Passo 3 | Passo 3 · escolha uma saída | Step 3 · choose an option |
+| CTA Passo 4 | Passo 4 · comparar e decidir | Step 4 · compare and decide |
+| Timeline | Sol nos 14 dias · vermelho = noite que quebra a regra · Planejado | Sun over 14 days · red = rule-breaking night · Planned |
+
+## Dados
+| Elemento | Fonte exata (arquivo ou rota + campo) | Selo | Sem dado |
+|---|---|---|---|
+| Impacto do atraso (noite, Terra) | `POST /api/scenarios/delay` | `PRE` / `SIM` | `—` (`N/D`) |
+| Folga da bateria nas saídas | `POST /api/onboard/evaluate` | `SIM` | `—` (`N/D`) |
+| Sítio alternativo (`D`) | `web/data/sites.json` → `sites[]` | `PRE` | `—` (`N/D`) |
+
+## Interações
+- **Clique:** Selecionar `+12`/`+24`/`+48`/`+72`/`+96` recalcula Passos 2, 3 e a timeline; clicar numa saída (`B'`, `D`, `B''`) destaca-a; clicar `Passo 4 · comparar e decidir` abre `compare.html` com a saída selecionada.
+- **Teclado:** `Tab` e setas navegam pelos satélites do dial e opções de saída.
+
+## Ligações
+- `compare.html` (C · Comparar — Passo 4), `explore.html` (B), `cockpit.html` (E), `evidence.html` (H), `landing.html` (F).
+
+## Diferenças entre o desenho e a tela real
+1. **Sem números fixos:** `+48`, `71 h`, `-11 h`, `58%`, `44 h` vêm de `POST /api/scenarios/delay` e `sites.json`.
+2. **Selo `VAL` proibido:** Nunca exibir `VAL`.
+3. **Locais reais:** Alternativa `D` usa um sítio real de `web/data/sites.json` (ex.: `Malapert Massif`), não `SR-05`.
+4. **Bateria H1:** Folgas `+11 h`, `+6 h`, `+2 h` são `SIM`.
+5. **Regras:** Limites editáveis rotulados como `assumed limit`.
+6. **Sem domínio inventado:** Query string local.
+7. **Dado real e resolução:** LOLA 80 m/px.
+8. **Landing Lab:** Link na navegação.
+
+## Correções feitas pela implementação (BR78)
+- Bateria H1 (folga em horas) não vem de `/api/compare` nem de `/api/scenarios/delay`: mostra "—" + N/D. A "folga" calculada é a distância até a regra mais apertada (noite ou perda da Terra), rotulada assim.
+- Os cenários e o atraso ficam no hash da URL (`#sc=local~início~horas,…&d=48&x=wait`); regras na query (`night`, `blackout`).
+- As saídas (esperar / trocar de local / encurtar) são calculadas da série; só aparecem as que cumprem as regras, ordenadas pela folga.
+- Rótulos de data e local vêm dos dados; o selo é o do estado da origem (PRE, SIM, EST).
+
+## Critérios de aceite
+- [ ] Alterar o atraso chama `POST /api/scenarios/delay` (ou fallback estático) e atualiza Passos 2, 3 e timeline.
+- [ ] Violações de regra exibem coral + texto/ícone.
+- [ ] Sítio alternativo é real de `sites.json`.
+- [ ] Responsivo em 1440×900 e 390×844 sem rolagem lateral.

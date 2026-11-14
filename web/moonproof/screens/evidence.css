@@ -1,0 +1,54 @@
+.mp-ev{position:fixed;z-index:10;top:132px;left:var(--margin);right:var(--margin);bottom:22px;display:grid;grid-template-columns:230px minmax(0,1fr) 420px;gap:var(--gap);align-items:start;overflow:hidden}
+.mp-ev>*{max-height:calc(100vh - 154px);overflow:auto}
+.mp-ev-menu{display:grid;gap:8px}.mp-ev-menu .mp-pill{justify-content:flex-start;width:100%}
+.mp-ev-main{display:grid;gap:21px;padding:34px}
+.mp-ev-main h1{margin:0;font-size:34px;font-weight:800;letter-spacing:var(--ls-title);line-height:1.1}
+.mp-ev-eyebrow{margin:0;color:var(--text-2);font-size:var(--fs-label);font-weight:600}
+.mp-ev-lead{margin:0;color:var(--text-2);max-width:60ch;font-size:15px}
+.mp-two{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+.mp-sub{border-radius:var(--r-inner);padding:18px;border:1.5px solid var(--real);display:grid;gap:8px}
+.mp-sub h3{margin:0;font-size:var(--fs-card-title);display:flex;justify-content:space-between;gap:8px;align-items:center}.mp-sub p{margin:0;color:var(--text-2)}
+.mp-sub.sim{border-color:var(--sim);background:repeating-linear-gradient(135deg,rgba(180,140,242,.16) 0 4px,transparent 4px 9px)}
+.mp-assume{margin:0;padding:0;list-style:none;display:grid;gap:13px;counter-reset:a}
+.mp-assume li{display:flex;gap:13px;counter-increment:a;align-items:flex-start}
+.mp-assume li::before{content:counter(a);flex:none;width:28px;height:28px;border-radius:50%;background:#1a1f25;display:grid;place-items:center;font-weight:700;font-size:13px}
+.mp-ev-main h2{margin:0;font-size:var(--fs-card-title)}
+.mp-src{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.mp-src:first-of-type{border-top:0}.mp-src b{display:block;font-size:14px}.mp-src small{color:var(--text-2);font-size:12px;display:block;overflow-wrap:anywhere}
+.mp-chipreg{font:700 11px/1 var(--mono);border:1.5px solid var(--unknown);color:var(--text-2);border-radius:6px;padding:5px 8px;white-space:nowrap}
+.mp-trust{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.mp-seg{display:flex;gap:3px}.mp-seg i{width:18px;height:8px;border-radius:2px;background:#2a3038}.mp-seg i.on{background:var(--jade)}
+.mp-help{width:var(--touch);height:var(--touch);padding:0;justify-content:center}
+.mp-mono{font-family:var(--mono);font-size:12px;overflow-wrap:anywhere}
+.mp-ev-block{display:grid;gap:8px}.mp-ev-block[hidden]{display:none}
+.mp-ev-block table{border-collapse:collapse;width:100%;font-size:13px}.mp-ev-block th{text-align:left;color:var(--text-2);font-weight:600;padding:4px 10px 4px 0;vertical-align:top;width:34%}
+@media (max-width:1100px){.mp-ev{grid-template-columns:200px minmax(0,1fr)}.mp-ev-right{grid-column:1/-1}}
+@media (max-width:700px){
+  .mp-ev{top:112px;bottom:70px;left:8px;right:8px;display:block;overflow:auto}.mp-ev>*{max-height:none;margin-bottom:12px}
+  .mp-ev-menu{display:flex;overflow-x:auto;padding-bottom:4px}.mp-ev-menu .mp-pill{width:auto;flex:none}
+  .mp-ev-main{padding:18px}.mp-ev-main h1{font-size:28px}.mp-two{grid-template-columns:1fr}
+}
+
+.mp-marker,.mp-marker-label{display:none!important}
+.mp-ev *{min-width:0}
+.mp-src small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+.mp-trust b,.mp-trust small{display:block}.mp-trust small{color:var(--text-2);font-size:12px}
+.mp-ev-block td{overflow-wrap:anywhere}
+.mp-ev-main{align-content:start}
+.mp-ev-main .mp-two{margin-top:0}
+.mp-ev-menu .mp-pill[aria-current="page"]{background:var(--jade);color:var(--jade-text)}
+.mp-context{overflow:hidden;text-overflow:ellipsis}
+@media (max-width:700px){
+  .mp-ev{left:14px;right:14px;width:auto}
+  .mp-ev-main{padding:18px 16px}.mp-ev-main h1{font-size:26px;overflow-wrap:anywhere}
+  .mp-src small{max-width:200px}
+  .mp-ev .mp-glass{padding:16px}
+}
+.mp-ev-right .mp-glass{padding:14px 18px}
+.mp-src{padding:6px 0}.mp-trust{padding:5px 0}
+.mp-ev-right{max-height:calc(100vh - 154px);overflow:auto;scrollbar-width:none}
+@media (max-width:700px){
+  .mp-context{white-space:normal;flex-wrap:wrap;border-radius:22px;padding:8px 14px;gap:6px 10px;overflow:visible;max-height:none;font-size:12.5px}
+  .mp-ev{top:150px}
+  .mp-bottomnav .mp-pill{padding:0 6px;font-size:11.5px;min-width:0}
+}
