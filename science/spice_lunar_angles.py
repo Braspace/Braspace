@@ -90,7 +90,7 @@ def generate(kernel_dir:pathlib.Path,horizon_json:pathlib.Path,start_utc:str,hou
         for i in range(hours*60//step_minutes):
             epoch=t0+dt.timedelta(minutes=i*step_minutes)
             utc=epoch.strftime("%Y-%m-%dT%H:%M:%S")
-            et=spice.str2et(utc+" UTC")
+            et=spice.str2et(epoch.strftime("%Y %b %d %H:%M:%S UTC"))
             sun,_=spice.spkpos("SUN",et,FRAME,"NONE","MOON")
             earth,_=spice.spkpos("EARTH",et,FRAME,"NONE","MOON")
             samples.append({"sun":look_angles(sun,site["latitude_deg"],site["longitude_deg"],observer_radius_km),
