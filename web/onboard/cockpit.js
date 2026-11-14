@@ -276,34 +276,89 @@
     return h("div", { style: "margin:8px 0" }, h("div", { class: "dim", text: label }), box);
   }
 
+  // Horizon view: azimuth on X (N at both ends, as in a skyline chart), elevation on Y.
+  // The filled area is the synthetic horizon. Faint dots show the Sun and Earth over the
+  // whole window; the solid markers show the current time, with a drop line to the horizon.
   VIEWS.horizonte = () => {
     const { tr } = scenario();
-    const cur = tr[Math.min(S.t, tr.length - 1)] || tr[0];
+    if (S.t >= tr.length) S.t = 0;
+    const cur = tr[S.t] || tr[0];
     const site = M.SITES[S.site];
-    const W = 620, H = 200, pad = 28;
-    const box = svg("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img", "aria-label": "Horizonte sintético com Sol e Terra" });
-    const xAz = a => pad + (a / 360) * (W - pad * 2);
-    const yEl = e => H - pad - ((e + 4) / 10) * (H - pad * 2);
-    box.append(svg("line", { x1: pad, y1: yEl(0), x2: W - pad, y2: yEl(0), stroke: "#5fd8ff", "stroke-opacity": ".35", "stroke-dasharray": "3 3" }));
+    const W = 640, H = 260, L = 46, R = 16, T = 14, B = 34;
+    const EMIN = -4, EMAX = 6;
+    const x = a => L + (a / 360) * (W - L - R);
+    const y = e => T + ((EMAX - e) / (EMAX - EMIN)) * (H - T - B);
+    const box = svg("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img",
+      "aria-label": "Horizonte sintético do sítio " + site.name + " com Sol e Terra no instante escolhido" });
+
+    // grid: elevation every 2°, azimuth every 45°
+    for (let e = EMIN; e <= EMAX; e += 2) {
+      box.append(svg("line", { x1: L, x2: W - R, y1: y(e), y2: y(e), stroke: e === 0 ? "#5fd8ff" : "#1c3240", "stroke-opacity": e === 0 ? ".6" : "1", "stroke-dasharray": e === 0 ? "4 4" : "" }));
+      box.append(svg("text", { x: L - 8, y: y(e) + 4, "text-anchor": "end" }, (e > 0 ? "+" : "") + e + "°"));
+    }
+    const names = { 0: "N", 45: "NE", 90: "L", 135: "SE", 180: "S", 225: "SO", 270: "O", 315: "NO", 360: "N" };
+    for (let a = 0; a <= 360; a += 45) {
+      box.append(svg("line", { x1: x(a), x2: x(a), y1: T, y2: H - B, stroke: "#1c3240" }));
+      box.append(svg("text", { x: x(a), y: H - B + 16, "text-anchor": "middle" }, names[a] + " " + a + "°"));
+    }
+
+    // horizon area
     let d = "";
-    for (let a = 0; a <= 360; a += 3) d += (a === 0 ? "M" : "L") + xAz(a).toFixed(1) + "," + yEl(M.horizonAt(a, site)).toFixed(1) + " ";
-    box.append(svg("path", { d: d + "L" + (W - pad) + "," + (H - pad) + " L" + pad + "," + (H - pad) + " Z", fill: "#1c3240", stroke: "#6f8b7c", "stroke-width": "1.5" }));
-    box.append(svg("circle", { cx: xAz(cur.sunAz), cy: yEl(cur.sunEl), r: 7, fill: "#ffb020" }));
-    box.append(svg("circle", { cx: xAz(cur.earthAz), cy: yEl(cur.earthEl), r: 7, fill: "#5fd8ff" }));
-    box.append(svg("text", { x: pad, y: H - 6 }, "0°"));
-    box.append(svg("text", { x: W - pad - 30, y: H - 6 }, "360°"));
+    for (let a = 0; a <= 360; a += 2) d += (a === 0 ? "M" : "L") + x(a).toFixed(1) + "," + y(M.horizonAt(a, site)).toFixed(1) + " ";
+    box.append(svg("path", { d: d + "L" + x(360) + "," + y(EMIN) + " L" + x(0) + "," + y(EMIN) + " Z", fill: "#1c3240", "fill-opacity": ".9", stroke: "#6f8b7c", "stroke-width": "1.5" }));
+
+    // whole-window paths as dots (no lines: azimuth wraps at 0/360)
+    const stride = Math.max(1, Math.ceil(tr.length / 240));
+    tr.forEach((s, i) => {
+      if (i % stride) return;
+      box.append(svg("circle", { cx: x(s.sunAz), cy: y(s.sunEl), r: 1.6, fill: "#ffb020", "fill-opacity": ".35" }));
+      box.append(svg("circle", { cx: x(s.earthAz), cy: y(s.earthEl), r: 1.6, fill: "#5fd8ff", "fill-opacity": ".35" }));
+    });
+
+    // current instant: drop lines and markers
+    const hs = M.horizonAt(cur.sunAz, site), he = M.horizonAt(cur.earthAz, site);
+    box.append(svg("line", { x1: x(cur.sunAz), x2: x(cur.sunAz), y1: y(cur.sunEl), y2: y(hs), stroke: "#ffb020", "stroke-dasharray": "2 2" }));
+    box.append(svg("line", { x1: x(cur.earthAz), x2: x(cur.earthAz), y1: y(cur.earthEl), y2: y(he), stroke: "#5fd8ff", "stroke-dasharray": "2 2" }));
+    box.append(svg("circle", { cx: x(cur.sunAz), cy: y(cur.sunEl), r: 6, fill: "#ffb020", stroke: "#0b0e11", "stroke-width": 2 }));
+    box.append(svg("circle", { cx: x(cur.earthAz), cy: y(cur.earthEl), r: 6, fill: "#5fd8ff", stroke: "#0b0e11", "stroke-width": 2 }));
+    // labels flip to the left of the marker near the right edge, so they stay inside the chart
+    const lab = (a, e, text, color) => {
+      const nearRight = x(a) > W - R - 60;
+      box.append(svg("text", { x: x(a) + (nearRight ? -9 : 9), y: y(e) - 8, fill: color, "text-anchor": nearRight ? "end" : "start" }, text));
+    };
+    lab(cur.sunAz, cur.sunEl, "SOL", "#ffb020");
+    lab(cur.earthAz, cur.earthEl, "TERRA", "#5fd8ff");
+
+    const slider = h("input", { type: "range", min: "0", max: String(Math.max(0, tr.length - 1)), value: String(S.t), "aria-label": "Instante do horizonte", oninput: e => { S.t = Number(e.target.value); renderTab(); } });
+    const sunMargin = cur.sunEl - hs, earthMargin = cur.earthEl - he;
     return [
       h("section", { class: "panel span2" },
-        h("h2", { text: "03 · Horizonte do sítio" }),
-        h("p", { class: "dim", text: "Sítio " + site.name + " · rugosidade " + site.rough + " · SINTÉTICO (função senoidal, não LOLA)" }),
+        h("h2", { text: "03 · Horizonte do sítio", },
+          h("em", { text: site.name + " · rugosidade " + site.rough })),
+        h("div", { class: "row" }, h("span", { class: "mono", text: fmt(startMs() + cur.i * S.stepMin * 60e3) }), tag("SINT")),
+        h("div", { style: "margin:10px 0" }, slider),
         box,
-        h("div", { class: "legend" }, h("span", {}, h("i", { style: "background:#ffb020" }), "Sol"), h("span", {}, h("i", { style: "background:#5fd8ff" }), "Terra")),
-        h("div", { style: "margin-top:10px" }, tag("PARC"), " ", h("span", { class: "dim", text: "horizonte real por raio no DEM (3.3) ainda pendente; leitura do GeoTIFF bloqueada (3.2)" }))),
+        h("div", { class: "legend" },
+          h("span", {}, h("i", { style: "background:#ffb020" }), "Sol"),
+          h("span", {}, h("i", { style: "background:#5fd8ff" }), "Terra"),
+          h("span", {}, h("i", { style: "background:#1c3240" }), "horizonte sintético"),
+          h("span", {}, "pontos claros: trajetória no intervalo")),
+        edu("Acima da área cinza, o Sol ou a Terra estão visíveis. Abaixo, o relevo esconde o astro. A linha tracejada mostra a altura do horizonte naquele azimute.")),
+      h("section", { class: "panel" },
+        h("h2", { text: "Neste instante" }),
+        h("dl", { class: "readout" },
+          h("dt", { text: "Sol · elevação" }), h("dd", { text: f1(cur.sunEl, 2) + "°" }),
+          h("dt", { text: "Sol · horizonte neste azimute" }), h("dd", { text: f1(hs, 2) + "°" }),
+          h("dt", { text: "Sol · margem" }), h("dd", { class: sunMargin > 0 ? "" : "fuelout", text: (sunMargin >= 0 ? "+" : "") + f1(sunMargin, 2) + "°" }),
+          h("dt", { text: "Terra · elevação" }), h("dd", { text: f1(cur.earthEl, 2) + "°" }),
+          h("dt", { text: "Terra · horizonte neste azimute" }), h("dd", { text: f1(he, 2) + "°" }),
+          h("dt", { text: "Terra · margem" }), h("dd", { class: earthMargin > 0 ? "" : "fuelout", text: (earthMargin >= 0 ? "+" : "") + f1(earthMargin, 2) + "°" }))),
       h("section", { class: "panel" },
         h("h2", { text: "Pendências do horizonte" }),
         h("ul", { class: "note" },
           ...[["3.2", "BLOQ", "leitura do DEM LOLA"], ["3.3", "PEND", "horizonte por raio"], ["3.4", "PEND", "distância máxima documentada"], ["3.5", "PEND", "pixels interpolados"], ["3.6", "PEND", "declive e crateras"]]
-            .map(([id, st, t]) => h("li", {}, id + " ", tag(st), " " + t))))
+            .map(([id, st, t]) => h("li", {}, id + " ", tag(st), " " + t))),
+        h("p", { class: "note", text: "Horizonte sintético: uma senoide com rugosidade do sítio. Não é relevo lunar." }))
     ];
   };
 
