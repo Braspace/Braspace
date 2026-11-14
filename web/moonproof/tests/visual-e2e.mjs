@@ -21,13 +21,17 @@ try{
  for(const name of screens){
   const resp=await page.goto(base+"/moonproof/"+name+".html",{waitUntil:"domcontentloaded",timeout:30000});
   assert.equal(resp.status(),200,"route "+name);
-  await page.locator("#terrain canvas").first().waitFor({timeout:30000});
+  if(name==="landing")await page.locator("#stage").waitFor({timeout:30000});
+  else if(name==="debrief")await page.locator("#map").waitFor({timeout:30000});
+  else await page.locator("#terrain canvas").first().waitFor({timeout:30000});
   const readySelector={
    explore:"#left .ex-list",compare:"#left .mp-scn",recover:"#left .mp-dial",
    plan:"#plan-rules #r-night",present:"#btn-reveal",activity:"#act-steps",
+   cockpit:"#left > *",evidence:"#main > *",landing:"#bar > *",debrief:"#actions > *",
   }[name]||"#screen-title";
   await page.locator(readySelector).first().waitFor({timeout:30000});
-  assert.ok(await page.locator(".mp-marker").count()>=3,"site markers "+name);
+  if(!["landing","debrief"].includes(name))
+   assert.ok(await page.locator(".mp-marker").count()>=3,"site markers "+name);
   const origin=await page.locator(".mp-seal").allTextContents();
   assert.ok(!origin.some(x=>x==="VAL"),"V3 incorrectly promotes preliminary to VAL on "+name);
  }
@@ -45,12 +49,13 @@ try{
  await page.screenshot({path:"/tmp/moonproof-v3-replan-desktop.png",fullPage:true});
  const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
  mobile.on("pageerror",err=>errors.push("mobile "+err.message));
- for(const name of ["explore","compare","recover","learn","plan","present","activity"]){
+ for(const name of ["explore","compare","recover","cockpit","evidence","landing","debrief","learn","plan","present","activity"]){
   const resp=await mobile.goto(base+"/moonproof/"+name+".html",{waitUntil:"domcontentloaded",timeout:30000});
   assert.equal(resp.status(),200,name+" mobile route");
   const readySelector={
    explore:".ex-left .ex-list",compare:".mp-scn",recover:".mp-dial",
    plan:"#plan-rules #r-night",present:"#btn-reveal",activity:"#act-steps",
+   cockpit:"#left > *",evidence:"#main > *",landing:"#bar > *",debrief:"#actions > *",
   }[name]||"#screen-title";
   await mobile.locator(readySelector).first().waitFor({timeout:30000});
   const dims=await mobile.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:window.innerWidth}));
