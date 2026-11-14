@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MoonProof · Kit Aula · Apresentar</title>
+  <link rel="stylesheet" href="core/tokens.css">
+  <link rel="stylesheet" href="core/components.css">
+  <link rel="stylesheet" href="screens/present.css">
+</head>
+<body>
+  <div id="terrain"></div>
+  <header class="mp-present-top">
+    <div class="mp-present-brand">
+      <span class="mp-logo-mark" aria-hidden="true"></span>
+      <strong>moonproof</strong>
+      <span id="present-badge" class="mp-pill-white"></span>
+    </div>
+    <div class="mp-present-right">
+      <div id="present-progress" class="mp-progress" aria-label="Progresso"></div>
+      <a id="present-exit" class="mp-btn-exit" href="activity.html"></a>
+    </div>
+  </header>
+  <main class="mp-present-layout">
+    <section id="present-question" class="mp-present-q"></section>
+    <aside class="mp-present-side">
+      <div id="present-timer" class="mp-glass mp-timer-card"></div>
+      <div id="present-privacy" class="mp-glass mp-privacy-card"></div>
+    </aside>
+    <section class="mp-present-bottom">
+      <div id="present-cards" class="mp-present-cards"></div>
+      <div class="mp-present-actions">
+        <button id="btn-reveal" class="mp-btn-jade" type="button"></button>
+        <button id="btn-next" class="mp-btn-outline" type="button"></button>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="screens/present.js"></script>
+</body>
+</html>
