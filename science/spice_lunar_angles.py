@@ -55,6 +55,16 @@ def from_utc(value:str)->dt.datetime:
     if t.tzinfo is None:raise ValueError("UTC time zone is required")
     return t.astimezone(dt.timezone.utc)
 
+def spice_utc(epoch:dt.datetime)->str:
+    """Render a timezone-aware instant in the CSPICE-recognized UTC form.
+
+    CSPICE str2et rejects '2026-11-15T00:00:00 UTC': an ISO 'T' date
+    delimiter must not be mixed with the trailing time-system token.
+    """
+    if epoch.tzinfo is None:
+        raise ValueError("SPICE UTC epoch must have a timezone")
+    return epoch.astimezone(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
 def generate(kernel_dir:pathlib.Path,horizon_json:pathlib.Path,start_utc:str,hours:int,step_minutes:int=60)->tuple[dict,dict]:
     if not 1<=hours<=240 or not 1<=step_minutes<=360 or 60*hours%step_minutes:
         raise ValueError("hours 1..240 and whole-step UTC grid required")
@@ -71,6 +81,8 @@ def generate(kernel_dir:pathlib.Path,horizon_json:pathlib.Path,start_utc:str,hou
     if len(h["terrain_horizon"])<2:
         raise ValueError("invalid terrain horizon")
     t0=from_utc(start_utc)
+    if t0.second != 0 or t0.microsecond != 0:
+        raise ValueError("start_utc must align to a whole UTC minute")
     kernel_paths=[kernel_dir/n for n in KERNEL_NAMES]
     for k in kernel_paths:
         if not k.is_file() or k.stat().st_size==0:
@@ -89,8 +101,7 @@ def generate(kernel_dir:pathlib.Path,horizon_json:pathlib.Path,start_utc:str,hou
             raise RuntimeError("moon reference frame not defined by loaded NAIF FK/PCK")
         for i in range(hours*60//step_minutes):
             epoch=t0+dt.timedelta(minutes=i*step_minutes)
-            utc=epoch.strftime("%Y-%m-%dT%H:%M:%S")
-            et=spice.str2et(utc+" UTC")
+            et=spice.str2et(spice_utc(epoch))
             sun,_=spice.spkpos("SUN",et,FRAME,"NONE","MOON")
             earth,_=spice.spkpos("EARTH",et,FRAME,"NONE","MOON")
             samples.append({"sun":look_angles(sun,site["latitude_deg"],site["longitude_deg"],observer_radius_km),

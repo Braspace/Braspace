@@ -6,7 +6,7 @@ import sys
 import unittest
 
 sys.path.insert(0,str(pathlib.Path(__file__).resolve().parents[1]))
-from spice_lunar_angles import look_angles, from_utc, KERNEL_NAMES, FRAME
+from spice_lunar_angles import look_angles, from_utc, spice_utc, KERNEL_NAMES, FRAME
 
 class SpiceAnglesTests(unittest.TestCase):
     def test_local_cardinal_directions_at_south_pole(self):
@@ -32,6 +32,17 @@ class SpiceAnglesTests(unittest.TestCase):
         self.assertEqual(from_utc("2026-11-14T21:00:00-03:00"),from_utc("2026-11-15T00:00:00Z"))
         with self.assertRaises(ValueError):
             from_utc("2026-11-15T00:00:00") # time zone mandatory
+
+    def test_spice_utc_parser_format(self):
+        # CSPICE N0067 accepts this explicit UTC format with a space delimiter.
+        # It rejects the previously generated 2026-11-15T00:00:00 UTC.
+        self.assertEqual(spice_utc(from_utc("2026-11-15T00:00:00Z")),
+                         "2026-11-15 00:00:00 UTC")
+        self.assertEqual(spice_utc(from_utc("2026-11-14T21:00:00-03:00")),
+                         "2026-11-15 00:00:00 UTC")
+        self.assertNotIn("T",spice_utc(from_utc("2026-11-15T00:00:00Z")))
+        with self.assertRaises(ValueError):
+            spice_utc(dt.datetime(2026,11,15))
 
     def test_nonfinite_or_zero_vector_rejected(self):
         with self.assertRaises(ValueError):
