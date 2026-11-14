@@ -1,45 +1,69 @@
-# BS-012 — Architecture, ADR-0001 and interface boundaries
+# BRASPACE — System Architecture
 
-**Decision date:** 2026-11-14. **Status:** accepted for *bootstrap*, review required for scientific production.
+**Updated:** 2026-11-14 | **Status:** Active prototype (`UNVERIFIED_INPUTS` / `scientifically_validated: false` — not flight-certified).
 
-## ADR-0001: Rust JSON-line subprocess behind Go API
+## Overview
 
-**Context.** BRASPACE has Go backend ownership, Rust science ownership and a hard hackathon deadline. An FFI shared-library ABI would create additional cross-toolchain and memory-safety integration risks. Existing team branches are almost empty and backend contracts are not implemented yet.
+BRASPACE (MoonProof) is structured as four decoupled layers:
 
-**Decision.** Go accepts a strict JSON POST on `/v1/visibility`, bounds request size and deadline, and launches a compiled Rust executable with JSON on stdin and one JSON response on stdout. Non-zero exit codes map to HTTP 502; invalid requests map to 400/415/422. All science fields are typed, include explicit `MOON_ME` frame metadata, and declare `UNVERIFIED_INPUTS` until a trusted source pipeline is integrated.
+1. **Frontend Web 3D & Mission Control (`web/`)** — Static HTML/JS/CSS (Three.js 3D Moon, Polar Lab, Onboard Mission Computer Cockpit, Polar Elevation Map, Mission Studio) served via GitHub Pages or `web/dev-server.mjs` in local development.
+2. **Mission API (`api/`, Go)** — HTTP server (`braspace.mission.v1`, `:8080`) handling validation, site catalog, comparison, sky/delay/onboard evaluation, printable reports, and NASA asset proxying.
+3. **Deterministic Visibility Engine (`engine/`, Rust)** — `braspace-lunar-engine` CLI subprocess invoked by the Go API over stdin/stdout JSON (ADR-0001).
+4. **Offline Science & Data Verification (`science/`, `scripts/`, `data/`)** — Python pipeline for NASA LOLA (`LDEM_80S_80M`) DEMs, NAIF SPICE kernels, PGDA/Horizons benchmarks, and manifest/checksum verification (`scripts/verify_lola.py`, `tests/test_data_contract.py`).
 
-**Consequences.** Straightforward process isolation and offline Docker builds after dependency download; per-request spawn overhead; container size; no streaming workloads yet. A production implementation could use a persistent worker pool only after a benchmark and protocol design. Never treat a submitted dataset identifier as proof of dataset ingestion. Integration does not implement lunar physics.
+## Runtime Topology
 
-## Runtime topology
-
-```text
-Client -- POST /v1/visibility ---> Go HTTP API (:8080)
-                                  | input schema, <128KiB, 2s deadline
-                                  v
-                              Rust CLI subprocess
-                              | interpolates supplied horizon
-                              | compares supplied Sun/Earth angles
-                                  v
-                 JSON {sun_margin_deg, earth_margin_deg,
-                       visible, science_status:UNVERIFIED_INPUTS}
+```mermaid
+flowchart LR
+    Browser["Static Web App<br/>(web/, Three.js 3D + Cockpit + Lab)"] -->|HTTPS JSON| API["Go Mission API<br/>(api/, :8080)"]
+    API -->|stdin/stdout JSON| Engine["Rust Visibility Engine<br/>(engine/, braspace-lunar-engine)"]
+    API -->|SQL| DB[("PostgreSQL 16<br/>(compose.db.yaml)")]
+    DB -.->|optional| Vector[("pgvector<br/>(compose.vector.yaml)")]
+    Science["Python Science Pipeline<br/>(science/, LOLA + SPICE)"] -.->|generates offline JSON/BIN| API
+    Science -.->|generates offline JSON/BIN| Browser
 ```
 
-- **Go** owns HTTP, validation, timeout, safe failures, observability (no secrets), readiness and future Postgres access.
-- **Rust** owns deterministic geometry and, *after a separate validation PR*, DEM ray tracing, frame transforms and Sun/Earth look angles. Current Rust only performs linear interpolation of a **provided** circular terrain skyline; no DEM/SPICE IO.
-- **PostgreSQL/pgvector** is explicitly **not** needed to run the bootstrap. Add later only if real NASA data ingestion or contextual retrieval has a demonstrated use. Do not introduce irrelevant infrastructure into P0.
-- **UI** must surface both provenance and `science_status`; never hide warning or turn it into a verdict.
-- **CI** checks Rust unit tests, Go unit tests, real Go-to-Rust process, Compose smoke. CI does not constitute physical scientific validation.
+### 1. Mission API (`api/`, Go)
 
-## Contract (`POST /v1/visibility`)
+- **Contract & Docs:** `api/openapi.json` and [`docs/MISSION_API.md`](MISSION_API.md).
+- **Core Routes:**
+  - Health & Capabilities: `GET /api/health`, `GET /readyz`, `GET /v1/capabilities`.
+  - Visibility: `POST /v1/visibility` (strict JSON, `<128 KiB`, 2s deadline, `MOON_ME` frame).
+  - Site Catalog & Analysis: `GET /api/sites`, `POST /api/compare`, `GET /api/sky`, `POST /api/delay`.
+  - Onboard Mission Computer (`api/onboard/`): `POST /api/onboard/evaluate`, `POST /api/onboard/site-evaluate`, `POST /api/onboard/report`.
+  - Visual Asset Proxy: `GET /api/moon/texture`, `GET /api/moon/model`.
+- **Site Data (`api/sitedata/`):** 16 catalog sites, of which 7 have stored time series (`5` `PRELIMINARY` LOLA+SPICE, `2` `SYNTHETIC`).
 
-Example: [synthetic request](../examples/visibility.synthetic.json). Angles are degrees (azimuth 0° north / clockwise convention is a caller contract to standardize during science review), elevations in [-90, 90]; horizon samples strictly increasing and periodic across 0/360°. `epoch_utc` is RFC3339 UTC. Frame currently must be `MOON_ME`. Two or more samples allow circular interpolation. A zero margin is treated as mathematically tangent/visible, **not** proof of robust visibility.
+### 2. Rust Visibility Engine (`engine/`, `braspace-lunar-engine`)
 
-Response contains numerical local horizon and clearance margins and three booleans, plus an **implemented request-level evidence passport** with SHA-256 of the normalized JSON request. This hash does **not** authenticate NASA dataset bytes or ephemeris kernel provenance. `GET /v1/capabilities` explicitly advertises unavailable physics. Full server-signed asset provenance remains a future ADR-0002 requirement. The classification is only as accurate as the source angles and skyline. Sun disc width, refraction, limb effects, antenna link budget, Earth occultation, DSN scheduling, lunar eclipses, terrain uncertainty and time-series windows are **not modeled**.
+- Invoked as a per-request subprocess by Go with JSON on `stdin` and one JSON response on `stdout` (ADR-0001).
+- Performs deterministic circular horizon interpolation and Sun/Earth clearance margin calculations.
+- Returns typed geometry fields, `MOON_ME` frame metadata, a SHA-256 request-level evidence passport, and `science_status: "UNVERIFIED_INPUTS"`.
 
-## ADR-0002: Source provenance, not artificial confidence
+### 3. Frontend Web 3D & Mission Control (`web/`)
 
-**Proposed.** New real-data API must accept **immutable** data asset identifiers, checksums/frames/epochs *from a server-side NASA data manifest*, not trust caller-supplied strings. Every computed metric should link to an auditable `EvidencePassport` containing exact source and version, spatial/temporal resolution, coordinate transform, algorithm version, reference test residual and limitations. Support `NOT_COMPUTED` / `ESTIMATED` / `VALIDATED`, backed by evidence and not client-chosen status.
+- **Main Shell (`web/index.html`, `web/moon3d.js`):** Interactive 3D Moon (Three.js) with optional on-demand NASA SVS 14959 GLB model, site markers, and 5-module navigation.
+- **Additional Views:** Polar Lab (`web/lab.html`), Onboard Mission Computer Cockpit (`web/onboard/cockpit.html`), Polar Elevation Map Demo (`web/polar-map-demo.html`), and Mission Studio (`web/studio/`).
+- **Configuration:** Uses `window.BRASPACE_API_BASE` from `web/config.js` (empty for same-origin, or public API origin on GitHub Pages).
+- **Local Dev Proxy:** `node web/dev-server.mjs` binds `127.0.0.1:5173` and forwards `/api/*`, `/readyz`, and `/v1/capabilities` to `127.0.0.1:8080` with strict CSP and static allowlisting.
 
-## Change safety
+### 4. PostgreSQL & Optional pgvector (`compose.db.yaml`, `compose.vector.yaml`)
 
-All changes are on `team/gustavofullstack/spaceapps-2026` and offered for review. Other owner branches, production secrets and NASA portal are untouched. Do not merge without reviewer approval. The Docker image tags should be digest-pinned and a `Cargo.lock` generated/committed before claiming strict reproducibility.
+- **Base (`compose.yaml`):** Runs the Go API + compiled Rust engine.
+- **PostgreSQL (`compose.db.yaml`):** Runs `postgres:16-alpine`, an `ingest` init container (`/app/bin/api ingest`), and wires `DATABASE_URL` to `api`.
+- **pgvector (`compose.vector.yaml`):** Optional metadata/semantic search extension (see [`docs/ADR-0003-pgvector-scope.md`](ADR-0003-pgvector-scope.md) and [`docs/PGVECTOR_OPTIONAL.md`](PGVECTOR_OPTIONAL.md)); never certifies lunar physics.
+
+### 5. Offline Science & Data Contracts (`science/`, `scripts/`, `tests/`)
+
+- **`science/`:** Offline Python pipeline computing terrain horizons and Sun/Earth angles from NASA LOLA (`LDEM_80S_80M`) and NAIF SPICE kernels, plus PGDA/Horizons benchmarks (`web/data/validation/`).
+- **`scripts/verify_lola.py`:** Verifies `LDEM_80S_80M.img` file size, SHA-256 checksum, and little-endian `LSB_INTEGER` decoding against `data/manifest.json`.
+- **`tests/test_data_contract.py`:** Validates `data/manifest.json`, `data/SCENARIOS.json`, `data/LUNAR_GALLERY.json`, and `verify_lola.py` claim boundaries.
+
+## Architectural Decisions
+
+### ADR-0001: Rust JSON-line subprocess behind Go API
+- **Decision:** Go handles HTTP, validation, timeouts, and Postgres access; Rust handles deterministic geometry via stdin/stdout JSON subprocesses. Non-zero exits map to `502`; invalid requests map to `400`/`415`/`422`.
+- **Trade-off:** Clean process isolation and toolchain separation at the cost of per-request spawn overhead.
+
+### ADR-0002: Source provenance, not artificial confidence
+- **Principle:** Never treat caller-supplied dataset identifiers as proof of ingestion. Every metric must surface its `science_status` (`PRELIMINARY`, `SYNTHETIC`, `UNVERIFIED_INPUTS`, `NOT_COMPUTED`) and provenance without inflating confidence.
