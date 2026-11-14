@@ -4,7 +4,7 @@
 > **Challenge:** Lunar Landing Site Navigator  
 > **Deadline:** 2026-11-15 23:59, Uberlândia time (America/Sao_Paulo)  
 > **Owner:** @gustavofullstack  
-> **Source of truth:** GitHub Issues #1–#43, #46–#52, #54–#61 and #63–#68 (64 issues total; #44, #45, #53, #62 and #70 are pull requests); original NASA submission form remains authoritative.
+> **Source of truth:** GitHub Issues #1–#43, #46–#52, #54–#61 and #63–#69 (65 issues total; #44, #45, #53, #62 and #70 are pull requests); original NASA submission form remains authoritative.
 
 ## Do this first (P0)
 
@@ -29,11 +29,11 @@
 
 ## GitHub Projects routing
 
-**Important:** The GitHub Issues #1–#43, #46–#52, #54–#61 and #63–#68 were created and assigned via the connected GitHub app. **Project-item membership has NOT yet been confirmed**. Each issue body contains its board targets for manual/project automation routing. Do not mark cards as synced without readback.
+**Important:** The GitHub Issues #1–#43, #46–#52, #54–#61 and #63–#69 were created and assigned via the connected GitHub app. **Project-item membership has NOT yet been confirmed**. Each issue body contains its board targets for manual/project automation routing. Do not mark cards as synced without readback.
 
 | Existing organization board | Issue references |
 |---|---|
-| [Kanban #2](https://github.com/orgs/Braspace/projects/2) | All 64 open issues: primary tracking and in-progress overview |
+| [Kanban #2](https://github.com/orgs/Braspace/projects/2) | All 65 open issues: primary tracking and in-progress overview |
 | [Team Planning #4](https://github.com/orgs/Braspace/projects/4) | [#1](https://github.com/Braspace/Braspace/issues/1), [#4](https://github.com/Braspace/Braspace/issues/4), [#7](https://github.com/Braspace/Braspace/issues/7), [#37](https://github.com/Braspace/Braspace/issues/37), [#42](https://github.com/Braspace/Braspace/issues/42), [#50](https://github.com/Braspace/Braspace/issues/50), [#51](https://github.com/Braspace/Braspace/issues/51), [#52](https://github.com/Braspace/Braspace/issues/52), [#55](https://github.com/Braspace/Braspace/issues/55), [#60](https://github.com/Braspace/Braspace/issues/60), [#61](https://github.com/Braspace/Braspace/issues/61), [#66](https://github.com/Braspace/Braspace/issues/66), [#67](https://github.com/Braspace/Braspace/issues/67) |
 | [Feature Release #5](https://github.com/orgs/Braspace/projects/5) | [#9](https://github.com/Braspace/Braspace/issues/9), [#23](https://github.com/Braspace/Braspace/issues/23), [#29](https://github.com/Braspace/Braspace/issues/29), [#33](https://github.com/Braspace/Braspace/issues/33), [#38](https://github.com/Braspace/Braspace/issues/38), [#46](https://github.com/Braspace/Braspace/issues/46), [#48](https://github.com/Braspace/Braspace/issues/48), [#54](https://github.com/Braspace/Braspace/issues/54), [#58](https://github.com/Braspace/Braspace/issues/58), [#63](https://github.com/Braspace/Braspace/issues/63) |
 | [Bug Tracker #6](https://github.com/orgs/Braspace/projects/6) | [#6](https://github.com/Braspace/Braspace/issues/6), [#17](https://github.com/Braspace/Braspace/issues/17), [#22](https://github.com/Braspace/Braspace/issues/22), [#28](https://github.com/Braspace/Braspace/issues/28), [#31](https://github.com/Braspace/Braspace/issues/31), [#35](https://github.com/Braspace/Braspace/issues/35), [#39](https://github.com/Braspace/Braspace/issues/39), [#40](https://github.com/Braspace/Braspace/issues/40), [#49](https://github.com/Braspace/Braspace/issues/49), [#50](https://github.com/Braspace/Braspace/issues/50), [#56](https://github.com/Braspace/Braspace/issues/56), [#59](https://github.com/Braspace/Braspace/issues/59), [#65](https://github.com/Braspace/Braspace/issues/65), [#68](https://github.com/Braspace/Braspace/issues/68) |
@@ -65,7 +65,7 @@ First reproducible milestone: choose **one** authoritative NASA lunar terrain/el
 
 ## Expanded scope 2026-11-14 — Heloísa + 15 competitors
 
-**64 open issues / 6 leads.** The seven additional assigned issues below extend but **do not invalidate or close** the original 43. Keep focus on scientifically valid P0 results before expanding.
+**65 open issues / 6 leads.** The seven additional assigned issues below extend but **do not invalidate or close** the original 43. Keep focus on scientifically valid P0 results before expanding.
 
 | Tracker | Issue | Lead | Priority | Need / tangible result |
 |---|---|---|---|---|
@@ -126,15 +126,17 @@ NASA Space Apps project remains **Lunar Landing Site Navigator**, focused on the
 
 | Issue | Owner | Implementable output |
 |---|---|---|
-| [#63](https://github.com/Braspace/Braspace/issues/63) | @gustavofullstack | Typed Go simulator, deterministic resource/comm risk model, API and tests; [PR #70](https://github.com/Braspace/Braspace/pull/70) |
+| [#63](https://github.com/Braspace/Braspace/issues/63) | @gustavofullstack | Typed Go simulator, deterministic resource/comm risk model, API and tests; [merged PR #70](https://github.com/Braspace/Braspace/pull/70) |
 | [#64](https://github.com/Braspace/Braspace/issues/64) | @gfreiresjrp | Integrate date/site API [PR #53](https://github.com/Braspace/Braspace/pull/53) with the Onboard Computer without duplicating replan logic |
 | [#65](https://github.com/Braspace/Braspace/issues/65) | @joeljato | Validate scientific Sun/Earth/LOLA/NAIF and Wh/W/hour model boundaries |
 | [#66](https://github.com/Braspace/Braspace/issues/66) | @maccachera | Research-only NASA data provenance, product IDs, coordinates and licenses |
 | [#67](https://github.com/Braspace/Braspace/issues/67) | @lisanogueira | Cockpit minimal UX within the existing five-section hub, educational story (no code required) |
 | [#68](https://github.com/Braspace/Braspace/issues/68) | @Ninzinhu | QA/risk states, reports, truthful NASA demo claims and link access (no code required) |
 
-**Core design / current evidence:** [Onboard architecture](ONBOARD_MISSION_COMPUTER_ARCHITECTURE.md). **Running source and API contract:** [PR #70 docs](https://github.com/Braspace/Braspace/blob/team/gustavofullstack/onboard-computer-v1/docs/ONBOARD_MISSION_COMPUTER_V1.md). Do not close #63 before latest branch CI and review; do not mark NASA LO(LA)/SPICE validated until real source data is used in the calculations.
+**Core design / current evidence:** [Onboard architecture](ONBOARD_MISSION_COMPUTER_ARCHITECTURE.md). **Running source and API contract:** [PR #70 docs](https://github.com/Braspace/Braspace/blob/team/gustavofullstack/onboard-computer-v1/docs/ONBOARD_MISSION_COMPUTER_V1.md). CI for #63/PR #70 is green and its code merged to main; keep issue open until independent acceptance review; do not mark NASA LO(LA)/SPICE validated until real source data is used in the calculations.
 
 **Personal ownership:** Gustavo remains code-first; rest of team specialized; all programming tasks in separate branches. PR #53 belongs to Gabriel Freire and must be reviewed independently, not overwritten by this sprint. Each GitHub Projects v2 target here is only a link/routing intention; item membership has not been verified.
 
 **Deadline and deliverables:** 2026-11-15 23:59 America/Sao_Paulo; public project and <=7 English slides, sources NASA actually integrated, transparent SI use and team-owner Submit for Judging. Source repository stays private while project demo must be public.
+
+**Additional independently created task:** [#69](https://github.com/Braspace/Braspace/issues/69), assigned to @gfreiresjrp, covers oxygen/food autonomy and onboard consumable risk. Not part of merged v1 and not DONE. CI of PR #70 passed at commit 53ffb1d23d5947da22258f513eda6f959eaa9cc4; squash-merged to main at 2fbb3498be19223451001c176677ea03bb3f0cd4.
