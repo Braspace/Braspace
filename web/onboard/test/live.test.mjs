@@ -74,3 +74,27 @@ test("dev-server proxies the badge routes (/readyz, /v1/capabilities) as well as
   const p = src("dev-server.py");
   assert.ok(/PROXY_PREFIXES\s*=.*"\/readyz".*"\/v1\//.test(p));
 });
+
+// BR62: the browser-model track has no ms; stepOf used tr[1].ms - tr[0].ms => NaN => NaN bars.
+test("stepOf: a track without ms falls back to the scenario step, never NaN", () => {
+  const noMs = [{ i: 0, sun_visible: true }, { i: 1, sun_visible: false }, { i: 2, sun_visible: true }];
+  assert.equal(L.stepOf(noMs, 120), 120);
+  assert.equal(L.stepOf([], 60), 60);
+  assert.equal(L.stepOf([{ ms: 0 }], 30), 30);
+  assert.equal(L.stepOf([{ ms: 0 }, { ms: 3600e3 }], 120), 60);
+});
+
+test("stamp: browser-model samples get ms, so a daily bar count is finite", () => {
+  const noMs = Array.from({ length: 6 }, (_, i) => ({ i, sun_visible: i % 2 === 0, earth_visible: true }));
+  const tr = L.stamp(noMs, Date.parse("2026-12-01T00:00:00Z"), 240);
+  assert.ok(tr.every(s => Number.isFinite(s.ms)));
+  assert.equal(L.stepOf(tr, 999), 240);
+  assert.equal(Math.round(24 * 60 / L.stepOf(tr, 999)), 6);
+  assert.ok(!Number.isNaN(Math.round(24 * 60 / L.stepOf(noMs, 240))));
+});
+
+test("cockpit.js uses the shared stepOf/stamp, not tr[1].ms - tr[0].ms", () => {
+  const c = src("cockpit.js");
+  assert.doesNotMatch(c, /tr\[1\]\.ms - tr\[0\]\.ms/);
+  assert.match(c, /L\.stamp\(track\(0\)/);
+});

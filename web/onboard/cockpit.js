@@ -79,7 +79,7 @@
       tr.stepMin = stepMin; tr.t0 = t0;
       return { tr, sum: L.summaryFromMetrics(live.metrics), life, viol: M.violations(L.summaryFromMetrics(live.metrics), null), src: "api", live };
     }
-    const tr = track(0);
+    const tr = L.stamp(track(0), startMs(), S.stepMin);
     const sum = M.summary(tr, S.stepMin);
     return { tr, sum, life, viol: M.violations(sum, null), src: "local", live: null };
   }
@@ -330,7 +330,7 @@
     return track(0).map((s, i) => ({ ...s, i, ms: startMs() + i * S.stepMin * 60e3, src: "local", angles: "local" }));
   }
   function stepOf(tr) {
-    return tr.length > 1 ? Math.round((tr[1].ms - tr[0].ms) / 60000) : S.stepMin;
+    return L.stepOf(tr, S.stepMin);
   }
   async function loadSeries(key) {
     const r = await OnboardApi.compare({ site_ids: [S.site], start_utc: iso(startMs()), duration_hours: S.durationH, include_series: true });

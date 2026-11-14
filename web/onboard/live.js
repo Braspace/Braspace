@@ -99,7 +99,17 @@
     return out;
   }
 
-  const api = { SEAL_LOCAL, SEAL_NOSRC, isNum, num, seal, liveFromCompare, summaryFromMetrics, delayRow, horizonFromSky, skyFromResponse, badges };
+  // Step in minutes of a track. A track without finite ms (the browser model before it is stamped) falls back.
+  function stepOf(tr, fallbackMin) {
+    const d = tr && tr.length > 1 ? tr[1].ms - tr[0].ms : NaN;
+    return Number.isFinite(d) && d > 0 ? Math.round(d / 60000) : fallbackMin;
+  }
+  // Stamp each browser-model sample with its epoch ms, so every view reads the same field the API track has.
+  function stamp(tr, startMs, stepMin) {
+    return tr.map((s, i) => ({ ...s, i, ms: startMs + i * stepMin * 60e3 }));
+  }
+
+  const api = { stepOf, stamp, SEAL_LOCAL, SEAL_NOSRC, isNum, num, seal, liveFromCompare, summaryFromMetrics, delayRow, horizonFromSky, skyFromResponse, badges };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.OnboardLive = api;
 })(typeof window !== "undefined" ? window : globalThis);
