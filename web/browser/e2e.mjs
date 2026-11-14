@@ -38,6 +38,11 @@ try{
   const status=await desktop.locator("#api-feedback").innerText();
   assert(status.includes("Go/Rust engine ready"),"browser did not confirm connected Go/Rust backend: "+status);
  }
+ if(process.env.BRASPACE_REQUIRE_BACKEND==="1"){
+  await desktop.locator("#api-simulate").click();
+  await desktop.waitForFunction(()=>document.querySelector("#api-sim-result")?.textContent?.includes("UNVERIFIED_INPUTS"),null,{timeout:30000});
+  assert((await desktop.locator("#api-sim-result").innerText()).includes("TRAINING ONLY"),"Go onboard incorrectly treated as science");
+ }
  await desktop.locator("#tabs button[data-view='compare']").click();
  await desktop.locator("#tabs button[data-view='recover']").click();
  await desktop.locator("#tabs button[data-view='evidence']").click();
