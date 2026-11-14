@@ -20,7 +20,7 @@
 .mp-seal[data-seal="EST"]{border-style:dashed}
 .mp-seal[data-seal="SIM"]{border-color:var(--sim);color:var(--sim);background:repeating-linear-gradient(135deg,rgba(180,140,242,.22) 0 3px,transparent 3px 6px)}
 .mp-seal[data-seal="N/D"]{border-color:var(--unknown);color:var(--unknown);background:repeating-linear-gradient(135deg,rgba(128,140,153,.2) 0 3px,transparent 3px 6px)}
-.mp-seal[data-seal="FALHA"]{background:var(--fail);border-color:var(--fail);color:#fff}
+.mp-seal[data-seal="FALHA"]{background:var(--fail);border-color:var(--fail-text);color:#fff}
 .mp-seal[data-seal="FALHA"]::before{content:"✕ "}
 /* Long origin states break only at "_" (layers.js inserts <wbr>), never mid-word. */
 .mp-proof td.mp-state{overflow-wrap:normal;word-break:normal}
@@ -135,3 +135,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .mp-entry-skip{padding:0 12px}
 .mp-sat span,.mp-stat small{font-size:max(10px,1em)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}}
+/* Contrast audit (14/11): the declared .58 glass measured 0.44 on the boards; over light relief that
+   left secondary text at 2.3:1. Glass is now .72 (4.7:1 worst case); failure text uses a lighter red;
+   the FALHA seal's fill passes 4.5:1 with white text. */
+.mp-seal[data-seal="FALHA"]{background:var(--fail-fill);border-color:var(--fail-fill)}

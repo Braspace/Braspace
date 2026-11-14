@@ -92,12 +92,12 @@ async function draw() {
     if (r.id === "horizon") return r.detail ? t("evidence.horizon_src", { h: fmtNum(hMast, 0), d: fmtNum(r.detail.max_distance_m / 1000) }) : t("nd");
     if (r.id === "battery") return t("evidence.sim_battery"); if (r.id === "landing") return t("evidence.sim_landing"); return t("evidence.src_rocks_note");
   };
-  const sh = el("div", "mp-head", ""); sh.style.cssText = "display:flex;justify-content:space-between;align-items:center";
+  const sh = el("div", "mp-head mp-row-between", "");
   sh.append(el("h2", null, t("evidence.sources")), el("span", "mp-count", "• " + t("evidence.sources_count", { n: rows.length })));
   $("sources").replaceChildren(sh, ...rows.map(r => { const row = el("div", "mp-src"); const l = el("div"); const sm = el("small", null, sd(r)); sm.title = sm.textContent; l.append(el("b", null, t(names[r.id])), sm);
     row.append(l, r.registryOnly ? Object.assign(el("span", "mp-chipreg", r.detail.redistribution), { title: t("evidence.registry_note", { n: REGISTRY.assets.length, d: REGISTRY.reviewed_at }) }) : sealEl(r.seal)); return row; }));
   // trust
-  const th = el("div"); th.style.cssText = "display:flex;justify-content:space-between;align-items:center"; th.append(el("h2", null, t("evidence.how_much_trust")));
+  const th = el("div", "mp-row-between"); th.append(el("h2", null, t("evidence.how_much_trust")));
   const q = el("button", "mp-pill mp-help", "?"); q.type = "button"; q.setAttribute("aria-label", t("evidence.help")); q.setAttribute("aria-expanded", String(trustOpen)); q.onclick = () => { trustOpen = !trustOpen; draw(); }; th.append(q);
   const keys = { sun: "evidence.trust_sun", earth: "evidence.trust_earth", tilt: "evidence.trust_tilt", battery: "evidence.trust_battery" };
   const tr = trustRows({ sitesStatus: doc.status, slopeAvailable: false });
