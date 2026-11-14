@@ -28,6 +28,7 @@ in `data/LOLA_80S_80M_VERIFICATION.md`.
 | LROC website Featured Image | Page 1276 | `external_link_only` | Do not copy/rehost the website image; link to the page and credit NASA/GSFC/ASU |
 | QuickMap/Lunaserv | Interactive service | `service_link_only` | Use for discovery or validation; do not treat service responses as repository assets |
 | Google Map/Moon tiles | Google Maps Tile API content | `rejected` | No bulk fetching, scraping, offline storage or rehosting |
+| BRASPACE polar elevation map (derived) | `web/assets/polar-elevation-87s.webp` + `.json` | `project_derived_from_nasa_pds` | Our render of LRO LOLA `LDEM_80S_80M.IMG` (PDS, SHA-256 in `data/manifest.json`) by `science/render_polar_map.py`; credit "NASA/GSFC/LOLA" shown in the component; elevation only, not illumination or visibility |
 
 ## NASA SVS CGI Moon Kit
 

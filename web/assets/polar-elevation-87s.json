@@ -1,0 +1,95 @@
+{
+  "schema": "braspace.polar-elevation-map.v1",
+  "product": "BRASPACE derived elevation visualization (not illumination, not visibility)",
+  "image": "polar-elevation-87s.webp",
+  "image_bytes": 146376,
+  "webp_quality": 80,
+  "width_px": 1180,
+  "height_px": 1180,
+  "meters_per_pixel": 160.0,
+  "latitude_edge_deg": -87.0,
+  "elevation_m": {
+    "min": -4377.1,
+    "max": 1955.6,
+    "scope": "pixels inside the 87°S circle after 2x2 averaging; colour ramp is stretched linearly between these",
+    "min_whole_square": -4377.1,
+    "max_whole_square": 4520.8,
+    "datum": "height above the 1737.4 km reference sphere (DN*0.5 m)"
+  },
+  "colour_ramp_low_to_high": [
+    {
+      "t": 0.0,
+      "hex": "#1A2B55"
+    },
+    {
+      "t": 0.14,
+      "hex": "#24507A"
+    },
+    {
+      "t": 0.28,
+      "hex": "#3D7FB5"
+    },
+    {
+      "t": 0.42,
+      "hex": "#6FD0E0"
+    },
+    {
+      "t": 0.54,
+      "hex": "#3FA58C"
+    },
+    {
+      "t": 0.66,
+      "hex": "#9CCB3C"
+    },
+    {
+      "t": 0.78,
+      "hex": "#EEDD44"
+    },
+    {
+      "t": 0.9,
+      "hex": "#F0A050"
+    },
+    {
+      "t": 1.0,
+      "hex": "#F2A39A"
+    }
+  ],
+  "hillshade": "synthetic grazing light (azimuth 315°, altitude 12°, z x2) for relief only; not a solar model",
+  "projection": {
+    "type": "polar stereographic (spherical), true scale at the pole",
+    "center_latitude_deg": -90.0,
+    "center_longitude_deg": 0.0,
+    "reference_radius_m": 1737400.0,
+    "frame": "MEAN EARTH/POLAR AXIS OF DE421",
+    "latitude": "planetocentric",
+    "longitude": "east-positive, degrees in (-180, 180]"
+  },
+  "transform": {
+    "pixel_convention": "zero-indexed image coordinates, col to the right, row downwards; integer col/row is a pixel centre, pixel edges at +-0.5",
+    "pole_pixel": [
+      589.5,
+      589.5
+    ],
+    "meters_per_pixel": 160.0,
+    "forward": "rho = 2*R*tan(radians(90+lat)/2); x = rho*sin(radians(lon)); y = rho*cos(radians(lon)); col = pole_col + x/meters_per_pixel; row = pole_row - y/meters_per_pixel",
+    "inverse": "x = (col-pole_col)*meters_per_pixel; y = (pole_row-row)*meters_per_pixel; rho = hypot(x,y); lat = degrees(2*atan(rho/(2*R))) - 90; lon = degrees(atan2(x,y))",
+    "orientation": "0°E up, 90°E right, 180°E down, 90°W left (viewed from above the south pole)",
+    "dem_pixel_of_image_pixel": "dem_col = 2*col + 2620.5, same for row (zero-indexed LDEM_80S_80M pixel centres)"
+  },
+  "source": {
+    "product": "LDEM_80S_80M.IMG",
+    "pds_dataset_id": "LRO-L-LOLA-4-GDR-V1.0",
+    "url": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img/ldem_80s_80m.img",
+    "sha256": "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc",
+    "dem_crop_zero_indexed": {
+      "first_col": 2620,
+      "first_row": 2620,
+      "size": 2360
+    },
+    "pixel_registration": "pole at zero-indexed pixel centre 3799.5 (label PROJECTION_OFFSET), per DSMAP_POLAR.CAT"
+  },
+  "credit": "Elevation: NASA/GSFC/LOLA (LRO LOLA LDEM_80S_80M). Rendering: BRASPACE.",
+  "generator": "science/render_polar_map.py",
+  "generated_utc": "2026-11-14T17:11:31Z",
+  "science_status": "NOT_A_SCIENCE_RESULT (visual context only)"
+}
