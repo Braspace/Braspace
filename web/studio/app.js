@@ -1,4 +1,4 @@
-import {api,compareRequest,recoverRequest,metricsFor,validationBadge} from "./api.js";
+import {api,compareRequest,recoverRequest,metricsFor,validationBadge,transitionSummary} from "./api.js";
 
 const el=id=>document.getElementById(id);
 const screens=[...document.querySelectorAll("[data-view]")];
@@ -94,6 +94,10 @@ function clearData(){
  emptyTable("recover-body","No scenario run with these parameters.",6);
  el("explore-site").textContent="—";el("explore-status").textContent="—";el("explore-step").textContent="—";
  el("sky-source").textContent="No terrain provenance available.";
+ for(const kind of ["sun","earth"]){
+  el(kind+"-transition").textContent="—";
+  el(kind+"-transition-note").textContent="No transition search loaded.";
+ }
  el("recovery-outcome").textContent="No constraints evaluated with these parameters.";
  el("evidence-details").replaceChildren();
  setSeal("NOT SCIENTIFICALLY CERTIFIED");
@@ -159,6 +163,11 @@ async function showSky(){
  el("explore-site").textContent=selected()?.name||id;
  el("explore-status").textContent=data.science_status||"UNVERIFIED";
  el("explore-step").textContent=String(data.step_seconds)+" seconds";
+ for(const kind of ["sun","earth"]){
+  const item=transitionSummary(data.next_transitions,kind,kind==="sun"?"Sun":"Earth");
+  el(kind+"-transition").textContent=item.value;
+  el(kind+"-transition-note").textContent=item.note;
+ }
  const body=el("sky-body");body.replaceChildren();
  for(const sample of data.samples.slice(0,72)){
   body.append(row([sample.epoch_utc,fmt(sample.sun?.elevation_deg,2)+"°",fmt(sample.earth?.elevation_deg,2)+"°",
