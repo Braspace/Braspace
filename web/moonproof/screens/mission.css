@@ -1,0 +1,13 @@
+.mp-mission-left{position:fixed;z-index:10;left:var(--margin);top:150px;display:grid;gap:var(--gap);padding:34px}
+.mp-mission-right{position:fixed;z-index:10;right:var(--margin);top:140px;width:400px;max-height:calc(100vh - 220px);overflow:auto}
+.mp-mission-dock{position:fixed;z-index:10;bottom:22px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center}
+.mp-mission-dock .mp-pill{min-width:var(--touch);justify-content:center}
+@media (max-width:700px){
+  .mp-mission-left{top:178px;left:50%;right:auto;padding:0;transform:translateX(-50%) scale(.72);transform-origin:top center}
+  .mp-mission-right{max-height:34vh}
+  .mp-mission-right{top:auto;bottom:74px;left:8px;right:8px;width:auto;max-height:40vh;border-radius:var(--r-card)}
+  .mp-bottomnav{overflow-x:auto}
+  .mp-mission-right .mp-layer{width:100%}
+  .mp-mission-dock{bottom:auto;top:120px;left:var(--margin);transform:none}
+  .mp-mission-dock .mp-sel{display:none}
+}
