@@ -26,7 +26,7 @@ func TestReportContentAndRiskAgreement(t *testing.T) {
 		"MoonProof Mission Report", "NOT FLIGHT SOFTWARE", "UNVERIFIED_INPUTS",
 		"ENERGY_LOSS", "EARTH_GEOMETRIC_BLACKOUT", "ENERGY_RESERVE",
 		"synthetic-lander-test", "minimum", "10", "2", "Wh", "Save as PDF",
-		"no supplied scenario satisfies", "application",
+		"no supplied scenario satisfies", "Scenario receipt",
 	} {
 		if !strings.Contains(strings.ToLower(html), strings.ToLower(snippet)) { t.Errorf("HTML missing %q", snippet) }
 	}
