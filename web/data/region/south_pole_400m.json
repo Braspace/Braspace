@@ -1,0 +1,44 @@
+{
+ "schema": "braspace.terrain-grid.v1",
+ "nx": 850,
+ "ny": 850,
+ "spacing_m": 400.0,
+ "origin_x_m": -169800.0,
+ "origin_y_m": -169800.0,
+ "scale_m": 0.5,
+ "offset_m": 0.0,
+ "nodata": -32768,
+ "coordinates": "south polar stereographic x/y (m), true scale at pole, R=1737400 m; row 0 = min y",
+ "height_reference": "metres above the 1,737,400 m reference sphere",
+ "method": "5x5 block mean of LDEM_80S_80M pixels (native 80 m)",
+ "native_resolution_m": 80,
+ "source": "NASA LRO/LOLA LDEM_80S_80M.IMG V2.0 (PDS LRO-L-LOLA-4-GDR-V1.0)",
+ "source_sha256": "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc",
+ "frame": "MEAN EARTH/POLAR AXIS OF DE421",
+ "sha256": "87e7353dafe537cef80fe45047162770a29c9de4b620423b18dd1a1fb3da1d89",
+ "bytes": 1445000,
+ "layers": {
+  "pgda_sun": {
+   "file": "pgda_sun_400m.bin",
+   "type": "uint8 percent",
+   "sha256": "a354543b62871227a5066077f5ac61ed7e8dabd5268eb5a5aa4b147aa5bba61e",
+   "meaning": "average fraction of the solar disc visible (PGDA, Mazarico et al. 2011); 0 = permanent shadow",
+   "product": "AVGVISIB_75S_120M_201608",
+   "label_sha256": "1b597f85822c20e349469c9499e7bd85a48efc3a23b9dd9d82b658e59192883c",
+   "url": "http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_75S_120M_201608.IMG",
+   "resolution_m": 120.0,
+   "scaling_factor": 4e-05
+  },
+  "pgda_earth": {
+   "file": "pgda_earth_400m.bin",
+   "type": "uint8 percent",
+   "sha256": "443ad251a480dea19e96417dfcfe1cb87a91eb02ee158b262d78abe899258fff",
+   "meaning": "average Earth visibility; Earth counted visible if any part of its disc is unobscured (PGDA)",
+   "product": "AVGVISIB_75S_120M_201608_EARTH",
+   "label_sha256": "86eabf4611eaf18c4e9b170b205d517b014ec9e694bc93c80d693caf7c0ca015",
+   "url": "http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_75S_120M_201608_EARTH.IMG",
+   "resolution_m": 120.0,
+   "scaling_factor": 4e-05
+  }
+ }
+}
