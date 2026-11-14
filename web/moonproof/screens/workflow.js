@@ -312,7 +312,7 @@ async function boot(){
   if(!s.start)setState({start:DEFAULT_UTC});
   if(!s.hours)setState({hours:336});
   try{
-   terrain=await mountTerrain(document.getElementById("terrain"),{sites:doc.sites,selected:site().id,route:doc.sites.map(s=>s.id),onSelect:id=>setState({site:id})});
+   terrain=await mountTerrain(document.getElementById("terrain"),{sites:doc.sites,features:doc.features,selected:site().id,route:doc.sites.map(s=>s.id),onSelect:id=>setState({site:id})});
    terrain.select(site().id);
   }catch(e){document.getElementById("terrain").replaceChildren(para("LOLA DEM unavailable; no false map substituted."));}
   online=(await api("/readyz",{timeoutMs:3000})).ok;
