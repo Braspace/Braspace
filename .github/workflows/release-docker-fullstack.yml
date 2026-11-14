@@ -126,7 +126,7 @@ jobs:
       - name: Anonymous route and same-origin backend smoke
         run: |
           set -euo pipefail
-          for page in index mission explore compare recover cockpit landing debrief evidence learn plan; do
+          for page in index mission explore compare recover cockpit landing debrief evidence learn plan present activity; do
             curl --fail-with-body -sS "http://127.0.0.1:5173/moonproof/$page.html" -o /dev/null
           done
           ./scripts/smoke-publico.sh http://127.0.0.1:5173 http://127.0.0.1:8080
