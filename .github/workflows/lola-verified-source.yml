@@ -1,0 +1,67 @@
+name: LOLA PDS source-backed horizon evidence
+on:
+  push:
+    branches: [feat/lola-southpole-horizon-science-20261114]
+    paths:
+      - "science/**"
+      - ".github/workflows/lola-verified-source.yml"
+  pull_request:
+    paths:
+      - "science/**"
+      - ".github/workflows/lola-verified-source.yml"
+permissions:
+  contents: read
+jobs:
+  source-evidence:
+    name: Real NASA DEM source verification and preliminary skyline
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download original NASA LOLA binary and label into temporary runner directory
+        env:
+          PDS_BASE: https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img
+          EXPECTED_SHA: e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/lola" evidence
+          curl --fail --location --silent --show-error --retry 3 --retry-delay 3 --connect-timeout 25 --max-time 720 "$PDS_BASE/ldem_80s_80m.img" -o "$RUNNER_TEMP/lola/ldem_80s_80m.img"
+          curl --fail --location --silent --show-error --retry 3 --retry-delay 3 --connect-timeout 25 --max-time 90 "$PDS_BASE/ldem_80s_80m.lbl" -o "$RUNNER_TEMP/lola/ldem_80s_80m.lbl"
+          test "$(wc -c < "$RUNNER_TEMP/lola/ldem_80s_80m.img")" -eq 115520000
+          printf '%s  %s\n' "$EXPECTED_SHA" "$RUNNER_TEMP/lola/ldem_80s_80m.img" | sha256sum -c -
+          grep -q 'LINE_PROJECTION_OFFSET *=' "$RUNNER_TEMP/lola/ldem_80s_80m.lbl"
+          grep -q 'COORDINATE_SYSTEM_NAME *=' "$RUNNER_TEMP/lola/ldem_80s_80m.lbl"
+      - name: Calculate preliminary terrain-only horizon for Connecting Ridge
+        run: |
+          set -euo pipefail
+          python3 science/lola_horizon.py \
+            --img "$RUNNER_TEMP/lola/ldem_80s_80m.img" \
+            --label "$RUNNER_TEMP/lola/ldem_80s_80m.lbl" \
+            --lat -89.4632 --lon -137.49 \
+            --observer-height-m 2 --max-distance-m 30000 --step-m 160 \
+            --azimuth-step-deg 10 \
+            --output evidence/connecting-ridge-LOLA-PRELIMINARY.json
+          python3 - <<'PY'
+          import json,math,pathlib
+          p=pathlib.Path('evidence/connecting-ridge-LOLA-PRELIMINARY.json')
+          v=json.loads(p.read_text())
+          assert v['provenance']['actual_nasa_dem_bytes_used'] is True
+          assert v['provenance']['terrain_geometry_validation']=='PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED'
+          assert v['provenance']['ephemerides_integrated'] is False
+          assert v['provenance']['sun_earth_visibility_calculated'] is False
+          assert v['coverage']['complete_azimuths'] > 0
+          assert len(v['terrain_horizon'])==36
+          assert all(math.isfinite(h['elevation_deg']) and -90<=h['elevation_deg']<=90 for h in v['terrain_horizon'])
+          print('PDS SHA and 36-azimuth terrain-only horizon verified; NO Sun/Earth windows or NASA certification.')
+          print('Missing-source-sector count:',v['coverage']['azimuths_with_missing_samples'])
+          PY
+      - name: Upload ONLY provenance and derived horizon JSON (not NASA binary)
+        uses: actions/upload-artifact@v4
+        with:
+          name: connecting-ridge-lola-preliminary-terrain-2026
+          path: evidence/connecting-ridge-LOLA-PRELIMINARY.json
+          retention-days: 14
+          if-no-files-found: error
