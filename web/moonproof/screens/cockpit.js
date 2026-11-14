@@ -14,7 +14,7 @@ const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const shell = mountShell({ screen: "cockpit", context: null, onLang: () => draw() });
 const doc = await loadSites();
-if (!doc.sites.some(s => s.id === getState().site)) setState({ site: doc.sites[0].id });
+if (!doc.sites.some(s => s.id === getState().site)) setState({ site: (doc.sites.find(s => s.id === "connecting-ridge") || doc.sites[0]).id });
 const online = await apiOnline();
 const terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: id => setState({ site: id }) });
 const narrow = () => matchMedia("(max-width:700px)").matches;
@@ -35,7 +35,7 @@ function markerCentre() {
 let bodies = null;
 function placeBodies() {
   const c = markerCentre(); if (!c || !bodies) return;
-  const k = narrow() ? 0.5 : 1; const sun = [c[0] - 150 * k, c[1] - 150 * k], earth = [c[0] + 150 * k, c[1] - 170 * k];
+  const k = narrow() ? 0.5 : 1; const sun = narrow() ? [c[0] - 75, c[1] - 75] : [c[0] - 255, c[1] - 186], earth = narrow() ? [c[0] + 75, c[1] - 85] : [c[0] + 321, c[1] - 203];
   for (const [b, p] of [["sun", sun], ["earth", earth]]) {
     Object.assign(bodies[b].ic.style, { left: p[0] + "px", top: p[1] + "px" });
     Object.assign(bodies[b].tag.style, { left: p[0] + "px", top: p[1] + 24 + "px" });
@@ -86,7 +86,7 @@ async function skyTransition(site, atIso) {
   const v = r.ok ? r.data.next_transitions : null; S.sky = { k, v }; return v;
 }
 
-const rulesCard = el("article", "mp-card"), alertCard = el("article", "mp-card mp-alert"), faultCard = el("article", "mp-card");
+const rulesCard = el("article", "mp-card mp-ck-rules"), alertCard = el("article", "mp-card mp-alert"), faultCard = el("article", "mp-card mp-ck-faults");
 const left = $("left"), right = $("right");
 const sheet = $("sheet");
 
@@ -109,7 +109,12 @@ async function draw() {
   shell.setContext({ site: t("cockpit.simulated_operation", { site: `${site.n} · ${site.name}` }),
     date: `${t("cockpit.day_time", { n: clock.day, h: clock.hhmm })} UTC`, days: fmtNum(H / 24), seal, online, action: { label: t("cockpit.onboard"), href: "../onboard/" } });
   const ctxEl = document.querySelector(".mp-context");
-  if (ctxEl) { const chip = el("span", "mp-sim-chip", t("cockpit.sim_label")); ctxEl.append(el("span", "mp-label", t("cockpit.profile")), chip); }
+  if (ctxEl) { // design E: "Operação simulada · <site> • dia · hora • perfil H1 [seal] [Alterar ▾] [SIMULAÇÃO]"
+    if (ctxEl.childNodes[4]) ctxEl.childNodes[4].textContent = t("cockpit.profile");
+    for (const x of ctxEl.querySelectorAll(":scope > .mp-label, :scope > label, :scope > .mp-pill")) x.remove();
+    const alter = Object.assign(el("a", "mp-alter", t("cockpit.change") + " ▾"), { href: hrefTo("explore.html") });
+    ctxEl.append(alter, el("span", "mp-sim-chip", t("cockpit.sim_label")));
+  }
 
   const title = el("p", "mp-ck-title", t("cockpit.how_now"));
   const stat = statCircle({ value: charge == null ? t("nd") : fmtNum(100 * charge / cap) + "%", label: t("cockpit.battery"), seal: charge == null ? "N/D" : seal,
@@ -126,7 +131,7 @@ async function draw() {
   const chart = el("div"); const bars = el("div", "mp-days"); bars.setAttribute("role", "img"); bars.setAttribute("aria-label", t("cockpit.sun_hours_day"));
   days.forEach((f, d) => { const b = el("i"); if (f == null) b.dataset.nd = "1"; else b.style.setProperty("--f", Math.round(f * 100) + "%"); if (d === today) b.dataset.today = "1"; bars.append(b); });
   const axis = el("div", "mp-axis"); axis.append(el("span", null, "D0"), Object.assign(el("em"), { textContent: t("cockpit.today") }), el("span", null, "D" + (days.length - 1)));
-  const nextLine = el("p", "mp-label"); nextLine.textContent = nightH == null ? t("nd") : t("cockpit.next_night_line", { t: sunNext.visible ? fmtDuration(sunNext.inHours) : t("nd"), n: fmtNum(nightH) });
+  const nextLine = el("p", "mp-nextline"); nextLine.append(el("span", null, t("cockpit.next_night")), Object.assign(el("b"), { textContent: nightH == null ? t("nd") : t("cockpit.next_night_val", { t: sunNext.visible ? fmtDuration(sunNext.inHours) : t("nd"), n: fmtNum(nightH) }) }));
   chart.append(bars, axis, nextLine);
   const rows = (...a) => a.map(([k, v]) => [k, v ?? t("nd")]);
   const code = v => Object.assign(el("code", "mp-coord"), { textContent: v ?? t("nd") });
