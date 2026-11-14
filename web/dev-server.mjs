@@ -33,7 +33,7 @@ export function labFile(pathname){
 const onboardTypes=new Map([
  ["index.html","text/html; charset=utf-8"],
  ["cockpit.html","text/html; charset=utf-8"],
- ...["app.js","api.js","cockpit.js","features.js","model.js","request.js","sim.js"].map(name=>[name,"text/javascript; charset=utf-8"])
+ ...["app.js","api.js","cockpit.js","config.js","features.js","live.js","model.js","request.js","sim.js"].map(name=>[name,"text/javascript; charset=utf-8"])
 ]);
 export function onboardFile(pathname){
  if(pathname==="/onboard/")return {name:"onboard/index.html",type:onboardTypes.get("index.html")};
@@ -105,7 +105,7 @@ export function createServer(){
   let parsed;
   try{parsed=new URL(req.url,"http://127.0.0.1");}catch{res.writeHead(400);res.end("invalid URL");return;}
   const pathname=parsed.pathname;
-  if((pathname.startsWith("/api/")||pathname==="/healthz"||pathname==="/readyz")){
+  if((pathname.startsWith("/api/")||pathname==="/healthz"||pathname==="/readyz"||pathname==="/v1/capabilities")){
    // Printable HTML report intentionally carries a strictly scoped inline stylesheet.
    if(pathname==="/api/onboard/report"||pathname==="/api/onboard/site-report")res.setHeader("Content-Security-Policy","default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
    if(!["GET","POST","HEAD","OPTIONS"].includes(req.method)){res.writeHead(405);res.end("Method not allowed");return;}

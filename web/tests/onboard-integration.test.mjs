@@ -1,6 +1,7 @@
 import {test,after} from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
+import {readFileSync} from "node:fs";
 import {createServer,onboardFile} from "../dev-server.mjs";
 
 const server=createServer();
@@ -21,11 +22,17 @@ test("13-tab cockpit is navigable from classic and Polar Lab",async()=>{
  assert.match(html,/Sem recomendação de voo/);
  assert.equal((html.match(/<button[^>]*data-tab="/g)||[]).length,13);
 });
+test("every script the cockpit and the training form load is on the allowlist",()=>{
+ for(const f of ["cockpit.html","index.html"]){
+  const html=readFileSync(new URL("../onboard/"+f,import.meta.url),"utf8");
+  for(const m of html.matchAll(/<script src="([^"]+)"/g))assert.ok(onboardFile("/onboard/"+m[1]),f+" loads "+m[1]+" but dev-server.mjs would answer 404");
+ }
+});
 test("same-origin onboard static allowlist serves only exact required assets",async()=>{
  assert.equal(onboardFile("/onboard/../api/main.go"),null);
  for(const path of ["/onboard/","/onboard/index.html","/onboard/cockpit.html",
  "/onboard/api.js","/onboard/app.js","/onboard/cockpit.js","/onboard/features.js",
- "/onboard/model.js","/onboard/request.js","/onboard/sim.js"]){
+ "/onboard/model.js","/onboard/live.js","/onboard/config.js","/onboard/request.js","/onboard/sim.js"]){
   const response=await fetch(root+path);
   assert.equal(response.status,200,path);
   assert.ok(onboardFile(path),path);

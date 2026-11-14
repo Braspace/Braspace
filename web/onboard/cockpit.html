@@ -49,6 +49,8 @@ header.top { background: var(--card2); border-bottom: 1px solid var(--line); pad
 .filter b { font-weight: 600; }
 .filter select { border: 0; background: transparent; font: inherit; color: inherit; padding: 0; }
 .status { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.badges { display: contents; }
+.seal-row { margin-top: 6px; }
 .chip { font-size: 12px; border-radius: 999px; padding: 4px 10px; border: 1px solid var(--line); background: var(--card); color: var(--muted); white-space: nowrap; }
 .chip.ok { color: var(--green); border-color: var(--ok-line); background: var(--ok-bg); }
 .chip.warn { color: var(--amber); border-color: var(--warn-line); background: var(--warn-bg); }
@@ -215,7 +217,7 @@ details.alarm .sev-CRITICAL { color: var(--red); } details.alarm .sev-HIGH { col
       <button type="button" data-tab="lanc" aria-pressed="false"><span class="ic">↑</span>Lançamentos</button>
       <button type="button" data-tab="status" aria-pressed="false"><span class="ic">✓</span>Status</button>
     </nav>
-    <div class="side-foot">Dados sintéticos. Não é software de voo.</div>
+    <div class="side-foot">Cada número leva o selo da sua origem. Não é software de voo.</div>
   </aside>
 
   <main class="shell">
@@ -229,10 +231,8 @@ details.alarm .sev-CRITICAL { color: var(--red); } details.alarm .sev-HIGH { col
           <summary id="alarm-sum">Sem alarmes do modelo</summary>
           <ul id="alarm-list"></ul>
         </details>
-        <span class="chip warn">PROTÓTIPO · sintético</span>
-        <span class="chip warn">Não validado</span>
+        <span id="badges" class="badges"><!-- static fallback until the script renders the real badges --><span class="chip warn">PROTÓTIPO · sintético</span><span class="chip warn">Não validado</span><span class="chip bad">Sem recomendação de voo</span></span>
         <span class="chip info" id="lamp-api">API ?</span>
-        <span class="chip bad">Sem recomendação de voo</span>
       </div>
     </header>
 
@@ -247,7 +247,9 @@ details.alarm .sev-CRITICAL { color: var(--red); } details.alarm .sev-HIGH { col
 <script src="sim.js"></script>
 <script src="request.js"></script>
 <script src="model.js"></script>
+<script src="live.js"></script>
 <script src="features.js"></script>
+<script src="config.js"></script>
 <script src="api.js"></script>
 <script src="cockpit.js"></script>
 </body>

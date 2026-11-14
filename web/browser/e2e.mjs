@@ -56,10 +56,16 @@ try{
  assert(onboardResponse?.status()===200,"onboard cockpit HTTP");
  const tabs=desktop.locator("nav.tabs button[data-tab]");
  assert(await tabs.count()===13,"onboard cockpit missing required tabs");
- assert((await desktop.locator("body").innerText()).includes("Não validado"),"onboard synthetic disclaimer missing");
+ await desktop.waitForFunction(()=>{
+  const text=document.querySelector("#badges")?.textContent||"";
+  return text.includes("UNVERIFIED_INPUTS")&&text.includes("No flight recommendation");
+ },null,{timeout:15000});
+ const scienceBadges=await desktop.locator("#badges").innerText();
+ assert(!scienceBadges.includes("validated: true"),"onboard falsely claims scientific validation: "+scienceBadges);
  await desktop.locator("nav.tabs button[data-tab='energia']").click();
  await desktop.locator("nav.tabs button[data-tab='replan']").click();
- assert((await desktop.locator("#views").innerText()).length>80,"onboard replan panel empty");
+ const replanText=await desktop.locator("#views").innerText();
+ assert(replanText.length>80,"onboard replan panel empty: "+JSON.stringify(replanText.slice(0,500))+"; page errors: "+errors.join(" | "));
  await desktop.screenshot({path:path.join(out,"onboard-cockpit-desktop.png"),fullPage:true});
  const trainingResponse=await desktop.goto(base+"/onboard/index.html",{waitUntil:"domcontentloaded",timeout:30000});
  assert(trainingResponse?.status()===200,"onboard training form HTTP");
