@@ -79,7 +79,7 @@
   // GET /api/sites/{id}/sky result -> { samples, horizon } or null. 404 (route or site series absent) => null => local model.
   function skyFromResponse(res) {
     if (!res || !res.ok || !res.data || !Array.isArray(res.data.samples) || !res.data.samples.length) return null;
-    return { samples: res.data.samples, horizon: horizonFromSky(res.data.terrain_horizon), science_status: res.data.science_status, step_seconds: res.data.step_seconds, next_transitions: res.data.next_transitions || null };
+    return { samples: res.data.samples, horizon: horizonFromSky(res.data.terrain_horizon), science_status: res.data.science_status, start_utc: res.data.start_utc, end_utc: res.data.end_utc, step_seconds: res.data.step_seconds, next_transitions: res.data.next_transitions || null };
   }
 
   // Header badges from /readyz, /v1/capabilities and the live science_status. Always ends with the permanent no-flight chip.
