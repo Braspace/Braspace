@@ -271,7 +271,7 @@ func loadStoreFromSnapshot(ctx context.Context, db querier) (*siteStore, error) 
 	cat := siteCatalog{Schema: "braspace.site-catalog.v1", Note: "Loaded from PostgreSQL."}
 	rows, err := db.Query(ctx, `
 		SELECT s.id, s.name, s.kind, s.note, s.latitude_deg, s.longitude_deg, s.coordinate_role, s.coordinate_frame,
-		       s.coordinate_source, s.coordinate_inventory, s.source_accuracy_m, COALESCE(ss.source_file, '')
+		       s.coordinate_source, s.coordinate_inventory, s.source_accuracy_m, COALESCE(ss.source_file, ''), COALESCE(ss.file_sha256, '')
 		FROM sites s LEFT JOIN site_series ss ON ss.site_id = s.id ORDER BY s.ordinal`)
 	if err != nil {
 		return nil, err
@@ -280,7 +280,7 @@ func loadStoreFromSnapshot(ctx context.Context, db querier) (*siteStore, error) 
 		var s site
 		var lat, lon *float64
 		var c coordinate
-		if err := rows.Scan(&s.ID, &s.Name, &s.Kind, &s.Note, &lat, &lon, &c.Role, &c.Frame, &c.Source, &c.Inventory, &c.SourceAccuracyM, &s.SeriesFile); err != nil {
+		if err := rows.Scan(&s.ID, &s.Name, &s.Kind, &s.Note, &lat, &lon, &c.Role, &c.Frame, &c.Source, &c.Inventory, &c.SourceAccuracyM, &s.SeriesFile, &s.SeriesSHA256); err != nil {
 			rows.Close()
 			return nil, err
 		}

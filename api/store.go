@@ -44,6 +44,10 @@ type site struct {
 	Coordinate *coordinate `json:"coordinate,omitempty"`
 	Nearby     []string    `json:"nearby,omitempty"`
 	SeriesFile string      `json:"series_file,omitempty"`
+	// SeriesSHA256 pins the exact bytes of SeriesFile. A truncated, reordered or
+	// edited file (e.g. a removed sample that would shift every later epoch) is
+	// rejected at load, matching the content check of the PostgreSQL path.
+	SeriesSHA256 string `json:"series_sha256,omitempty"`
 	Note       string      `json:"note,omitempty"`
 }
 
@@ -158,7 +162,7 @@ func loadStore(fsys fs.FS) (*siteStore, error) {
 		if s.SeriesFile == "" {
 			return nil, nil
 		}
-		return loadSeries(fsys, s.SeriesFile)
+		return loadSeries(fsys, s.SeriesFile, s.SeriesSHA256)
 	})
 	if err != nil {
 		return nil, err
@@ -209,10 +213,16 @@ func buildStore(cat siteCatalog, seriesOf func(*site) (*siteSeries, error)) (*si
 	return st, nil
 }
 
-func loadSeries(fsys fs.FS, name string) (*siteSeries, error) {
+func loadSeries(fsys fs.FS, name, wantSHA string) (*siteSeries, error) {
 	raw, err := fs.ReadFile(fsys, path.Clean(name))
 	if err != nil {
 		return nil, fmt.Errorf("read series: %w", err)
+	}
+	if !sha256Pattern.MatchString(wantSHA) {
+		return nil, fmt.Errorf("catalog entry for %s needs series_sha256 (64 lowercase hex)", name)
+	}
+	if got := sha256Hex(raw); got != wantSHA {
+		return nil, fmt.Errorf("series file %s does not match series_sha256 (catalog %s…, file %s…)", name, wantSHA[:12], got[:12])
 	}
 	var s siteSeries
 	if err := decodeStrict(raw, &s); err != nil {

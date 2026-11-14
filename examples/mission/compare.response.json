@@ -29,6 +29,7 @@
         "name": "Synthetic demo site A",
         "kind": "synthetic_test_fixture",
         "series_file": "series/synthetic-demo-a.json",
+        "series_sha256": "dc6a64a7b64a7633dcf0e079723b0626dcff17f88d88e4f56f4fa9b4bcbd0c28",
         "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location.",
         "series": {
           "start_utc": "2026-11-01T00:00:00Z",
@@ -92,6 +93,7 @@
         "name": "Synthetic demo site B",
         "kind": "synthetic_test_fixture",
         "series_file": "series/synthetic-demo-b.json",
+        "series_sha256": "207a6179327701a31539ad3e689fec9c1adbe50383c9cb366e91e2d2201ae633",
         "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location.",
         "series": {
           "start_utc": "2026-11-01T00:00:00Z",

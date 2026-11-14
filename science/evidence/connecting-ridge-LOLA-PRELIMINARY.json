@@ -1,0 +1,248 @@
+{
+  "site": {
+    "latitude_deg": -89.4632,
+    "longitude_deg": -137.49,
+    "observer_height_m": 2.0,
+    "site_elevation_m": 1943.265
+  },
+  "model": "braspace.lola-polar-horizon.v0.1",
+  "ray_parameters": {
+    "max_distance_m": 30000,
+    "step_m": 160,
+    "azimuth_step_deg": 10
+  },
+  "coverage": {
+    "azimuths_with_missing_samples": 0,
+    "complete_azimuths": 36
+  },
+  "terrain_horizon": [
+    {
+      "azimuth_deg": 0.0,
+      "elevation_deg": 1.320404,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 10.0,
+      "elevation_deg": 1.753412,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 20.0,
+      "elevation_deg": 1.644755,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 30.0,
+      "elevation_deg": 1.822792,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 40.0,
+      "elevation_deg": 1.879965,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 50.0,
+      "elevation_deg": 1.718499,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 60.0,
+      "elevation_deg": 1.52752,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 70.0,
+      "elevation_deg": 1.326182,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 80.0,
+      "elevation_deg": 1.205441,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 90.0,
+      "elevation_deg": 1.213172,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 100.0,
+      "elevation_deg": 1.260935,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 110.0,
+      "elevation_deg": 1.149669,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 120.0,
+      "elevation_deg": 0.802329,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 130.0,
+      "elevation_deg": 0.513445,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 140.0,
+      "elevation_deg": 0.211625,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 150.0,
+      "elevation_deg": -0.22073,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 160.0,
+      "elevation_deg": -0.35024,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 170.0,
+      "elevation_deg": 0.12113,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 180.0,
+      "elevation_deg": 0.022426,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 190.0,
+      "elevation_deg": -0.275479,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 200.0,
+      "elevation_deg": -0.761526,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 210.0,
+      "elevation_deg": -1.253655,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 220.0,
+      "elevation_deg": -1.800945,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 230.0,
+      "elevation_deg": -1.840236,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 240.0,
+      "elevation_deg": -2.488894,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 250.0,
+      "elevation_deg": -3.822978,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 260.0,
+      "elevation_deg": -4.390491,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 270.0,
+      "elevation_deg": -4.865203,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 280.0,
+      "elevation_deg": -5.091506,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 290.0,
+      "elevation_deg": -4.684675,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 300.0,
+      "elevation_deg": -3.878156,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 310.0,
+      "elevation_deg": -2.982827,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 320.0,
+      "elevation_deg": -1.966143,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 330.0,
+      "elevation_deg": -0.63317,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 340.0,
+      "elevation_deg": 0.196843,
+      "sample_count": 187,
+      "partial_coverage": false
+    },
+    {
+      "azimuth_deg": 350.0,
+      "elevation_deg": 0.835774,
+      "sample_count": 187,
+      "partial_coverage": false
+    }
+  ],
+  "provenance": {
+    "terrain_dataset": "LRO-L-LOLA-4-GDR-V1.0/LDEM_80S_80M.IMG V2.0",
+    "terrain_sha256": "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc",
+    "pds_label": "ldem_80s_80m.lbl",
+    "reference_frame": "MEAN EARTH/POLAR AXIS OF DE421",
+    "source": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm",
+    "actual_nasa_dem_bytes_used": true,
+    "terrain_geometry_validation": "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED",
+    "ephemerides_integrated": false,
+    "sun_earth_visibility_calculated": false,
+    "nasa_certified": false
+  }
+}

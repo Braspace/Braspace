@@ -160,8 +160,8 @@ func TestSiteOnboardGridMismatch(t *testing.T) {
 	b, _ := embeddedSiteData.ReadFile("sitedata/series/synthetic-demo-b.json")
 	b30 := strings.Replace(string(b), `"step_seconds":3600`, `"step_seconds":1800`, 1)
 	cat := `{"schema":"braspace.site-catalog.v1","note":"","sites":[
-		{"id":"synthetic-demo-a","name":"A","kind":"synthetic_test_fixture","series_file":"a.json"},
-		{"id":"synthetic-demo-b","name":"B","kind":"synthetic_test_fixture","series_file":"b.json"}]}`
+		{"id":"synthetic-demo-a","name":"A","kind":"synthetic_test_fixture","series_file":"a.json","series_sha256":"` + sha256Hex(a) + `"},
+		{"id":"synthetic-demo-b","name":"B","kind":"synthetic_test_fixture","series_file":"b.json","series_sha256":"` + sha256Hex([]byte(b30)) + `"}]}`
 	st, err := loadStore(fstest.MapFS{"catalog.json": {Data: []byte(cat)}, "a.json": {Data: a}, "b.json": {Data: []byte(b30)}})
 	if err != nil {
 		t.Fatal(err)
