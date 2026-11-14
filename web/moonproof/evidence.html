@@ -1,15 +1,17 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="dark"><meta name="description" content="Passaporte e origem dos dados — BRASPACE MoonProof">
-<title>moonproof · H · Evidências</title>
-<link rel="stylesheet" href="core/tokens.css"><link rel="stylesheet" href="core/components.css">
-<link rel="stylesheet" href="screens/workflow.css"><script type="module" src="screens/workflow.js"></script></head>
-<body data-screen="evidence"><a class="mp-skip" href="#screen-title">Pular para o conteúdo</a>
-<div id="terrain" aria-hidden="true"></div>
-<main class="mp-flow" id="flow">
-<section class="mp-flow-left" id="flow-left" aria-labelledby="screen-title"></section>
-<section class="mp-flow-right" id="flow-right" aria-label="Dados e resultados"></section>
-<footer class="mp-flow-dock" id="flow-dock" aria-label="Navegação do cenário"></footer>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>moonproof · Evidence</title>
+<link rel="stylesheet" href="core/tokens.css"><link rel="stylesheet" href="core/components.css"><link rel="stylesheet" href="screens/evidence.css">
+<script type="module" src="screens/evidence.js"></script>
+</head>
+<body>
+<div id="terrain"></div>
+<main class="mp-ev" id="ev">
+  <nav class="mp-ev-menu" id="menu"></nav>
+  <section class="mp-glass mp-ev-main" id="main"></section>
+  <div class="mp-ev-right" style="display:grid;gap:12px;align-content:start"><article class="mp-glass" id="sources"></article><article class="mp-glass" id="trust"></article></div>
 </main>
-<div id="flow-status" role="status" aria-live="polite" class="mp-flow-status">A carregar os dados do Polo Sul…</div>
-</body></html>
+</body>
+</html>
