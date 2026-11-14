@@ -55,6 +55,9 @@ jobs:
           assert v['coverage']['complete_azimuths'] > 0
           assert len(v['terrain_horizon'])==36
           assert all(math.isfinite(h['elevation_deg']) and -90<=h['elevation_deg']<=90 for h in v['terrain_horizon'])
+          committed=json.loads(pathlib.Path('science/evidence/connecting-ridge-LOLA-PRELIMINARY.json').read_text())
+          assert committed == v, 'checked-in preliminary horizon differs from reproducible NASA PDS output'
+          print('Reproducibility MATCH: committed 36-ray NASA terrain-only evidence equals fresh PDS computation.')
           print('PDS SHA and 36-azimuth terrain-only horizon verified; NO Sun/Earth windows or NASA certification.')
           print('Missing-source-sector count:',v['coverage']['azimuths_with_missing_samples'])
           PY
