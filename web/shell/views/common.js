@@ -132,7 +132,7 @@ export async function regionMap(sites, selectedId, onSelect) {
     h("strong", { text: "Relevo LOLA (LDEM 80 m → 400 m)" }),
     h("div", { class: "ramp", "aria-hidden": "true" }),
     h("div", { class: "t3", text: "Sombreado ilustrativo, não é iluminação. Quadro ≈ " + km + " km, norte da grade estereográfica para cima." }));
-  const el = h("div", { class: "mapcard solid" }, canvas, labels, legend);
+  const el = h("div", { class: "mapcard solid" }, h("div", { class: "mapbox" }, canvas, labels), legend);
   return {
     el, select(id) {
       markers.forEach(m => { m.mk.setAttribute("aria-pressed", String(m.id === id)); m.name.classList.toggle("sel", m.id === id); });

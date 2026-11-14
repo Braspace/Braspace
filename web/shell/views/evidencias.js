@@ -22,7 +22,7 @@ export async function render(outlet, ctx) {
       h("dt", {}, badge("sim")), h("dd", { text: "Simulação ou dado sintético (painel de bordo, laboratório de pouso)." }),
       h("dt", {}, badge("nd")), h("dd", { text: "Não disponível ou não calculado. Nunca mostramos 0 no lugar de um valor ausente." })));
 
-  const sources = h("section", { class: "solid card" }, h("h2", { class: "h-card", text: "Fontes dos dados" }),
+  const sources = h("section", { class: "solid card tablewrap" }, h("h2", { class: "h-card", text: "Fontes dos dados" }),
     h("table", { class: "mtab" }, h("thead", {}, h("tr", {}, h("th", { scope: "col", text: "Dado" }), h("th", { scope: "col", text: "Fonte" }), h("th", { scope: "col", text: "Verificação" }))),
       h("tbody", {},
         h("tr", {}, h("th", { scope: "row", text: "Relevo" }), h("td", { text: prov ? prov.terrain : "N/D" }), h("td", { class: "mono small", text: prov ? "SHA-256 " + prov.terrain_sha256.slice(0, 16) + "…" : "N/D" })),

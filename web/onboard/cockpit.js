@@ -1654,7 +1654,7 @@
     const nav = $("topnav"); if (!nav || !RT) return;
     const site = routeQuery().site;
     const link = (path, label, cls) => h("a", { class: "navp" + (cls ? " " + cls : ""), href: "../index.html" + RT.buildHash(path, { site }) }, label);
-    nav.replaceChildren(link("/explorar", "Explorar"), link("/comparar", "Comparar"),
+    nav.replaceChildren(h("a", { class: "navp home", href: "../index.html#/", "aria-label": "moonproof · voltar para a escolha de tarefa" }, "◐ moonproof"), link("/explorar", "Explorar"), link("/comparar", "Comparar"),
       h("a", { class: "navp", href: tabHash("visao"), "aria-current": "page" }, "Painel de bordo"),
       link("/evidencias", "Evidências"), link("/terreno", "Terreno 3D", "lab"));
   }
