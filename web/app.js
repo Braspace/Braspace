@@ -96,7 +96,10 @@ function rowText(parent,label,value){
 function breachText(risk){
  const has=v=>v!==undefined&&v!==null&&v!=="";
  const what=String(risk.category||"constraint").replaceAll("_"," ").toLowerCase();
- if(has(risk.measured)&&has(risk.allowed))return what+" — measured "+format(risk.measured," "+(risk.unit||""))+" exceeds limit "+format(risk.allowed," "+(risk.unit||""));
+ if(has(risk.measured)&&has(risk.allowed)){
+  const relation=Number(risk.measured)>Number(risk.allowed)?"exceeds":Number(risk.measured)<Number(risk.allowed)?"is below":"equals";
+  return what+" — measured "+format(risk.measured," "+(risk.unit||""))+" "+relation+" limit "+format(risk.allowed," "+(risk.unit||""));
+ }
  return what+" — the API gave no measured/limit values";
 }
 function renderResult(r,computed){
