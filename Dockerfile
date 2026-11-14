@@ -74,6 +74,7 @@ COPY web/ ./web/
 COPY api/db/ ./api/db/
 COPY compose.yaml ./
 COPY api/middleware.go ./api/middleware.go
+COPY api/sitedata/ ./api/sitedata/
 RUN python3 -m compileall -q scripts tests science \
  && python3 -m unittest discover -s tests -v \
  && python3 -m unittest discover -s science/tests -v
