@@ -52,6 +52,8 @@ COPY web/ ./web/
 COPY scripts/ ./scripts/
 COPY examples/ ./examples/
 COPY data/ ./data/
+# web/moonproof/tests/evidence-model.test.mjs checks the registry against this matrix.
+COPY docs/ASSET_LICENSE_MATRIX.md ./docs/ASSET_LICENSE_MATRIX.md
 COPY --from=gobuilder /out/api /opt/e2e/braspace-e2e-api
 COPY --from=rustbuilder /build/engine/target/release/braspace-lunar-engine /src/engine/target/debug/braspace-lunar-engine
 # No package-lock.json in web/ (no dependencies): npm ci is not applicable.
