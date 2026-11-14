@@ -121,8 +121,11 @@ func routes(binary string) http.Handler {
    log.Printf("engine error: %v; stderr: %.300s",err,stderr.String())
    writeJSON(w,http.StatusBadGateway,map[string]string{"error":msg}); return
   }
+  if _,err:=parseEngineResult(req,stdout.Bytes());err!=nil {
+   writeJSON(w,http.StatusBadGateway,map[string]string{"error":"engine returned invalid contract"}); return
+  }
   var result map[string]any
-  if json.Unmarshal(stdout.Bytes(),&result)!=nil || result["science_status"]!="UNVERIFIED_INPUTS" {
+  if json.Unmarshal(stdout.Bytes(),&result)!=nil {
    writeJSON(w,http.StatusBadGateway,map[string]string{"error":"engine returned invalid contract"}); return
   }
   // A reproducibility fingerprint of the exact normalized request, NOT of NASA assets.
@@ -146,6 +149,8 @@ func routes(binary string) http.Handler {
  store,err:=loadDefaultStore()
  if err!=nil { panic(fmt.Errorf("site data: %w",err)) }
  (&missionAPI{store:store,engine:newEngineClient(binary)}).register(mux)
+ registerLayers(mux,store)
+ registerVectorAPI(mux) // optional, disabled by default; never changes mission physics
  return mux
 }
 func main() {
@@ -154,6 +159,7 @@ func main() {
  if bin=="" { bin="./bin/lunar-engine" }
  address:=os.Getenv("LISTEN_ADDR")
  if address=="" { address=":8080" }
+ if _,err:=loadDefaultStore(); err!=nil { log.Printf("site data rejected, not starting: %v",err); os.Exit(1) }
  srv:=&http.Server{Addr:address,Handler:withMiddleware(routes(bin)),ReadHeaderTimeout:5*time.Second,
   ReadTimeout:10*time.Second,WriteTimeout:30*time.Second,IdleTimeout:60*time.Second,MaxHeaderBytes:16<<10}
  log.Printf("BRASPACE API %s; source data NOT validated",address)

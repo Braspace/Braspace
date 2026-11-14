@@ -6,7 +6,7 @@ COPY engine/Cargo.toml ./
 COPY engine/src ./src
 RUN cargo build --release
 
-FROM golang:1.23-alpine AS gobuilder
+FROM golang:1.26-alpine AS gobuilder
 WORKDIR /build/api
 COPY api/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o /out/api .
@@ -17,7 +17,7 @@ WORKDIR /app
 COPY --from=rustbuilder /build/engine/target/release/braspace-lunar-engine /app/bin/lunar-engine
 COPY --from=gobuilder /out/api /app/bin/api
 USER app
-ENV LISTEN_ADDR=:8080 RUST_ENGINE_BIN=/app/bin/lunar-engine
+ENV LISTEN_ADDR=:8080 RUST_ENGINE_BIN=/app/bin/lunar-engine ASSET_CACHE_DIR=/var/cache/braspace
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 CMD curl -fsS http://127.0.0.1:8080/readyz || exit 1
 CMD ["/app/bin/api"]

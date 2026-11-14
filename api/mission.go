@@ -30,7 +30,7 @@ const (
 
 var limitations = []string{
 	"Visibility is geometric line of sight to the Sun and Earth centers against the stored terrain horizon; Sun disc width, refraction, eclipses, RF link budget and DSN scheduling are not modelled.",
-	"Durations have a resolution of one series step; windows start and end on grid epochs.",
+	"Windows must start on a series grid epoch and last a whole multiple of the series step; anything else is reported as GRID_NOT_ALIGNED, never rounded.",
 	"Results are only as accurate as the stored horizon and ephemeris series; check science_status and provenance per site.",
 	"Constraint thresholds are caller-declared assumptions, not mission requirements.",
 }
@@ -68,6 +68,8 @@ func writeError(w http.ResponseWriter, err error) {
 		ae = errf(http.StatusServiceUnavailable, "ENGINE_UNAVAILABLE", "%s", err)
 	case errors.Is(err, errEngineTimeout):
 		ae = errf(http.StatusGatewayTimeout, "ENGINE_TIMEOUT", "%s", err)
+	case errors.Is(err, errRequestCanceled):
+		ae = errf(499, "REQUEST_CANCELED", "client closed the request")
 	case errors.Is(err, errEngineFailed), errors.Is(err, errEngineContract):
 		ae = errf(http.StatusBadGateway, "ENGINE_ERROR", "%s", err)
 	default:
@@ -80,9 +82,11 @@ func (m *missionAPI) register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/health", m.health)
 	mux.HandleFunc("GET /api/sites", m.listSites)
 	mux.HandleFunc("GET /api/sites/{id}", m.getSite)
+	m.registerSky(mux)
 	mux.HandleFunc("POST /api/compare", m.compare)
 	mux.HandleFunc("POST /api/scenarios/delay", m.delayScenario)
 	mux.HandleFunc("POST /api/onboard/site-evaluate", m.siteOnboard)
+	mux.HandleFunc("POST /api/onboard/site-report", m.siteReport)
 	mux.HandleFunc("GET /api/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		_, _ = w.Write(openAPISpec)
@@ -197,19 +201,34 @@ func fingerprint(v any) string {
 	return fmt.Sprintf("%x", sha256.Sum256(b))
 }
 
-// span maps [start, start+hours) onto series indices, aligning start down to
-// the series grid. ok is false when the series does not cover the window.
+// Grid alignment is mandatory: floor/ceil resampling can silently change
+// reported sunlight, communications and energy for an actual mission window.
+func gridAligned(s *siteSeries, start time.Time, hours float64) bool {
+	if s.step <= 0 || !finite(hours) || hours <= 0 {
+		return false
+	}
+	value := hours * float64(time.Hour)
+	if value <= 0 || value > float64(365*24*time.Hour) {
+		return false
+	}
+	rounded := math.Round(value)
+	if math.Abs(value-rounded) > 1 {
+		return false
+	} // sub-ns float tolerance
+	return start.Sub(s.start)%s.step == 0 && time.Duration(rounded)%s.step == 0
+}
+
+// span maps the exact [start, start+hours) onto sample indices; never rounds.
 func span(s *siteSeries, start time.Time, hours float64) (from, to int, ok bool) {
+	if !gridAligned(s, start, hours) {
+		return 0, 0, false
+	}
 	off := start.Sub(s.start)
 	if off < 0 {
 		return 0, 0, false
 	}
 	from = int(off / s.step)
-	n := int(math.Ceil(hours * float64(time.Hour) / float64(s.step)))
-	if n < 1 {
-		n = 1
-	}
-	to = from + n
+	to = from + int(time.Duration(math.Round(hours*float64(time.Hour)))/s.step)
 	return from, to, to <= len(s.Samples)
 }
 
@@ -231,6 +250,11 @@ func (m *missionAPI) evaluateSite(ctx context.Context, ev *evaluator, s *site, s
 		res.DataStatus, res.Reason = "NO_SERIES_DATA", "no horizon/ephemeris series has been ingested for this site"
 		return res, nil
 	}
+	if !gridAligned(ser, start, hours) {
+		res.DataStatus = "GRID_NOT_ALIGNED"
+		res.Reason = fmt.Sprintf("requested start and duration must match the %d-second sample grid exactly", ser.StepSeconds)
+		return res, nil
+	}
 	from, to, ok := span(ser, start, hours)
 	if !ok {
 		res.DataStatus = "OUTSIDE_COVERAGE"
@@ -249,17 +273,17 @@ func (m *missionAPI) evaluateSite(ctx context.Context, ev *evaluator, s *site, s
 }
 
 func scientificallyValidated(results ...siteResult) bool {
-	found := false
+	// Even one missing or off-grid candidate invalidates a full comparison.
+	if len(results) == 0 {
+		return false
+	}
 	for _, r := range results {
-		if r.DataStatus != "AVAILABLE" {
-			continue
-		}
-		found = true
-		if r.ScienceStatus != "VALIDATED" || r.EngineScienceStatus != "VALIDATED" {
+		if r.DataStatus != "AVAILABLE" ||
+			r.ScienceStatus != "VALIDATED" || r.EngineScienceStatus != "VALIDATED" {
 			return false
 		}
 	}
-	return found
+	return true
 }
 
 type compareRequest struct {
@@ -416,6 +440,12 @@ func (m *missionAPI) delayScenario(w http.ResponseWriter, r *http.Request) {
 	var baseOpt *scenarioOption
 	option := func(kind string, target *site, delay float64, dist *float64, baseline *metrics) (scenarioOption, error) {
 		at := start.Add(time.Duration(delay * float64(time.Hour)))
+		// Options are only comparable on horizons computed for the same observer height.
+		if ts, ok := m.store.seriesFor(target.ID); ok && ts.ObserverHeightM != ser.ObserverHeightM {
+			return scenarioOption{Kind: kind, SiteID: target.ID, DelayHours: delay, DistanceKm: dist, StartUTC: at.Format(time.RFC3339),
+				DataStatus: "OBSERVER_HEIGHT_MISMATCH", Checks: []constraintCheck{}, Breached: []constraintCheck{},
+				Reason: fmt.Sprintf("series computed for observer_height_m=%g, baseline uses %g", ts.ObserverHeightM, ser.ObserverHeightM)}, nil
+		}
 		res, err := m.evaluateSite(ctx, ev, target, at, req.DurationHours, false)
 		if err != nil {
 			return scenarioOption{}, err
@@ -444,7 +474,11 @@ func (m *missionAPI) delayScenario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if base.Metrics == nil {
-		writeError(w, errf(http.StatusUnprocessableEntity, "OUTSIDE_COVERAGE", "baseline window is outside stored data: %s", base.Reason))
+		code := "OUTSIDE_COVERAGE"
+		if base.DataStatus == "GRID_NOT_ALIGNED" {
+			code = "GRID_NOT_ALIGNED"
+		}
+		writeError(w, errf(http.StatusUnprocessableEntity, code, "baseline cannot be evaluated: %s", base.Reason))
 		return
 	}
 	baseOpt = &base
@@ -577,7 +611,7 @@ func (m *missionAPI) resourceChecks(ctx context.Context, ev *evaluator, req *del
 	}
 	resp, err := onboard.Evaluate(onboard.Request{MissionID: "delay-replan", Candidates: []onboard.Candidate{in.candidate(o.Kind, *req.Power, *req.MaxCommBlackoutHours)}})
 	if err != nil {
-		return errf(http.StatusUnprocessableEntity, "INVALID_POWER", "%s", err)
+		return errf(http.StatusUnprocessableEntity, "INVALID_SCENARIO", "%s", err)
 	}
 	opt := resp.Options[0]
 	o.Onboard = &onboardSummary{SimulationStatus: opt.SimulationStatus, EndMode: opt.EndMode, Metrics: opt.Metrics, Risks: opt.Risks}
@@ -585,25 +619,28 @@ func (m *missionAPI) resourceChecks(ctx context.Context, ev *evaluator, req *del
 	if base != nil && base.Onboard != nil {
 		bm = &base.Onboard.Metrics
 	}
-	add := func(name, unit, cmp string, limit float64, pick func(onboard.Metrics) float64) {
+	// Pass/fail comes from the simulator's own risk register, which uses
+	// unrounded values; the reported value and margin are its rounded metrics.
+	risks := map[string]bool{}
+	for _, rk := range opt.Risks {
+		risks[rk.Category] = true
+	}
+	add := func(name, unit, cmp string, limit float64, pick func(onboard.Metrics) float64, riskCategory string) {
 		v := pick(opt.Metrics)
 		margin := limit - v
 		if cmp == ">=" {
 			margin = v - limit
 		}
-		cc := constraintCheck{Criterion: name, Unit: unit, Comparator: cmp, Limit: limit, Value: v, Margin: round6(margin), Passed: margin >= 0}
-		if cmp == ">=" && name == "min_battery_charge_wh" {
-			cc.Passed = v > limit // onboard v1 treats reaching the reserve as a breach
-		}
+		cc := constraintCheck{Criterion: name, Unit: unit, Comparator: cmp, Limit: limit, Value: v, Margin: round6(margin), Passed: !risks[riskCategory]}
 		if bm != nil {
 			b := pick(*bm)
 			cc.BaselineValue = &b
 		}
 		o.Checks = append(o.Checks, cc)
 	}
-	add("min_battery_charge_wh", "Wh", ">=", req.Power.ReserveWh, func(m onboard.Metrics) float64 { return m.MinChargeWh })
-	add("unserved_energy_wh", "Wh", "<=", 0, func(m onboard.Metrics) float64 { return m.UnservedEnergyWh })
-	add("longest_earth_obstruction_hours", "h", "<=", *req.MaxCommBlackoutHours, func(m onboard.Metrics) float64 { return m.LongestEarthObstructionHours })
+	add("min_battery_charge_wh", "Wh", ">=", req.Power.ReserveWh, func(m onboard.Metrics) float64 { return m.MinChargeWh }, "ENERGY_RESERVE")
+	add("unserved_energy_wh", "Wh", "<=", 0, func(m onboard.Metrics) float64 { return m.UnservedEnergyWh }, "ENERGY_LOSS")
+	add("longest_earth_obstruction_hours", "h", "<=", *req.MaxCommBlackoutHours, func(m onboard.Metrics) float64 { return m.LongestEarthObstructionHours }, "EARTH_GEOMETRIC_BLACKOUT")
 	return nil
 }
 

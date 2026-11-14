@@ -173,6 +173,9 @@ func TestOpenAPIDocumentCoversRoutes(t *testing.T) {
 	for path, ops := range s.Paths {
 		for method := range ops {
 			url := strings.ReplaceAll(path, "{id}", "synthetic-demo-a")
+			if strings.HasPrefix(path, "/api/layers/") {
+				url = strings.ReplaceAll(path, "{id}", "lola-ldem-80s-80m")
+			}
 			body := ""
 			if method == "post" {
 				body = "{}"
@@ -195,7 +198,7 @@ func TestOpenAPIDocumentCoversRoutes(t *testing.T) {
 
 func TestGetResponsesMatchSchema(t *testing.T) {
 	_, raw := loadSpec(t)
-	h, _ := testAPI(t, "ok")
+	h := routes(fakeEngineBinary(t, "ok"))
 	for _, tc := range []struct {
 		path, url string
 		status    int
@@ -205,6 +208,9 @@ func TestGetResponsesMatchSchema(t *testing.T) {
 		{"/api/sites/{id}", "/api/sites/malapert-massif", 200},
 		{"/api/sites/{id}", "/api/sites/synthetic-demo-a", 200},
 		{"/api/sites/{id}", "/api/sites/atlantis", 404},
+		{"/api/layers", "/api/layers", 200},
+		{"/api/layers/{id}", "/api/layers/lroc-color-2k", 200},
+		{"/api/sites/{id}/media", "/api/sites/malapert-massif/media", 200},
 	} {
 		rec := do(h, "GET", tc.url, "")
 		if rec.Code != tc.status {

@@ -22,6 +22,12 @@ var migrationFiles embed.FS
 
 func sha256Hex(b []byte) string { return fmt.Sprintf("%x", sha256.Sum256(b)) }
 
+// querier is satisfied by both *pgxpool.Pool and pgx.Tx.
+type querier interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
 // contentHash is the hash of a series' canonical JSON encoding. It is the same
 // whether the series was read from a file or reassembled from the database.
 func contentHash(s *siteSeries) (string, error) {
@@ -251,11 +257,21 @@ func ingest(ctx context.Context, db *pgxpool.Pool, fsys fs.FS, manifest []byte) 
 
 // loadStoreFromDB reassembles the catalog and series and runs the same
 // validation as the file loader. Gaps in indices or epochs are rejected.
-func loadStoreFromDB(ctx context.Context, db *pgxpool.Pool) (*siteStore, error) {
+func loadStoreFromDB(ctx context.Context, pool *pgxpool.Pool) (*siteStore, error) {
+	// One REPEATABLE READ snapshot so a concurrent ingest cannot mix old and new rows.
+	tx, err := pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	return loadStoreFromSnapshot(ctx, tx)
+}
+
+func loadStoreFromSnapshot(ctx context.Context, db querier) (*siteStore, error) {
 	cat := siteCatalog{Schema: "braspace.site-catalog.v1", Note: "Loaded from PostgreSQL."}
 	rows, err := db.Query(ctx, `
 		SELECT s.id, s.name, s.kind, s.note, s.latitude_deg, s.longitude_deg, s.coordinate_role, s.coordinate_frame,
-		       s.coordinate_source, s.coordinate_inventory, s.source_accuracy_m, COALESCE(ss.source_file, '')
+		       s.coordinate_source, s.coordinate_inventory, s.source_accuracy_m, COALESCE(ss.source_file, ''), COALESCE(ss.file_sha256, '')
 		FROM sites s LEFT JOIN site_series ss ON ss.site_id = s.id ORDER BY s.ordinal`)
 	if err != nil {
 		return nil, err
@@ -264,7 +280,7 @@ func loadStoreFromDB(ctx context.Context, db *pgxpool.Pool) (*siteStore, error) 
 		var s site
 		var lat, lon *float64
 		var c coordinate
-		if err := rows.Scan(&s.ID, &s.Name, &s.Kind, &s.Note, &lat, &lon, &c.Role, &c.Frame, &c.Source, &c.Inventory, &c.SourceAccuracyM, &s.SeriesFile); err != nil {
+		if err := rows.Scan(&s.ID, &s.Name, &s.Kind, &s.Note, &lat, &lon, &c.Role, &c.Frame, &c.Source, &c.Inventory, &c.SourceAccuracyM, &s.SeriesFile, &s.SeriesSHA256); err != nil {
 			rows.Close()
 			return nil, err
 		}
@@ -295,6 +311,9 @@ func loadStoreFromDB(ctx context.Context, db *pgxpool.Pool) (*siteStore, error) 
 		nearby[a] = append(nearby[a], b)
 	}
 	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	for i := range cat.Sites {
 		cat.Sites[i].Nearby = nearby[cat.Sites[i].ID]
 	}
@@ -311,7 +330,7 @@ func loadStoreFromDB(ctx context.Context, db *pgxpool.Pool) (*siteStore, error) 
 	return st, nil
 }
 
-func loadSeriesFromDB(ctx context.Context, db *pgxpool.Pool, id string) (*siteSeries, error) {
+func loadSeriesFromDB(ctx context.Context, db querier, id string) (*siteSeries, error) {
 	s := &siteSeries{SiteID: id}
 	var start time.Time
 	var count int
@@ -346,6 +365,9 @@ func loadSeriesFromDB(ctx context.Context, db *pgxpool.Pool, id string) (*siteSe
 		s.TerrainHorizon = append(s.TerrainHorizon, h)
 	}
 	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	rows, err = db.Query(ctx, `
 		SELECT idx, epoch_utc, sun_azimuth_deg, sun_elevation_deg, earth_azimuth_deg, earth_elevation_deg
@@ -407,8 +429,17 @@ func verifyReadback(ctx context.Context, db *pgxpool.Pool, fsys fs.FS, manifest 
 		rep.Problems = append(rep.Problems, "database load: "+err.Error())
 		return rep, nil
 	}
-	if len(src.sites) != len(dbStore.sites) {
-		rep.Problems = append(rep.Problems, fmt.Sprintf("site count: source %d, database %d", len(src.sites), len(dbStore.sites)))
+	srcCat, _ := json.Marshal(src.sites)
+	dbCat, _ := json.Marshal(dbStore.sites)
+	if string(srcCat) != string(dbCat) {
+		rep.Problems = append(rep.Problems, "catalog differs from source (sites, names, coordinates, nearby links or series association)")
+	} else {
+		rep.Checks["catalog"] = fmt.Sprintf("%d sites, sha256 %s", len(src.sites), sha256Hex(srcCat)[:12])
+	}
+	for id := range dbStore.series {
+		if _, ok := src.series[id]; !ok {
+			rep.Problems = append(rep.Problems, id+": series in database but not in source")
+		}
 	}
 	for id, ser := range src.series {
 		want, _ := contentHash(ser)

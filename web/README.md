@@ -9,6 +9,7 @@
 - Loads the GitHub team's site catalog from \`GET /api/sites\` **when that backend route is actually available** (currently in PR #53). In its absence, no fake catalog is substituted.
 - Training-only scenario input: UTC date, mission length, scheduled delay, assumed solar generation, battery capacity/load/reserve and maximum geometric Earth-visibility gap.
 - \`POST /api/onboard/evaluate\` (merged PR #70) computes all battery, risk and blackout values on the **Go backend**. The frontend creates visibly synthetic Sun/Earth visibility input sequences solely for a software demonstration and **does not claim any lunar dataset is involved**.
+- When the selected site has an ingested horizon/ephemeris series (\`series\` in \`GET /api/sites\`), the simulator calls \`POST /api/onboard/site-evaluate\` (PR #53): Sun/Earth visibility is computed by the Go API and Rust engine from stored data, crew oxygen/food are added, and the result shows the series' \`science_status\` and provenance. Sites without a series keep the synthetic training path above. Crew consumption rates are placeholders pending a NASA BVAD check.
 - \`POST /api/onboard/report\` opens the print-friendly evidence report **only when PR #72 is subsequently deployed/merged**. It otherwise displays a clear endpoint unavailable message.
 - No NASA insignia, no copied Google Maps lunar tiles or logos; NASA SVS credits are linked directly.
 
@@ -54,3 +55,9 @@ The Node tests cover static serving, content security policy, no path traversal,
 - [ ] Public HTTPS application and anonymous-reader <=7-slide English NASA demo.
 - [ ] AI assistance and any image generation disclosed and credited.
 - [ ] Authorized teammate submits NASA form and saves official confirmation before deadline.
+
+## API base for static hosting (BR41)
+
+`moon3d.js` builds its API paths with `window.BRASPACE_API_BASE || ""`. Same-origin deployments set nothing. A static host (GitHub Pages) sets it in `config.js` before the module loads, e.g. `window.BRASPACE_API_BASE = "https://api.example.org";`, so the file no longer needs to be rewritten at publish time. The CSP must then allow that origin in `img-src` (texture) and `connect-src` (model).
+
+The NASA SVS 14959 Moon model is loaded on demand with the button "Load NASA 3D model" (or `?model=1`); the sphere stays the default.

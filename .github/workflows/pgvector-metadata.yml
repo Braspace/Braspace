@@ -1,0 +1,52 @@
+name: BRASPACE Optional pgvector Metadata
+on:
+  pull_request:
+    paths:
+      - "api/vector.go"
+      - "api/vector_test.go"
+      - "api/db/optional-vector.sql"
+      - "compose.vector.yaml"
+      - ".github/workflows/pgvector-metadata.yml"
+  push:
+    branches:
+      - "feat/optional-pgvector-metadata-20261114"
+
+permissions:
+  contents: read
+
+jobs:
+  metadata-vector:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres-vector:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: braspace
+          POSTGRES_PASSWORD: ci-temporary-only
+          POSTGRES_DB: braspace
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U braspace -d braspace"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      TEST_VECTOR_DATABASE_URL: postgres://braspace:ci-temporary-only@localhost:5432/braspace?sslmode=disable
+      BRASPACE_VECTOR_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+      - name: Go vet and optional live pgvector integration
+        working-directory: api
+        run: |
+          go vet ./...
+          go test -race -count=1 -run 'TestVector' ./...
+      - name: Verify conventional SQL migration has no mandatory vector extension
+        run: |
+          if grep -ri 'CREATE EXTENSION.*vector' api/db/migrations; then
+            echo 'pgvector must remain outside standard migrations'
+            exit 1
+          fi
+          echo 'Standard postgres migrations remain extension-independent.'

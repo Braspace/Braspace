@@ -55,9 +55,15 @@ func TestConsumablesDelayAboard(t *testing.T) {
 	if waiting.Items[0].Status != "DEPLETED_BEFORE_END" || notAboard.Items[0].Status != "OK" {
 		t.Fatal("waiting aboard must consume the stock before the window")
 	}
+	// 1 kg at 0.07 kg/h lasts 14.29 h of a 48 h wait: depletes during the delay.
 	empty := consumables(crew(1, 100, 0, true), t0, 72, 48)
-	if empty.Items[0].StockAtStartKg != 0 || *empty.Items[0].DepletionUTC != t0.Format(time.RFC3339) {
-		t.Fatalf("stock used up during the delay depletes at window start: %+v", empty.Items[0])
+	rate := 0.07
+	want := t0.Add(-48 * time.Hour).Add(time.Duration(1 / rate * float64(time.Hour))).UTC().Format(time.RFC3339)
+	if empty.Items[0].Status != "DEPLETED_DURING_DELAY" || empty.Items[0].StockAtStartKg != 0 || *empty.Items[0].DepletionUTC != want {
+		t.Fatalf("stock used up during the delay: %+v (want depletion %s)", empty.Items[0], want)
+	}
+	if !strings.Contains(empty.Risks[0].Explanation, "before the window starts") {
+		t.Fatalf("explanation: %s", empty.Risks[0].Explanation)
 	}
 }
 
@@ -154,8 +160,8 @@ func TestSiteOnboardGridMismatch(t *testing.T) {
 	b, _ := embeddedSiteData.ReadFile("sitedata/series/synthetic-demo-b.json")
 	b30 := strings.Replace(string(b), `"step_seconds":3600`, `"step_seconds":1800`, 1)
 	cat := `{"schema":"braspace.site-catalog.v1","note":"","sites":[
-		{"id":"synthetic-demo-a","name":"A","kind":"synthetic_test_fixture","series_file":"a.json"},
-		{"id":"synthetic-demo-b","name":"B","kind":"synthetic_test_fixture","series_file":"b.json"}]}`
+		{"id":"synthetic-demo-a","name":"A","kind":"synthetic_test_fixture","series_file":"a.json","series_sha256":"` + sha256Hex(a) + `"},
+		{"id":"synthetic-demo-b","name":"B","kind":"synthetic_test_fixture","series_file":"b.json","series_sha256":"` + sha256Hex([]byte(b30)) + `"}]}`
 	st, err := loadStore(fstest.MapFS{"catalog.json": {Data: []byte(cat)}, "a.json": {Data: a}, "b.json": {Data: []byte(b30)}})
 	if err != nil {
 		t.Fatal(err)

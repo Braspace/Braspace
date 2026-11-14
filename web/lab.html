@@ -8,6 +8,7 @@
   <title>BRASPACE MoonProof | Polar Lab &amp; Landing Lab</title>
   <link rel="stylesheet" href="./lab/lab.css">
   <script type="module" src="./lab/app.js"></script>
+  <script type="module" src="./lab/backend-widget.js"></script>
 </head>
 <body>
 <a class="skip" href="#panel">Skip to mission controls</a>
@@ -24,6 +25,7 @@
     <label class="toggle"><input type="checkbox" id="motion"> <span data-i18n="reduceMotion">Reduce motion</span></label>
     <button id="lang" type="button" aria-label="Switch language">PT</button>
     <a class="ghost" href="./index.html" data-i18n="classic">Mission computer</a>
+    <a class="ghost" href="./onboard/cockpit.html">Onboard Cockpit (synthetic)</a>
   </div>
 </header>
 <main class="layout">
@@ -66,6 +68,7 @@
 </dialog>
 <footer class="foot">
   <span>BRASPACE · Uberlândia, Brazil · NASA Space Apps 2026 educational prototype</span>
+  <span><button type="button" id="api-sync">Check Go / PostgreSQL</button> <button type="button" id="api-simulate">Test Go mission computer (synthetic)</button> <output id="api-sim-result" role="status" aria-live="polite"></output> <output id="api-feedback" role="status" aria-live="polite">Backend not yet checked; lab metrics come from versioned assets.</output></span>
   <span>Data: NASA LRO/LOLA, NASA GSFC PGDA, JPL/NAIF SPICE, NASA SVS. NASA does not endorse this tool.</span>
 </footer>
 </body>

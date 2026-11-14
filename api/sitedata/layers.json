@@ -1,0 +1,175 @@
+{
+  "schema": "braspace.layers.v1",
+  "note": "Visual layers never feed scientific calculations. Gallery entries are links to original pages; no image is copied (data/LUNAR_GALLERY.json thumbnail policy).",
+  "gallery_terms_url": "https://lroc.im-ldi.com/about/terms",
+  "layers": [
+    {
+      "id": "lroc-color-2k",
+      "title": "LROC WAC color mosaic (NASA SVS CGI Moon Kit, 2k)",
+      "kind": "global_albedo_visualization",
+      "registry_ref": "data/ASSET_REGISTRY.json#nasa-svs-cgi-moon-kit-lroc-color-2k-2025",
+      "source_page": "https://svs.gsfc.nasa.gov/4720/",
+      "source_url": "https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_2k.jpg",
+      "format": "image/jpeg",
+      "bytes": 457942,
+      "sha256": "f7130a1822681fa7512d7dcfd40db8c10b9ba4f06777910348698260ed7a2170",
+      "width_px": 2048,
+      "height_px": 1024,
+      "projection": "simple cylindrical (equirectangular), full globe",
+      "frame": "MOON_ME (body-fixed), longitude -180..180",
+      "coverage": {
+        "latitude_min_deg": -90,
+        "latitude_max_deg": 90
+      },
+      "resolution_km_per_px_equator": 5.33,
+      "attribution": "NASA Scientific Visualization Studio; visualizer Ernie Wright; scientist Noah Petro (NASA/GSFC); source LROC WAC Color Mosaic collected by Arizona State University",
+      "rights": "Educational/informational visualization with NASA SVS and source credits; confirm current NASA media guidance before redistribution.",
+      "redistribution_status": "approved_candidate",
+      "scientific_role": "visualization_only",
+      "delivery": "proxy",
+      "note": "Same-origin copy for the 3D globe, fetched only from source_url and checked against sha256. Not terrain data."
+    },
+    {
+      "id": "svs-14959-moon-small-glb",
+      "title": "NASA SVS 14959 Moon 3D model, small (moon_small.glb, color map, no topography)",
+      "kind": "visual_model_3d",
+      "registry_ref": "data/ASSET_REGISTRY.json#nasa-svs-14959-moon-small-glb-2026",
+      "source_page": "https://svs.gsfc.nasa.gov/14959/",
+      "source_url": "https://svs.gsfc.nasa.gov/vis/a010000/a014900/a014959/moon_small.glb",
+      "format": "model/gltf-binary",
+      "bytes": 13799876,
+      "sha256": "12d3b0bb7fe214903f51447d1bc61710f442e92a11c703fcaca6d4e7ff8e67d4",
+      "width_px": 4096,
+      "height_px": 4096,
+      "projection": "textured UV sphere, 1 mesh, 23,232 triangles; texture is a 4096x4096 cube-face cross (no polar pinch)",
+      "frame": "model-local: +Y north pole, longitude 0 toward -Z, east toward -X; radius about 1.278 units; not a SPICE/PCK frame",
+      "coverage": {
+        "latitude_min_deg": -90,
+        "latitude_max_deg": 90
+      },
+      "resolution_km_per_px_equator": null,
+      "attribution": "NASA's Goddard Space Flight Center; NASA SVS 14959 (producer Dan Gallagher); made with LRO imagery; color source CGI Moon Kit (SVS 4720)",
+      "rights": "Educational/informational visualization with the NASA SVS credit \"NASA's Goddard Space Flight Center\"; confirm current NASA media guidance before redistribution.",
+      "redistribution_status": "approved_candidate",
+      "scientific_role": "visualization_only",
+      "delivery": "proxy",
+      "note": "Same-origin copy for the 3D globe, written to a disk cache while its size and sha256 are checked, then streamed (never held whole in memory). Visual model only: no topography, no illumination, no visibility; not terrain data."
+    },
+    {
+      "id": "lola-ldem-80s-80m",
+      "title": "LRO LOLA south polar DEM, 80 m/px (LDEM_80S_80M V2.0)",
+      "kind": "science_elevation",
+      "registry_ref": "data/manifest.json",
+      "source_page": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm",
+      "source_url": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img/ldem_80s_80m.img",
+      "format": "PDS3 IMG, 16-bit LSB integer",
+      "bytes": 115520000,
+      "sha256": "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc",
+      "width_px": 7600,
+      "height_px": 7600,
+      "projection": "polar stereographic, center latitude -90",
+      "frame": "MOON_ME (DE421 mean Earth/polar axis)",
+      "coverage": {
+        "latitude_min_deg": -90,
+        "latitude_max_deg": -80
+      },
+      "resolution_km_per_px_equator": null,
+      "resolution_m_per_px": 80,
+      "attribution": "LOLA Science Team, NASA GSFC; PDS Geosciences Node",
+      "rights": "The product label does not state a separate license; retain PDS/NASA/LOLA attribution and verify applicable reuse terms before redistribution.",
+      "redistribution_status": "source_link_only",
+      "scientific_role": "science_source",
+      "delivery": "external",
+      "note": "Consumed offline by the science pipeline (horizon profiles); never served or rendered as imagery by the API."
+    },
+    {
+      "id": "lola-dem-4ppd-render",
+      "title": "LOLA global DEM render, 4 px/deg (NASA SVS CGI Moon Kit)",
+      "kind": "global_dem_render",
+      "registry_ref": "data/ASSET_REGISTRY.json#nasa-svs-cgi-moon-kit-lola-dem-4",
+      "source_page": "https://svs.gsfc.nasa.gov/4720/",
+      "source_url": "https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/ldem_4.tif",
+      "format": "image/tiff (32-bit float)",
+      "bytes": 4153352,
+      "sha256": "330afa2556a86fd05ac6ba2f912f246600fdade35de2a0d90593d50d07b01b65",
+      "width_px": 1440,
+      "height_px": 720,
+      "projection": "simple cylindrical (equirectangular), full globe",
+      "frame": "MOON_ME (body-fixed)",
+      "coverage": {
+        "latitude_min_deg": -90,
+        "latitude_max_deg": 90
+      },
+      "resolution_km_per_px_equator": 7.58,
+      "attribution": "NASA Scientific Visualization Studio; LRO LOLA data source",
+      "rights": "Educational/informational rendering with NASA SVS/LOLA attribution; confirm current NASA media guidance before redistribution.",
+      "redistribution_status": "approved_candidate",
+      "scientific_role": "visualization_only",
+      "delivery": "external",
+      "note": "Global render; not the south polar science DEM. TIFF is not browser-renderable, so it is linked, not proxied."
+    }
+  ],
+  "media": [
+    {
+      "id": "LROC-1276",
+      "title": "Where is the South Pole?",
+      "region": "Shackleton rim",
+      "page_url": "https://lroc.im-ldi.com/images/1276",
+      "image_id": "M1407524099LR",
+      "credit": "NASA/GSFC/Arizona State University",
+      "illustrative_only": true,
+      "coordinate_note": "South Pole reference is not a landing coordinate",
+      "related_site_ids": []
+    },
+    {
+      "id": "LROC-1247",
+      "title": "Traversing the Shackleton de Gerlache Ridge",
+      "region": "Connecting Ridge and Shackleton rim",
+      "page_url": "https://lroc.im-ldi.com/images/1247",
+      "image_id": "M1348682369LR",
+      "credit": "NASA/GSFC/Arizona State University",
+      "illustrative_only": true,
+      "coordinate_note": "Oblique regional view; no site point assigned",
+      "related_site_ids": [
+        "connecting-ridge"
+      ]
+    },
+    {
+      "id": "LROC-1294",
+      "title": "Malapert Massif",
+      "region": "Malapert Massif",
+      "page_url": "https://lroc.im-ldi.com/images/1294",
+      "image_id": "M1432398306LR",
+      "credit": "NASA/GSFC/Arizona State University",
+      "illustrative_only": true,
+      "coordinate_note": "Page's spacecraft position is not the massif or landing site position",
+      "related_site_ids": [
+        "malapert-massif"
+      ]
+    },
+    {
+      "id": "LROC-237",
+      "title": "The Lunar South Pole",
+      "region": "South polar overview",
+      "page_url": "https://lroc.im-ldi.com/images/237",
+      "image_id": null,
+      "credit": "NASA/GSFC/Arizona State University",
+      "illustrative_only": true,
+      "coordinate_note": "Regional mosaic, approximately 600 km wide",
+      "related_site_ids": []
+    },
+    {
+      "id": "LROC-1105",
+      "title": "Islands in the Dark",
+      "region": "Shackleton and de Gerlache ridge",
+      "page_url": "https://lroc.im-ldi.com/images/1105",
+      "image_id": null,
+      "credit": "NASA/GSFC/Arizona State University",
+      "illustrative_only": true,
+      "coordinate_note": "Regional context; no exact site coordinate asserted",
+      "related_site_ids": [
+        "connecting-ridge"
+      ]
+    }
+  ]
+}

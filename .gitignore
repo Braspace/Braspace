@@ -7,3 +7,5 @@ science/results/*.json
 !science/results/summary.json
 !science/results/validation_*.json
 __pycache__/
+*.pyc
+data/raw/

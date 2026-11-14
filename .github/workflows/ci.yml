@@ -2,11 +2,19 @@ name: Braspace Go Rust Docker integration
 on:
   push:
     branches:
+      - "main"
       - "team/**"
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+# One run per ref; a newer push cancels the older run, except on main, where
+# every merge commit must end with its own verdict.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   integration:
@@ -14,6 +22,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Data manifest and verifier tests
+        run: python3 -m unittest discover -s tests -v
       - uses: actions/setup-go@v5
         with:
           go-version-file: api/go.mod
@@ -99,3 +109,26 @@ jobs:
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/readyz && break; sleep 1; done
           curl -fsS http://127.0.0.1:8080/api/health | python3 -c 'import json,sys; assert json.load(sys.stdin)["data_source"]=="postgres"'
           ../examples/mission/replay.sh http://127.0.0.1:8080
+
+  # Post-merge gate: only on a push to main (not PR, not manual dispatch).
+  # Brings Compose up under its own project name, serves web/ with the
+  # same-origin dev server and runs the public smoke test against the local pair.
+  main-smoke:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [integration, postgres]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Compose up, serve web/, run scripts/smoke-publico.sh locally
+        run: |
+          docker compose -p main-smoke up --build -d
+          trap 'docker compose -p main-smoke logs; docker compose -p main-smoke down --volumes; kill "$(cat /tmp/web.pid)" || true' EXIT
+          for i in $(seq 1 50); do if curl -fsS http://127.0.0.1:8080/readyz; then break; fi; sleep 2; done
+          node web/dev-server.mjs >/tmp/web.log 2>&1 &
+          echo $! >/tmp/web.pid
+          for i in $(seq 1 20); do if curl -fsS -o /dev/null http://127.0.0.1:5173/; then break; fi; sleep 1; done
+          ./scripts/smoke-publico.sh http://127.0.0.1:5173 http://127.0.0.1:8080

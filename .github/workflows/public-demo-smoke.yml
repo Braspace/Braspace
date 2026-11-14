@@ -1,0 +1,58 @@
+name: BRASPACE Anonymous Public Demo and API P0
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/public-demo-smoke.yml"
+      - "scripts/smoke-publico.sh"
+  push:
+    branches:
+      - "test/public-demo-external-smoke-20261114"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FRONT: https://braspace.github.io
+      API: https://braspace-api.srv1898743.hstgr.cloud
+    steps:
+      - uses: actions/checkout@v4
+      - name: Anonymous end-to-end public smoke (no cookies, tokens or login)
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/braspace-public-smoke
+          bash scripts/smoke-publico.sh "$FRONT" "$API" | tee /tmp/braspace-public-smoke/smoke.txt
+      - name: Verify browser CORS and scientific disclosure externally
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/braspace-public-smoke
+          curl -fsS --retry 2 --max-time 30 -H "Origin: $FRONT" -D /tmp/braspace-public-smoke/headers.txt -o /tmp/braspace-public-smoke/health.json "$API/api/health"
+          curl -fsS --retry 2 --max-time 30 -o /tmp/braspace-public-smoke/capabilities.json "$API/v1/capabilities"
+          curl -fsS --retry 2 --max-time 30 -H "Content-Type: application/json" --data-binary @examples/mission/compare.request.json -o /tmp/braspace-public-smoke/compare.json "$API/api/compare"
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('/tmp/braspace-public-smoke')
+          headers=p.joinpath('headers.txt').read_text().lower()
+          cors=[x.strip() for x in headers.splitlines() if x.startswith('access-control-allow-origin:')]
+          assert cors and cors[-1]=='access-control-allow-origin: https://braspace.github.io', f'Browser CORS mismatch: {cors}'
+          health=json.loads(p.joinpath('health.json').read_text())
+          assert health['engine']=='ready' and health['status']=='ok', f'Unexpected public backend state {health}'
+          caps=json.loads(p.joinpath('capabilities.json').read_text())
+          assert isinstance(caps,dict) and len(caps)>0, 'Missing API capabilities'
+          compare=json.loads(p.joinpath('compare.json').read_text())
+          assert compare['scientifically_validated'] is False, 'Synthetic scenario was falsely presented as validated'
+          assert any(x['data_status']=='AVAILABLE' for x in compare['results']), 'Synthetic training site unavailable'
+          print('PASS anonymous public frontend/API/CORS/synthetic-science-honesty')
+          PY
+      - name: Archive public smoke evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: braspace-public-demo-p0-smoke
+          path: /tmp/braspace-public-smoke/
+          retention-days: 7
+          if-no-files-found: ignore

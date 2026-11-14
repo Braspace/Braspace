@@ -98,10 +98,18 @@ of the window, with `CRITICAL` / `HIGH` risks in the same shape as the onboard o
 `aboard_during_delay: true` means the crew consumes while waiting out a delay. Rates are
 inputs and `rate_source` is mandatory; the examples use 0.84 kg O2 and 1.76 kg food per
 person per day as placeholders to be checked against NASA BVAD (NASA/TP-2015-218570).
-Without `crew`, consumables are reported as `UNKNOWN`.
+Without `crew`, consumables are reported as `UNKNOWN`. If the stock runs out while the crew waits out a delay, the item is `DEPLETED_DURING_DELAY` with the actual depletion time.
 
 `combined_decision` picks the first candidate (request order) where energy, comms and
 consumables all hold; the onboard simulator's own decision only weighs energy and comms.
+
+### `POST /api/onboard/site-report`
+
+Same input as `site-evaluate`, returns the printable mission report from #72 as HTML
+(Print → Save as PDF) with an extra section: visibility source, combined decision,
+consumption rate source and, per candidate, the oxygen/food table and risks. The plain
+`/api/onboard/report` is unchanged. The MoonProof UI uses this report after a
+computed-series run.
 
 ### Resources in `POST /api/scenarios/delay` (#69)
 
@@ -109,8 +117,25 @@ consumables all hold; the onboard simulator's own decision only weighs energy an
 Each option then also reports `consumables` and an `onboard` summary, and its checks
 include `oxygen_margin_hours`, `food_margin_hours`, `min_battery_charge_wh`,
 `unserved_energy_wh` and `longest_earth_obstruction_hours`, each with its baseline value.
-That is how a delay that fixes the energy budget but runs the oxygen down shows up.
+That is how a delay that fixes the energy budget but runs the oxygen down shows up. Nearby sites whose series was computed for a different observer height are listed as `OBSERVER_HEIGHT_MISMATCH` and never compared.
 `examples/mission/scenario-delay-resources.*` has a full case.
+
+### Map layers and site media (#57)
+
+- `GET /api/layers`, `GET /api/layers/{id}`: optional lunar layers with source page
+  and URL, rights, attribution, coverage, resolution, projection/frame, size and SHA-256.
+  Entries are copied from `data/ASSET_REGISTRY.json` and `data/manifest.json`, and a
+  test fails if they drift. `scientific_role` is `visualization_only` or
+  `science_source`; visual layers never feed calculations.
+- `GET /api/layers/{id}/asset`: same-origin copy for `delivery: "proxy"` layers (today
+  only the NASA SVS LROC 2k texture used by the 3D globe, which browsers block
+  cross-origin). The API fetches only the registered `source_url` on an allowlisted
+  host, checks size and SHA-256 before serving, and caches the bytes in memory. It
+  never takes a URL from the request. If the source is down or the checksum differs,
+  you get `502 LAYER_UNAVAILABLE` and the UI keeps its procedural fallback. The LOLA
+  science DEM is `external` and is never served.
+- `GET /api/sites/{id}/media`: LROC gallery links (`data/LUNAR_GALLERY.json`) related to
+  a site. Links only; no image is copied, per the gallery's thumbnail policy.
 
 ## Errors
 
@@ -123,16 +148,23 @@ JSON `{"error": "...", "code": "..."}`.
 | 405 | wrong method |
 | 413 | `REQUEST_TOO_LARGE` (> 128 KiB) |
 | 415 | `UNSUPPORTED_MEDIA_TYPE` |
-| 422 | `INVALID_TIME`, `INVALID_DURATION`, `INVALID_SITES`, `INVALID_DELAYS`, `INVALID_CONSTRAINT`, `CONSTRAINTS_REQUIRED`, `DATA_NOT_AVAILABLE`, `OUTSIDE_COVERAGE`, `OBSERVER_HEIGHT_UNAVAILABLE`, `INVALID_CREW`, `INVALID_POWER`, `INVALID_MISSION`, `INVALID_CANDIDATES`, `GRID_MISMATCH`, `GRID_UNSUPPORTED`, `WINDOW_TOO_LONG`, `INVALID_SCENARIO` |
+| 422 | `INVALID_TIME`, `INVALID_DURATION`, `INVALID_SITES`, `INVALID_DELAYS`, `INVALID_CONSTRAINT`, `CONSTRAINTS_REQUIRED`, `DATA_NOT_AVAILABLE`, `OUTSIDE_COVERAGE`, `OBSERVER_HEIGHT_UNAVAILABLE`, `INVALID_CREW`, `INVALID_POWER`, `INVALID_MISSION`, `INVALID_CANDIDATES`, `GRID_MISMATCH`, `GRID_UNSUPPORTED`, `WINDOW_TOO_LONG`, `INVALID_SCENARIO`, `GRID_NOT_ALIGNED`, `TOO_MANY_EVALUATIONS` (more than 4000 uncached engine evaluations in one request) |
+| 499 | `REQUEST_CANCELED` (client went away) |
 | 500 | `INTERNAL` |
 | 502 | `ENGINE_ERROR` (non-zero exit or invalid output) |
 | 503 | `ENGINE_UNAVAILABLE` |
 | 504 | `ENGINE_TIMEOUT` (2 s per call, 20 s per request) |
 
+Engine subprocesses are capped globally (2 × CPU, at most 16 at once) so concurrent requests queue instead of multiplying processes.
+
 ## Series data contract (for the science pipeline)
 
 One JSON file per site under `api/sitedata/series/`, referenced by `series_file` in
-`catalog.json`. The loader rejects the whole data set at startup if any file is invalid.
+`catalog.json` together with `series_sha256`, the SHA-256 of the file's exact bytes
+(`shasum -a 256 api/sitedata/series/<file>`). The loader rejects the whole data set at
+startup if any file is invalid or does not match its hash, so an edited angle, a removed
+sample (which would shift every later epoch) or a truncated file never reaches the API.
+The server then exits with a one-line `site data rejected, not starting: …` message.
 
 ```json
 {
@@ -211,3 +243,8 @@ engine produce identical comparison output.
 
 Sun disc width, refraction, eclipses, RF link budget, DSN scheduling. Durations have one
 series-step resolution.
+
+
+### Exact temporal grid and scientific integrity guardrails (2026-11-14)
+
+All starts and durations must match the stored `step_seconds` grid exactly; no floor/ceil window rounding. A per-site comparison reports `data_status=GRID_NOT_ALIGNED` without metrics for off-grid input. Onboard adaptation and delay-planning baselines reject it with HTTP 422 `GRID_NOT_ALIGNED`. Source files with a self-declared `VALIDATED` label are rejected until independent SPICE/LOLA scientific validation attestation is implemented. Rust stdout must match the current `UNVERIFIED_INPUTS` protocol and returned site/epoch/angle margins and visibility must agree. These checks detect malformed software inputs; they do not replace NASA scientific verification.

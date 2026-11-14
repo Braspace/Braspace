@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"math"
 	"os"
@@ -43,6 +44,10 @@ type site struct {
 	Coordinate *coordinate `json:"coordinate,omitempty"`
 	Nearby     []string    `json:"nearby,omitempty"`
 	SeriesFile string      `json:"series_file,omitempty"`
+	// SeriesSHA256 pins the exact bytes of SeriesFile. A truncated, reordered or
+	// edited file (e.g. a removed sample that would shift every later epoch) is
+	// rejected at load, matching the content check of the PostgreSQL path.
+	SeriesSHA256 string `json:"series_sha256,omitempty"`
 	Note       string      `json:"note,omitempty"`
 }
 
@@ -64,6 +69,50 @@ type seriesProvenance struct {
 type seriesSample struct {
 	Sun   direction `json:"sun"`
 	Earth direction `json:"earth"`
+}
+
+// SampleError is the typed load error for a series sample that is null,
+// absent or missing a required field. It is never replaced by a zero angle.
+type SampleError struct {
+	Index  int
+	Reason string
+}
+
+func (e *SampleError) Error() string {
+	if e.Index < 0 {
+		return "series sample: " + e.Reason
+	}
+	return fmt.Sprintf("series sample %d: %s", e.Index, e.Reason)
+}
+
+type rawDirection struct {
+	AzimuthDeg   *float64 `json:"azimuth_deg"`
+	ElevationDeg *float64 `json:"elevation_deg"`
+}
+
+// UnmarshalJSON requires sun and earth, each with both angles. null, {} and
+// partial objects are rejected so a missing sample can never become az 0/el 0.
+func (s *seriesSample) UnmarshalJSON(b []byte) error {
+	if bytes.Equal(bytes.TrimSpace(b), []byte("null")) {
+		return &SampleError{Index: -1, Reason: "sample is null"}
+	}
+	var raw struct {
+		Sun   *rawDirection `json:"sun"`
+		Earth *rawDirection `json:"earth"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&raw); err != nil {
+		return &SampleError{Index: -1, Reason: err.Error()}
+	}
+	for name, d := range map[string]*rawDirection{"sun": raw.Sun, "earth": raw.Earth} {
+		if d == nil || d.AzimuthDeg == nil || d.ElevationDeg == nil {
+			return &SampleError{Index: -1, Reason: name + " direction missing azimuth_deg/elevation_deg"}
+		}
+	}
+	s.Sun = direction{*raw.Sun.AzimuthDeg, *raw.Sun.ElevationDeg}
+	s.Earth = direction{*raw.Earth.AzimuthDeg, *raw.Earth.ElevationDeg}
+	return nil
 }
 
 // siteSeries is the server-side input for one site: its terrain horizon and
@@ -113,7 +162,7 @@ func loadStore(fsys fs.FS) (*siteStore, error) {
 		if s.SeriesFile == "" {
 			return nil, nil
 		}
-		return loadSeries(fsys, s.SeriesFile)
+		return loadSeries(fsys, s.SeriesFile, s.SeriesSHA256)
 	})
 	if err != nil {
 		return nil, err
@@ -164,10 +213,16 @@ func buildStore(cat siteCatalog, seriesOf func(*site) (*siteSeries, error)) (*si
 	return st, nil
 }
 
-func loadSeries(fsys fs.FS, name string) (*siteSeries, error) {
+func loadSeries(fsys fs.FS, name, wantSHA string) (*siteSeries, error) {
 	raw, err := fs.ReadFile(fsys, path.Clean(name))
 	if err != nil {
 		return nil, fmt.Errorf("read series: %w", err)
+	}
+	if !sha256Pattern.MatchString(wantSHA) {
+		return nil, fmt.Errorf("catalog entry for %s needs series_sha256 (64 lowercase hex)", name)
+	}
+	if got := sha256Hex(raw); got != wantSHA {
+		return nil, fmt.Errorf("series file %s does not match series_sha256 (catalog %s…, file %s…)", name, wantSHA[:12], got[:12])
 	}
 	var s siteSeries
 	if err := decodeStrict(raw, &s); err != nil {
@@ -189,6 +244,11 @@ func validateSeries(s *siteSeries) error {
 	if !scienceStatuses[s.ScienceStatus] {
 		return fmt.Errorf("invalid science_status %q", s.ScienceStatus)
 	}
+	// A stored label is not a scientific validation receipt. Do not accept
+	// VALIDATED until independent reference evidence is enforced at ingestion.
+	if s.ScienceStatus == "VALIDATED" {
+		return errors.New("VALIDATED requires independent science attestation; this engine does not support it")
+	}
 	p := s.Provenance
 	if p.TerrainDatasetID == "" || p.EphemerisID == "" || p.Frame != "MOON_ME" || p.Generator == "" {
 		return errors.New("series provenance incomplete (terrain, ephemeris, MOON_ME frame, generator)")
@@ -198,6 +258,9 @@ func validateSeries(s *siteSeries) error {
 	}
 	if s.start, err = time.Parse(time.RFC3339, s.StartUTC); err != nil {
 		return errors.New("start_utc must be RFC3339")
+	}
+	if s.start.Nanosecond() != 0 {
+		return errors.New("start_utc must be a whole second")
 	}
 	s.start = s.start.UTC()
 	s.StartUTC = s.start.Format(time.RFC3339)
@@ -224,7 +287,17 @@ func validateSeries(s *siteSeries) error {
 func decodeStrict(raw []byte, v any) error {
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.DisallowUnknownFields()
-	return dec.Decode(v)
+	if err := dec.Decode(v); err != nil {
+		return err
+	}
+	var extra any
+	if err := dec.Decode(&extra); err != io.EOF {
+		if err != nil {
+			return err
+		}
+		return errors.New("trailing JSON document")
+	}
+	return nil
 }
 
 // greatCircleKm uses a spherical Moon (R = 1737.4 km, the LOLA reference radius).

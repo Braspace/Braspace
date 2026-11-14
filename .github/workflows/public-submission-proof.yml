@@ -1,0 +1,41 @@
+name: BRASPACE public NASA submission link evidence
+on:
+  pull_request:
+    paths:
+      - "scripts/public_submission_audit.py"
+      - "scripts/test_public_submission_audit.py"
+      - "docs/PUBLIC_SUBMISSION_EVIDENCE.md"
+      - ".github/workflows/public-submission-proof.yml"
+  push:
+    branches:
+      - qa/public-nasa-submission-proof-20261114
+    paths:
+      - "scripts/public_submission_audit.py"
+      - "scripts/test_public_submission_audit.py"
+      - ".github/workflows/public-submission-proof.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  anonymous-public-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pin PDF reader used to count seven slides
+        run: python -m pip install --disable-pip-version-check pypdf==5.9.0
+      - name: Offline success and fail-closed tests
+        run: python -m unittest discover -s scripts -p 'test_public_submission_audit.py' -v
+      - name: Probe only anonymous public HTTPS links and save receipt
+        run: python scripts/public_submission_audit.py --output evidence/public-submission-http.json
+      - name: Upload evidence regardless of success or blockage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: braspace-public-nasa-submission-link-evidence
+          path: evidence/public-submission-http.json
+          retention-days: 14
+          if-no-files-found: warn
