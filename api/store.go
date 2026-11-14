@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -88,6 +89,8 @@ func (s *siteSeries) end() time.Time { return s.start.Add(time.Duration(len(s.Sa
 func (s *siteSeries) epoch(i int) time.Time { return s.start.Add(time.Duration(i) * s.step) }
 
 type siteStore struct {
+	source string
+	note   string
 	sites  []site
 	byID   map[string]*site
 	series map[string]*siteSeries
@@ -106,10 +109,26 @@ func loadStore(fsys fs.FS) (*siteStore, error) {
 	if err := decodeStrict(raw, &cat); err != nil {
 		return nil, fmt.Errorf("parse catalog: %w", err)
 	}
+	st, err := buildStore(cat, func(s *site) (*siteSeries, error) {
+		if s.SeriesFile == "" {
+			return nil, nil
+		}
+		return loadSeries(fsys, s.SeriesFile)
+	})
+	if err != nil {
+		return nil, err
+	}
+	st.source = "embedded"
+	return st, nil
+}
+
+// buildStore validates a catalog and attaches each site's series (nil when the
+// site has none). File and database loaders share it.
+func buildStore(cat siteCatalog, seriesOf func(*site) (*siteSeries, error)) (*siteStore, error) {
 	if cat.Schema != "braspace.site-catalog.v1" {
 		return nil, fmt.Errorf("unsupported catalog schema %q", cat.Schema)
 	}
-	st := &siteStore{sites: cat.Sites, byID: map[string]*site{}, series: map[string]*siteSeries{}}
+	st := &siteStore{sites: cat.Sites, byID: map[string]*site{}, series: map[string]*siteSeries{}, note: cat.Note}
 	for i := range st.sites {
 		s := &st.sites[i]
 		if !siteIDPattern.MatchString(s.ID) || s.Name == "" {
@@ -130,15 +149,15 @@ func loadStore(fsys fs.FS) (*siteStore, error) {
 				return nil, fmt.Errorf("site %q: unknown nearby site %q", s.ID, n)
 			}
 		}
-		if s.SeriesFile == "" {
-			continue
-		}
-		ser, err := loadSeries(fsys, s.SeriesFile)
+		ser, err := seriesOf(s)
 		if err != nil {
 			return nil, fmt.Errorf("site %q: %w", s.ID, err)
 		}
+		if ser == nil {
+			continue
+		}
 		if ser.SiteID != s.ID {
-			return nil, fmt.Errorf("site %q: series file belongs to %q", s.ID, ser.SiteID)
+			return nil, fmt.Errorf("site %q: series belongs to %q", s.ID, ser.SiteID)
 		}
 		st.series[s.ID] = ser
 	}
@@ -154,40 +173,52 @@ func loadSeries(fsys fs.FS, name string) (*siteSeries, error) {
 	if err := decodeStrict(raw, &s); err != nil {
 		return nil, fmt.Errorf("parse series: %w", err)
 	}
+	if err := validateSeries(&s); err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+// validateSeries checks a parsed series and fills its derived time fields.
+// start_utc is normalised to RFC3339 UTC so content hashes are stable.
+func validateSeries(s *siteSeries) error {
+	var err error
 	if s.Schema != "braspace.site-series.v1" {
-		return nil, fmt.Errorf("unsupported series schema %q", s.Schema)
+		return fmt.Errorf("unsupported series schema %q", s.Schema)
 	}
 	if !scienceStatuses[s.ScienceStatus] {
-		return nil, fmt.Errorf("invalid science_status %q", s.ScienceStatus)
+		return fmt.Errorf("invalid science_status %q", s.ScienceStatus)
 	}
 	p := s.Provenance
 	if p.TerrainDatasetID == "" || p.EphemerisID == "" || p.Frame != "MOON_ME" || p.Generator == "" {
-		return nil, errors.New("series provenance incomplete (terrain, ephemeris, MOON_ME frame, generator)")
+		return errors.New("series provenance incomplete (terrain, ephemeris, MOON_ME frame, generator)")
 	}
 	if !finite(s.ObserverHeightM) || s.ObserverHeightM < 0 || s.ObserverHeightM > 100 {
-		return nil, errors.New("observer_height_m out of range")
+		return errors.New("observer_height_m out of range")
 	}
 	if s.start, err = time.Parse(time.RFC3339, s.StartUTC); err != nil {
-		return nil, errors.New("start_utc must be RFC3339")
+		return errors.New("start_utc must be RFC3339")
 	}
+	s.start = s.start.UTC()
+	s.StartUTC = s.start.Format(time.RFC3339)
 	if s.StepSeconds < 60 || s.StepSeconds > 86400 {
-		return nil, errors.New("step_seconds must be 60..86400")
+		return errors.New("step_seconds must be 60..86400")
 	}
 	s.step = time.Duration(s.StepSeconds) * time.Second
 	if len(s.Samples) < 2 || len(s.Samples) > 200000 {
-		return nil, errors.New("samples must contain 2..200000 entries")
+		return errors.New("samples must contain 2..200000 entries")
 	}
 	for i, smp := range s.Samples {
 		if !validDirection(smp.Sun) || !validDirection(smp.Earth) {
-			return nil, fmt.Errorf("sample %d: invalid look angle", i)
+			return fmt.Errorf("sample %d: invalid look angle", i)
 		}
 	}
 	probe := visibilityRequest{SiteID: s.SiteID, EpochUTC: s.StartUTC, Sun: s.Samples[0].Sun, Earth: s.Samples[0].Earth,
 		TerrainHorizon: s.TerrainHorizon, Provenance: provenance{TerrainDatasetID: p.TerrainDatasetID, EphemerisID: p.EphemerisID, Frame: p.Frame}}
 	if err := validate(probe); err != nil {
-		return nil, fmt.Errorf("series rejected by engine contract: %w", err)
+		return fmt.Errorf("series rejected by engine contract: %w", err)
 	}
-	return &s, nil
+	return nil
 }
 
 func decodeStrict(raw []byte, v any) error {
@@ -266,9 +297,22 @@ var (
 	defaultStoreErr  error
 )
 
-// loadDefaultStore reads SITE_DATA_DIR when set, otherwise the embedded data.
+// loadDefaultStore reads PostgreSQL when DATABASE_URL is set, else SITE_DATA_DIR,
+// else the embedded data. The store is loaded once at startup.
 func loadDefaultStore() (*siteStore, error) {
 	defaultStoreOnce.Do(func() {
+		if url := os.Getenv("DATABASE_URL"); url != "" {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			db, err := openPool(ctx, url)
+			if err != nil {
+				defaultStoreErr = err
+				return
+			}
+			defer db.Close()
+			defaultStore, defaultStoreErr = loadStoreFromDB(ctx, db)
+			return
+		}
 		var fsys fs.FS
 		if dir := os.Getenv("SITE_DATA_DIR"); dir != "" {
 			fsys = os.DirFS(dir)

@@ -95,6 +95,7 @@ func (m *missionAPI) health(w http.ResponseWriter, r *http.Request) {
 		"service":                 "braspace-api",
 		"api_version":             missionAPIVersion,
 		"engine":                  "ready",
+		"data_source":             m.store.source,
 		"sites":                   len(m.store.sites),
 		"sites_with_series":       len(m.store.series),
 		"series_science_statuses": statuses,

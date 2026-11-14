@@ -148,6 +148,7 @@ func routes(binary string) http.Handler {
  return mux
 }
 func main() {
+ if len(os.Args)>1 { os.Exit(runCLI(os.Args[1:])) }
  bin:=os.Getenv("RUST_ENGINE_BIN")
  if bin=="" { bin="./bin/lunar-engine" }
  address:=os.Getenv("LISTEN_ADDR")

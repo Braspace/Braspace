@@ -596,6 +596,14 @@
               "unavailable"
             ]
           },
+          "data_source": {
+            "type": "string",
+            "enum": [
+              "embedded",
+              "postgres"
+            ],
+            "description": "Where the catalog and series were loaded from at startup"
+          },
           "sites": {
             "type": "integer"
           },
