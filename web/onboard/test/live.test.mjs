@@ -52,7 +52,8 @@ test("badges: read from readyz/capabilities; permanent no-flight chip; offline s
   assert.match(t, /readyz: ready/); assert.match(t, /science: UNVERIFIED_INPUTS/); assert.match(t, /validated: false/); assert.match(t, /LOLA not loaded/); assert.match(t, /series: SYNTHETIC/);
   assert.equal(on[on.length - 1].text, "No flight recommendation");
   const off = L.badges({ apiUp: false });
-  assert.match(off[0].text, /browser model only/); assert.equal(off[off.length - 1].text, "No flight recommendation");
+  assert.deepEqual(off.slice(0, 2).map(b => b.text), ["PROTÓTIPO · sintético", "Não validado"]); // permanent chips, also after the script replaces the static ones (CI e2e reads "Não validado")
+  assert.match(off[2].text, /browser model only/); assert.equal(off[off.length - 1].text, "No flight recommendation");
 });
 
 test("cockpit.html: static chips are only a fallback inside #badges; cockpit.js replaces them from the API", () => {

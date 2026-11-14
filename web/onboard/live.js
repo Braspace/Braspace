@@ -85,7 +85,8 @@
   // Header badges from /readyz, /v1/capabilities and the live science_status. Always ends with the permanent no-flight chip.
   function badges(state) {
     const s = state || {};
-    const out = [];
+    // Permanent honesty chips (same text as the static HTML fallback), whatever the API says.
+    const out = [{ kind: "warn", text: "PROTÓTIPO · sintético" }, { kind: "warn", text: "Não validado" }];
     if (!s.apiUp) {
       out.push({ kind: "warn", text: "no API · browser model only (SYNTHETIC)" });
     } else {
