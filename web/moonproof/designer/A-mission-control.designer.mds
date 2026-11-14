@@ -1,15 +1,108 @@
-# A · Mission Control
+# A-mission-control · Mission Control (Visão geral do local)
 
-**Origem visual:** Heloísa · BRASPACE MoonProof — Telas · https://claude.ai/artifact/QV5ykVW5q9HvyZsH68SPf1
+## Pergunta que a tela responde
+**pt-BR:** Como está este local de pouso no período escolhido (luz do Sol, contato com a Terra, energia e riscos)?  
+**en:** How does this landing site perform over the chosen period (sunlight, Earth contact, power, and risks)?
 
-## Estrutura de tela, componentes e ações
-Contexto: local do polo sul, data UTC, janela de 14 dias, status, camadas de energia e contato, mapa com marcadores numerados, cartões de dados sobrepostos, contagem para pôr do Sol. Referência H1 apenas exemplo educativo. Nunca transcrever porcentagens 71/63 e horas 46/38 do mockup como observações.
+## Quem usa e em que camada abre
+- **Público geral / Explorar a Lua:** abre na camada **1 · Resposta** (cartões resumidos com 1 frase e até 3 números).
+- **Educadores / Dar uma aula:** pode alternar para **2 · Por quê** (gráficos e séries por dia/hora).
+- **Planejadores / Planejar uma missão:** pode alternar para **3 · Prova** (definição, fonte, estado científico `PRE`/`SIM`, incerteza e exportação).
+- Toda tela v3 expõe os chips `1 Resposta · 2 Por quê · 3 Prova` nos cartões de dados.
 
-## Tradução segura para implementação
-Núcleo Overview no Studio + Cockpit existente. Card Resposta/Por quê/Prova deverá apontar API e distinguir hipótese de energia.
+## Layout
+- **Desktop (1440×900):**
+  - Fundo *full-bleed*: terreno 3D/topográfico do polo sul lunar (`core/terrain.js` usando `web/lab/terrain.js`) com marcadores numerados (`1`..`5` para os sítios reais) e vetores celestes (Sol e Terra).
+  - **Topo:** Barra de navegação em pílulas (`moonproof`, `Explorar`, `Comparar`, `Replanejar`, `Cockpit`, `Evidências`, `Landing Lab`, `?`, `BR`/`EN`) + barra de contexto centralizada logo abaixo.
+  - **Coluna esquerda:** Abas `Visão geral` / `Notas`, seletor de perfil de bateria, 2 medidores circulares (Sol e Terra com 4 satélites cada), 2 pílulas brancas (Altitude e Declividade), cartão `Energia na maior noite`.
+  - **Centro (mapa):** Marcadores numerados, rótulo do sítio selecionado, vetores pontilhados para Sol e Terra com pílulas de elevação, controles inferiores (`<`, `>`, `Local N · <nome>`, `−`, `+`).
+  - **Coluna direita:** Cartão `<Sítio> em números` (tabela Janelas e Riscos vs. sítio de referência), cartão `Agora no local` (contagem regressiva para próximo pôr/nascer), bússola circular da Terra (`TERRA / N / <azimute>°`).
+- **Celular (390×844):**
+  - Mapa no topo; folha inferior arrastável com os cartões principais em coluna única; barra de navegação inferior fixa com 5 abas (`Explorar`, `Comparar`, `Replanejar`, `Cockpit`, `Provas`). Sem rolagem lateral.
 
-## Estados e validação
-- Placeholder, erro, sem série e offline precisam ser distintos; zero nunca substitui ausente.
-- Fontes científicas com units/UTC/frame/resolução e selo textual; dados do mockup são ILUSTRATIVOS.
-- Accessibility: foco visível, legenda de tabela, alvos de 44px, reduced motion e mobile responsivo.
-- Revisão pela autora de UX antes de declarar equivalência visual ao artefato.
+## Componentes
+- **Barra de navegação (`core/shell.js`):** Logo `moonproof` + 6 pílulas de tela + `?` + `BR`/`EN`. Estados: ativo (Jade `#2EC4A0`), inativo (vidro), `Landing Lab` (borda lilás).
+- **Barra de contexto (`core/shell.js`):** Sítio • data • duração, selo de estado (`PRE` ou `SIM`, nunca `VAL`), dropdown `Abrir em` (1 Resposta / 2 Por quê / 3 Prova), botão `Alterar`, CTA `Comparar`.
+- **Abas de painel (`Visão geral` / `Notas`):** Alterna entre telemetria do local e notas da missão.
+- **Seletor de bateria (pílula branca):** Exibe perfil selecionado (padrão `H1 (hipotético)`). Estado: fechado / dropdown aberto.
+- **Círculo de estatística — Sol:** Miolo Jade com `% Sol visível` + 4 satélites (nº noites, maior noite, D pôr, D nasce). Estado: com dado / `N/D` (`—`).
+- **Círculo de estatística — Terra:** Miolo cinza-ardósia com `% Terra` + 4 satélites (nº perdas, maior perda, D some, D volta). Estado: com dado / `N/D` (`—`).
+- **Pílulas de terreno (2 pílulas brancas):** `Altitude` e `Declividade`. Estado: valor / `—` com selo `N/D` se ausente.
+- **Cartão `Energia na maior noite`:** Selo `SIM`, barra segmentada (noite vs. folga vs. autonomia), 3 linhas com barra colorida lateral. Estado: positivo (Jade) / déficit (Falha `#E5484D`) / `N/D`.
+- **Chips de camada (`1 Resposta · 2 Por quê · 3 Prova`):** Em cada cartão de dados; alternam o nível de detalhe.
+- **Cartão `<Sítio> em números`:** Dropdown de janela, tabela `Janelas (horas)` e `Riscos (horas seguidas)` comparando sítio atual vs. sítio de referência, selo de proveniência (`PRE` ou `SIM`).
+- **Cartão `Agora no local`:** Contagem regressiva até próxima transição solar + ícone tracejado Sol/Terra.
+- **Bússola da Terra:** Mostrador circular azul com `TERRA`, direção cardinal e azimute em graus.
+- **Controles do mapa:** Dica de interação + `<`, `>`, seletor `Local N · <nome>`, `−`, `+`.
+
+## Textos
+| Elemento | pt-BR | en |
+|---|---|---|
+| Barra de contexto CTA | Comparar | Compare |
+| Barra de contexto ação | Alterar | Change |
+| Barra de contexto camada | Abrir em: Resposta | Open in: Answer |
+| Abas | Visão geral · Notas | Overview · Notes |
+| Bateria | Bateria de referência: H1 (hipotética) | Reference battery: H1 (hypothetical) |
+| Sol visível | Sol visível | Sun visible |
+| Satélites Sol | noites · maior · pôr · nasce | nights · longest · set · rise |
+| Terra visível | Terra | Earth |
+| Satélites Terra | perdas · maior · some · volta | blackouts · longest · loss · return |
+| Terreno | Altitude · Declividade | Elevation · Slope |
+| Energia | Energia na maior noite | Power during longest night |
+| Energia linhas | Noite mais longa · Folga da bateria · Autonomia total | Longest night · Battery margin · Total autonomy |
+| Comparativo | em números · Janelas · horas · Riscos · horas seguidas | in numbers · Windows · hours · Risks · consecutive hours |
+| Agora | Agora no local · até o Sol se pôr atrás da crista | Right now at site · until Sun sets behind ridge |
+| Dica mapa | Toque num número para ver o local · arraste para girar | Tap a number to inspect site · drag to orbit |
+
+## Dados
+| Elemento | Fonte exata (arquivo ou rota + campo) | Selo | Sem dado |
+|---|---|---|---|
+| Lista de sítios, nome, lat/lon | `web/data/sites.json` → `sites[].id`, `name`, `lat`, `lon` ou `GET /api/sites` → `sites[].id`, `name`, `coordinate` | `PRE` | `—` (`N/D`) |
+| Altitude do sítio | `web/data/sites.json` → `sites[].site_height_m` (ou `sites/<id>.json` → `site.site_elevation_m`) | `PRE` | `—` (`N/D`) |
+| Declividade do sítio | sem fonte: N/D (não consta em `sites.json` nem em `/api/sites`) | `N/D` | `—` (`N/D`) |
+| % Sol visível / % Terra / Sol+Terra | `web/data/sites.json` → `sites[].metrics.sun_center_visible_pct`, `earth_center_visible_pct`, `sun_and_earth_visible_pct` | `PRE` | `—` (`N/D`) |
+| Maior noite / Maior perda da Terra | `web/data/sites.json` → `sites[].metrics.longest_darkness_h`, `longest_earth_blackout_h` | `PRE` | `—` (`N/D`) |
+| Nº de noites / perdas / D pôr / D nasce | Calculado no cliente a partir de `web/data/sites/<id>.json` (série horária) ou `GET /api/sites/{id}/sky` | `PRE` ou `SIM` | `—` (`N/D`) |
+| Energia, autonomia e folga (H1) | `POST /api/onboard/evaluate` ou `POST /api/onboard/site-evaluate` | `SIM` | `—` (`N/D`) |
+| Agora no local (próxima transição) | `GET /api/sites/{id}/sky` → `next_transitions` | `SIM` (se `synthetic-*`) ou `PRE` | `—` (`N/D`) |
+| Azimute e elevação Sol/Terra agora | `GET /api/sites/{id}/sky` → `sun` / `earth` (ou último ponto da série) | `SIM` ou `PRE` | `—` (`N/D`) |
+
+## Interações
+- **Clique:** Selecionar marcador no mapa ou `<`/`>`/`Local N` atualiza toda a tela para o sítio escolhido; clicar nos chips `1 Resposta · 2 Por quê · 3 Prova` muda a camada do cartão; clicar em `Comparar` navega para `compare.html` mantendo o sítio na query string.
+- **Teclado:** `Tab` percorre barra de navegação, barra de contexto, controles e cartões com foco visível; `Enter`/`Espaço` ativa; setas `←`/`→` alternam sítios quando o seletor está focado.
+- **Arrastar:** Arrastar no canvas 3D orbita a câmera; roda do mouse / `+` e `−` dão zoom.
+
+## Ligações
+- `explore.html` (B · Explorar)
+- `compare.html` (C · Comparar — via barra de navegação ou CTA `Comparar`)
+- `recover.html` (D · Replanejar)
+- `cockpit.html` (E · Cockpit)
+- `evidence.html` (H · Evidências)
+- `landing.html` (F · Landing Lab)
+
+## Diferenças entre o desenho e a tela real
+Aplicando as 8 regras de integridade do contrato:
+1. **Sem números fixos:** `71%`, `46 h`, `+14 h`, `63%`, `38 h`, `+1.832 m`, `4,6°` do desenho são ilustrativos e NÃO entram no código; vêm de `web/data/` ou da API.
+2. **Selo `VAL` proibido:** O desenho mostra `VAL · LOLA + DE440`. Na tela real, `sites.json` tem `science_status: "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED"`, portanto o selo exibido é `PRE` (ou `SIM` se vier da série sintética da API).
+3. **Locais reais:** Em vez de `SR-01`..`SR-05` e `Crista Shackleton`, a tela real usa os 5 sítios de `web/data/sites.json` (`Mons Mouton (IM-2 Athena target)`, `Malapert Massif`, `Nobile Rim 1`, `Connecting Ridge`, `Peak Near Shackleton`).
+4. **Bateria H1 hipotética:** Toda métrica de bateria/autonomia/folga recebe selo `SIM` e exibe os parâmetros assumidos na camada `3 · Prova`.
+5. **Regras como limites assumidos:** Os limites padrão (`noite ≤ 60 h`, `perda ≤ 72 h`, `piso 30%`) são rotulados como `assumed limit` / `limite assumido`.
+6. **Sem domínio inventado:** Compartilhamento usa a própria URL com query string (`?site=...&date=...&days=...`).
+7. **Dado real e resolução:** Proveniência cita `LRO-L-LOLA-4-GDR-V1.0 / LDEM_80S_80M.IMG V2.0 (80 m/px)` e os kernels NAIF do `.json`, nunca `20 m/px`.
+8. **Landing Lab:** Não aplicável diretamente nesta tela (apenas link na navegação).
+
+## Critérios de aceite
+- [ ] Nenhum número ilustrativo do desenho (`71%`, `46 h`, `SR-02`, `VAL`) aparece no HTML/JS.
+- [ ] Todos os 5 sítios reais de `web/data/sites.json` são navegáveis pelo mapa e pelos botões `<`/`>`.
+- [ ] Selo exibido é `PRE` (dados LOLA/SPICE) ou `SIM` (API sintética/bateria H1), nunca `VAL`.
+- [ ] Campos sem fonte (ex.: declividade por sítio) exibem `—` com selo `N/D`.
+- [ ] Funciona em 1440×900 e 390×844 sem rolagem lateral e sem erros no console.
+
+## Correções feitas pela implementação (BR77)
+- **Declividade não é N/D:** é derivada do DEM LOLA 400 m (`TerrainGrid.normal().slopeDeg`, diferença central) e marcada `EST`. O cartão Terreno herda o selo mais fraco (`EST`).
+- **Bateria H1 sem números padrão:** o cartão Energia (`SIM`) mostra só a maior noite enquanto o usuário não declara capacidade, carga inicial, reserva, geração e consumo em Prova. Com as entradas, chama `POST /api/onboard/site-evaluate` e a autonomia = (inicial − reserva) / consumo. A API não devolve um campo "autonomia"; ver pedido no relato.
+- **Satélites:** nº de noites/perdas, maior, dia do primeiro pôr/perda e dia da primeira volta, calculados da série horária gravada (`sunMargin`/`earthMargin`). Ficam nas diagonais, como na captura A.
+- **"Em números":** compara com outro sítio escolhido no seletor (padrão: o primeiro diferente); horas = % × duração da janela; o pior dos dois fica em vermelho com ✕ (não só cor).
+- **Agora no local:** `GET /api/sites/{id}/sky?start=&hours=` → `next_transitions.sun`; selo pelo `science_status` da resposta. Os cinco sítios do `web/data` não têm série na API de hoje (404 `NO_SERIES_DATA`): a tela usa `SiteSeries.nextChange` da série gravada (selo `PRE`) e escreve "API fora: série horária gravada".
+- **Linhas de Sol e Terra:** saem do sítio na direção do azimute local (norte local aponta para longe do polo), com o rótulo da margem sobre o horizonte do relevo ("Sol x° acima/abaixo"); ficam dentro da área livre do mapa.
+- Pílula ativa na navegação: "Explorar" (A não tem pílula própria no núcleo).
