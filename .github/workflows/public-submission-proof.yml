@@ -1,19 +1,9 @@
 name: BRASPACE public NASA submission link evidence
 on:
-  pull_request:
-    paths:
-      - "scripts/public_submission_audit.py"
-      - "scripts/test_public_submission_audit.py"
-      - "docs/PUBLIC_SUBMISSION_EVIDENCE.md"
-      - ".github/workflows/public-submission-proof.yml"
-  push:
-    branches:
-      - qa/public-nasa-submission-proof-20261114
-    paths:
-      - "scripts/public_submission_audit.py"
-      - "scripts/test_public_submission_audit.py"
-      - ".github/workflows/public-submission-proof.yml"
   workflow_dispatch:
+  schedule:
+    - cron: "43 */12 * * *"
+
 permissions:
   contents: read
 jobs:
