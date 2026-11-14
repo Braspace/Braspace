@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install CSPICE bindings
-        run: python -m pip install --only-binary=:all: spiceypy==8.4.0
+        run: "python -m pip install --only-binary=:all: spiceypy==8.4.0"
       - name: Get official NASA JPL NAIF kernels (temporary only)
         run: |
           set -euo pipefail
