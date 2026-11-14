@@ -59,7 +59,8 @@ try{
  assert((await desktop.locator("body").innerText()).includes("Não validado"),"onboard synthetic disclaimer missing");
  await desktop.locator("nav.tabs button[data-tab='energia']").click();
  await desktop.locator("nav.tabs button[data-tab='replan']").click();
- assert((await desktop.locator("#views").innerText()).length>80,"onboard replan panel empty");
+ const replanText=await desktop.locator("#views").innerText();
+ assert(replanText.length>80,"onboard replan panel empty: "+JSON.stringify(replanText.slice(0,500))+"; page errors: "+errors.join(" | "));
  await desktop.screenshot({path:path.join(out,"onboard-cockpit-desktop.png"),fullPage:true});
  const trainingResponse=await desktop.goto(base+"/onboard/index.html",{waitUntil:"domcontentloaded",timeout:30000});
  assert(trainingResponse?.status()===200,"onboard training form HTTP");
