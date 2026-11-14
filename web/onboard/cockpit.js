@@ -1436,6 +1436,8 @@
     return apiPanelFrame("API · Comparação de lugares (/api/compare)", "Lugares sem série aparecem como NO_SERIES_DATA, sem números.", button, h("div", {}, picker, body));
   }
 
+  // combined_decision is an object { candidate_id, status }; never print it as [object Object].
+  function decisionText(d) { return d && typeof d === "object" ? (d.status || "—") + (d.candidate_id ? " (" + d.candidate_id + ")" : "") : (d || "—"); }
   function siteEvalPanel() {
     const r = S.apiResults.siteEval;
     const button = callButton("AVALIAR COM SÉRIE (API)", async () => {
@@ -1466,8 +1468,8 @@
     if (r && r.ok) {
       const c0 = (r.data.candidates || [])[0] || {};
       body = h("div", {}, r.windowNote ? h("p", { class: "caution", role: "status", id: "window-note", text: r.windowNote }) : null, h("dl", { class: "readout" },
-        h("dt", { text: "decisão combinada" }), h("dd", { text: r.data.combined_decision || "—" }),
-        h("dt", { text: "simulador de energia (estado)" }), h("dd", { text: r.data.onboard ? r.data.onboard.simulation_status : "—" }),
+        h("dt", { text: "decisão combinada" }), h("dd", { text: decisionText(r.data.combined_decision) }),
+        h("dt", { text: "simulador de energia (estado)" }), h("dd", { text: r.data.onboard ? (r.data.onboard.decision || r.data.onboard.simulation_status || "—") : "—" }),
         h("dt", { text: "ciência do primeiro candidato" }), h("dd", { text: c0.science_status || "—" }),
         h("dt", { text: "riscos quebrados (primeiro candidato)" }), h("dd", { text: (c0.breached_risks || []).length ? String(c0.breached_risks.length) : "nenhum" })));
     }

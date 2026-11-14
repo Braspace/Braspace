@@ -50,3 +50,8 @@ test("cockpit wires the helpers: no fixed 480, no 15-site list, next-transitions
   assert.match(c, /L\.refusalText\(res\)/);
   assert.match(c, /nextTransitionsPanel\(\)/);
 });
+test("site-evaluate panel does not print the combined_decision object as [object Object]", () => {
+  const c = src("cockpit.js");
+  assert.match(c, /decisionText\(r\.data\.combined_decision\)/);
+  assert.doesNotMatch(c, /r\.data\.combined_decision \|\| /);
+});
