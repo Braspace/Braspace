@@ -28,6 +28,18 @@ export function labFile(pathname){
  if(!name.startsWith("lab"+path.sep)&&!name.startsWith("data"+path.sep))return null;
  return {name,type:labTypes[ext]};
 }
+// MoonProof v3 front (web/moonproof/): pages, core and screen modules/styles only.
+export function moonproofFile(pathname){
+ if(pathname==="/moonproof/")return {name:"moonproof/index.html",type:labTypes[".html"]};
+ // Self-hosted OFL fonts (CSP font-src 'self'): woff2 only, flat folder.
+ if(/^\/moonproof\/fonts\/[a-z0-9\-]+\.woff2$/.test(pathname))return {name:path.normalize(pathname.slice(1)),type:"font/woff2"};
+ if(!/^\/moonproof\/(?:(?:core|screens)\/)?[A-Za-z0-9_\-]+\.(html|js|css)$/.test(pathname))return null;
+ const ext=pathname.slice(pathname.lastIndexOf("."));
+ const sub=pathname.slice("/moonproof/".length);
+ if(ext===".html"&&sub.includes("/"))return null;
+ if(ext!==".html"&&!sub.includes("/"))return null;
+ return {name:path.normalize(pathname.slice(1)),type:labTypes[ext]};
+}
 // Restrict Onboard Cockpit static access to reviewed HTML and JS files.
 // No arbitrary directory traversal, Python server source or local secrets.
 const onboardTypes=new Map([
@@ -131,7 +143,7 @@ export function createServer(){
   if(pathname==="/onboard/"||pathname==="/onboard/index.html"||pathname==="/onboard/cockpit.html"){
    res.setHeader("Content-Security-Policy",csp.replace("style-src 'self'","style-src 'self' 'unsafe-inline'"));
   }
-  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname)||studioFile(pathname);
+  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname)||studioFile(pathname)||moonproofFile(pathname);
   if(!file){res.writeHead(404);res.end("Not found");return;}
   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
   try{
