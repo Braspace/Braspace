@@ -567,8 +567,8 @@
   // Polar map of the south pole. Centre = pole; rings = distance from the pole (1° = 70 px);
   // radial lines = longitude every 45°. Shared by the overview card and the Visual tab.
   function polarMap(maxWidth) {
-    const C = 180, K = 70, EDGE = 178;
-    const box = svg("svg", { viewBox: "0 0 360 360", width: "100%", style: "max-width:" + maxWidth + "px;display:block;margin:0 auto", role: "img",
+    const C = 180, K = 62, EDGE = 168;
+    const box = svg("svg", { viewBox: "-30 -30 420 420", width: "100%", style: "max-width:" + maxWidth + "px;display:block;margin:0 auto", role: "img",
       "aria-label": "Mapa polar: sítios sintéticos ao redor do polo sul" });
     const defs = svg("defs", {});
     const grad = svg("radialGradient", { id: "polarBg" });
@@ -580,11 +580,18 @@
       const rad = a * Math.PI / 180;
       box.append(svg("line", { x1: C, y1: C, x2: C + EDGE * Math.cos(rad), y2: C + EDGE * Math.sin(rad), stroke: "#243447" }));
     });
+    // ring labels sit on the upper-left diagonal, where no site is
     [[1, "1°"], [2, "2°"], [2.5, "2,5°"]].forEach(([deg, lab]) => {
-      const r = deg * K;
+      const r = deg * K, px = C - r * Math.SQRT1_2, py = C - r * Math.SQRT1_2;
       box.append(svg("circle", { cx: C, cy: C, r, fill: "none", stroke: "#3a526b", "stroke-width": 1.2, "stroke-dasharray": deg === 2.5 ? "" : "4 4" }));
-      box.append(svg("rect", { x: C + 4, y: C - r - 8, width: 34, height: 16, rx: 4, fill: "#0c141d", "fill-opacity": ".9" }));
-      box.append(svg("text", { x: C + 8, y: C - r + 4, style: "fill:#c9d6e2" }, lab));
+      box.append(svg("rect", { x: px - 18, y: py - 8, width: 36, height: 16, rx: 4, fill: "#0c141d", stroke: "#3a526b", "stroke-width": .8 }));
+      box.append(svg("text", { x: px, y: py + 4, "text-anchor": "middle", style: "fill:#c9d6e2" }, lab));
+    });
+    // longitude labels outside the edge (lon 0 is to the right, angles increase clockwise on screen)
+    [[0, "0°"], [90, "90°"], [180, "180°"], [270, "270°"]].forEach(([a, lab]) => {
+      const rad = a * Math.PI / 180, rr = EDGE + 11;
+      const anchor = Math.abs(Math.cos(rad)) < 0.2 ? "middle" : (Math.cos(rad) > 0 ? "start" : "end");
+      box.append(svg("text", { x: C + rr * Math.cos(rad), y: C + rr * Math.sin(rad) + 4, "text-anchor": anchor, style: "fill:#7f97ab" }, lab));
     });
     box.append(svg("circle", { cx: C, cy: C, r: 4, fill: "#e6edf5" }));
     box.append(svg("text", { x: C - 10, y: C - 10, "text-anchor": "end", style: "fill:#e6edf5;font-weight:600" }, "polo sul"));
