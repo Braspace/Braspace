@@ -47,6 +47,16 @@ export function modelDirection(lat, lon) {
   const la = radians(lat), lo = radians(lon), c = Math.cos(la);
   return {x: -c * Math.sin(lo), y: Math.sin(la), z: -c * Math.cos(lo)};
 }
+// Euler (XYZ, Ry applied first) that turns the marker for (lat, lon) toward the
+// camera. The old focus() used a fixed -lat*0.42 tilt that sent south-pole
+// markers to the far side of the globe (BR88). Navigation aid only.
+export const CAMERA_POSITION = {x: 0, y: -1.35, z: 5.4};
+export function focusRotation(lat, lon, cam = CAMERA_POSITION) {
+  const v = lonLatToVector(lat, lon, 1);
+  const y = Math.atan2(-v.x, v.z), h = Math.hypot(v.x, v.z);
+  const x = Math.atan2(cam.z, cam.y) - Math.atan2(h, v.y);
+  return {x: Math.atan2(Math.sin(x), Math.cos(x)), y};
+}
 export const STATUS_TEXT = {
   sphere: "Sphere + NASA SVS LROC texture · visual model · not terrain science",
   glb: "NASA SVS 14959 Moon GLB · visual model · not terrain science",
@@ -88,7 +98,7 @@ export async function createMoon(stage,status,options={}) {
   renderer.setClearColor(0x000000,0);
   const scene=new THREE.Scene();
   const camera=new THREE.PerspectiveCamera(43,1,.1,100);
-  camera.position.set(0,-1.35,5.4);camera.lookAt(0,0,0);
+  camera.position.set(CAMERA_POSITION.x,CAMERA_POSITION.y,CAMERA_POSITION.z);camera.lookAt(0,0,0);
   const globe=new THREE.Group();scene.add(globe);
   const surface=new THREE.Mesh(
     new THREE.SphereGeometry(1.65,96,64),
@@ -141,7 +151,7 @@ export async function createMoon(stage,status,options={}) {
       surface.geometry.dispose();surface.material.map?.dispose();surface.material.dispose();
       modelRoot=pivot;modelState="ready";stage.dataset.globeModel="glb";
       stage.dataset.modelMs=String(Math.round(performance.now()-t0));
-      modelButton.hidden=true;setStatus();render();
+      modelButton.textContent="NASA 3D model loaded";modelButton.hidden=true;setStatus();render();
     }catch(err){
       modelState="failed";stage.dataset.globeModel="sphere";
       modelButton.disabled=false;modelButton.textContent="Retry NASA 3D model";setStatus();
@@ -191,14 +201,14 @@ export async function createMoon(stage,status,options={}) {
     e.preventDefault();render();
   }
   const reset=()=>{
-    camera.position.set(0,-1.35,5.4);camera.lookAt(0,0,0);
+    camera.position.set(CAMERA_POSITION.x,CAMERA_POSITION.y,CAMERA_POSITION.z);camera.lookAt(0,0,0);
     globe.rotation.set(.32,.5,0);render();
   };
   function focus(latitude,longitude){
     // Navigation aid only; position remains unverified against UV orientation.
     if(!Number.isFinite(latitude)||!Number.isFinite(longitude))return;
-    globe.rotation.y= -radians(longitude)/1.3 + .2;
-    globe.rotation.x=clamp(-radians(latitude)*.42,-1.2,1.2);
+    const r=focusRotation(latitude,longitude);
+    globe.rotation.y=r.y;globe.rotation.x=r.x;
     render();
   }
   stage.addEventListener("pointerdown",pointerDown);
