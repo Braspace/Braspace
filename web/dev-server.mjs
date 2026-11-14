@@ -7,7 +7,9 @@ import {fileURLToPath,pathToFileURL} from "node:url";
 import path from "node:path";
 
 const directory=path.dirname(fileURLToPath(import.meta.url));
-const upstreamHost="127.0.0.1",upstreamPort=Number.parseInt(process.env.BRASPACE_API_PORT||"8080",10);
+const configuredUpstreamHost=process.env.BRASPACE_API_HOST||"127.0.0.1";
+if(!["127.0.0.1","localhost","api"].includes(configuredUpstreamHost))throw new Error("invalid fixed upstream host");
+const upstreamHost=configuredUpstreamHost,upstreamPort=Number.parseInt(process.env.BRASPACE_API_PORT||"8080",10);
 const staticFiles=new Map([
   ["/",{name:"index.html",type:"text/html; charset=utf-8"}],
   ["/index.html",{name:"index.html",type:"text/html; charset=utf-8"}],
@@ -143,7 +145,9 @@ export function createServer(){
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
  const port=Number.parseInt(process.env.BRASPACE_WEB_PORT||"5173",10);
  if(!(port>1023&&port<65536))throw new Error("invalid local web port");
- createServer().listen(port,"127.0.0.1",()=>{
+ const host=process.env.BRASPACE_WEB_HOST||"127.0.0.1";
+ if(!["127.0.0.1","0.0.0.0"].includes(host))throw new Error("invalid web bind host");
+ createServer().listen(port,host,()=>{
   process.stdout.write("MoonProof web preview: http://127.0.0.1:"+port+"\n");
   process.stdout.write("Private Go API expected: http://127.0.0.1:8080\n");
  });
