@@ -1,7 +1,7 @@
 import { mountTerrain } from "../core/terrain.js";
 import { loadSites, windowMetrics, sealFor } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
-import { register, t, fmtNum } from "../core/i18n.js";
+import { register, t, fmtNum, pickLang, setLang } from "../core/i18n.js";
 import { getState, hrefTo, DEFAULT_RULES } from "../core/state.js";
 
 register({
@@ -42,6 +42,10 @@ register({
     "present.next": "Próxima pergunta"
   }
 });
+
+// No shell on this page: honour ?lang= (set by the other screens) and the browser language, and keep <html lang> in sync.
+setLang(pickLang(getState().lang));
+document.title = `MoonProof · ${t("present.badge")}`;
 
 const doc = await loadSites();
 const LETTERS = ["A", "B", "C"];
