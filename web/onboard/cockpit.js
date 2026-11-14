@@ -344,7 +344,14 @@
     const cur = tr[S.t] || tr[0];
     const site = M.SITES[S.site];
     const W = 640, H = 260, L = 46, R = 16, T = 14, B = 34;
-    const EMIN = -4, EMAX = 6;
+    // vertical scale fits the values in the window (display only), so no curve is cut off
+    const vals = [];
+    tr.forEach((s, i) => { if (i % Math.max(1, Math.ceil(tr.length / 240)) === 0) vals.push(s.sunEl, s.earthEl, M.horizonAt(s.sunAz, site), M.horizonAt(s.earthAz, site)); });
+    const lo = Math.min(...vals), hi = Math.max(...vals);
+    const span = Math.max(4, hi - lo);
+    const tickStep = span > 12 ? 4 : 2;
+    const EMIN = Math.floor((lo - 0.5) / tickStep) * tickStep;
+    const EMAX = Math.ceil((hi + 0.5) / tickStep) * tickStep;
     const x = a => L + (a / 360) * (W - L - R);
     // values outside the scale are pinned to the edge, so curves never leave the chart
     const y = e => T + ((EMAX - Math.max(EMIN, Math.min(EMAX, e))) / (EMAX - EMIN)) * (H - T - B);
@@ -352,7 +359,7 @@
       "aria-label": "Horizonte sintético do lugar " + site.name + " com Sol e Terra no instante escolhido" });
 
     // grid: elevation every 2°, azimuth every 45°
-    for (let e = EMIN; e <= EMAX; e += 2) {
+    for (let e = EMIN; e <= EMAX; e += tickStep) {
       box.append(svg("line", { x1: L, x2: W - R, y1: y(e), y2: y(e), stroke: e === 0 ? "#5fd8ff" : "#263241", "stroke-opacity": e === 0 ? ".6" : "1", "stroke-dasharray": e === 0 ? "4 4" : "" }));
       box.append(svg("text", { x: L - 8, y: y(e) + 4, "text-anchor": "end" }, (e > 0 ? "+" : "") + e + "°"));
     }
@@ -422,7 +429,7 @@
         h("ul", { class: "note" },
           ...[["3.2", "BLOQ", "leitura do DEM LOLA"], ["3.3", "PEND", "horizonte por raio"], ["3.4", "PEND", "distância máxima documentada"], ["3.5", "PEND", "pixels interpolados"], ["3.6", "PEND", "declive e crateras"]]
             .map(([id, st, t]) => h("li", {}, id + " ", tag(st), " " + t))),
-        h("p", { class: "note", text: "Horizonte sintético: uma senoide com rugosidade do lugar. Não é relevo lunar. Valores fora da escala ficam encostados na borda do gráfico." }))
+        h("p", { class: "note", text: "Horizonte sintético: uma senoide com rugosidade do lugar. Não é relevo lunar. A escala vertical se ajusta aos valores da janela." }))
     ];
   };
 
