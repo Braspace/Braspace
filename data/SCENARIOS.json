@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "status": "planned_inputs_not_computed",
+  "terrain_manifest": "manifest.json",
+  "site_source": "https://ntrs.nasa.gov/api/citations/20230007818/downloads/ACD-50044%20Lunar%20Surface%20Data%20Book%20Rev%20A.pdf",
+  "site_coordinate_role": "feature_polygon_center_not_touchdown",
+  "coordinate_frame": "planetocentric_east_positive_mean_earth_polar_axis_de421",
+  "sites": [
+    {"id": "Site01", "name": "Connecting Ridge", "latitude_deg": -89.4632, "longitude_deg": -137.49, "source_table": "A2-2", "dem_asset": "LDEM_80S_80M.IMG", "map_layer": "LOLA south-polar GDR", "usable_for_calculation": false},
+    {"id": "Site04", "name": "Shackleton Rim", "latitude_deg": -89.7668, "longitude_deg": -171.87, "source_table": "A2-2", "dem_asset": "LDEM_80S_80M.IMG", "map_layer": "LOLA south-polar GDR", "usable_for_calculation": false},
+    {"id": "Site07", "name": "Peak Near Shackleton", "latitude_deg": -88.811, "longitude_deg": 123.6901, "source_table": "A2-2", "dem_asset": "LDEM_80S_80M.IMG", "map_layer": "LOLA south-polar GDR", "usable_for_calculation": false}
+  ],
+  "epochs_utc": ["2026-11-15T00:00:00Z", "2027-02-15T00:00:00Z", "2027-05-15T00:00:00Z"],
+  "epoch_selection": "quarterly_sampling_proposal_not_verified_illumination_extrema",
+  "ephemeris_inputs": {
+    "spk": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
+    "lunar_pck": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/moon_pa_de440_200625.bpc",
+    "lunar_fk": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/satellites/moon_de440_250416.tf",
+    "lsk": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls",
+    "observer_frame_candidate": "MOON_ME_DE440_ME421",
+    "kernel_coverage_check": "pending_runtime_validation"
+  },
+  "calculations": {
+    "lola_sample": "planned",
+    "terrain_horizon": "planned",
+    "sun_earth_look_angles": "planned",
+    "visibility": "planned"
+  }
+}

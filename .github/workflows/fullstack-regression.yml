@@ -1,0 +1,100 @@
+name: BRASPACE Fullstack Regression Matrix
+
+on:
+  pull_request:
+    paths:
+      - "api/**"
+      - "engine/**"
+      - "web/**"
+      - "scripts/**"
+      - "tests/**"
+      - ".github/workflows/fullstack-regression.yml"
+  push:
+    branches:
+      - "test/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fullstack-regression-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go-contracts:
+    name: Go API contracts and race checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+      - name: Static analysis
+        working-directory: api
+        run: go vet ./...
+      - name: API, onboard, storage and resource regressions
+        working-directory: api
+        run: go test -race -count=1 ./...
+
+  rust-cli:
+    name: Rust engine real CLI regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Unit and real process integration tests
+        run: cargo test --manifest-path engine/Cargo.toml --locked --all-targets
+
+  nasa-data-contracts:
+    name: NASA manifest and LOLA bytes
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python syntax checks
+        run: python3 -m compileall -q scripts tests
+      - name: Manifest, checksum and corruption regressions
+        run: python3 -m unittest discover -s tests -v
+
+  browser-security:
+    name: Web UI regression (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20", "22"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Syntax and static analysis
+        run: npm --prefix web run lint
+      - name: Browser-facing server tests
+        run: npm --prefix web test
+
+  fullstack-http:
+    name: Real Go-Rust-Web end-to-end mission replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build real Rust executable
+        run: cargo build --manifest-path engine/Cargo.toml --locked
+      - name: Build real Go HTTP API
+        working-directory: api
+        run: go build -o /tmp/braspace-e2e-api .
+      - name: Test same-origin frontend to Go to Rust through mission and reports
+        run: node scripts/fullstack-e2e.mjs

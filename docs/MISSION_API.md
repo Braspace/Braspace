@@ -103,6 +103,14 @@ Without `crew`, consumables are reported as `UNKNOWN`.
 `combined_decision` picks the first candidate (request order) where energy, comms and
 consumables all hold; the onboard simulator's own decision only weighs energy and comms.
 
+### `POST /api/onboard/site-report`
+
+Same input as `site-evaluate`, returns the printable mission report from #72 as HTML
+(Print → Save as PDF) with an extra section: visibility source, combined decision,
+consumption rate source and, per candidate, the oxygen/food table and risks. The plain
+`/api/onboard/report` is unchanged. The MoonProof UI uses this report after a
+computed-series run.
+
 ### Resources in `POST /api/scenarios/delay` (#69)
 
 `crew`, and `power` + `max_comm_blackout_hours`, are optional on the delay replan.
@@ -111,6 +119,23 @@ include `oxygen_margin_hours`, `food_margin_hours`, `min_battery_charge_wh`,
 `unserved_energy_wh` and `longest_earth_obstruction_hours`, each with its baseline value.
 That is how a delay that fixes the energy budget but runs the oxygen down shows up.
 `examples/mission/scenario-delay-resources.*` has a full case.
+
+### Map layers and site media (#57)
+
+- `GET /api/layers`, `GET /api/layers/{id}`: optional lunar layers with source page
+  and URL, rights, attribution, coverage, resolution, projection/frame, size and SHA-256.
+  Entries are copied from `data/ASSET_REGISTRY.json` and `data/manifest.json`, and a
+  test fails if they drift. `scientific_role` is `visualization_only` or
+  `science_source`; visual layers never feed calculations.
+- `GET /api/layers/{id}/asset`: same-origin copy for `delivery: "proxy"` layers (today
+  only the NASA SVS LROC 2k texture used by the 3D globe, which browsers block
+  cross-origin). The API fetches only the registered `source_url` on an allowlisted
+  host, checks size and SHA-256 before serving, and caches the bytes in memory. It
+  never takes a URL from the request. If the source is down or the checksum differs,
+  you get `502 LAYER_UNAVAILABLE` and the UI keeps its procedural fallback. The LOLA
+  science DEM is `external` and is never served.
+- `GET /api/sites/{id}/media`: LROC gallery links (`data/LUNAR_GALLERY.json`) related to
+  a site. Links only; no image is copied, per the gallery's thumbnail policy.
 
 ## Errors
 

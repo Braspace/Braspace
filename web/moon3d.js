@@ -2,7 +2,10 @@
 // NASA SVS imagery is for aesthetics. Scientific horizon MUST use NASA LOLA DEM.
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.181.0/build/three.module.js";
 
-const textureURL = "https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_2k.jpg";
+// NASA SVS LROC color texture served same-origin by the Go API (GET /api/layers),
+// fetched from svs.gsfc.nasa.gov and checked against the team asset registry's
+// SHA-256. Loading it cross-origin from SVS is blocked by CORS in browsers.
+const textureURL = "/api/layers/lroc-color-2k/asset";
 const radians = d => d * Math.PI / 180;
 const clamp = (v,min,max) => Math.min(max,Math.max(min,v));
 
