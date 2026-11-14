@@ -191,10 +191,9 @@ async function start() {
   L.fuel0 = L.sim.s[6] - vehicle.dryMass; L.startAlt = telemetry(L.sim).altitudeAGL;
   L.throttleCmd = 0; L.keys = {}; L.running = true; L.step = 1; L.saved = null; L.paused = L.mode === "guided"; // guided starts at step 1, paused
   clearTimeout(L.openT);
-  L.viewer?.addLander(); L.viewer?.startFollow(); if (L.viewer) L.viewer.camMode = L.cam; L.viewer?.setSiteSky?.(...skyEnu());
+  L.viewer?.addLander(); L.viewer?.startFollow(); if (L.viewer) L.viewer.camMode = L.cam; if (L.skyEnu) L.viewer?.setSiteSky?.(...L.skyEnu);
   build(); drawTicks(); update(true);
 }
-function skyEnu() { return [null, null]; }
 function frame(dt) {
   if (!L.running || !L.sim) return;
   const k = L.keys, rate = THROTTLE_RATE * dt;
@@ -337,7 +336,7 @@ if (!okLoad) { renderEmpty(); build(); } else {
     const s = site();
     L.viewer.showSite({ tile: L.tile, horizon: L.series.horizon, layer: "natural", sunEnu: null, earthEnu: null });
     const sky = L.series.at(L.simTime);
-    if (sky) { const { azElToEnu } = await import("../../lab/coords.js"); L.viewer.setSiteSky(azElToEnu(sky.sunAz, sky.sunEl), azElToEnu(sky.earthAz, sky.earthEl)); }
+    if (sky) { const { azElToEnu } = await import("../../lab/coords.js"); L.skyEnu = [azElToEnu(sky.sunAz, sky.sunEl), azElToEnu(sky.earthAz, sky.earthEl)]; L.viewer.setSiteSky(...L.skyEnu); }
     if (L.viewer.target) { const lbl = THREE ? L.viewer.addLabel(t("lab.zone", { d: fmt(2 * ASSUMED.zoneRadiusM) }), new THREE.Vector3(ASSUMED.zoneRadiusM + 4, (L.tile.height(0, 0) || 0) + 1, 0), { cls: "zone" }) : null; L.zoneLabel = lbl; }
   } catch (e) { $("live").textContent = t("lab.nowebgl"); L.viewer = null; L.noGl = true; L.rafStop = false; (function loop(prev) { requestAnimationFrame(now => { frame(Math.min(0.5, (now - prev) / 1000)); loop(now); }); })(performance.now()); }
   await start();
