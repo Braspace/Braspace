@@ -49,7 +49,7 @@ try{
  assert((await desktop.locator("#panel-body").innerText()).length>60,"evidence panel is empty");
  await desktop.screenshot({path:path.join(out,"polar-lab-desktop.png"),fullPage:true});
  await desktop.getByRole("link",{name:"Mission computer"}).click();
- assert(desktop.url().endsWith("/index.html"),"classic UI navigation failed");
+ assert(desktop.url().endsWith("/classic.html"),"classic UI navigation failed");
  assert((await desktop.locator("body").innerText()).includes("UNVERIFIED INPUTS"),"classic scientific disclaimer absent");
  await desktop.screenshot({path:path.join(out,"moonproof-classic-desktop.png"),fullPage:true});
  const onboardResponse=await desktop.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});

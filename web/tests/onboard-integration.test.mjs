@@ -10,7 +10,7 @@ const root="http://127.0.0.1:"+server.address().port;
 after(()=>new Promise(resolve=>server.close(resolve)));
 
 test("13-tab cockpit is navigable from classic and Polar Lab",async()=>{
- const home=await (await fetch(root+"/")).text();
+ const home=await (await fetch(root+"/classic.html")).text();
  const lab=await (await fetch(root+"/lab.html")).text();
  assert.match(home,/href="\.\/onboard\/cockpit\.html"/);
  assert.match(lab,/href="\.\/onboard\/cockpit\.html"/);
