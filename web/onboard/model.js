@@ -39,7 +39,7 @@
   // delay in hours applied to the start. Returns per-step records with angles and flags.
   function track(opts) {
     const site = SITES[opts.siteId];
-    if (!site) throw new Error("sítio desconhecido: " + opts.siteId);
+    if (!site) throw new Error("lugar desconhecido: " + opts.siteId);
     const t0H = (opts.startMs + (opts.delayH || 0) * 3600e3) / 3600e3;
     const out = [];
     for (let i = 0; i < opts.count; i++) {

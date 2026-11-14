@@ -192,7 +192,7 @@
       h("section", { class: "panel" },
         h("h2", { text: "01 · Entrada do cenário" }),
         h("div", { class: "fields" },
-          h("label", {}, "Sítio sintético", h("select", { id: "site", onchange: e => { S.site = e.target.value; S.api = null; renderAlarm(); renderTab(); } }, sites)),
+          h("label", {}, "Lugar sintético", h("select", { id: "site", onchange: e => { S.site = e.target.value; S.api = null; renderAlarm(); renderTab(); } }, sites)),
           h("label", {}, "Data e hora de pouso (UTC)", h("input", { type: "datetime-local", value: S.startLocal, onchange: e => { S.startLocal = e.target.value; S.api = null; renderAlarm(); renderTab(); } })),
           h("label", {}, "Duração (h, até 720)", h("input", { type: "number", min: "1", max: "720", value: S.durationH, onchange: e => { S.durationH = Number(e.target.value); S.api = null; renderAlarm(); renderTab(); } })),
           h("label", {}, "Passo (min, 1 a 360)", h("input", { type: "number", min: "1", max: "360", value: S.stepMin, onchange: e => { S.stepMin = Number(e.target.value); S.api = null; renderAlarm(); renderTab(); } }))),
@@ -203,7 +203,7 @@
           h("button", { type: "button", id: "calc", class: "go", onclick: calculate }, "CALCULAR")),
         h("p", { class: "note", text: "TÉCNICO mostra valores e premissas. EDUCATIVO acrescenta explicações em cada painel." }),
         h("p", { class: "note", text: "CALCULAR envia o cenário à API para energia e riscos. Os demais painéis usam o modelo sintético do navegador." }),
-        edu("Modo educativo: o sítio define o horizonte; a data define onde Sol e Terra estão; a energia depende do que o sol entrega e do que a carga consome.")),
+        edu("Modo educativo: o lugar define o horizonte; a data define onde Sol e Terra estão; a energia depende do que o sol entrega e do que a carga consome.")),
       h("section", { class: "panel" },
         h("h2", { text: "Energia do cenário (entrada)" }),
         h("div", { class: "fields" },
@@ -224,11 +224,12 @@
   }
 
   VIEWS.geometria = () => {
-    const { tr, sum } = scenario();
+    const tr = timeline();
     if (S.t >= tr.length) S.t = 0;
     const cur = tr[S.t] || tr[0];
-    const trS = M.transitions(tr, "sun_visible", S.stepMin);
-    const trE = M.transitions(tr, "earth_visible", S.stepMin);
+    const stepM = stepOf(tr);
+    const trS = M.transitions(tr, "sun_visible", stepM);
+    const trE = M.transitions(tr, "earth_visible", stepM);
     const nextS = trS.find(x => x.index > S.t);
     const nextE = trE.find(x => x.index > S.t);
     const slider = h("input", { type: "range", min: "0", max: String(Math.max(0, tr.length - 1)), value: String(S.t), "aria-label": "Hora do cenário", style: "--p:" + progressPct(S.t, tr.length) + "%", oninput: e => { S.t = Number(e.target.value); renderTab(); } });
@@ -236,10 +237,10 @@
       h("section", { class: "panel" },
         h("h2", { text: "02 · Geometria do Sol e da Terra" }),
         instantLabel(cur),
-        h("label", { style: "margin:12px 0 8px" }, "Arraste para escolher o instante (cada posição = " + S.stepMin + " min)", slider),
+        h("label", { style: "margin:12px 0 8px" }, "Arraste para escolher o instante (passo de " + stepM + " min)", slider),
         h("div", { class: "row" },
           h("button", { type: "button", "aria-pressed": !!S.playing, onclick: togglePlay }, S.playing ? "PAUSAR" : "REPRODUZIR"),
-          h("span", { class: "dim", text: "passo " + S.stepMin + " min" })),
+          h("span", { class: "dim", text: "passo " + stepM + " min" })),
         h("div", { class: "grid two", style: "margin-top:12px" },
           h("dl", { class: "readout" },
             h("dt", { text: "SOL azimute" }), h("dd", { text: f1(cur.sunAz) + "°" }),
@@ -255,10 +256,10 @@
         strip("Luz do Sol", tr, s => s.sun_visible, "#ffb020"),
         strip("Terra visível", tr, s => s.earth_visible, "#5fd8ff"),
         h("div", { class: "legend" }, h("span", {}, h("i", { style: "background:#ffb020" }), "luz"), h("span", {}, h("i", { style: "background:#5fd8ff" }), "Terra visível"), h("span", {}, h("i", { style: "background:#1c3240" }), "sem")),
-        h("div", { class: "axis" }, h("span", { text: fmt(startMs()) }), h("span", { text: fmt(startMs() + (tr.length - 1) * S.stepMin * 60e3) })),
+        h("div", { class: "axis" }, h("span", { text: fmt(tr[0].ms) }), h("span", { text: fmt(tr[tr.length - 1].ms) })),
         h("dl", { class: "readout", style: "margin-top:10px" },
-          h("dt", { text: "PRÓXIMA MUDANÇA DE LUZ" }), h("dd", { text: nextS ? fmt(startMs() + nextS.tH * 0 + nextS.index * S.stepMin * 60e3) + (nextS.to ? " (escurece→luz)" : " (luz→escuro)") : "nenhuma após T" }),
-          h("dt", { text: "PRÓXIMA MUDANÇA DA TERRA" }), h("dd", { text: nextE ? fmt(startMs() + nextE.index * S.stepMin * 60e3) : "nenhuma após T" })),
+          h("dt", { text: "PRÓXIMA MUDANÇA DE LUZ" }), h("dd", { text: nextS ? fmt(tr[nextS.index].ms) + (nextS.to ? " (escurece→luz)" : " (luz→escuro)") : "nenhuma após T" }),
+          h("dt", { text: "PRÓXIMA MUDANÇA DA TERRA" }), h("dd", { text: nextE ? fmt(tr[nextE.index].ms) : "nenhuma após T" })),
         h("p", { class: "note", text: "Animação por passo fixo. Instante exato por bisseção ainda pendente (4.6)." }),
         edu("Cada barra mostra uma hora (ou o passo escolhido). Luz e Terra visível são coisas diferentes."))
     ];
@@ -270,14 +271,53 @@
 
   // Readable instant: day of the scenario, time of day and the UTC stamp.
   function instantLabel(cur) {
-    const ms = startMs() + cur.i * S.stepMin * 60e3;
-    const dayIdx = Math.floor(cur.i * S.stepMin / 1440) + 1;
+    const ms = cur.ms;
+    const dayIdx = Math.floor((ms - startMs()) / 86400e3) + 1;
     const days = Math.ceil(S.durationH / 24);
     const hhmm = new Date(ms).toISOString().slice(11, 16);
+    const fromApi = cur.src === "api";
     return h("div", { class: "instant" },
       h("span", { class: "big", text: "Dia " + dayIdx + " de " + days + " · " + hhmm }),
       h("span", { class: "small", text: fmt(ms) }),
-      tag("SINT"));
+      h("span", { class: "tag " + (fromApi ? "SIM" : "SINT"), text: fromApi ? "SÉRIE DA API" : "MODELO LOCAL" }));
+  }
+
+  // ---------- timeline: API series when available, local model otherwise ----------
+  // The API series (GET via POST /api/compare with include_series) gives the visibility flags and
+  // margins that the server computed. Azimuth and elevation still come from the local model at the
+  // same epoch, and the panel says so.
+  S.series = null;      // { key, points } from the API
+  S.loadingKey = null;
+  function seriesKey() { return S.site + "|" + S.startLocal + "|" + S.durationH; }
+  function timeline() {
+    const key = seriesKey();
+    if (!(S.series && S.series.key === key) && S.loadingKey !== key) {
+      S.loadingKey = key;
+      loadSeries(key);
+    }
+    if (S.series && S.series.key === key && S.series.points && S.series.points.length) {
+      const site = M.SITES[S.site];
+      return S.series.points.map((p, i) => {
+        const ms = Date.parse(p.epoch_utc), tH = ms / 3600e3, b = M.bodiesAt(tH);
+        // Elevation is rebuilt from the server margin, so the angle and the visibility flag agree.
+        const sunEl = M.horizonAt(b.sunAz, site) + p.sun_margin_deg, earthEl = M.horizonAt(b.earthAz, site) + p.earth_margin_deg;
+        return { i, ms, tH, src: "api", sunAz: b.sunAz, sunEl, earthAz: b.earthAz, earthEl,
+          sun_visible: p.sun_visible, earth_visible: p.earth_visible, sun_margin: p.sun_margin_deg, earth_margin: p.earth_margin_deg, site };
+      });
+    }
+    return track(0).map((s, i) => ({ ...s, i, ms: startMs() + i * S.stepMin * 60e3, src: "local" }));
+  }
+  function stepOf(tr) {
+    return tr.length > 1 ? Math.round((tr[1].ms - tr[0].ms) / 60000) : S.stepMin;
+  }
+  async function loadSeries(key) {
+    const r = await OnboardApi.compare({ site_ids: [S.site], start_utc: iso(startMs()), duration_hours: S.durationH, include_series: true });
+    if (key !== seriesKey()) { S.loadingKey = null; return; }   // the user changed the scenario meanwhile
+    const res = r.ok && r.data && r.data.results ? r.data.results[0] : null;
+    const pts = res && res.data_status === "AVAILABLE" && res.evaluation && res.evaluation.series ? res.evaluation.series : null;
+    S.series = { key, points: pts, status: res ? res.data_status : "ERRO" };
+    S.loadingKey = null;
+    renderTab();
   }
 
   function togglePlay() {
@@ -308,7 +348,7 @@
     const x = a => L + (a / 360) * (W - L - R);
     const y = e => T + ((EMAX - e) / (EMAX - EMIN)) * (H - T - B);
     const box = svg("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img",
-      "aria-label": "Horizonte sintético do sítio " + site.name + " com Sol e Terra no instante escolhido" });
+      "aria-label": "Horizonte sintético do lugar " + site.name + " com Sol e Terra no instante escolhido" });
 
     // grid: elevation every 2°, azimuth every 45°
     for (let e = EMIN; e <= EMAX; e += 2) {
@@ -356,7 +396,7 @@
     const sunMargin = cur.sunEl - hs, earthMargin = cur.earthEl - he;
     return [
       h("section", { class: "panel span2" },
-        h("h2", { text: "03 · Horizonte do sítio", },
+        h("h2", { text: "03 · Horizonte do lugar", },
           h("em", { text: site.name + " · rugosidade " + site.rough })),
         instantLabel(cur),
         h("label", { style: "margin:10px 0" }, "Arraste para escolher o instante", slider),
@@ -381,7 +421,7 @@
         h("ul", { class: "note" },
           ...[["3.2", "BLOQ", "leitura do DEM LOLA"], ["3.3", "PEND", "horizonte por raio"], ["3.4", "PEND", "distância máxima documentada"], ["3.5", "PEND", "pixels interpolados"], ["3.6", "PEND", "declive e crateras"]]
             .map(([id, st, t]) => h("li", {}, id + " ", tag(st), " " + t))),
-        h("p", { class: "note", text: "Horizonte sintético: uma senoide com rugosidade do sítio. Não é relevo lunar." }))
+        h("p", { class: "note", text: "Horizonte sintético: uma senoide com rugosidade do lugar. Não é relevo lunar." }))
     ];
   };
 
@@ -549,21 +589,21 @@
             h("td", { class: "n", text: f1(r.sum.blockH) }),
             h("td", { class: "n", text: r.o ? f1(r.o.metrics.minimum_charge_wh) : "—" }),
             h("td", { title: r.v.map(x => x.text).join("; ") }, r.v.length ? (r.v[0].text + (r.v.length > 1 ? " (+" + (r.v.length - 1) + ")" : "")) : "nenhuma")))))),
-        h("p", { class: "note", text: S.api ? "Bateria e riscos vêm da API para o sítio atual. Escuridão e bloqueio são do modelo." : "Bateria só aparece depois de CALCULAR. Escuridão e bloqueio são do modelo." })),
+        h("p", { class: "note", text: S.api ? "Bateria e riscos vêm da API para o lugar atual. Escuridão e bloqueio são do modelo." : "Bateria só aparece depois de CALCULAR. Escuridão e bloqueio são do modelo." })),
       h("section", { class: "panel" },
-        h("h2", { text: "Busca de data no mesmo sítio (7.4)" }),
+        h("h2", { text: "Busca de data no mesmo lugar (7.4)" }),
         h("p", { class: "note", text: "Grade de 24 h, até 7 dias, sem otimização. Não é busca completa." }),
         h("div", { class: "scroll" }, h("table", { class: "table" },
           h("thead", {}, h("tr", {}, h("th", { text: "início (UTC)" }), h("th", { text: "resultado" }), h("th", { class: "n", text: "escuridão (h)" }))),
           h("tbody", {}, dateRows.map(r => h("tr", {}, h("td", { text: fmt(r.ms) }), h("td", {}, verdictTag(r.verdict)), h("td", { class: "n", text: f1(r.sum.darkH) })))))),
         h("div", { style: "margin-top:8px" }, tag("PARC"), " ", h("span", { class: "dim", text: "grade fixa; sem explicação quando nenhuma data serve (7.6)" }))),
       h("section", { class: "panel" },
-        h("h2", { text: "Comparação de sítios (7.5 · 8.7)" }),
+        h("h2", { text: "Comparação de lugares (7.5 · 8.7)" }),
         h("div", { class: "scroll" }, h("table", { class: "table" },
-          h("thead", {}, h("tr", {}, h("th", { text: "sítio" }), h("th", { text: "resultado" }), h("th", { class: "n", text: "luz (h)" }), h("th", { class: "n", text: "escuridão (h)" }), h("th", { class: "n", text: "Terra (h)" }))),
+          h("thead", {}, h("tr", {}, h("th", { text: "lugar" }), h("th", { text: "resultado" }), h("th", { class: "n", text: "luz (h)" }), h("th", { class: "n", text: "escuridão (h)" }), h("th", { class: "n", text: "Terra (h)" }))),
           h("tbody", {}, siteRows.map(r => h("tr", {}, h("td", { text: (r.id === S.site ? "▶ " : "") + M.SITES[r.id].name }), h("td", {}, verdictTag(r.verdict)), h("td", { class: "n", text: f1(r.sum.sunlitH) }), h("td", { class: "n", text: f1(r.sum.darkH) }), h("td", { class: "n", text: f1(r.sum.earthH) })))))),
-        h("p", { class: "note", text: "Sem fonte por sítio: os três são sintéticos. Bateria só para o sítio atual." }),
-        h("div", { style: "margin-top:8px" }, tag("PARC"), " ", tag("BLOQ"), " ", h("span", { class: "dim", text: "fonte real por sítio (7.5) bloqueada (#5, #52)" }))),
+        h("p", { class: "note", text: "Sem fonte por lugar: os três são sintéticos. Bateria só para o lugar atual." }),
+        h("div", { style: "margin-top:8px" }, tag("PARC"), " ", tag("BLOQ"), " ", h("span", { class: "dim", text: "fonte real por lugar (7.5) bloqueada (#5, #52)" }))),
       h("section", { class: "panel span2" },
         h("h2", { text: "Explicação (7.6)" }),
         h("p", { class: "note", text: rows.every(r => r.verdict === "NAO_VIAVEL") ? "Nenhum atraso testado é viável neste cenário. Motivos: escuridão, bloqueio ou bateria, conforme a tabela acima." : "Há pelo menos um cenário viável neste modelo sintético." }),
@@ -586,7 +626,7 @@
   function polarMap(maxWidth) {
     const C = 180, K = 62, EDGE = 168;
     const box = svg("svg", { viewBox: "-30 -30 420 420", width: "100%", style: "max-width:" + maxWidth + "px;display:block;margin:0 auto", role: "img",
-      "aria-label": "Mapa polar: sítios sintéticos ao redor do polo sul" });
+      "aria-label": "Mapa polar: lugares sintéticos ao redor do polo sul" });
     const defs = svg("defs", {});
     const grad = svg("radialGradient", { id: "polarBg" });
     grad.append(svg("stop", { offset: "0%", "stop-color": "#1b2d40" }), svg("stop", { offset: "100%", "stop-color": "#0c141d" }));
@@ -641,20 +681,20 @@
     const box = polarMap(440);
     return [
       h("section", { class: "panel" },
-        h("h2", { text: "08 · Mapa polar do sítio", }, h("em", { text: "sintético" })),
+        h("h2", { text: "08 · Mapa polar do lugar", }, h("em", { text: "sintético" })),
         box,
         h("div", { class: "edu", style: "margin-top:12px" }, "Como ler: o centro é o polo sul. Cada anel é 1° de distância do polo. As linhas radiais são longitudes, de 45 em 45°. Quanto mais longe do centro, mais perto do equador lunar."),
         h("p", { class: "note", text: "Projeção ampliada, sem escala real. Coordenadas sintéticas, não são locais de pouso." }),
         h("div", { style: "margin-top:8px" }, tag("SIM"), " ", tag("BLOQ"), " ", h("span", { class: "dim", text: "mapa 2D com LOLA (8.5) e 3D (8.6) bloqueados" }))),
       h("section", { class: "panel" },
-        h("h2", { text: "Sítios" }, h("em", { text: "clique para selecionar" })),
+        h("h2", { text: "Lugares" }, h("em", { text: "clique para selecionar" })),
         siteLegend()),
       h("section", { class: "panel" },
         h("h2", { text: "Pendências visuais" }),
         h("ul", { class: "note" },
           ...[["8.5", "BLOQ", "mapa 2D com dado LOLA"], ["8.6", "BLOQ", "3D do terreno"], ["8.8", "PARC", "animação sem destaque de transição"]]
             .map(([id, st, t]) => h("li", {}, id + " ", tag(st), " " + t)))),
-        edu("O mapa mostra onde ficam os sítios em relação ao polo. Não mostra o relevo.")
+        edu("O mapa mostra onde ficam os lugares em relação ao polo. Não mostra o relevo.")
     ];
   };
 
@@ -706,7 +746,7 @@
         h("p", { class: "note", text: "Só nesta sessão. Se a página fechar, o registro some." }),
         S.saved.length === 0 ? h("p", { class: "dim", text: "Nenhum cenário salvo." }) :
           h("div", { class: "scroll" }, h("table", { class: "table" },
-            h("thead", {}, h("tr", {}, h("th", { text: "sítio" }), h("th", { text: "início" }), h("th", { class: "n", text: "dur. h" }), h("th", { class: "n", text: "carga mín." }), h("th", { text: "estado" }))),
+            h("thead", {}, h("tr", {}, h("th", { text: "lugar" }), h("th", { text: "início" }), h("th", { class: "n", text: "dur. h" }), h("th", { class: "n", text: "carga mín." }), h("th", { text: "estado" }))),
             h("tbody", {}, S.saved.map(r => h("tr", {}, h("td", { text: r.site }), h("td", { text: r.start_utc }), h("td", { class: "n", text: r.duration_h }), h("td", { class: "n", text: r.battery_min_wh === null ? "—" : f1(r.battery_min_wh) }), h("td", { text: r.api_status })))))),
       ),
       h("section", { class: "panel" },
@@ -836,7 +876,7 @@
 
   function polarCard() {
     return h("section", { class: "panel" },
-      h("h2", {}, "Sítios no polo sul", h("em", {}, "sintéticos")),
+      h("h2", {}, "Lugares no polo sul", h("em", {}, "sintéticos")),
       polarMap(320),
       h("p", { class: "note", text: "Centro = polo sul. Anéis = distância do polo. Sem escala real." }));
   }
@@ -924,12 +964,12 @@
       };
       S.apiResults.delay = await OnboardApi.scenarioDelay(body);
     });
-    let body = h("p", { class: "dim", text: "Ainda não consultado. Usa a API /api/scenarios/delay com sítios que têm série de dados." });
+    let body = h("p", { class: "dim", text: "Ainda não consultado. Usa a API /api/scenarios/delay com lugares que têm série de dados." });
     if (r && !r.ok) body = apiError(r);
     if (r && r.ok) {
       const d = r.data;
       body = h("div", { class: "scroll" }, h("table", { class: "table" },
-        h("thead", {}, h("tr", {}, h("th", { text: "opção" }), h("th", { text: "sítio" }), h("th", { class: "n", text: "atraso h" }), h("th", { text: "restrições" }))),
+        h("thead", {}, h("tr", {}, h("th", { text: "opção" }), h("th", { text: "lugar" }), h("th", { class: "n", text: "atraso h" }), h("th", { text: "restrições" }))),
         h("tbody", {}, (d.options || []).map(o => h("tr", {},
           h("td", { text: o.kind || "—" }),
           h("td", { text: o.site_id || "—" }),
@@ -937,21 +977,21 @@
           h("td", { text: (o.checks || []).map(c => c.criterion + ": " + (c.passed ? "ok" : "violada")).join(" · ") || (o.data_status || "—") }))))),
         h("p", { class: "note", text: "Estado: " + (d.outcome ? d.outcome.status : "—") + (d.outcome && d.outcome.message ? " · " + d.outcome.message : "") + " · request " + (d.scenario_sha256 || "—").slice(0, 12) + "…" }));
     }
-    return apiPanelFrame("API · Replanejamento por atraso (/api/scenarios/delay)", "Dados de série do sítio atual, sem dado de série o resultado é NO_SERIES_DATA.", button, body);
+    return apiPanelFrame("API · Replanejamento por atraso (/api/scenarios/delay)", "Dados de série do lugar atual, sem dado de série o resultado é NO_SERIES_DATA.", button, body);
   }
 
   function comparePanel() {
     const r = S.apiResults.compare;
-    const button = callButton("COMPARAR SÍTIOS (API)", async () => {
+    const button = callButton("COMPARAR LUGARES (API)", async () => {
       const ids = (S.sitesApi || []).map(s => s.id);
       const pick = ids.length ? ids : ["synthetic-demo-a", "synthetic-demo-b", "malapert-massif"];
       S.apiResults.compare = await OnboardApi.compare({ site_ids: pick, start_utc: iso(startMs()), duration_hours: S.durationH, include_series: false });
     });
-    let body = h("p", { class: "dim", text: "Ainda não consultado. Compara sítios do catálogo, com dados de série quando existirem." });
+    let body = h("p", { class: "dim", text: "Ainda não consultado. Compara lugares do catálogo, com dados de série quando existirem." });
     if (r && !r.ok) body = apiError(r);
     if (r && r.ok) {
       body = h("div", { class: "scroll" }, h("table", { class: "table" },
-        h("thead", {}, h("tr", {}, h("th", { text: "sítio" }), h("th", { text: "dados" }), h("th", { class: "n", text: "luz" }), h("th", { class: "n", text: "escuridão h" }), h("th", { text: "ciência" }))),
+        h("thead", {}, h("tr", {}, h("th", { text: "lugar" }), h("th", { text: "dados" }), h("th", { class: "n", text: "luz" }), h("th", { class: "n", text: "escuridão h" }), h("th", { text: "ciência" }))),
         h("tbody", {}, (r.data.results || []).map(s => {
           const m = s.evaluation && s.evaluation.metrics;
           const id = typeof s.site === "object" && s.site ? (s.site.id || s.site.name) : s.site;
@@ -963,7 +1003,7 @@
             h("td", { text: s.science_status || "—" }));
         }))));
     }
-    return apiPanelFrame("API · Comparação de sítios (/api/compare)", "Sítios sem série aparecem como NO_SERIES_DATA, sem números.", button, body);
+    return apiPanelFrame("API · Comparação de lugares (/api/compare)", "Lugares sem série aparecem como NO_SERIES_DATA, sem números.", button, body);
   }
 
   function siteEvalPanel() {
@@ -980,7 +1020,7 @@
       };
       S.apiResults.siteEval = await OnboardApi.siteEvaluate(body);
     });
-    let body = h("p", { class: "dim", text: "Ainda não consultado. Só sítios com série ingerida (synthetic-demo-a e -b) são aceitos." });
+    let body = h("p", { class: "dim", text: "Ainda não consultado. Só lugares com série ingerida (synthetic-demo-a e -b) são aceitos." });
     if (r && !r.ok) body = apiError(r);
     if (r && r.ok) {
       const c0 = (r.data.candidates || [])[0] || {};
@@ -1034,7 +1074,14 @@
     const box = $("views");
     const top = $("top-site");
     if (top && top.value !== S.site) top.value = S.site;
-    const nodes = VIEWS[S.tab]();
+    let nodes;
+    try {
+      nodes = VIEWS[S.tab]();
+    } catch (err) {
+      // Show the failure in the panel instead of a blank page, so it can be reported.
+      nodes = [h("div", { class: "caution", role: "alert" }, "Erro ao montar esta aba: " + (err && err.message ? err.message : err))];
+      if (window.console) console.error(err);
+    }
     box.replaceChildren(...nodes.filter(Boolean));
     document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.tab === S.tab ? "true" : "false"));
   }

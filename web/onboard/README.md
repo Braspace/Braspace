@@ -37,7 +37,7 @@ ONBOARD_API_URL=http://127.0.0.1:8080 node --test web/onboard/test/
 
 ## Limitações conhecidas
 
-- O modelo sintético de Sol e Terra tem ciclo de cerca de 29,5 dias. Janelas curtas, como 72 h, podem ficar sem luz em qualquer sítio sintético. O padrão da tela é 720 h com passo de 120 min.
+- O modelo sintético de Sol e Terra tem ciclo de cerca de 29,5 dias. Janelas curtas, como 72 h, podem ficar sem luz em qualquer lugar sintético. O padrão da tela é 720 h com passo de 120 min.
 - A visibilidade é gerada por um modelo matemático, não por efemérides nem por DEM LOLA.
 - Os valores de bateria e de painel são premissas do cenário, não parâmetros de hardware.
 - A API marca todos os resultados como `UNVERIFIED_INPUTS`. A interface mostra isso no topo.
