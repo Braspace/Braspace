@@ -93,3 +93,10 @@
  .mp-bottomnav .mp-pill{padding:0 5px;font-size:10px;min-height:44px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
+
+/* Seven mobile navigation destinations scroll inside their own pill dock, never the page. */
+@media(max-width:700px){
+ .mp-bottomnav{overflow-x:auto;overflow-y:hidden;justify-content:flex-start;gap:2px;scrollbar-width:none;overscroll-behavior-x:contain}
+ .mp-bottomnav::-webkit-scrollbar{display:none}
+ .mp-bottomnav .mp-pill{flex:none}
+}
