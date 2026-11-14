@@ -163,6 +163,36 @@ export const REGISTRY = {
    "author_credit": "Page: 'Please credit NASA's LOLA Team and JAXA's SELENE/Kaguya Team.'",
    "redistribution_status": "review_required",
    "scientific_role": "NOT_APPLICABLE_AT_POLE: covers latitudes within +/-60 deg only"
+  },
+  {
+   "asset_id": "braspace-terrain-shade-87s",
+   "category": "project_derived_terrain_background",
+   "source_page": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm",
+   "file_id": "terrain-shade-87s.webp",
+   "sha256": "43fef36738628d83a03450e786e7c676b7e597539930b02005bfdfbf4457378d",
+   "author_credit": "Elevation: NASA/GSFC/LOLA (LRO LOLA LDEM_80S_80M). Rendering: BRASPACE (science/render_terrain_backgrounds.py).",
+   "redistribution_status": "project_derived_from_nasa_pds",
+   "scientific_role": "visualization_only"
+  },
+  {
+   "asset_id": "braspace-terrain-shade-84s",
+   "category": "project_derived_terrain_background",
+   "source_page": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm",
+   "file_id": "terrain-shade-84s.webp",
+   "sha256": "8cf3eae7b2edd61cf06d95eca040aabe76a6cef3b85936ccb76fb53a5f1bf4e9",
+   "author_credit": "Elevation: NASA/GSFC/LOLA (LRO LOLA LDEM_80S_80M). Rendering: BRASPACE (science/render_terrain_backgrounds.py).",
+   "redistribution_status": "project_derived_from_nasa_pds",
+   "scientific_role": "visualization_only"
+  },
+  {
+   "asset_id": "braspace-terrain-altitude-87s",
+   "category": "project_derived_terrain_background",
+   "source_page": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm",
+   "file_id": "terrain-altitude-87s.webp",
+   "sha256": "1e09edb121a2b6f5de0a0985844c7e8e85dada75f0f2afe805b73a5a6a9a7a6a",
+   "author_credit": "Elevation: NASA/GSFC/LOLA (LRO LOLA LDEM_80S_80M). Rendering: BRASPACE (science/render_terrain_backgrounds.py).",
+   "redistribution_status": "project_derived_from_nasa_pds",
+   "scientific_role": "visualization_only"
   }
  ],
  "matrix": [

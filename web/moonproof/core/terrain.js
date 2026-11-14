@@ -3,7 +3,7 @@
 // BR91: the relief is shaded per DEVICE pixel (bilinear heights, devicePixelRatio) instead of
 // stretching an 850×850 bitmap, and the view keeps the chosen site in the FREE area of the
 // screen (viewport minus the fixed panels laid over the map).
-import { loadRegion, loadSites } from "./data.js";
+import { loadRegion } from "./data.js";
 import { t } from "./i18n.js";
 
 // Two lights (key from the upper left, soft fill from the right) + slope occlusion, grey ramp.
@@ -68,12 +68,64 @@ export function freeArea(W, H, rects) {
 
 function overlayRects(container) {
   const out = [];
-  for (const el of document.body.querySelectorAll("body > *")) {
+  // Screens may wrap their fixed panels in a non-positioned container: look one level inside it.
+  const els = [...document.body.children].flatMap(e => { const c = getComputedStyle(e); return c.display === "contents" || (c.position === "static" && c.display !== "none") ? [...e.children] : [e]; });
+  for (const el of els) {
     if (el === container || el.contains(container) || el.hidden) continue;
     const cs = getComputedStyle(el); if (cs.position !== "fixed" || cs.display === "none" || cs.visibility === "hidden") continue;
-    out.push(el.getBoundingClientRect());
+    const r = el.getBoundingClientRect();
+    if (r.width >= innerWidth * .9 && r.height >= innerHeight * .9) continue; // full-screen overlay (e.g. rays svg), not a panel
+    out.push(r);
   }
   return out;
+}
+
+// Y01: sharp LOLA backgrounds of PR 178 (web/moonproof/assets/terrain-*.webp + projection .json).
+// The image is the base; the 400 m grid stays for altitude lookups only (grid.heightAt etc.).
+export const BACKGROUNDS = { shade87: "terrain-shade-87s", shade84: "terrain-shade-84s", altitude87: "terrain-altitude-87s" };
+const ASSETS = new URL("../assets/", import.meta.url).href;
+const R_MOON = 1737400;
+
+/** Polar stereographic x/y (m) of a lat/lon, same forward transform as the background .json. */
+export function stereo(latDeg, lonDeg, R = R_MOON) {
+  const rho = 2 * R * Math.tan((90 + latDeg) * Math.PI / 360), l = lonDeg * Math.PI / 180;
+  return [rho * Math.sin(l), rho * Math.cos(l)];
+}
+
+/** Image pixel (col,row; centre convention) of stereo metres, from the background .json transform. */
+export function bgPixel(meta, x, y) {
+  const t = meta.transform, [pc, pr] = t.pole_pixel, m = t.meters_per_pixel;
+  return [pc + x / m, pr - y / m];
+}
+
+/**
+ * Greedy label placement: tries centred, above, below, right, left of the anchor; drops a label that
+ * collides with a placed one or with a blocked rect (panels/markers). boxes: {x,y,w,h} CSS px, x/y = centre.
+ */
+export function placeLabels(items, blocked = []) {
+  const hit = (a, b) => Math.abs(a.x - b.x) * 2 < a.w + b.w && Math.abs(a.y - b.y) * 2 < a.h + b.h;
+  const out = [], taken = blocked.map(r => ({ x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }));
+  for (const it of items) {
+    const offs = [[0, 0], [0, -it.h - 2], [0, it.h + 2], [it.w / 2 + 8, 0], [-it.w / 2 - 8, 0]];
+    for (const [ox, oy] of offs) {
+      const b = { ...it, x: it.x + ox, y: it.y + oy };
+      if (!taken.some(q => hit(b, q))) { out.push(b); taken.push(b); break; }
+    }
+  }
+  return out;
+}
+
+async function loadBackground(name) {
+  const meta = await fetch(ASSETS + name + ".json").then(r => { if (!r.ok) throw new Error(name + " " + r.status); return r.json(); });
+  const img = new Image(); img.decoding = "async"; img.src = ASSETS + meta.image;
+  await img.decode();
+  return { meta, img };
+}
+let featP = null;
+function loadFeatures() {
+  return featP ||= fetch(new URL("../data/features.json", import.meta.url)).then(r => r.ok ? r.json() : { features: [] })
+    .then(d => (d.features || []).map(f => { const [x, y] = stereo(f.lat, f.lon_e); return { name: f.name, type: f.type, d: f.diameter_km, stereo_x_m: x, stereo_y_m: y }; }))
+    .catch(() => []);
 }
 
 /**
@@ -81,43 +133,44 @@ function overlayRects(container) {
  *  sites: [{ id, n, name, stereo_x_m, stereo_y_m }]; route: [siteId, ...] dotted line.
  * Returns Promise<{ select(id), zoom(f), redraw(), grid, el }>.
  */
-export async function mountTerrain(container, { sites = [], selected = null, route = [], onSelect, labels = true } = {}) {
+export async function mountTerrain(container, { sites = [], selected = null, route = [], onSelect, labels: showLabels = true, background = "shade87" } = {}) {
   container.classList.add("mp-terrain");
   Object.assign(container.style, { position: "fixed", inset: "0", overflow: "hidden", background: "var(--bg)" });
-  const grid = await loadRegion();
+  const [grid, bgs, features] = await Promise.all([loadRegion(),
+    Promise.all([loadBackground(BACKGROUNDS[background] || BACKGROUNDS.shade87), loadBackground(BACKGROUNDS.shade84)]).catch(() => null), showLabels ? loadFeatures() : []]);
   const cv = document.createElement("canvas"); cv.setAttribute("role", "img"); cv.setAttribute("aria-label", t("terrain.label"));
   Object.assign(cv.style, { position: "absolute", inset: "0", width: "100%", height: "100%" });
+  const labels = document.createElement("div"); labels.className = "mp-terrain-labels"; labels.setAttribute("aria-hidden", "true");
   const layer = document.createElement("div"); Object.assign(layer.style, { position: "absolute", inset: "0", pointerEvents: "none" });
-  container.append(cv, layer);
-  // view: centre (metres) and span (metres across the free area's short side).
+  container.append(cv, labels, layer);
+  container.dataset.background = bgs ? bgs[0].meta.image : "grid";
   const xs = sites.map(s => s.stereo_x_m), ys = sites.map(s => s.stereo_y_m);
   const view = { cx: xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0, cy: ys.length ? (Math.min(...ys) + Math.max(...ys)) / 2 : 0,
     span: xs.length ? Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * 1.6 + 30000 : grid.nx * grid.dx };
-  // Crater names on the map (IAU labels from web/data/sites.json "features", label only).
-  let features = [];
-  if (labels) try { features = ((await loadSites()).features || []).filter(f => !f.landing_site && Number.isFinite(f.stereo_x_m)); } catch { features = []; }
   container.dataset.features = String(features.length);
-  let lastMpp = 0;
-  let sel = selected, focus = selected, free = null, relief = null, reliefKey = "";
-  const ext = grid.nx * grid.dx;
+  let lastMpp = 0, sel = selected, free = null, relief = null, reliefKey = "";
+  // Extent the view may show: the wider background (84°S) when loaded, else the grid.
+  const ext = bgs ? 2 * bgs[1].meta.bounds.square_half_width_m : grid.nx * grid.dx;
+  const ox = bgs ? -ext / 2 : grid.x0, oy = bgs ? -ext / 2 : grid.y0;
   function frame(W, H) {
     free = freeArea(W, H, overlayRects(container));
     const fw = free.r - free.l, fh = free.b - free.t;
-    // metres per CSS px so that `span` fits the free area; never zoom out past the grid.
     let mpp = view.span / Math.min(fw, fh); mpp = Math.min(mpp, ext / Math.max(W, H));
-    // Free-area centre in metres → screen centre in metres.
     const fcx = (free.l + free.r) / 2, fcy = (free.t + free.b) / 2;
-    // Keep the mosaic filling the screen (no hard black edge). Clamping may move the chosen point
-    // off the free-area centre: then zoom in step by step until it is back inside the free area.
     const place = m => { const hw = W * m / 2, hh = H * m / 2;
       let x = view.cx - (fcx - W / 2) * m, y = view.cy + (fcy - H / 2) * m;
-      x = Math.min(grid.x0 + ext - hw, Math.max(grid.x0 + hw, x)); y = Math.min(grid.y0 + ext - hh, Math.max(grid.y0 + hh, y));
+      x = Math.min(ox + ext - hw, Math.max(ox + hw, x)); y = Math.min(oy + ext - hh, Math.max(oy + hh, y));
       const px = W / 2 + (view.cx - x) / m, py = H / 2 - (view.cy - y) / m;
       return { x, y, ok: px >= free.l && px <= free.r && py >= free.t && py <= free.b }; };
     let pl = place(mpp);
     for (let k = 0; k < 12 && !pl.ok; k++) { mpp *= .85; pl = place(mpp); }
-    const sx = pl.x, sy = pl.y;
-    return { mpp, sx, sy };
+    return { mpp, sx: pl.x, sy: pl.y };
+  }
+  // Draw one background image so that stereo metres map through its own .json transform.
+  function drawBg(g, bg, W, H, sx, sy, mpp) {
+    const m = bg.meta.transform.meters_per_pixel, [c0, r0] = bgPixel(bg.meta, sx - W * mpp / 2, sy + H * mpp / 2);
+    const k = m / mpp; // CSS px per image px
+    g.drawImage(bg.img, 0, 0, bg.img.naturalWidth, bg.img.naturalHeight, -(c0 + .5) * k, -(r0 + .5) * k, bg.img.naturalWidth * k, bg.img.naturalHeight * k);
   }
   function draw() {
     const W = container.clientWidth, H = container.clientHeight, dpr = Math.min(3, devicePixelRatio || 1);
@@ -127,17 +180,23 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
     const w = Math.round(W * dpr), h = Math.round(H * dpr);
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
     const g = cv.getContext("2d");
-    const key = [w, h, sx.toFixed(1), sy.toFixed(1), mpp.toFixed(4)].join();
-    if (key !== reliefKey) { relief = renderRelief(grid, w, h, sx - W * mpp / 2, sy + H * mpp / 2, mpp / dpr); reliefKey = key; }
-    g.setTransform(1, 0, 0, 1, 0, 0); g.putImageData(relief, 0, 0);
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.setTransform(dpr, 0, 0, dpr, 0, 0); g.fillStyle = "#07090C"; g.fillRect(0, 0, W, H);
+    if (bgs) {
+      g.imageSmoothingQuality = "high";
+      // One image per frame (no seam): the sharp 87°S one when the whole view fits in it, else the 84°S one.
+      const half = bgs[0].meta.bounds.square_half_width_m, hw = W * mpp / 2, hh = H * mpp / 2;
+      const inner = Math.abs(sx) + hw <= half && Math.abs(sy) + hh <= half, bg = inner ? bgs[0] : bgs[1];
+      container.dataset.background = bg.meta.image; drawBg(g, bg, W, H, sx, sy, mpp);
+    } else {
+      const key = [w, h, sx.toFixed(1), sy.toFixed(1), mpp.toFixed(4)].join();
+      if (key !== reliefKey) { relief = renderRelief(grid, w, h, sx - W * mpp / 2, sy + H * mpp / 2, mpp / dpr); reliefKey = key; }
+      g.setTransform(1, 0, 0, 1, 0, 0); g.putImageData(relief, 0, 0); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    // Design A: dark, cool night tone over the relief (cosmetic grade, no data meaning).
+    g.fillStyle = "rgba(10,22,48,.08)"; g.fillRect(0, 0, W, H);
     const vg = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .78);
-    vg.addColorStop(0, "rgba(7,9,12,0)"); vg.addColorStop(1, "rgba(7,9,12,.88)"); g.fillStyle = vg; g.fillRect(0, 0, W, H);
+    vg.addColorStop(0, "rgba(7,9,12,0)"); vg.addColorStop(1, "rgba(7,9,12,.6)"); g.fillStyle = vg; g.fillRect(0, 0, W, H);
     const toPx = (x, y) => [W / 2 + (x - sx) / mpp, H / 2 - (y - sy) / mpp];
-    g.font = "500 12.5px Manrope, system-ui, sans-serif"; g.textAlign = "center"; g.fillStyle = "rgba(242,244,245,.78)";
-    g.shadowColor = "rgba(0,0,0,.8)"; g.shadowBlur = 4;
-    for (const f of features) { const [x, y] = toPx(f.stereo_x_m, f.stereo_y_m); if (x > 0 && y > 0 && x < W && y < H) g.fillText(f.name.replace(/ crater$/i, ""), x, y); }
-    g.shadowBlur = 0;
     const pts = route.map(id => sites.find(s => s.id === id)).filter(Boolean).map(s => toPx(s.stereo_x_m, s.stereo_y_m));
     if (pts.length > 1) { g.setLineDash([1, 9]); g.lineCap = "round"; g.lineWidth = 2.4; g.strokeStyle = "#F2F4F5"; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); g.setLineDash([]); }
     layer.replaceChildren(...sites.map(s => {
@@ -149,18 +208,28 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
       const lab = document.createElement("span"); lab.className = "mp-marker-label"; lab.textContent = s.name; b.append(lab);
       return b;
     }));
-    // A marker under a panel is hidden (not focusable): the site stays reachable by the ‹ › selector.
-    requestAnimationFrame(() => { for (const b of layer.children) {
-      const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      const hit = cx >= 0 && cy >= 0 && cx < W && cy < H ? document.elementFromPoint(cx, cy) : null;
-      b.dataset.covered = String(!(hit && (hit === b || b.contains(hit))) && b.getAttribute("aria-pressed") !== "true");
-    } });
+    requestAnimationFrame(() => {
+      const panels = overlayRects(container);
+      for (const b of layer.children) {
+        const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const hit = cx >= 0 && cy >= 0 && cx < W && cy < H ? document.elementFromPoint(cx, cy) : null;
+        b.dataset.covered = String(!(hit && (hit === b || b.contains(hit))) && b.getAttribute("aria-pressed") !== "true");
+      }
+      // IAU names: white, no box; larger features first; hidden under panels, markers and each other.
+      const marks = [...layer.querySelectorAll(".mp-marker:not([data-covered=true]), .mp-marker:not([data-covered=true]) .mp-marker-label")].map(e => e.getBoundingClientRect());
+      const cands = features.filter(f => !sites.some(s => s.name && f.name && s.name.startsWith(f.name))).sort((a, b) => b.d - a.d)
+        .map(f => { const [x, y] = toPx(f.stereo_x_m, f.stereo_y_m); return { f, x, y, w: f.name.length * 7 + 6, h: 16 }; })
+        .filter(c => c.x > c.w / 2 && c.y > 8 && c.x < W - c.w / 2 && c.y < H - 8);
+      const placed = placeLabels(cands, [...panels, ...marks]).slice(0, 8);
+      labels.replaceChildren(...placed.map(p => { const s = document.createElement("span"); s.className = "mp-feature";
+        s.dataset.type = p.f.type; s.textContent = p.f.name; Object.assign(s.style, { left: p.x + "px", top: p.y + "px" }); return s; }));
+      container.dataset.labels = String(placed.length);
+    });
   }
   const api = { el: container, grid, view,
-    select(id) { sel = id; focus = id; const s = sites.find(x => x.id === id); if (s) { view.cx = s.stereo_x_m; view.cy = s.stereo_y_m; } draw(); },
+    select(id) { sel = id; const s = sites.find(x => x.id === id); if (s) { view.cx = s.stereo_x_m; view.cy = s.stereo_y_m; } draw(); },
     zoom(f) { view.span = Math.min(ext, Math.max(4000, view.span / f)); draw(); }, redraw: draw,
     get free() { return free; }, get mpp() { return lastMpp; } };
-  // Panels are rendered after the map: re-frame when the overlays change size or appear.
   let pending = 0, lastFree = "";
   const reframe = () => { if (pending) return; pending = requestAnimationFrame(() => { pending = 0;
     const f = JSON.stringify(freeArea(container.clientWidth, container.clientHeight, overlayRects(container)));
