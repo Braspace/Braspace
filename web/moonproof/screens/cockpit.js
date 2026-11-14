@@ -6,7 +6,7 @@ import { createLayerCard, statCircle } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { TEXTS } from "./cockpit-texts.js";
-import { FAULTS, H1_PROFILE, SPEEDS, HOUR_MS, applyFault, runScenario, nextChange, dailyFractions, autonomyHours, fmtDuration,
+import { siteEvaluateBody, FAULTS, H1_PROFILE, SPEEDS, HOUR_MS, applyFault, runScenario, nextChange, dailyFractions, autonomyHours, fmtDuration,
   clockLabel, hourIndex, evaluateRules, rulesMet, longestRun, countRises } from "./cockpit-model.js";
 
 register(TEXTS);
@@ -73,6 +73,7 @@ async function compute() {
   if (!online) run = { ok: false, offline: true, route: "none" };
   else {
     const call = (p, o) => (p === "/api/onboard/site-evaluate" && S.noSiteRoute.has(st.site)) ? Promise.resolve({ ok: false, error: "cached DATA_NOT_AVAILABLE" }) : api(p, o);
+    S.reportReq = siteEvaluateBody({ siteId: st.site, startIso: new Date(m.t0).toISOString(), hours: hoursOf(), power, maxBlackoutH: Math.min(st.blackout, hoursOf()), delayH: f.delayH });
     run = await runScenario(call, { siteId: st.site, startIso: new Date(m.t0).toISOString(), hours: hoursOf(), power, maxBlackoutH: Math.min(st.blackout, hoursOf()), samples, delayH: f.delayH });
     if (run.route === "eval") S.noSiteRoute.add(st.site);
     if (run.route === "site") run.samples = null;
@@ -192,6 +193,8 @@ async function draw() {
   $("play").textContent = S.playing ? "⏸" : "▶"; $("play").setAttribute("aria-label", t(S.playing ? "cockpit.pause" : "cockpit.play"));
   $("restart").setAttribute("aria-label", t("cockpit.restart")); $("speed").setAttribute("aria-label", t("cockpit.speed")); rg.setAttribute("aria-label", t("cockpit.time"));
   $("onboard").textContent = t("cockpit.onboard"); $("onboard").href = "../onboard/";
+  // Printable site report from the onboard computer API (was only in the legacy onboard panel).
+  const rep = $("report"); rep.textContent = t("cockpit.report"); rep.disabled = !S.reportReq; rep.title = S.reportReq ? t("cockpit.report.hint") : t("cockpit.report.offline");
   $("handle").setAttribute("aria-label", t("cockpit.sheet"));
 }
 function sealSpan(s) { const e = el("span", "mp-seal", s); e.dataset.seal = s; e.title = t("seal." + s); return e; }
@@ -217,3 +220,11 @@ let last = getState().site;
 onState(s => { if (s.site !== last) { last = s.site; S.t = 0; S.dismissed = null; frame(); } draw(); });
 frame(); await draw(); frame();
 globalThis.__cockpit = S;
+
+// Opens the API's printable HTML report for the current scenario (POST /api/onboard/site-report).
+document.getElementById("report")?.addEventListener("click", async e => {
+  const b = e.currentTarget; if (!S.reportReq) return;
+  b.disabled = true; const r = await api("/api/onboard/site-report", { method: "POST", body: S.reportReq, as: "text", timeoutMs: 15000 }); b.disabled = false;
+  if (!r.ok) { b.title = t("cockpit.report.fail", { e: r.error }); b.textContent = t("cockpit.report.failShort"); return; }
+  window.open(URL.createObjectURL(new Blob([r.data], { type: "text/html" })), "_blank", "noopener");
+});

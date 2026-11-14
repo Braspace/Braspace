@@ -102,3 +102,4 @@
   .mp-scn-dock .mp-pill:not(select){min-width:44px;padding:0 10px}
   .mp-scn-dock select.mp-pill{min-width:0;flex:1 1 120px;text-overflow:ellipsis}
 }
+.mp-nearby{margin-top:13px;border-top:1px solid var(--line);padding-top:8px}.mp-nearby-row{margin:4px 0;font-size:13px}.mp-nearby-row .is-ok{color:var(--jade)}.mp-nearby-row .is-fail{color:var(--fail-text)}
