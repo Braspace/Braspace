@@ -3061,6 +3061,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "next_transitions": {
+            "$ref": "#/components/schemas/NextTransitions"
           }
         },
         "additionalProperties": false,
@@ -3075,7 +3078,96 @@
           "step_seconds",
           "terrain_horizon",
           "samples",
-          "limitations"
+          "limitations",
+          "next_transitions"
+        ]
+      },
+      "VisibilityTransition": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "epoch_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "First stored sample showing the new state"
+          },
+          "last_unchanged_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last stored sample still in the start state"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "sunrise",
+              "sunset",
+              "earth_rise",
+              "earth_set"
+            ]
+          },
+          "hours_from_start": {
+            "type": "number",
+            "minimum": 0
+          },
+          "resolution_seconds": {
+            "type": "integer",
+            "description": "Series step; the change lies in (last_unchanged_utc, epoch_utc]"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "epoch_utc",
+          "last_unchanged_utc",
+          "kind",
+          "hours_from_start",
+          "resolution_seconds"
+        ]
+      },
+      "NextTransitions": {
+        "type": "object",
+        "description": "Next change of sun_visible / earth_visible after start_utc within the requested window, from stored native-step samples only (no interpolation). null + *_null_reason when there is none.",
+        "properties": {
+          "search_start_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "search_end_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolution_seconds": {
+            "type": "integer"
+          },
+          "sun": {
+            "$ref": "#/components/schemas/VisibilityTransition"
+          },
+          "sun_null_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "earth": {
+            "$ref": "#/components/schemas/VisibilityTransition"
+          },
+          "earth_null_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "search_start_utc",
+          "search_end_utc",
+          "resolution_seconds",
+          "sun",
+          "sun_null_reason",
+          "earth",
+          "earth_null_reason"
         ]
       }
     }
