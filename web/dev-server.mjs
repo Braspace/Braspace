@@ -63,7 +63,7 @@ export function createServer(){
   const pathname=parsed.pathname;
   if((pathname.startsWith("/api/")||pathname==="/healthz"||pathname==="/readyz")){
    // Printable HTML report intentionally carries a strictly scoped inline stylesheet.
-   if(pathname==="/api/onboard/report")res.setHeader("Content-Security-Policy","default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
+   if(pathname==="/api/onboard/report"||pathname==="/api/onboard/site-report")res.setHeader("Content-Security-Policy","default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
    if(!["GET","POST","HEAD","OPTIONS"].includes(req.method)){res.writeHead(405);res.end("Method not allowed");return;}
    proxyAPI(req,res);
    return;

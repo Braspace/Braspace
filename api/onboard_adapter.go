@@ -94,11 +94,84 @@ func (in onboardInput) candidate(id string, power onboard.Power, maxBlackout flo
 	}
 }
 
+type siteOnboardResult struct {
+	req      siteOnboardRequest
+	sources  []candidateSource
+	onboard  onboard.Response
+	combined map[string]any
+	results  []siteResult
+}
+
 func (m *missionAPI) siteOnboard(w http.ResponseWriter, r *http.Request) {
-	var req siteOnboardRequest
-	if err := decodeJSON(r, &req); err != nil {
+	res, err := m.runSiteOnboard(r)
+	if err != nil {
 		writeError(w, err)
 		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"api_version":              missionAPIVersion,
+		"request_sha256":           fingerprint(res.req),
+		"model":                    model,
+		"request":                  res.req,
+		"combined_decision":        res.combined,
+		"candidates":               res.sources,
+		"onboard":                  res.onboard,
+		"scientifically_validated": scientificallyValidated(res.results...),
+		"limitations": append(append([]string{}, limitations...),
+			"Consumables use constant per-person rates from crew.rate_source; no regeneration, leaks or EVA demand are modelled."),
+	})
+}
+
+// siteReport renders the printable mission report (#72) for the same input
+// as site-evaluate, with consumables and the combined decision appended.
+func (m *missionAPI) siteReport(w http.ResponseWriter, r *http.Request) {
+	res, err := m.runSiteOnboard(r)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	app := &onboard.ReportAppendix{Candidates: []onboard.AppendixCandidate{}}
+	if id, ok := res.combined["candidate_id"].(string); ok {
+		app.CombinedCandidateID = id
+	}
+	if res.req.Crew != nil {
+		app.RateSource = res.req.Crew.RateSource
+	}
+	validated := "not scientifically validated"
+	if scientificallyValidated(res.results...) {
+		validated = "scientifically validated"
+	}
+	app.VisibilitySource = fmt.Sprintf("computed by the BRASPACE API (Rust engine) from stored horizon/ephemeris series, %s; series status per candidate below", validated)
+	for _, c := range res.sources {
+		ac := onboard.AppendixCandidate{ID: c.ID, SiteID: c.SiteID, ScienceStatus: c.ScienceStatus, Admissible: c.Admissible,
+			ConsumablesStatus: c.Consumables.Status, Risks: c.Consumables.Risks,
+			Provenance: fmt.Sprintf("terrain=%s ephemeris=%s frame=%s", c.Provenance.TerrainDatasetID, c.Provenance.EphemerisID, c.Provenance.Frame)}
+		for _, it := range c.Consumables.Items {
+			row := onboard.ConsumableRow{Resource: it.Resource, Status: it.Status, StockAtStartKg: it.StockAtStartKg, UsedDuringDelayKg: it.UsedDuringDelayKg,
+				RequiredKg: it.RequiredKg, AutonomyHours: it.AutonomyHours, MarginHours: it.MarginHours}
+			if it.DepletionUTC != nil {
+				row.DepletionUTC = *it.DepletionUTC
+			}
+			ac.Consumables = append(ac.Consumables, row)
+		}
+		app.Candidates = append(app.Candidates, ac)
+	}
+	page, err := onboard.RenderReport(res.onboard, app)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+	w.Header().Set("Content-Disposition", "inline; filename=\"braspace-mission-report.html\"")
+	w.Header().Set("Cache-Control", "no-store")
+	_, _ = w.Write(page)
+}
+
+func (m *missionAPI) runSiteOnboard(r *http.Request) (*siteOnboardResult, error) {
+	var req siteOnboardRequest
+	if err := decodeJSON(r, &req); err != nil {
+		return nil, err
 	}
 	start, err := parseUTC("start_utc", req.StartUTC)
 	if err == nil {
@@ -114,8 +187,7 @@ func (m *missionAPI) siteOnboard(w http.ResponseWriter, r *http.Request) {
 		err = req.Crew.validate()
 	}
 	if err != nil {
-		writeError(w, err)
-		return
+		return nil, err
 	}
 	req.StartUTC = start.Format(time.RFC3339)
 
@@ -129,27 +201,22 @@ func (m *missionAPI) siteOnboard(w http.ResponseWriter, r *http.Request) {
 	for _, c := range req.Candidates {
 		label := "candidate " + c.ID
 		if strings.TrimSpace(c.ID) == "" || len(c.ID) > 96 || seen[c.ID] {
-			writeError(w, errf(http.StatusUnprocessableEntity, "INVALID_CANDIDATES", "candidate ids must be unique and non-empty"))
-			return
+			return nil, errf(http.StatusUnprocessableEntity, "INVALID_CANDIDATES", "candidate ids must be unique and non-empty")
 		}
 		seen[c.ID] = true
 		if _, ok := m.store.site(c.SiteID); !siteIDPattern.MatchString(c.SiteID) || !ok {
-			writeError(w, errf(http.StatusNotFound, "SITE_NOT_FOUND", "%s: unknown site", label))
-			return
+			return nil, errf(http.StatusNotFound, "SITE_NOT_FOUND", "%s: unknown site", label)
 		}
 		if !finite(c.DelayHours) || c.DelayHours < 0 || c.DelayHours > maxDelayHours {
-			writeError(w, errf(http.StatusUnprocessableEntity, "INVALID_DURATION", "%s: delay_hours must be in [0, %d]", label, maxDelayHours))
-			return
+			return nil, errf(http.StatusUnprocessableEntity, "INVALID_DURATION", "%s: delay_hours must be in [0, %d]", label, maxDelayHours)
 		}
 		at := start.Add(time.Duration(c.DelayHours * float64(time.Hour)))
 		in, err := m.adaptSeries(ctx, ev, label, c.SiteID, at, req.DurationHours)
 		if err != nil {
-			writeError(w, err)
-			return
+			return nil, err
 		}
 		if step != 0 && in.series.StepSeconds != step {
-			writeError(w, errf(http.StatusUnprocessableEntity, "GRID_MISMATCH", "all candidates must share one time step"))
-			return
+			return nil, errf(http.StatusUnprocessableEntity, "GRID_MISMATCH", "all candidates must share one time step")
 		}
 		step = in.series.StepSeconds
 		inputs = append(inputs, in)
@@ -157,8 +224,7 @@ func (m *missionAPI) siteOnboard(w http.ResponseWriter, r *http.Request) {
 	}
 	obResp, err := onboard.Evaluate(obReq)
 	if err != nil {
-		writeError(w, errf(http.StatusUnprocessableEntity, "INVALID_SCENARIO", "%s", err))
-		return
+		return nil, errf(http.StatusUnprocessableEntity, "INVALID_SCENARIO", "%s", err)
 	}
 
 	sources := make([]candidateSource, len(inputs))
@@ -190,16 +256,5 @@ func (m *missionAPI) siteOnboard(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{
-		"api_version":              missionAPIVersion,
-		"request_sha256":           fingerprint(req),
-		"model":                    model,
-		"request":                  req,
-		"combined_decision":        combined,
-		"candidates":               sources,
-		"onboard":                  obResp,
-		"scientifically_validated": scientificallyValidated(results...),
-		"limitations": append(append([]string{}, limitations...),
-			"Consumables use constant per-person rates from crew.rate_source; no regeneration, leaks or EVA demand are modelled."),
-	})
+	return &siteOnboardResult{req: req, sources: sources, onboard: obResp, combined: combined, results: results}, nil
 }

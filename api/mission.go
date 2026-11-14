@@ -83,6 +83,7 @@ func (m *missionAPI) register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/compare", m.compare)
 	mux.HandleFunc("POST /api/scenarios/delay", m.delayScenario)
 	mux.HandleFunc("POST /api/onboard/site-evaluate", m.siteOnboard)
+	mux.HandleFunc("POST /api/onboard/site-report", m.siteReport)
 	mux.HandleFunc("GET /api/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		_, _ = w.Write(openAPISpec)

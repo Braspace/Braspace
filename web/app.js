@@ -34,7 +34,10 @@ function trainingSamples(start,count) {
           earth_visible:Math.cos(2*Math.PI*t/(27.3*24)+1.2)>-0.35};
  });
 }
-function buildRequest(){
+// Consumption rates are placeholders until checked against NASA BVAD; the API
+// requires a rate source and reports it with every result.
+const CREW_RATES={o2:0.84,food:1.76,source:"Placeholder planning values (O2 0.84, food 1.76 kg/person/day); verify against NASA BVAD NASA/TP-2015-218570"};
+function missionInputs(){
  const start=utcDateInput(byId("start").value);
  const duration=inputNumber("duration"),delay=inputNumber("delay");
  const capacity=inputNumber("battery"),initial=inputNumber("initial"),reserve=inputNumber("reserve"),
@@ -43,6 +46,36 @@ function buildRequest(){
  if(capacity<=0||capacity>1e5||initial<0||initial>capacity||reserve<0||reserve>capacity)throw new Error("Battery charge and reserve must not exceed capacity.");
  if(generation<0||load<0||blackout<0||blackout>duration)throw new Error("Use valid positive power and blackout inputs (gap <= duration).");
  const power={battery_capacity_wh:capacity,initial_charge_wh:initial,reserve_wh:reserve,solar_generation_w:generation,load_w:load};
+ return {start,duration,delay,blackout,power};
+}
+function crewInput(){
+ const size=inputNumber("crew");
+ if(size===0)return undefined;
+ const o2=inputNumber("o2"),food=inputNumber("food");
+ if(!Number.isInteger(size)||size<0||size>12||o2<0||food<0)throw new Error("Crew must be 0..12 people with non-negative stocks.");
+ return {size,o2_stock_kg:o2,food_stock_kg:food,o2_kg_per_person_day:CREW_RATES.o2,food_kg_per_person_day:CREW_RATES.food,
+  reserve_hours:12,aboard_during_delay:true,rate_source:CREW_RATES.source};
+}
+// Sites with an ingested series are evaluated from stored horizon/ephemeris
+// data by the Go API (Rust engine), not from browser-made samples.
+function siteRequest(site){
+ const {start,duration,delay,blackout,power}=missionInputs();
+ return {mission_id:"MoonProof "+site.id,start_utc:start.toISOString().replace(".000Z","Z"),duration_hours:duration,
+  candidates:[{id:"baseline",site_id:site.id,delay_hours:0},{id:"delayed-plus-"+delay+"h",site_id:site.id,delay_hours:delay}],
+  power,max_comm_blackout_hours:blackout,crew:crewInput()};
+}
+// Rebuild an onboard request from the computed timeline so the printable
+// report (#72) documents exactly the samples that were evaluated.
+function onboardRequestFrom(resp){
+ return {mission_id:resp.onboard.mission_id,candidates:resp.onboard.options.map((o,i)=>{
+  const c=resp.candidates[i];
+  return {id:o.id,site_id:o.site_id,start_utc:o.start_utc,source_claim:o.source_claim_unverified,step_minutes:c.step_seconds/60,
+   max_comm_blackout_hours:resp.request.max_comm_blackout_hours,power:resp.request.power,
+   samples:o.timeline.map(t=>({sun_visible:t.sun_visible,earth_visible:t.earth_visible}))};
+ })};
+}
+function buildRequest(){
+ const {start,duration,delay,blackout,power}=missionInputs();
  const make=(id,epoch)=>({id,site_id:"SYNTHETIC-SOUTH-POLE-TRAINING",start_utc:epoch.toISOString().replace(".000Z","Z"),source_claim:"SYNTHETIC-NOT-NASA",step_minutes:60,max_comm_blackout_hours:blackout,power,samples:trainingSamples(epoch,duration)});
  const shifted=new Date(start.getTime()+delay*3600000);
  return {mission_id:"MoonProof synthetic mission resilience lesson",candidates:[make("baseline",start),make("delayed-plus-"+delay+"h",shifted)]};
@@ -54,7 +87,7 @@ function element(tag,className,content){
 function rowText(parent,label,value){
  const p=element("p","");const strong=element("strong","",label+": ");p.append(strong,document.createTextNode(value));parent.append(p);
 }
-function renderResult(r){
+function renderResult(r,computed){
  const choices=Array.isArray(r.options)?r.options:[];
  if(r.science_status!=="UNVERIFIED_INPUTS"){setStatus("Unexpected scientific status. Do not use this result.");return;}
  state.lastResponse=r;
@@ -63,7 +96,7 @@ function renderResult(r){
  byId("metric-dark").textContent=first?format(first.metrics?.longest_darkness_hours," h"):"—";
  byId("metric-earth").textContent=first?format(first.metrics?.longest_earth_obstruction_hours," h"):"—";
  byId("metric-risks").textContent=String(first?.risks?.length??0);
- byId("result-placeholder").hidden=true;byId("result-content").hidden=false;byId("run-badge").textContent="TRAINING RESULT · UNVERIFIED";
+ byId("result-placeholder").hidden=true;byId("result-content").hidden=false;byId("run-badge").textContent=computed?"COMPUTED FROM STORED SERIES · "+computed.candidates[0].science_status:"TRAINING RESULT · UNVERIFIED";
  const cards=byId("scenario-cards");cards.replaceChildren();
  choices.forEach(o=>{
   const card=element("div","scenario-card");
@@ -72,6 +105,9 @@ function renderResult(r){
   rowText(card,"Final battery",format(o.metrics?.final_charge_wh," Wh"));
   rowText(card,"Earth obstruction",format(o.metrics?.longest_earth_obstruction_hours," h"));
   rowText(card,"Minimum reserve",format(o.metrics?.minimum_charge_wh," Wh"));
+  const cons=computed?.candidates.find(c=>c.id===o.id)?.consumables;
+  for(const item of (cons?.items||[]))rowText(card,item.resource==="oxygen"?"Oxygen margin":"Food margin",format(item.margin_hours," h")+" ("+item.status+")");
+  if(cons?.status==="UNKNOWN")rowText(card,"Crew consumables","not evaluated (no crew)");
   cards.append(card);
  });
  const risks=byId("risk-register");risks.replaceChildren();
@@ -81,9 +117,19 @@ function renderResult(r){
    left.append(element("strong","",o.id+" — "+risk.category),element("p","",risk.explanation||""));
    const badge=element("span","",risk.severity);div.append(left,badge);risks.append(div);
   }
+  for(const risk of (computed?.candidates.find(c=>c.id===o.id)?.consumables?.risks||[])){
+   const div=element("div","risk-entry"),left=element("div","");
+   left.append(element("strong","",o.id+" — "+risk.category),element("p","",risk.explanation||""));
+   div.append(left,element("span","",risk.severity));risks.append(div);
+  }
  }
  if(!risks.childElementCount)risks.append(element("p","small-muted","No training constraints were breached. This does NOT establish actual lunar mission safety."));
- byId("model-status").textContent="Input status: "+r.science_status+" · no real NASA elevation, validated ephemerides or spacecraft RF/power model. Educational candidate: "+(r.laboratory_candidate_id||"none")+".";
+ if(computed){
+  const c=computed.candidates[0],p=c.provenance;
+  byId("model-status").textContent="Visibility computed by the Go API from stored series ("+c.science_status+"; terrain "+p.terrain_dataset_id+"; ephemeris "+p.ephemeris_id+"; "+p.frame+"). Scientifically validated: "+(computed.scientifically_validated?"yes":"no")+". Energy, comms and consumables together: "+(computed.combined_decision.candidate_id||"no option meets every assumed limit")+".";
+ }else{
+  byId("model-status").textContent="Input status: "+r.science_status+" · no real NASA elevation, validated ephemerides or spacecraft RF/power model. Educational candidate: "+(r.laboratory_candidate_id||"none")+".";
+ }
  byId("report").disabled=false;
 }
 async function apiRequest(path,data,asHTML=false){
@@ -95,11 +141,20 @@ async function runTraining(event){
  event.preventDefault();
  const run=byId("run");run.disabled=true;run.textContent="Evaluating scenario…";
  try{
-  const req=buildRequest();state.lastRequest=req;
-  const r=await apiRequest("/api/onboard/evaluate",req,false);
-  renderResult(r);
+  const site=state.selected;
+  if(site?.series){
+   const sreq=siteRequest(site);
+   const resp=await apiRequest("/api/onboard/site-evaluate",sreq,false);
+   state.lastRequest=onboardRequestFrom(resp);state.lastSiteRequest=sreq;
+   renderResult(resp.onboard,resp);
+   setStatus("Visibility computed from stored "+site.series.science_status+" series for "+site.name+".");
+  }else{
+   const req=buildRequest();state.lastRequest=req;state.lastSiteRequest=null;
+   const r=await apiRequest("/api/onboard/evaluate",req,false);
+   renderResult(r);
+   setStatus(site?"No computed series for "+site.name+" yet: synthetic training output only.":"Go mission computer connected. Synthetic educational output only.");
+  }
   state.apiReady=true;
-  setStatus("Go mission computer connected. Synthetic educational output only.");
  }catch(err){
   byId("report").disabled=true;state.lastResponse=null;
   setStatus("Cannot evaluate: "+String(err.message||err)+". The page will not invent mission results.");
@@ -109,7 +164,8 @@ async function openReport(){
  if(!state.lastRequest)return;
  const button=byId("report");button.disabled=true;
  try{
-  const html=await apiRequest("/api/onboard/report",state.lastRequest,true);
+  // Computed-series runs get the report with crew consumables and the combined decision.
+  const html=state.lastSiteRequest?await apiRequest("/api/onboard/site-report",state.lastSiteRequest,true):await apiRequest("/api/onboard/report",state.lastRequest,true);
   const blob=new Blob([html],{type:"text/html;charset=utf-8"});
   const url=URL.createObjectURL(blob),tab=window.open(url,"_blank","noopener,noreferrer");
   if(!tab){const a=document.createElement("a");a.href=url;a.download="braspace-mission-report.html";a.click();}
@@ -119,12 +175,13 @@ async function openReport(){
  finally{button.disabled=false;}
 }
 function onSiteChange(){
- const id=byId("site").value,site=state.sites.find(x=>x.id===id);
+ const id=byId("site").value,site=(state.allSites||state.sites).find(x=>x.id===id);
  state.selected=site||null;
  if(site?.coordinate&&state.globe){
   state.globe.focus(Number(site.coordinate.latitude_deg),Number(site.coordinate.longitude_deg));
  }
- if(site)byId("view-description").textContent=site.name+" is a candidate-region feature center, not a precise touchdown point. NASA scientific terrain/ephemeris time series have NOT been established by the current training simulator. The 3D globe is visual context only.";
+ if(site?.series)byId("view-description").textContent=site.name+" has an ingested "+site.series.science_status+" horizon/ephemeris series; the mission computer will use visibility computed from it."+(site.coordinate?" The point is a candidate-region feature center, not a touchdown point.":" It is a software test fixture, not a lunar location.");
+ else if(site)byId("view-description").textContent=site.name+" is a candidate-region feature center, not a precise touchdown point. NASA scientific terrain/ephemeris time series have NOT been established by the current training simulator. The 3D globe is visual context only.";
 }
 async function loadSites(){
  const select=byId("site");
@@ -133,9 +190,14 @@ async function loadSites(){
   if(!resp.ok)throw new Error("HTTP "+resp.status);
   const data=await resp.json(),sites=Array.isArray(data.sites)?data.sites:[];
   if(!sites.length)throw new Error("Empty site catalog");
-  state.sites=sites.filter(s=>s?.coordinate&&Number.isFinite(Number(s.coordinate.latitude_deg))&&Number.isFinite(Number(s.coordinate.longitude_deg)));
+  const located=sites.filter(s=>s?.coordinate&&Number.isFinite(Number(s.coordinate.latitude_deg))&&Number.isFinite(Number(s.coordinate.longitude_deg)));
+  const fixtures=sites.filter(s=>!s?.coordinate&&s?.series);
+  state.sites=located;state.allSites=[...located,...fixtures];
   select.replaceChildren();
-  state.sites.forEach(s=>{const op=element("option","",s.name);op.value=s.id;select.append(op);});
+  const group=(label,list)=>{if(!list.length)return;const g=document.createElement("optgroup");g.label=label;
+   list.forEach(s=>{const op=element("option","",s.name+(s.series?" · "+s.series.science_status+" series":""));op.value=s.id;g.append(op);});select.append(g);};
+  group("Artemis III candidate regions",located);
+  group("Test fixtures (synthetic series, not lunar locations)",fixtures);
   const match=state.sites.find(s=>s.id==="connecting-ridge");if(match)select.value=match.id;
   onSiteChange();
   if(state.globe)state.globe.setSites(state.sites);

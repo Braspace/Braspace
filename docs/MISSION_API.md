@@ -103,6 +103,14 @@ Without `crew`, consumables are reported as `UNKNOWN`.
 `combined_decision` picks the first candidate (request order) where energy, comms and
 consumables all hold; the onboard simulator's own decision only weighs energy and comms.
 
+### `POST /api/onboard/site-report`
+
+Same input as `site-evaluate`, returns the printable mission report from #72 as HTML
+(Print → Save as PDF) with an extra section: visibility source, combined decision,
+consumption rate source and, per candidate, the oxygen/food table and risks. The plain
+`/api/onboard/report` is unchanged. The MoonProof UI uses this report after a
+computed-series run.
+
 ### Resources in `POST /api/scenarios/delay` (#69)
 
 `crew`, and `power` + `max_comm_blackout_hours`, are optional on the delay replan.
