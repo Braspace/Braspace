@@ -155,6 +155,7 @@ func main() {
  if bin=="" { bin="./bin/lunar-engine" }
  address:=os.Getenv("LISTEN_ADDR")
  if address=="" { address=":8080" }
+ if _,err:=loadDefaultStore(); err!=nil { log.Printf("site data rejected, not starting: %v",err); os.Exit(1) }
  srv:=&http.Server{Addr:address,Handler:withMiddleware(routes(bin)),ReadHeaderTimeout:5*time.Second,
   ReadTimeout:10*time.Second,WriteTimeout:30*time.Second,IdleTimeout:60*time.Second,MaxHeaderBytes:16<<10}
  log.Printf("BRASPACE API %s; source data NOT validated",address)

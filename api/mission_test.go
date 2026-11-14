@@ -367,14 +367,23 @@ func TestStoreRejectsBadData(t *testing.T) {
 	catalog := func(sites string) *fstest.MapFile {
 		return &fstest.MapFile{Data: []byte(`{"schema":"braspace.site-catalog.v1","note":"","sites":[` + sites + `]}`)}
 	}
-	entry := `{"id":"synthetic-demo-a","name":"A","kind":"synthetic_test_fixture","series_file":"s.json"}`
+	entryFor := func(data []byte) string {
+		return `{"id":"synthetic-demo-a","name":"A","kind":"synthetic_test_fixture","series_file":"s.json","series_sha256":"` + sha256Hex(data) + `"}`
+	}
+	entry := entryFor(good)
+	badFrame := []byte(strings.Replace(string(good), `"MOON_ME"`, `"J2000"`, 1))
+	badStatus := []byte(strings.Replace(string(good), `"SYNTHETIC"`, `"TRUST_ME"`, 1))
+	truncated := good[:len(good)/2]
 	cases := map[string]fstest.MapFS{
-		"duplicate id":   {"catalog.json": catalog(entry + "," + entry), "s.json": {Data: good}},
-		"unknown nearby": {"catalog.json": catalog(`{"id":"x","name":"X","kind":"k","nearby":["y"]}`)},
-		"wrong frame":    {"catalog.json": catalog(entry), "s.json": {Data: []byte(strings.Replace(string(good), `"MOON_ME"`, `"J2000"`, 1))}},
-		"bad status":     {"catalog.json": catalog(entry), "s.json": {Data: []byte(strings.Replace(string(good), `"SYNTHETIC"`, `"TRUST_ME"`, 1))}},
-		"wrong site":     {"catalog.json": catalog(strings.Replace(entry, `"id":"synthetic-demo-a"`, `"id":"other"`, 1)), "s.json": {Data: good}},
-		"no source":      {"catalog.json": catalog(`{"id":"x","name":"X","kind":"k","coordinate":{"latitude_deg":-89,"longitude_deg":0,"role":"r","frame":"f","source":""}}`)},
+		"duplicate id":      {"catalog.json": catalog(entry + "," + entry), "s.json": {Data: good}},
+		"unknown nearby":    {"catalog.json": catalog(`{"id":"x","name":"X","kind":"k","nearby":["y"]}`)},
+		"wrong frame":       {"catalog.json": catalog(entryFor(badFrame)), "s.json": {Data: badFrame}},
+		"bad status":        {"catalog.json": catalog(entryFor(badStatus)), "s.json": {Data: badStatus}},
+		"wrong site":        {"catalog.json": catalog(strings.Replace(entry, `"id":"synthetic-demo-a"`, `"id":"other"`, 1)), "s.json": {Data: good}},
+		"missing hash":      {"catalog.json": catalog(`{"id":"synthetic-demo-a","name":"A","kind":"k","series_file":"s.json"}`), "s.json": {Data: good}},
+		"edited after hash": {"catalog.json": catalog(entry), "s.json": {Data: badFrame}},
+		"truncated file":    {"catalog.json": catalog(entry), "s.json": {Data: truncated}},
+		"no source":         {"catalog.json": catalog(`{"id":"x","name":"X","kind":"k","coordinate":{"latitude_deg":-89,"longitude_deg":0,"role":"r","frame":"f","source":""}}`)},
 	}
 	for name, fsys := range cases {
 		if _, err := loadStore(fsys); err == nil {
@@ -425,5 +434,38 @@ func TestRealEngineAgreesWithContract(t *testing.T) {
 	rb, _ := io.ReadAll(b.Body)
 	if string(ra) != string(rb) {
 		t.Fatal("real Rust engine and test engine disagree on the same inputs")
+	}
+}
+
+// TestSeriesHashCatchesSilentEdits covers edits that still parse: a changed
+// angle, a removed sample (which would shift every later epoch) and a cut tail.
+func TestSeriesHashCatchesSilentEdits(t *testing.T) {
+	good, _ := embeddedSiteData.ReadFile("sitedata/series/synthetic-demo-a.json")
+	var s map[string]any
+	_ = json.Unmarshal(good, &s)
+	samples := s["samples"].([]any)
+	variants := map[string]func() []any{
+		"changed angle": func() []any {
+			c := append([]any{}, samples...)
+			c[50] = map[string]any{"sun": map[string]any{"azimuth_deg": 10.0, "elevation_deg": 45.0}, "earth": c[50].(map[string]any)["earth"]}
+			return c
+		},
+		"removed sample": func() []any { return append(append([]any{}, samples[:1]...), samples[2:]...) },
+		"cut tail":       func() []any { return append([]any{}, samples[:100]...) },
+	}
+	cat := `{"schema":"braspace.site-catalog.v1","note":"","sites":[{"id":"synthetic-demo-a","name":"A","kind":"k","series_file":"s.json","series_sha256":"` + sha256Hex(good) + `"}]}`
+	for name, mutate := range variants {
+		c := map[string]any{}
+		for k, v := range s {
+			c[k] = v
+		}
+		c["samples"] = mutate()
+		edited, _ := json.Marshal(c)
+		if _, err := loadStore(fstest.MapFS{"catalog.json": {Data: []byte(cat)}, "s.json": {Data: edited}}); err == nil || !strings.Contains(err.Error(), "series_sha256") {
+			t.Errorf("%s: must be rejected by the catalog hash, got %v", name, err)
+		}
+	}
+	if _, err := loadStore(fstest.MapFS{"catalog.json": {Data: []byte(cat)}, "s.json": {Data: good}}); err != nil {
+		t.Fatalf("unchanged file must load: %v", err)
 	}
 }

@@ -681,7 +681,7 @@
         },
         "responses": {
           "200": {
-            "description": "Standalone print-friendly HTML (Print → Save as PDF)",
+            "description": "Standalone print-friendly HTML (Print \u2192 Save as PDF)",
             "content": {
               "text/html": {}
             }
@@ -1316,6 +1316,10 @@
           },
           "series_file": {
             "type": "string"
+          },
+          "series_sha256": {
+            "type": "string",
+            "description": "SHA-256 of series_file; the file is rejected at load if it does not match"
           },
           "note": {
             "type": "string"
