@@ -1092,6 +1092,96 @@
     ];
   };
 
+  // ---------- Replanning: redesigned view ----------
+  // Replaces the earlier VIEWS.replan. Kept above the API wrapper loop, which adds the API panel.
+  const VERDICT_CHIP = { VIAVEL: ["ok", "VIÁVEL"], MARGEM_REDUZIDA: ["warn", "MARGEM REDUZIDA"], NAO_VIAVEL: ["bad", "NÃO VIÁVEL"] };
+  function verdictChip(v) {
+    const [k, label] = VERDICT_CHIP[v] || ["info", v];
+    return h("span", { class: "chip " + k, text: label });
+  }
+  function delayName(d) { return d ? "+" + d + " h" : "sem atraso"; }
+
+  VIEWS.replan = () => {
+    const life = M.lifeSupport(S.durationH);
+    const options = REPLAN_DELAYS.map(d => {
+      const tr = track(d);
+      const sum = M.summary(tr, S.stepMin);
+      const v = M.violations(sum, life);
+      const o = apiOption(d);
+      if (o) {
+        if (o.metrics.minimum_charge_wh < S.power.reserve_wh) v.push({ code: "BATT", text: "bateria abaixo da reserva" });
+        if (o.risks.some(r => r.category === "ENERGY_LOSS")) v.push({ code: "ENERGY_LOSS", text: "perda de energia" });
+      }
+      return { d, sum, v, o, verdict: M.verdict(v, life.fuelMarginKg) };
+    });
+    const viable = options.filter(x => x.verdict !== "NAO_VIAVEL");
+    const best = options.find(x => x.verdict === "VIAVEL") || options.find(x => x.verdict === "MARGEM_REDUZIDA");
+
+    // Summary: one sentence the reader can act on.
+    const headline = best
+      ? (best.d ? "Atrasar para " + delayName(best.d) + " ainda é viável neste cenário." : "O plano atual é viável neste cenário.")
+      : "Nenhum atraso testado é viável. Veja o motivo em cada cartão.";
+    const summary = h("section", { class: "panel span2" },
+      h("div", { class: "row" },
+        h("div", {}, h("h2", { style: "margin:0", text: "Replanejamento por atraso" }), h("p", { class: "dim", style: "margin:6px 0 0", text: headline })),
+        h("span", { class: "chip " + (best ? (best.verdict === "VIAVEL" ? "ok" : "warn") : "bad"), text: viable.length + " de " + options.length + " opções viáveis" })));
+
+    // One card per delay: verdict, the two main numbers and the reasons.
+    const cards = h("div", { class: "grid four span2" }, options.map(x => h("section", { class: "panel kpi" },
+      h("div", { class: "row" }, h("span", { class: "label", text: delayName(x.d) }), verdictChip(x.verdict)),
+      h("div", { class: "value", style: "margin-top:10px" }, f1(x.sum.darkH, 0), h("small", { text: " h escuro" })),
+      h("div", { class: "delta " + (x.sum.darkH > M.LIMITS.darkH ? "down" : "flat"), text: "limite " + M.LIMITS.darkH + " h · Terra bloqueada " + f1(x.sum.blockH, 0) + " h" }),
+      h("div", { class: "dim", style: "margin-top:8px" }, x.o ? "carga mínima " + f1(x.o.metrics.minimum_charge_wh, 0) + " Wh" : "carga: calcule com +"),
+      x.v.length
+        ? h("ul", { class: "plain", style: "margin-top:10px;font-size:12px" }, x.v.map(r => h("li", { text: r.text })))
+        : h("p", { class: "dim", style: "margin-top:10px", text: "Nenhuma restrição violada." }))));
+
+    // Date search: each day of the window as a coloured cell.
+    const days = DATE_OFFSETS_DAYS.map(off => {
+      const ms = startMs() + off * 86400e3;
+      const tr = M.track({ siteId: S.site, startMs: ms, stepMin: S.stepMin, count: count(), delayH: 0 });
+      const sum = M.summary(tr, S.stepMin);
+      return { off, ms, sum, verdict: M.verdict(M.violations(sum, life), undefined) };
+    });
+    const cellColor = { VIAVEL: "#3fbf80", MARGEM_REDUZIDA: "#e8a317", NAO_VIAVEL: "#e0606e" };
+    const dateStrip = h("section", { class: "panel span2" },
+      h("h2", {}, "Outras datas no mesmo lugar", h("em", { text: "grade de 24 h · 7 dias" })),
+      h("div", { class: "datestrip" }, days.map(d => h("div", { class: "daycell", title: fmt(d.ms) + " · " + (VERDICT_CHIP[d.verdict] || [])[1],
+        style: "border-top:4px solid " + cellColor[d.verdict] },
+        h("strong", { text: "dia " + (d.off + 1) }),
+        h("span", { class: "dim", text: new Date(d.ms).toISOString().slice(5, 10) }),
+        h("span", { class: "num", text: f1(d.sum.darkH, 0) + " h escuro" })))),
+      h("div", { class: "legend" },
+        h("span", {}, h("i", { style: "background:#3fbf80" }), "viável"),
+        h("span", {}, h("i", { style: "background:#e8a317" }), "margem reduzida"),
+        h("span", {}, h("i", { style: "background:#e0606e" }), "não viável")),
+      h("p", { class: "note", text: "Grade fixa, sem otimização. Não é uma busca completa de datas." }));
+
+    // Places: same metrics, one card each.
+    const places = h("section", { class: "panel span2" },
+      h("h2", {}, "Outros lugares", h("em", { text: "mesma data e duração" })),
+      h("div", { class: "grid three" }, Object.keys(M.SITES).map(id => {
+        const tr = M.track({ siteId: id, startMs: startMs(), stepMin: S.stepMin, count: count(), delayH: 0 });
+        const sum = M.summary(tr, S.stepMin);
+        const v = M.verdict(M.violations(sum, undefined), undefined);
+        const on = id === S.site;
+        return h("div", { class: "panel", style: on ? "border-color:var(--sky)" : "" },
+          h("div", { class: "row" }, h("strong", { text: M.SITES[id].name + (on ? " · atual" : "") }), verdictChip(v)),
+          h("dl", { class: "readout", style: "margin-top:8px" },
+            h("dt", {}, "horas com luz"), h("dd", { text: f1(sum.sunlitH, 0) + " h" }),
+            h("dt", {}, "maior escuridão"), h("dd", { text: f1(sum.darkH, 0) + " h" }),
+            h("dt", {}, "Terra visível"), h("dd", { text: f1(sum.earthH, 0) + " h" })));
+      })),
+      h("p", { class: "note", text: "Sem fonte real por lugar: os três são sintéticos. Bateria só para o lugar atual." }));
+
+    const explain = h("section", { class: "panel span2" },
+      h("h2", {}, "Como o veredito é calculado"),
+      h("div", { class: "edu" }, "Um atraso é inviável se a escuridão passa do limite, se a Terra fica bloqueada por tempo demais, se a bateria cai abaixo da reserva ou se o combustível fica abaixo da reserva. Os limites são premissas ilustrativas."),
+      h("p", { class: "note", text: "Cálculo do modelo sintético. Os números da API aparecem no painel de API acima, quando consultados." }));
+
+    return [summary, cards, dateStrip, places, explain];
+  };
+
   // ---------- API panels (linked to the Go API in main) ----------
   // Each panel calls one endpoint on demand and keeps the last response in S.apiResults.
   // Nothing here replaces the synthetic panels: they are shown above them, labelled as API data.
