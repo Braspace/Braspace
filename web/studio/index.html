@@ -15,7 +15,7 @@
   <header class="header">
     <a class="brand" href="../index.html" aria-label="Back to BRASPACE MoonProof home"><span class="logo" aria-hidden="true">◉</span><span>BRASPACE <small>MOONPROOF / MISSION STUDIO</small></span></a>
     <nav class="quick" aria-label="Existing scientific modules">
-      <a href="../lab.html">3D Polar Lab</a>
+      <a href="../lab.html">3D Polar Lab + Landing / Debrief</a>
       <a href="../onboard/cockpit.html">Onboard Computer</a>
     </nav>
     <label class="persona">Experience
@@ -56,12 +56,32 @@
       </section>
       <div class="notice" id="feedback" role="status" aria-live="polite">No observations loaded. Choose a site and run a view below.</div>
       <section class="screen" data-view="overview" aria-label="Mission overview">
+        <div class="task-entry" aria-label="Choose a task and opening explanation layer">
+          <p class="eyebrow">WHAT DO YOU WANT TO DO TODAY?</p>
+          <div class="task-grid">
+            <button type="button" data-task="public" class="task-card"><strong>Explore the Moon</strong><span>Curious visitors and students · begins with the Answer</span><small>Guided discovery and Polar Landing Lab</small></button>
+            <button type="button" data-task="educator" class="task-card"><strong>Teach a class</strong><span>Educators · begins with Why</span><small>Questions, evidence and in-page explanation</small></button>
+            <button type="button" data-task="researcher" class="task-card"><strong>Plan a scenario</strong><span>Researchers · begins with Proof</span><small>Constraints, reproducible data and source IDs</small></button>
+          </div>
+          <p class="small">Your selection changes only the starting explanation layer and available shortcuts. The same calculation and evidence remain accessible to everyone.</p>
+        </div>
         <div class="hero"><div><p class="eyebrow">MISSION RESILIENCE EXPLORER</p><h2>A landing plan is more than a dot on the Moon.</h2><p>Sunlight, terrain shadows and direct-to-Earth line of sight vary with place and UTC epoch. Compare constraints, simulate a delay, then inspect the underlying evidence.</p><div class="actions"><button type="button" data-go="explore">Explore terrain and sky</button><button type="button" data-go="recover" class="subtle">Test a 48-hour delay</button></div></div><div class="orb" aria-hidden="true"><span>87°S — 90°S</span><div></div><small>SCHEMATIC · NOT A MAP OR MEASUREMENT</small></div></div>
         <div class="tile-grid">
           <article class="tile"><small>01 / EXPLORE</small><h3>Sun / Earth relative to horizon</h3><p>Only stored API series can populate azimuth, elevation and visibility. Open the existing 3D Polar Lab for NASA-derived preliminary terrain visualization.</p></article>
           <article class="tile"><small>02 / COMPARE</small><h3>Shared UTC, fair comparison</h3><p>Compare up to three source-backed site time windows with identical start and duration. Missing observations are marked unavailable.</p></article>
           <article class="tile"><small>03 / RECOVER</small><h3>Failure-driven replan</h3><p>State your own allowable darkness and Earth-visibility gaps, then request baseline and delayed alternatives from the Go engine.</p></article>
         </div>
+        <section class="layer-card" id="overview-layers" data-initial-layer="answer" aria-label="Understanding Sun visibility">
+          <div class="layer-top"><div><p class="eyebrow">SUN & TERRAIN · THREE EXPLANATION LAYERS</p><h3>The horizon changes the answer.</h3></div><span class="source-pill">OBSERVATION · SOURCE-GATED</span></div>
+          <div class="layer-switch" aria-label="Choose depth of explanation">
+            <button type="button" data-layer="answer" aria-pressed="true">1 · Answer</button>
+            <button type="button" data-layer="why" aria-pressed="false">2 · Why</button>
+            <button type="button" data-layer="proof" aria-pressed="false">3 · Proof</button>
+          </div>
+          <div data-layer-panel="answer"><strong>Find where sunlight can reach the landing site.</strong><p>Sun/Earth observations come from stored site series. Without a valid series, the site has no computed answer.</p></div>
+          <div data-layer-panel="why" hidden><strong>Low-angle sunlight meets a rugged horizon.</strong><p>At the lunar South Pole, a ridge can hide the Sun for a long time. Comparing the same UTC interval across sites reveals which shadow/visibility constraint matters.</p></div>
+          <div data-layer-panel="proof" hidden><strong>Definitions, uncertainty and source.</strong><p>Sun and Earth are visible when their stored direction is above the terrain horizon at each grid sample. Source ID, MOON_ME frame, sample step and limits are available in Evidence. The current series are not independently certified.</p><a href="../lab.html">Inspect preliminary NASA-derived terrain and 3D skyline</a></div>
+        </section>
       </section>
       <section class="screen" data-view="explore" hidden aria-label="Explore">
         <div class="section-head"><h2>Site and sky timeline</h2><button id="load-sky" type="button" class="action">Read stored Sun &amp; Earth samples</button></div>
@@ -75,6 +95,17 @@
         <p class="muted">Pick up to three distinct regions. Every numerical result requires <code>data_status: AVAILABLE</code>; no numbers are invented for absent series.</p>
         <label class="inline-field">Second site <select id="site-two"><option value="">None</option></select></label>
         <label class="inline-field">Third site <select id="site-three"><option value="">None</option></select></label>
+        <section class="layer-card" id="compare-layers" data-initial-layer="answer" aria-label="Understanding the comparison">
+          <div class="layer-top"><div><p class="eyebrow">RESULTS · SAME DATA, THREE LAYERS</p><h3>What do the numbers tell us?</h3></div><span class="source-pill">SCIENCE STATUS VISIBLE</span></div>
+          <div class="layer-switch" aria-label="Comparison explanation depth">
+            <button type="button" data-layer="answer" aria-pressed="true">1 · Answer</button>
+            <button type="button" data-layer="why" aria-pressed="false">2 · Why</button>
+            <button type="button" data-layer="proof" aria-pressed="false">3 · Proof</button>
+          </div>
+          <div data-layer-panel="answer"><strong id="compare-answer">Run the API comparison to read real available results.</strong><p>No numerical ranking is made without source-backed metrics and user-declared mission rules.</p></div>
+          <div data-layer-panel="why" hidden><strong>Why can two sites differ?</strong><p>Local terrain blocks low-angle Sun and Earth rays differently. Sunlight fraction alone cannot guarantee battery adequacy or a radio link. See the same-window table below.</p></div>
+          <div data-layer-panel="proof" hidden><strong>How were the numbers computed?</strong><p>POST /api/compare evaluates stored grid samples at the exact UTC start and duration. For every row, the data status and scientific status accompany fractions and maximum continuous gaps. No value appears for a site without an AVAILABLE series.</p><button type="button" id="export-compare" disabled>Download source-bearing JSON</button><p class="small" id="export-note">Export enabled only after a successful API response.</p></div>
+        </section>
         <div class="table-scroll"><table><caption>Computed metrics from exactly the same time window</caption><thead><tr><th>Site / status</th><th>Sun visible</th><th>Earth visible</th><th>Darkness (h)</th><th>Earth gap (h)</th><th>Scientific state</th></tr></thead><tbody id="compare-body"><tr><td colspan="6">Run comparison to see API results.</td></tr></tbody></table></div>
       </section>
       <section class="screen" data-view="recover" hidden aria-label="Recover">
@@ -101,6 +132,13 @@
       <section class="screen" data-view="learn" hidden aria-label="Learn and teach">
         <div class="section-head"><h2>Mission recovery classroom</h2></div>
         <div class="two-cols"><article class="tile"><small>EXPERIMENT 01</small><h3>Find a horizon obstruction</h3><p>Inspect the same site at two UTC times. Record whether the terrain-constrained Sun and Earth visibility change, then explain why.</p><button type="button" data-go="explore">Open live sky observations</button></article><article class="tile"><small>EXPERIMENT 02</small><h3>Repair a missed landing window</h3><p>Declare maximum darkness and Earth gap. Test a two-day delay, then inspect each failed criterion and candidate alternative.</p><button type="button" data-go="recover">Open recovery exercise</button></article></div>
+        <div class="tile" id="lesson">
+          <p class="eyebrow">KIT AULA · QUESTION / REASON / EVIDENCE</p>
+          <h3 id="lesson-question">Question 1 / 4: If the Earth is visible above the terrain, is an RF link guaranteed?</h3>
+          <div class="actions"><button type="button" id="reveal-answer">Reveal the explanation</button><button class="subtle" type="button" id="next-question">Next question</button></div>
+          <p id="lesson-answer" class="lesson-answer" hidden>No. Line-of-sight is geometric; communications also depend on antennas, power, frequency, link budget and networks.</p>
+          <p class="small">Classroom answers and progress stay in this browser tab; no student information is collected.</p>
+        </div>
         <div class="tile"><h3>Evidence checklist</h3><label class="check"><input type="checkbox"> I can distinguish a visualization from a measurement.</label><label class="check"><input type="checkbox"> I checked that two sites use the same UTC window.</label><label class="check"><input type="checkbox"> I inspected at least one failed constraint.</label><label class="check"><input type="checkbox"> I understand geometric visibility is not guaranteed communications.</label><p class="small">These are local learning prompts only; no grade, account or user data is transmitted.</p></div>
       </section>
       <footer>BRASPACE · Educational prototype · No flight recommendation · <a href="../index.html">Original MoonProof</a> · <a href="../lab.html">NASA-derived 3D Polar Lab</a></footer>
