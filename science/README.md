@@ -45,11 +45,11 @@ For south-pole planetocentric latitude `phi` and east-positive longitude `lambda
 ```text
 rho = 2 R tan((phi + 90°)/2)
 x = rho sin(lambda); y = rho cos(lambda)
-pixel_col0 = SAMPLE_PROJECTION_OFFSET - 0.5 + x/MAP_SCALE
-pixel_row0 = LINE_PROJECTION_OFFSET - 0.5 - y/MAP_SCALE
+pixel_col0 = SAMPLE_PROJECTION_OFFSET + x/MAP_SCALE
+pixel_row0 = LINE_PROJECTION_OFFSET - y/MAP_SCALE
 ```
 
-This uses the label's PDS3 one-indexed pixel-registration offset and half-pixel convention. Joel must confirm this exact convention with an independent georeferenced benchmark before production use. DEM values use bilinear spatial interpolation with an explicit sentinel guard. Ray directions follow great circles along local tangent ENU. At each distance, terrain planetary radius is `R+elevation`; the apparent height is measured against the observer's local tangent using a 3D vector (curvature included). The maximum apparent elevation among sampled terrain points defines the approximate skyline for that azimuth.
+Zero-indexed pixel centres per DSMAP_POLAR.CAT (X = (I - N/2 - 0.5)*MAP_SCALE, I one-indexed): the label offset is already the zero-indexed pole position, so no extra -0.5 is applied. Joel must confirm this exact convention with an independent georeferenced benchmark before production use. DEM values use bilinear spatial interpolation with an explicit sentinel guard. Ray directions follow great circles along local tangent ENU. At each distance, terrain planetary radius is `R+elevation`; the apparent height is measured against the observer's local tangent using a 3D vector (curvature included). The maximum apparent elevation among sampled terrain points defines the approximate skyline for that azimuth.
 
 **Limitations:** This is a sampled discrete DEM along rays; grid resolution, interpolation, oversampling and undersampling, radial extent, image artifacts, observer-height uncertainty, site center uncertainty, partial coverage, parallax, geodetic-vs-geocentric conventions and lunar shape approximation all affect results. It is *not* flight-grade. True Sun disc width and eclipses are absent; no solar incidence, battery or RF budget is computed.
 
