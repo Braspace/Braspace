@@ -33,6 +33,7 @@ type skyResponse struct {
 	APIVersion      string           `json:"api_version"`
 	SiteID          string           `json:"site_id"`
 	ScienceStatus   string           `json:"science_status"`
+	ScientificallyValidated bool `json:"scientifically_validated"`
 	Provenance      seriesProvenance `json:"provenance"`
 	ObserverHeightM float64          `json:"observer_height_m"`
 	StartUTC        string           `json:"start_utc"`
@@ -159,12 +160,13 @@ func (m *missionAPI) siteSky(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	writeJSON(w, http.StatusOK, skyResponse{
-		APIVersion: missionAPIVersion, SiteID: s.ID, ScienceStatus: ser.ScienceStatus, Provenance: ser.Provenance,
+		APIVersion: missionAPIVersion, SiteID: s.ID, ScienceStatus: ser.ScienceStatus, ScientificallyValidated: false, Provenance: ser.Provenance,
 		ObserverHeightM: ser.ObserverHeightM, StartUTC: out[0].EpochUTC, EndUTC: ser.epoch(from + n).Format(time.RFC3339),
 		StepSeconds: ser.StepSeconds * stride, TerrainHorizon: ser.TerrainHorizon, Samples: out, NextTransitions: nt,
 		Limitations: append([]string{
 			"Angles and horizon are the stored series values, copied unchanged; nothing is interpolated.",
 			"science_status is the series state and is never promoted by this route.",
+			"scientifically_validated is always false on this read-only sky route until independent scientific review enables verified evidence.",
 			"next_transitions compares stored samples at the native series step only: the change happened after last_unchanged_utc and no later than epoch_utc.",
 		}, limitations...),
 	})

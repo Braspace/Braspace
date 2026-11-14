@@ -1,0 +1,15 @@
+# v3 · Kit Aula
+
+**Origem visual:** Heloísa · BRASPACE MoonProof — Telas · https://claude.ai/artifact/QV5ykVW5q9HvyZsH68SPf1
+
+## Estrutura de tela, componentes e ações
+Apresentação por pergunta, projeção com notas do professor ocultas, experiência de 4 questões, atividade partilhável por link/QR sem login, escolha de inputs permitidos e desbloqueio da resposta.
+
+## Tradução segura para implementação
+Exigir privacidade do gabarito e estado do professor. Sem backend de aula ainda, não alegar acompanhamento de respostas ou compartilhamento online.
+
+## Estados e validação
+- Placeholder, erro, sem série e offline precisam ser distintos; zero nunca substitui ausente.
+- Fontes científicas com units/UTC/frame/resolução e selo textual; dados do mockup são ILUSTRATIVOS.
+- Accessibility: foco visível, legenda de tabela, alvos de 44px, reduced motion e mobile responsivo.
+- Revisão pela autora de UX antes de declarar equivalência visual ao artefato.
