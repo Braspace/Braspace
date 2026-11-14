@@ -27,7 +27,7 @@ body { overflow-x: hidden; }
 
 /* ---- shell ---- */
 .app { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; }
-@media (max-width: 860px) { .app { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .app { grid-template-columns: minmax(0, 1fr); } }
 aside.side { background: var(--side); color: var(--side-txt); padding: 18px 0 16px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; border-right: 1px solid var(--line); }
 @media (max-width: 860px) { aside.side { position: static; height: auto; padding: 10px 0; } }
 .brand { display: flex; align-items: center; gap: 10px; padding: 0 18px 16px; color: var(--ink); font-weight: 600; letter-spacing: .04em; }
@@ -170,6 +170,23 @@ details.alarm .sev-CRITICAL { color: var(--red); } details.alarm .sev-HIGH { col
 .fab span.tip { position: absolute; right: 66px; background: var(--card); color: var(--ink); border: 1px solid var(--line); font-size: 12px; padding: 4px 8px; border-radius: 6px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s; }
 .fab:hover span.tip, .fab:focus-visible span.tip { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* 390 px phone layout (issue #125): scroll cue on tabs, smaller header, tables scroll inside their box, floating button off the cards. */
+@media (max-width: 860px) {
+  nav.tabs { scroll-snap-type: x proximity; scrollbar-width: none; padding-right: 36px; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent); }
+  nav.tabs::-webkit-scrollbar { display: none; }
+  nav.tabs button { scroll-snap-align: start; }
+}
+@media (max-width: 520px) {
+  header.top { position: static; padding: 8px 12px; gap: 6px; }
+  .status { margin-left: 0; gap: 4px; }
+  .chip { font-size: 12px; padding: 2px 8px; }
+  .filter { padding: 4px 10px; min-height: 32px; }
+  .content { padding: 12px 12px 76px; }
+  .seg { flex-wrap: wrap; max-width: 100%; }
+  .table { display: block; overflow-x: auto; max-width: 100%; }
+  .fab { right: 10px; bottom: 10px; width: 40px; height: 40px; font-size: 22px; opacity: .92; }
+}
 </style>
 </head>
 <body>
