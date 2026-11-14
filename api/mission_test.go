@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -29,6 +30,9 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	testEngineBin = filepath.Join(dir, "testengine")
+	if runtime.GOOS == "windows" {
+		testEngineBin += ".exe"
+	}
 	if out, err := exec.Command("go", "build", "-o", testEngineBin, "./internal/testengine").CombinedOutput(); err != nil {
 		panic(fmt.Sprintf("build test engine: %v\n%s", err, out))
 	}
@@ -41,6 +45,9 @@ func fakeEngineBinary(t *testing.T, mode string) string {
 	t.Helper()
 	if mode == "ok" {
 		return testEngineBin
+	}
+	if runtime.GOOS == "windows" {
+		t.Skip("failure-mode engines are POSIX shell scripts")
 	}
 	path := filepath.Join(t.TempDir(), "engine")
 	script := fmt.Sprintf("#!/bin/sh\nBRASPACE_FAKE_ENGINE=%s exec %q\n", mode, testEngineBin)
@@ -416,6 +423,9 @@ func TestRealEngineAgreesWithContract(t *testing.T) {
 	bin := os.Getenv("RUST_ENGINE_BIN")
 	if bin == "" {
 		bin = "../engine/target/debug/braspace-lunar-engine"
+		if runtime.GOOS == "windows" {
+			bin += ".exe"
+		}
 	}
 	if _, err := os.Stat(bin); err != nil {
 		t.Skip("Rust engine not built")

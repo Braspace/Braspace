@@ -259,6 +259,9 @@ func validateSeries(s *siteSeries) error {
 	if s.start, err = time.Parse(time.RFC3339, s.StartUTC); err != nil {
 		return errors.New("start_utc must be RFC3339")
 	}
+	if s.start.Nanosecond() != 0 {
+		return errors.New("start_utc must be a whole second")
+	}
 	s.start = s.start.UTC()
 	s.StartUTC = s.start.Format(time.RFC3339)
 	if s.StepSeconds < 60 || s.StepSeconds > 86400 {
@@ -289,7 +292,9 @@ func decodeStrict(raw []byte, v any) error {
 	}
 	var extra any
 	if err := dec.Decode(&extra); err != io.EOF {
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 		return errors.New("trailing JSON document")
 	}
 	return nil

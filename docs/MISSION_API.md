@@ -98,7 +98,7 @@ of the window, with `CRITICAL` / `HIGH` risks in the same shape as the onboard o
 `aboard_during_delay: true` means the crew consumes while waiting out a delay. Rates are
 inputs and `rate_source` is mandatory; the examples use 0.84 kg O2 and 1.76 kg food per
 person per day as placeholders to be checked against NASA BVAD (NASA/TP-2015-218570).
-Without `crew`, consumables are reported as `UNKNOWN`.
+Without `crew`, consumables are reported as `UNKNOWN`. If the stock runs out while the crew waits out a delay, the item is `DEPLETED_DURING_DELAY` with the actual depletion time.
 
 `combined_decision` picks the first candidate (request order) where energy, comms and
 consumables all hold; the onboard simulator's own decision only weighs energy and comms.
@@ -117,7 +117,7 @@ computed-series run.
 Each option then also reports `consumables` and an `onboard` summary, and its checks
 include `oxygen_margin_hours`, `food_margin_hours`, `min_battery_charge_wh`,
 `unserved_energy_wh` and `longest_earth_obstruction_hours`, each with its baseline value.
-That is how a delay that fixes the energy budget but runs the oxygen down shows up.
+That is how a delay that fixes the energy budget but runs the oxygen down shows up. Nearby sites whose series was computed for a different observer height are listed as `OBSERVER_HEIGHT_MISMATCH` and never compared.
 `examples/mission/scenario-delay-resources.*` has a full case.
 
 ### Map layers and site media (#57)
@@ -148,11 +148,14 @@ JSON `{"error": "...", "code": "..."}`.
 | 405 | wrong method |
 | 413 | `REQUEST_TOO_LARGE` (> 128 KiB) |
 | 415 | `UNSUPPORTED_MEDIA_TYPE` |
-| 422 | `INVALID_TIME`, `INVALID_DURATION`, `INVALID_SITES`, `INVALID_DELAYS`, `INVALID_CONSTRAINT`, `CONSTRAINTS_REQUIRED`, `DATA_NOT_AVAILABLE`, `OUTSIDE_COVERAGE`, `OBSERVER_HEIGHT_UNAVAILABLE`, `INVALID_CREW`, `INVALID_POWER`, `INVALID_MISSION`, `INVALID_CANDIDATES`, `GRID_MISMATCH`, `GRID_UNSUPPORTED`, `WINDOW_TOO_LONG`, `INVALID_SCENARIO` |
+| 422 | `INVALID_TIME`, `INVALID_DURATION`, `INVALID_SITES`, `INVALID_DELAYS`, `INVALID_CONSTRAINT`, `CONSTRAINTS_REQUIRED`, `DATA_NOT_AVAILABLE`, `OUTSIDE_COVERAGE`, `OBSERVER_HEIGHT_UNAVAILABLE`, `INVALID_CREW`, `INVALID_POWER`, `INVALID_MISSION`, `INVALID_CANDIDATES`, `GRID_MISMATCH`, `GRID_UNSUPPORTED`, `WINDOW_TOO_LONG`, `INVALID_SCENARIO`, `GRID_NOT_ALIGNED`, `TOO_MANY_EVALUATIONS` (more than 4000 uncached engine evaluations in one request) |
+| 499 | `REQUEST_CANCELED` (client went away) |
 | 500 | `INTERNAL` |
 | 502 | `ENGINE_ERROR` (non-zero exit or invalid output) |
 | 503 | `ENGINE_UNAVAILABLE` |
 | 504 | `ENGINE_TIMEOUT` (2 s per call, 20 s per request) |
+
+Engine subprocesses are capped globally (2 × CPU, at most 16 at once) so concurrent requests queue instead of multiplying processes.
 
 ## Series data contract (for the science pipeline)
 

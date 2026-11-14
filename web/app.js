@@ -111,7 +111,7 @@ function renderResult(r,computed){
  byId("metric-battery").textContent=first?format(first.metrics?.minimum_charge_wh," Wh"):"—";
  byId("metric-dark").textContent=first?format(first.metrics?.longest_darkness_hours," h"):"—";
  byId("metric-earth").textContent=first?format(first.metrics?.longest_earth_obstruction_hours," h"):"—";
- byId("metric-risks").textContent=String(first?.risks?.length??0);
+ byId("metric-risks").textContent=String((first?.risks?.length??0)+(computed?.candidates.find(c=>c.id===first?.id)?.consumables?.risks?.length??0));
  // Say which scenario the four top numbers describe; other scenarios are only quoted from the response.
  const quote=o=>o.id+": minimum charge "+format(o.metrics?.minimum_charge_wh," Wh")+", Earth obstruction "+format(o.metrics?.longest_earth_obstruction_hours," h")+", "+(o.risks?.length??0)+" risk(s)";
  byId("scope-text").textContent=first?"Top numbers are for scenario “"+first.id+"” only ("+choices.length+" evaluated). "+choices.slice(1).map(o=>"Not shown above — "+quote(o)+".").join(" "):"Top numbers: none.";
