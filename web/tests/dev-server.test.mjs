@@ -38,7 +38,7 @@ test("onboard cockpit serves live.js and config.js without opening arbitrary fil
   assert.ok(html.includes('src="'+asset+'"'),"cockpit script missing: "+asset);
   const response=await fetch(base+"/onboard/"+asset);
   assert.equal(response.status,200,"missing onboard dependency: "+asset);
-  assert.match(response.headers.get("content-type")||"",/text\\/javascript/);
+  assert.ok((response.headers.get("content-type")||"").includes("text/javascript"));
   assert.ok((await response.text()).length>50,"empty onboard dependency: "+asset);
  }
  const denied=await fetch(base+"/onboard/dev-server.py");
