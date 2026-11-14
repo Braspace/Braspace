@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "status": "curated_external_links",
+  "terms_url": "https://lroc.im-ldi.com/about/terms",
+  "default_credit": "NASA/GSFC/Arizona State University",
+  "thumbnail_policy": "Use links to original pages; no thumbnail copied into this repository. Resolve any thumbnail from an approved product at integration time.",
+  "cards": [
+    {"id":"LROC-1276","title":"Where is the South Pole?","region":"Shackleton rim","page_url":"https://lroc.im-ldi.com/images/1276","image_id":"M1407524099LR","credit":"NASA/GSFC/Arizona State University","illustrative_only":true,"coordinate_note":"South Pole reference is not a landing coordinate"},
+    {"id":"LROC-1247","title":"Traversing the Shackleton de Gerlache Ridge","region":"Connecting Ridge and Shackleton rim","page_url":"https://lroc.im-ldi.com/images/1247","image_id":"M1348682369LR","credit":"NASA/GSFC/Arizona State University","illustrative_only":true,"coordinate_note":"Oblique regional view; no site point assigned"},
+    {"id":"LROC-1294","title":"Malapert Massif","region":"Malapert Massif","page_url":"https://lroc.im-ldi.com/images/1294","image_id":"M1432398306LR","credit":"NASA/GSFC/Arizona State University","illustrative_only":true,"coordinate_note":"Page's spacecraft position is not the massif or landing site position"},
+    {"id":"LROC-237","title":"The Lunar South Pole","region":"South polar overview","page_url":"https://lroc.im-ldi.com/images/237","image_id":null,"credit":"NASA/GSFC/Arizona State University","illustrative_only":true,"coordinate_note":"Regional mosaic, approximately 600 km wide"},
+    {"id":"LROC-1105","title":"Islands in the Dark","region":"Shackleton and de Gerlache ridge","page_url":"https://lroc.im-ldi.com/images/1105","image_id":null,"credit":"NASA/GSFC/Arizona State University","illustrative_only":true,"coordinate_note":"Regional context; no exact site coordinate asserted"}
+  ]
+}
