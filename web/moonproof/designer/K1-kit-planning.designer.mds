@@ -17,6 +17,11 @@ Como diferentes regras de missão (noite, perda da Terra, bateria, mastro, decli
 - **Celular (390×844):**
   - Terreno no topo; regras editáveis, tabela comparativa com rolagem horizontal interna (sem vazar a página) e exportação empilhados na folha inferior.
 
+**Visual (fidelidade ao desenho `V3ComparePlan`)**
+- `Regras da missão` e a tabela são cartões pretos sólidos (`#050607`, borda `rgba(255,255,255,.06)`, sombra `0 18px 40px rgba(0,0,0,.45)`); `Exportar e reproduzir` segue em vidro.
+- Campos numéricos e seletores: 64×36, raio 999, borda `#5E6C7D`, fundo `rgba(255,255,255,.06)`, 14/700 centrado; botão primário 48 px 15/700; botões de exportar brancos de 38 px; URL em caixa mono 11,5/17.
+- Tabela: colunas alinhadas à direita, cabeçalhos `A`/`B`/`C` (com `n · nome` do sítio abaixo, em corpo pequeno, para casar com os marcadores numerados do terreno), violação em `var(--bad, #FF7A80)`, melhor valor em jade, linhas com `border-top rgba(255,255,255,.06)`, selo de origem em pílula. Cores com fallback `var(--x, valor)`; `core/` não foi alterado.
+
 **Componentes**
 - `ShellNav` + `BarraContexto`: com `Planejar` ativo.
 - `PainelRegrasMissao`: 5 inputs numéricos + 2 selects + botão `Recalcular 3 cenários`. Estados: editado, recalculando, salvo.
@@ -44,7 +49,7 @@ Como diferentes regras de missão (noite, perda da Terra, bateria, mastro, decli
 | Rugosidade < 20 m | sem fonte: N/D | `N/D` | `N/D` |
 
 **Interações**
-- Alterar qualquer regra e clicar `Recalcular 3 cenários` atualiza a tabela, margens e URL da página (`?rules=...`).
+- Alterar qualquer regra e clicar `Recalcular 3 cenários` atualiza a tabela, margens e URL da página. A URL é a da própria página: cenário (`site`, `start`, `hours`…) + `rules=noite,perda,bateria,mastro,declividade` (vírgulas legíveis) + `v=<versão>` quando a implantação publica uma (commit de `config.js` ou `/api/health`, 7 caracteres para commit hex); sem versão, `v` é omitido e a tela mostra `—` com selo `N/D`. Recarregar a URL reproduz as regras (`rules=` vence os parâmetros soltos; `sunMode`/`step` só aparecem se diferentes do padrão). Lógica pura em `screens/plan-model.js`.
 - Clicar `CSV`, `JSON` ou `Passaporte PDF` exporta os dados atuais.
 
 **Ligações**
@@ -56,7 +61,7 @@ Como diferentes regras de missão (noite, perda da Terra, bateria, mastro, decli
 3. **Locais reais:** cenários usam sítios reais de `web/data/sites.json`.
 4. **Bateria:** `Folga da bateria` vem de `POST /api/onboard/evaluate` com selo `SIM`.
 5. **Regras:** rotuladas como "assumed limit" (padrão editável).
-6. **Sem domínio inventado:** `moonproof.app/c?...` vira a URL real da página (`window.location.href` com query string).
+6. **Sem domínio inventado:** `moonproof.app/c?s=A,B,C&t=…&rules=…&v=…` vira a URL real da página (`window.location.href` com a query do cenário, `rules=` e `v=` reais; sem `a41c9e2`).
 7. **Dado real:** fontes e incertezas seguem `web/data/sites.json`.
 8. **Landing Lab:** não aplicável diretamente aqui.
 

@@ -9,6 +9,7 @@ register({
     "present.badge": "Presenting · Mission",
     "present.exit": "Exit",
     "present.qOf": "Question {n} of 4",
+    "present.scenario": "Scenario {n}",
     "present.q1": "Where would you land?",
     "present.q2": "Which site stays within the battery limit?",
     "present.q3": "Which site keeps Earth radio contact?",
@@ -26,6 +27,7 @@ register({
     "present.badge": "Apresentando · Missão",
     "present.exit": "Sair",
     "present.qOf": "Pergunta {n} de 4",
+    "present.scenario": "Cenário {n}",
     "present.q1": "Onde vocês pousariam?",
     "present.q2": "Qual local fica dentro do limite da bateria?",
     "present.q3": "Qual local mantém contato de rádio com a Terra?",
@@ -42,7 +44,9 @@ register({
 });
 
 const doc = await loadSites();
-const scenarios = doc.sites.slice(0, 3);
+const LETTERS = ["A", "B", "C"];
+// Scenarios are real sites; the terrain marker shows the scenario letter instead of the site number.
+const scenarios = doc.sites.slice(0, 3).map((s, i) => ({ ...s, n: LETTERS[i] }));
 const st = getState();
 const nightLimit = Number(st.night ?? DEFAULT_RULES.night);
 const blackoutLimit = Number(st.blackout ?? DEFAULT_RULES.blackout);
@@ -67,6 +71,11 @@ setInterval(() => {
   }
 }, 1000);
 
+const ICON_NIGHT = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#D9AE4E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 15a4 4 0 0 1 8 0"/><path d="M2 15h20"/><path d="M12 7v2M5 10l1.4 1.4M19 10l-1.4 1.4"/><path d="M5 19h14" stroke-dasharray="2 2"/></svg>`;
+const ICON_EARTH = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#9DB4CC" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12v9"/><path d="M8 21h8"/><circle cx="12" cy="10" r="2"/><path d="M4 4l16 16"/></svg>`;
+const ICON_X = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+const ICON_INFO = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9DB4CC" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>`;
+
 function fmtClock(sec) {
   const m = Math.floor(sec / 60);
   const s = String(sec % 60).padStart(2, "0");
@@ -83,10 +92,11 @@ function evaluateScenario(m) {
 function draw() {
   document.getElementById("present-badge").textContent = t("present.badge");
   const exitEl = document.getElementById("present-exit");
-  exitEl.textContent = `× ${t("present.exit")}`;
+  exitEl.innerHTML = `${ICON_X}${t("present.exit")}`;
   exitEl.href = hrefTo("activity.html");
 
   const progEl = document.getElementById("present-progress");
+  progEl.setAttribute("aria-label", t("present.qOf", { n: qIndex }));
   progEl.innerHTML = [1, 2, 3, 4].map((i) => `<span class="mp-progress-seg ${i <= qIndex ? "is-done" : ""}"></span>`).join("");
 
   const qKey = `present.q${qIndex}`;
@@ -97,10 +107,10 @@ function draw() {
   `;
 
   const timerEl = document.getElementById("present-timer");
-  timerEl.innerHTML = `<span>${t("present.timer")}</span><span id="timer-val" class="mp-timer-val">${fmtClock(secondsLeft)}</span>`;
+  timerEl.innerHTML = `<span class="mp-timer-label">${t("present.timer")}</span><span id="timer-val" class="mp-timer-val">${fmtClock(secondsLeft)}</span>`;
   timerEl.onclick = () => { running = !running; };
 
-  document.getElementById("present-privacy").textContent = t("present.privacy");
+  document.getElementById("present-privacy").innerHTML = `${ICON_INFO}<span>${t("present.privacy")}</span>`;
 
   const cardsEl = document.getElementById("present-cards");
   cardsEl.innerHTML = "";
@@ -112,10 +122,11 @@ function draw() {
     const nVal = m.longestDarkH.value == null ? t("nd") : `${fmtNum(m.longestDarkH.value)} h`;
     const bVal = m.longestBlackoutH.value == null ? t("nd") : `${fmtNum(m.longestBlackoutH.value)} h`;
     card.innerHTML = `
-      <div class="mp-sc-head"><span>${s.n} · ${s.name}</span><span class="mp-sc-seal"></span></div>
-      <div class="mp-sc-row"><span>${t("present.night")}</span><strong>${nVal}</strong></div>
-      <div class="mp-sc-row"><span>${t("present.blackout")}</span><strong>${bVal}</strong></div>
+      <div class="mp-sc-head"><span class="mp-sc-letter">${s.n}</span><span class="mp-sc-title"><span class="mp-sc-name">${t("present.scenario", { n: s.n })}</span><span class="mp-sc-site"></span></span><span class="mp-sc-seal"></span></div>
+      <div class="mp-sc-row">${ICON_NIGHT}<span class="mp-sc-label">${t("present.night")}</span><strong class="mp-sc-val">${nVal}</strong></div>
+      <div class="mp-sc-row">${ICON_EARTH}<span class="mp-sc-label">${t("present.blackout")}</span><strong class="mp-sc-val">${bVal}</strong></div>
     `;
+    card.querySelector(".mp-sc-site").textContent = s.name;
     card.querySelector(".mp-sc-seal").appendChild(sealEl(sealFor(m.longestDarkH.value == null ? "NOT_COMPUTED" : doc.status)));
     cardsEl.appendChild(card);
   });
