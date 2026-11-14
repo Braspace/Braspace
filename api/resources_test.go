@@ -133,7 +133,7 @@ func TestSiteOnboardRejectsMissingOrPartialData(t *testing.T) {
 		name, body, code string
 		status           int
 	}{
-		{"site without series", r(`"site_id": "synthetic-demo-b"`, `"site_id": "malapert-massif"`), "DATA_NOT_AVAILABLE", 422},
+		{"site without series", r(`"site_id": "synthetic-demo-b"`, `"site_id": "haworth"`), "DATA_NOT_AVAILABLE", 422},
 		{"past series end", r(`"delay_hours": 48`, `"delay_hours": 700`), "OUTSIDE_COVERAGE", 422},
 		{"over onboard sample limit", r(`"duration_hours": 72`, `"duration_hours": 500`), "WINDOW_TOO_LONG", 422},
 		{"unknown site", r(`"site_id": "synthetic-demo-b"`, `"site_id": "atlantis"`), "SITE_NOT_FOUND", 404},

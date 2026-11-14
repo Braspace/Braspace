@@ -25,7 +25,7 @@ const moonRadiusKm = 1737.4
 
 var siteIDPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,63}$`)
 
-var scienceStatuses = map[string]bool{"SYNTHETIC": true, "UNVERIFIED": true, "VALIDATED": true}
+var scienceStatuses = map[string]bool{"SYNTHETIC": true, "UNVERIFIED": true, "PRELIMINARY": true, "VALIDATED": true}
 
 type coordinate struct {
 	LatitudeDeg     float64 `json:"latitude_deg"`
@@ -48,7 +48,7 @@ type site struct {
 	// edited file (e.g. a removed sample that would shift every later epoch) is
 	// rejected at load, matching the content check of the PostgreSQL path.
 	SeriesSHA256 string `json:"series_sha256,omitempty"`
-	Note       string      `json:"note,omitempty"`
+	Note         string `json:"note,omitempty"`
 }
 
 type siteCatalog struct {
