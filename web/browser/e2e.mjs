@@ -34,6 +34,10 @@ try{
  assert((await desktop.locator("body").innerText()).includes("PRELIMINARY"),"missing scientific disclaimer");
  await desktop.locator("#api-feedback").waitFor({state:"visible",timeout:30000});
  await desktop.waitForFunction(()=>!document.querySelector("#api-feedback")?.textContent?.includes("not yet checked"),{timeout:30000});
+ if(process.env.BRASPACE_REQUIRE_BACKEND==="1"){
+  const status=await desktop.locator("#api-feedback").innerText();
+  assert(status.includes("Go/Rust engine ready"),"browser did not confirm connected Go/Rust backend: "+status);
+ }
  await desktop.locator("#tabs button[data-view='compare']").click();
  await desktop.locator("#tabs button[data-view='recover']").click();
  await desktop.locator("#tabs button[data-view='evidence']").click();
