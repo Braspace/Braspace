@@ -1,0 +1,59 @@
+name: MoonProof Polar Lab Chromium / Go-Rust integration
+on:
+  pull_request:
+    paths:
+      - "web/**"
+      - ".github/workflows/landing-lab-browser.yml"
+  push:
+    branches:
+      - "integration/heloisa-polar-lab-api-20261114"
+permissions:
+  contents: read
+jobs:
+  browser:
+    name: Real Chromium desktop/mobile and live Go-Rust backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Build Rust visibility executable
+        run: cargo build --locked --manifest-path engine/Cargo.toml
+      - name: Build Go mission API
+        working-directory: api
+        run: go build -o /tmp/braspace-api .
+      - name: Install Playwright and headless Chromium
+        working-directory: web
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Start real backend and run Chromium QA
+        env:
+          RUST_ENGINE_BIN: ${{ github.workspace }}/engine/target/debug/braspace-lunar-engine
+          LISTEN_ADDR: "127.0.0.1:8080"
+          BRASPACE_REQUIRE_BACKEND: "1"
+          BRASPACE_BROWSER_ARTIFACTS: "/tmp/braspace-browser-artifacts"
+        run: |
+          /tmp/braspace-api >/tmp/braspace-browser-backend.log 2>&1 &
+          apipid=$!
+          trap 'kill "$apipid" || true; cat /tmp/braspace-browser-backend.log' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/readyz; then break; fi
+            sleep 1
+          done
+          node web/browser/e2e.mjs
+      - name: Upload screenshots, even after test failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moonproof-polar-lab-chromium
+          path: /tmp/braspace-browser-artifacts/*.png
+          if-no-files-found: ignore
+          retention-days: 7
