@@ -4,3 +4,4 @@ engine/target/
 __pycache__/
 *.pyc
 data/raw/
+web/node_modules/

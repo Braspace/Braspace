@@ -146,4 +146,8 @@ export function saveAttempt(storage, attempt) {
 export function loadAttempts(storage) {
   try { const v = JSON.parse(storage.getItem(ATTEMPTS_KEY) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
 }
+/** AUD-17: attempts live only in this tab (sessionStorage); this is the shareable, versioned copy. */
+export function attemptExport(attempt, now = new Date()) {
+  return { schema: "braspace.landing-attempt", version: 1, exported_utc: now.toISOString(), storage: "sessionStorage (this tab only)", science_status: "SIMULATION", attempt };
+}
 export const lastAttempt = (storage) => loadAttempts(storage).at(-1) || null;

@@ -168,7 +168,8 @@ function card(s, m, mobile) {
   const height = point ? sourced(point.outside ? null : grid.height(X, Y), { unit: "m", status: doc.status }) : sourced(s.site_height_m, { unit: "m", status: doc.status });
   const sl = sourced(point?.outside ? null : grid.normal(X, Y).slopeDeg, { unit: "°", status: "ESTIMATE" });
   const v = (x, d = 0, u = "") => fmtVal(x, fmtNum, nd(), d, u);
-  const lt = el("h4", "mp-label"); lt.append(t("ex.light") + " · ", el("span", "ex-jade", t("ctx.days", { n: fmtNum(hours() / DAY) })));
+  const lt = el("h4", "mp-label"); // AUD-03: a free point only has the PGDA long-term mean, not the selected mission window.
+  lt.append(t("ex.light") + " · ", el("span", "ex-jade", point ? t("ex.pgdaLong") : t("ctx.days", { n: fmtNum(hours() / DAY) })));
   c.append(lt);
   if (point) c.append(rows([[t("ex.pgdaSun"), v(ps, 0, "%"), ps == null ? "N/D" : sealFor(doc.status)], [t("ex.pgdaEarth"), v(pe, 0, "%"), pe == null ? "N/D" : sealFor(doc.status)], [t("ex.night"), nd(), "N/D"]]));
   else c.append(rows([[t("ex.sunVis"), v(m.sunPct.value, 0, "%"), m.sunPct.seal], [t("ex.earthVis"), v(m.earthPct.value, 0, "%"), m.earthPct.seal], [t("ex.night"), v(m.longestDarkH.value, 0, "\u00a0h"), m.longestDarkH.seal]]));
