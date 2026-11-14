@@ -18,7 +18,7 @@ test("12-tab cockpit is navigable from classic and Polar Lab",async()=>{
  assert.match(html,/PROTÓTIPO · sintético/);
  assert.match(html,/Não validado/);
  assert.match(html,/Sem recomendação de voo/);
- assert.equal((html.match(/<button[^>]*data-tab="/g)||[]).length,12);
+ assert.equal((html.match(/<button[^>]*data-tab="/g)||[]).length,13);
 });
 test("same-origin onboard static allowlist serves only exact required assets",async()=>{
  assert.equal(onboardFile("/onboard/../api/main.go"),null);
