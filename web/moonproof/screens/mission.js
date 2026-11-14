@@ -8,7 +8,7 @@ import { loadSites, windowMetrics, dailySun, sealFor, apiOnline, api, loadRegion
 import { createLayerCard, statCircle, barEl, sealEl } from "../core/layers.js";
 import { t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
-import { runs, dayOf, fmtVal, mapDir, stereoToPx, skyNext, batteryMargin, pgdaAt } from "./mission-calc.js";
+import { runs, dayOf, fmtVal, mapDir, skyNext, batteryMargin, pgdaAt } from "./mission-calc.js";
 import "./mission-i18n.js";
 
 const H = 3600e3, DAY = 24;
@@ -44,7 +44,7 @@ function frame() {
 // Dotted Sun and Earth lines from the site along their local azimuth, labelled with the margin over the terrain horizon.
 function rays() {
   const svg = $("rays"); svg.replaceChildren(); if (!cur) return;
-  const s = site(), W = innerWidth, Hh = innerHeight, [px, py] = stereoToPx(s.stereo_x_m, s.stereo_y_m, terrain.view, W, Hh);
+  const s = site(), W = innerWidth, Hh = innerHeight, [px, py] = terrain.toPx(s.stereo_x_m, s.stereo_y_m);
   svg.setAttribute("viewBox", `0 0 ${W} ${Hh}`);
   const g = cur.geo; if (!g) return;
   const len = Math.min(W, Hh) * (W > 700 ? .26 : .18);
