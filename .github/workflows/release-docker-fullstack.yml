@@ -8,6 +8,11 @@ on:
       - "web/**"
       - "tests/**"
       - "science/**"
+      - "scripts/**"
+      - "data/**"
+      - "examples/**"
+      - ".dockerignore"
+      - "docs/ASSET_LICENSE_MATRIX.md"
       - "Dockerfile"
       - "Dockerfile.web"
       - "compose*.yaml"
@@ -181,8 +186,8 @@ jobs:
           file: Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/braspace-api:sha-${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/braspace-api:latest
+            ghcr.io/braspace/braspace-api:sha-${{ github.sha }}
+            ghcr.io/braspace/braspace-api:latest
           labels: org.opencontainers.image.revision=${{ github.sha }}
       - uses: docker/build-push-action@v6
         with:
@@ -190,6 +195,6 @@ jobs:
           file: Dockerfile.web
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/moonproof-web:sha-${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/moonproof-web:latest
+            ghcr.io/braspace/moonproof-web:sha-${{ github.sha }}
+            ghcr.io/braspace/moonproof-web:latest
           labels: org.opencontainers.image.revision=${{ github.sha }}
