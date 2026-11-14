@@ -231,7 +231,7 @@
     const trE = M.transitions(tr, "earth_visible", S.stepMin);
     const nextS = trS.find(x => x.index > S.t);
     const nextE = trE.find(x => x.index > S.t);
-    const slider = h("input", { type: "range", min: "0", max: String(Math.max(0, tr.length - 1)), value: String(S.t), "aria-label": "Hora do cenário", oninput: e => { S.t = Number(e.target.value); renderTab(); } });
+    const slider = h("input", { type: "range", min: "0", max: String(Math.max(0, tr.length - 1)), value: String(S.t), "aria-label": "Hora do cenário", style: "--p:" + progressPct(S.t, tr.length) + "%", oninput: e => { S.t = Number(e.target.value); renderTab(); } });
     return [
       h("section", { class: "panel" },
         h("h2", { text: "02 · Geometria do Sol e da Terra" }),
@@ -263,6 +263,11 @@
         edu("Cada barra mostra uma hora (ou o passo escolhido). Luz e Terra visível são coisas diferentes."))
     ];
   };
+  // Share of the track already passed, used to fill the slider track up to the thumb.
+  function progressPct(i, n) {
+    return n <= 1 ? 0 : Math.round((i / (n - 1)) * 1000) / 10;
+  }
+
   // Readable instant: day of the scenario, time of day and the UTC stamp.
   function instantLabel(cur) {
     const ms = startMs() + cur.i * S.stepMin * 60e3;
@@ -347,7 +352,7 @@
     lab(cur.sunAz, cur.sunEl, "SOL", "#ffb020");
     lab(cur.earthAz, cur.earthEl, "TERRA", "#5fd8ff");
 
-    const slider = h("input", { type: "range", min: "0", max: String(Math.max(0, tr.length - 1)), value: String(S.t), "aria-label": "Instante do horizonte", oninput: e => { S.t = Number(e.target.value); renderTab(); } });
+    const slider = h("input", { type: "range", min: "0", max: String(Math.max(0, tr.length - 1)), value: String(S.t), "aria-label": "Instante do horizonte", style: "--p:" + progressPct(S.t, tr.length) + "%", oninput: e => { S.t = Number(e.target.value); renderTab(); } });
     const sunMargin = cur.sunEl - hs, earthMargin = cur.earthEl - he;
     return [
       h("section", { class: "panel span2" },
