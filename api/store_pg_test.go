@@ -107,8 +107,16 @@ func TestDBIngestReadbackAndManifest(t *testing.T) {
 	}
 	var n int
 	_ = db.QueryRow(ctx, `SELECT count(*) FROM ephemeris_samples`).Scan(&n)
-	if n != 2928 {
-		t.Fatalf("ephemeris rows after re-ingest = %d", n)
+	st, err := loadStore(embeddedFS(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var expected int
+	for _, series := range st.series {
+		expected += len(series.Samples)
+	}
+	if n != expected {
+		t.Fatalf("ephemeris rows after re-ingest = %d; expected %d from source files", n, expected)
 	}
 }
 
