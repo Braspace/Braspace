@@ -205,7 +205,12 @@ func TestEngineFailureModes(t *testing.T) {
 	body := `{"site_ids":["synthetic-demo-a"],"start_utc":"2026-12-01T00:00:00Z","duration_hours":4}`
 	for mode, want := range map[string]int{"": 503, "fail": 502, "garbage": 502, "slow": 504} {
 		h, api := testAPI(t, mode)
-		api.engine.callTimeout = 300 * time.Millisecond
+		// Short deadline only where the timeout itself is under test; the other
+		// modes get headroom so a slow process start cannot turn them into 504s.
+		api.engine.callTimeout = 3 * time.Second
+		if mode == "slow" {
+			api.engine.callTimeout = 300 * time.Millisecond
+		}
 		rec := do(h, "POST", "/api/compare", body)
 		if rec.Code != want {
 			t.Errorf("engine %q: got %d want %d: %s", mode, rec.Code, want, rec.Body.String())

@@ -29,6 +29,13 @@ in `data/LOLA_80S_80M_VERIFICATION.md`.
 | QuickMap/Lunaserv | Interactive service | `service_link_only` | Use for discovery or validation; do not treat service responses as repository assets |
 | Google Map/Moon tiles | Google Maps Tile API content | `rejected` | No bulk fetching, scraping, offline storage or rehosting |
 | BRASPACE polar elevation map (derived) | `web/assets/polar-elevation-87s.webp` + `.json` | `project_derived_from_nasa_pds` | Our render of LRO LOLA `LDEM_80S_80M.IMG` (PDS, SHA-256 in `data/manifest.json`) by `science/render_polar_map.py`; credit "NASA/GSFC/LOLA" shown in the component; elevation only, not illumination or visibility |
+| PGDA 78 5 m site LDEMs | `Site01_final_adj_5mpp_surf.tif` | `review_required` | Candidate high-res terrain; page states no data license, only NASA Reproduction Guidelines link; cite Barker et al. 2021. Not rehosted |
+| PGDA 81 south pole 87S mosaic | `ldem_87s_5mpp.tif` (3.3 GB) | `review_required` | Page asks citation of Barker et al. 2021; no data license stated. Not rehosted |
+| PGDA 69 polar illumination | `AVGVISIB_85S_060M_201608.TIF` | `review_required` | Page asks citation of Mazarico et al. 2011; no data license stated. Candidate benchmark, not ingested |
+| NASA SVS 5127 | `lola_sp_still_print.jpg` | `approved_candidate` | Credit "NASA's Scientific Visualization Studio" (page). Visual target only |
+| LROC curated downloads | `NAC_POLE_P900S0000.zip`, `LROC_Polar_Illumination_Map.tif` | `external_link_only` | Website-curated products are copyrighted per LROC terms; link and credit NASA/GSFC/Arizona State University |
+| LROC Featured Image 237 | WAC south polar mosaic page | `external_link_only` | Already in `LUNAR_GALLERY.json`; do not rehost |
+| SLDEM2015 (USGS/PGDA 54) | `Lunar_LRO_LOLAKaguya_DEMmerge_60N060S_512ppd.tif` | `review_required` | Covers only +/-60 deg latitude: not usable at the pole |
 
 ## NASA SVS CGI Moon Kit
 
@@ -119,6 +126,26 @@ first low-bandwidth visual handoff candidate, subject to team review of the
 credit text. The registry supplies the exact URL, dimensions, bytes and
 checksum. It is not a scientific result and does not represent polar terrain
 resolution.
+
+## Assets exposed by the API layer catalog (BS-054, #57)
+
+`GET /api/layers` and `GET /api/sites/{id}/media` expose only the entries below.
+Each row keeps the handling decided above.
+
+| Asset | API entry | Status | Handling in the API | Credit |
+| --- | --- | --- | --- | --- |
+| `lroc_color_2k.jpg` (SVS 4720) | layer `lroc-color-2k` | `approved_candidate` | Same-origin copy for the 3D globe: fetched only from the SVS URL, served only if size, type and SHA-256 `f7130a18…` match; visualization only | NASA SVS; Ernie Wright; Noah Petro (NASA/GSFC); LROC WAC Color Mosaic, ASU |
+| `moon_small.glb` (SVS 14959) | layer `svs-14959-moon-small-glb` | `approved_candidate` | Same-origin copy for the 3D globe: fetched only from the SVS URL, written to a disk cache while size (13,799,876 bytes) and SHA-256 `12d3b0bb…` are checked, then streamed (never whole in memory); color map on a sphere, no topography; visualization only, shows no illumination or visibility. The grid (`Moon_NASA_LRO_15k_Grid_Small.glb`), topography (`…8k_Topo…`) and `.usdz` files are NOT used | NASA's Goddard Space Flight Center; NASA SVS 14959; LRO imagery; color source CGI Moon Kit (SVS 4720) |
+| `ldem_4.tif` (SVS 4720) | layer `lola-dem-4ppd-render` | `approved_candidate` | Metadata and link only, never served; visualization only | NASA SVS; LRO LOLA |
+| `LDEM_80S_80M.IMG` (PDS `LRO-L-LOLA-4-GDR-V1.0`, V2.0) | layer `lola-ldem-80s-80m` | science source | Metadata and PDS link only; consumed offline by the science pipeline; never served or rendered as imagery. The label states no separate license: keep PDS/NASA/LOLA attribution and check reuse terms before any redistribution | LOLA Science Team, NASA GSFC; PDS Geosciences Node |
+| LROC Featured Image 1276 (M1407524099LR) | media `LROC-1276` | `external_link_only` | Link to the LROC page only; no site association | NASA/GSFC/Arizona State University |
+| LROC Featured Image 1247 (M1348682369LR) | media `LROC-1247` | `external_link_only` | Link only; related to `connecting-ridge` | NASA/GSFC/Arizona State University |
+| LROC Featured Image 1294 (M1432398306LR) | media `LROC-1294` | `external_link_only` | Link only; related to `malapert-massif` | NASA/GSFC/Arizona State University |
+| LROC Featured Image 237 | media `LROC-237` | `external_link_only` | Link only; regional overview, no site association | NASA/GSFC/Arizona State University |
+| LROC Featured Image 1105 | media `LROC-1105` | `external_link_only` | Link only; related to `connecting-ridge` | NASA/GSFC/Arizona State University |
+
+Website Featured Images stay copyrighted LROC content: the API returns links and
+credits, never image bytes or thumbnails (`data/LUNAR_GALLERY.json` thumbnail policy).
 
 ## BS-052 acceptance mapping
 
