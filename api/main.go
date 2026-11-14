@@ -18,6 +18,7 @@ import (
  "os/exec"
  "strings"
  "time"
+ "github.com/Braspace/Braspace/api/onboard"
 )
 
 const maxRequestBytes = 128 << 10
@@ -140,6 +141,7 @@ func routes(binary string) http.Handler {
   }
   writeJSON(w,http.StatusOK,result)
  })
+ mux.Handle("POST /api/onboard/evaluate", onboard.Handler())
  return mux
 }
 func main() {
