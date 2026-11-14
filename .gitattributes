@@ -1,0 +1,4 @@
+# NASA-derived binary products are checksummed byte-for-byte; never convert line endings
+*.bin binary
+*.jpg binary
+*.img binary
