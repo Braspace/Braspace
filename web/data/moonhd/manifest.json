@@ -20,6 +20,7 @@
   "height_min_m": -8981.5,
   "height_max_m": 10685.5,
   "height_reference": "metres above the 1,737,400 m sphere",
+  "height_map": "height_4k.jpg, 8 bit: one grey level is 77 m",
   "normal_map": "tangent space: R east, G north, B up",
   "normal_exaggeration": 6.0,
   "source_resolution": "16 pixels per degree (about 1.9 km at the equator)"
@@ -68,6 +69,20 @@
   "source": "Gazetteer of Planetary Nomenclature, IAU/USGS, MOON_nomenclature_center_pts (public domain)",
   "filter": "Adopted by IAU; Crater >= 20.0 km or Mons at latitude <= -80.5; every Mare and Oceanus"
  },
+ "earth": {
+  "file": "earth_2k.jpg",
+  "projection": "equirectangular, centre 0 E, north up",
+  "content": "cloud-free monthly composite (December 2004) with shaded relief; not the weather or the season of the clock time"
+ },
+ "earth_orientation": {
+  "file": "earth_orientation.bin",
+  "start_utc": "2025-01-01T00:00:00Z",
+  "step_seconds": 3600,
+  "count": 35064,
+  "layout": "int16 x*32767 | y | z | w, little-endian; rotates IAU_EARTH vectors into MOON_ME_DE440_ME421",
+  "earth_frame": "IAU_EARTH (pck00010.tpc)",
+  "light_time": "ignored (about 0.005 deg of Earth rotation)"
+ },
  "ephemeris": {
   "file": "ephemeris.bin",
   "start_utc": "2025-01-01T00:00:00Z",
@@ -112,6 +127,16 @@
    "sha256": "bcb1a37a195babb159ee1f720a6c64d03842de87d10a7ba7d754f8873477606b",
    "bytes": 23845070
   },
+  "blue_marble": {
+   "url": "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/bmng/bmng-topography-bathymetry/december/world.topo.bathy.200412.3x5400x2700.jpg",
+   "sha256": "a9f0088972dee0254610af851c4d6838ca3f2cf79176987e0a5713e2c15ec042",
+   "bytes": 2566770
+  },
+  "pck00010.tpc": {
+   "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00010.tpc",
+   "sha256": "59468328349aa730d18bf1f8d7e86efe6e40b75dfb921908f99321b3a7a701d2",
+   "bytes": 126143
+  },
   "ldem_80s_80m": {
    "url": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img/ldem_80s_80m.img",
    "sha256": "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc",
@@ -142,7 +167,8 @@
   "NASA's Scientific Visualization Studio (CGI Moon Kit, SVS 4720; Deep Star Maps 2020, SVS 4851)",
   "NASA LRO/LOLA Science Team (LDEM_80S_80M, PDS Geosciences Node)",
   "NASA/JPL NAIF (SPICE kernels, DE440)",
-  "IAU/USGS Gazetteer of Planetary Nomenclature (feature names)"
+  "IAU/USGS Gazetteer of Planetary Nomenclature (feature names)",
+  "NASA Earth Observatory, Blue Marble Next Generation (Earth texture)"
  ],
  "files": {
   "color_4k.jpg": {
@@ -153,6 +179,14 @@
    "sha256": "5b8c60f57ef2b4f9c27b1eb3e73d2a9c472458dcd7a7c5f4e561ed8214aa3056",
    "bytes": 6287612
   },
+  "earth_2k.jpg": {
+   "sha256": "5189fd3cebb90cf48495ae98aa92d6c695be9c776a9b3b7ab003ef6102834d97",
+   "bytes": 395621
+  },
+  "earth_orientation.bin": {
+   "sha256": "80449193e0376819eacf35178c9632cde6e304c53c9254fb2afe7d62ec307073",
+   "bytes": 280512
+  },
   "ephemeris.bin": {
    "sha256": "bb2e7661e9de2c250543b237b5021692af4840a4abb32f0598c554774ad6044d",
    "bytes": 280512
@@ -161,9 +195,9 @@
    "sha256": "62361ecd3b0002b2be9c4efe9526df6ec0203e4bd1fca882b093ce36e7276826",
    "bytes": 9198
   },
-  "height_2k.jpg": {
-   "sha256": "d3822f3b4afbfc4398fce023214246ef5f7a8f8ea571dfa3005327578ee04a70",
-   "bytes": 354510
+  "height_4k.jpg": {
+   "sha256": "1b427d5c427dd58b74fdb85ff7ba3abfd2e7872d92c598818c969cd6064b7388",
+   "bytes": 1502375
   },
   "normal_4k.jpg": {
    "sha256": "c8c7ab2e69edb179dabc5237bfd7476bdcffb591e943e0d85b9931a2ebee4837",

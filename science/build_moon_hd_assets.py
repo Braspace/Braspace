@@ -6,6 +6,8 @@ Inputs are downloaded by hand (never by this script) and checked by SHA-256 befo
   data/raw/moonhd/ldem_16.tif               NASA SVS 4720 CGI Moon Kit, LOLA elevation, 16 px/deg, float km
   data/raw/moonhd/starmap_2020_4k.exr       NASA SVS 4851 Deep Star Maps 2020 (celestial coordinates)
   data/raw/lola/ldem_80s_80m.img            PDS LRO-L-LOLA-4-GDR-V1.0 LDEM_80S_80M.IMG V2.0
+  data/raw/earth/world.topo.bathy.200412.3x5400x2700.jpg   NASA Blue Marble Next Generation, December, topography and bathymetry
+  data/raw/naif/pck00010.tpc                NAIF planetary constants (orientation of the Earth, IAU_EARTH)
   data/raw/usgs/MOON_nomenclature_center_pts.zip   IAU/USGS Gazetteer of Planetary Nomenclature, centre points
   data/raw/naif/{naif0012.tls,de440s.bsp,moon_pa_de440_200625.bpc,moon_de440_250416.tf}
 
@@ -44,6 +46,11 @@ INPUTS = {
     "nomenclature": ("usgs/MOON_nomenclature_center_pts.zip",
                      "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip",
                      "bcb1a37a195babb159ee1f720a6c64d03842de87d10a7ba7d754f8873477606b"),
+    "blue_marble": ("earth/world.topo.bathy.200412.3x5400x2700.jpg",
+                    "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/bmng/bmng-topography-bathymetry/december/world.topo.bathy.200412.3x5400x2700.jpg",
+                    "a9f0088972dee0254610af851c4d6838ca3f2cf79176987e0a5713e2c15ec042"),
+    "pck00010.tpc": ("naif/pck00010.tpc", f"{NAIF}/pck/pck00010.tpc",
+                     "59468328349aa730d18bf1f8d7e86efe6e40b75dfb921908f99321b3a7a701d2"),
     "ldem_80s_80m": ("lola/ldem_80s_80m.img", f"{PDS_POLAR}/ldem_80s_80m.img",
                      "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc"),
     "naif0012.tls": ("naif/naif0012.tls", f"{NAIF}/lsk/naif0012.tls",
@@ -128,8 +135,9 @@ def build_relief(src: pathlib.Path, out: pathlib.Path) -> dict:
     Image.fromarray(rgb).resize((4096, 2048), Image.LANCZOS).save(out / "normal_4k.jpg", "JPEG", quality=92, optimize=True)
     lo, hi = float(h_m.min()), float(h_m.max())
     grey = np.clip(np.rint((h_m - lo) / (hi - lo) * 255), 0, 255).astype(np.uint8)
-    Image.fromarray(grey).resize((2048, 1024), Image.LANCZOS).save(out / "height_2k.jpg", "JPEG", quality=90, optimize=True)
+    Image.fromarray(grey).resize((4096, 2048), Image.LANCZOS).save(out / "height_4k.jpg", "JPEG", quality=95, optimize=True)
     return {"height_min_m": round(lo, 1), "height_max_m": round(hi, 1), "height_reference": "metres above the 1,737,400 m sphere",
+            "height_map": "height_4k.jpg, 8 bit: one grey level is %.0f m" % ((hi - lo) / 255),
             "normal_map": "tangent space: R east, G north, B up", "normal_exaggeration": NORMAL_EXAGGERATION,
             "source_resolution": "16 pixels per degree (about 1.9 km at the equator)"}
 
@@ -171,6 +179,45 @@ def build_polar(src: pathlib.Path, out: pathlib.Path) -> dict:
             "method": "centre crop of LDEM_80S_80M at native resolution, no resampling",
             "min_m": float(grid.min()) * POLAR_DN_M, "max_m": float(grid.max()) * POLAR_DN_M,
             "frame": "MEAN EARTH/POLAR AXIS OF DE421"}
+
+
+def build_earth(src: pathlib.Path, out: pathlib.Path) -> dict:
+    from PIL import Image
+    img = Image.open(src).convert("RGB")
+    if img.size != (5400, 2700):
+        raise SystemExit(f"unexpected Blue Marble size {img.size}")
+    img.resize((2048, 1024), Image.LANCZOS).save(out / "earth_2k.jpg", "JPEG", quality=88, optimize=True, progressive=True)
+    return {"file": "earth_2k.jpg", "projection": "equirectangular, centre 0 E, north up",
+            "content": "cloud-free monthly composite (December 2004) with shaded relief; not the weather or the season of the clock time"}
+
+
+def build_earth_orientation(inputs: dict, out: pathlib.Path) -> dict:
+    """Hourly rotation from the Earth body-fixed frame (IAU_EARTH) to the Moon mean-Earth frame, as unit quaternions.
+
+    Layout per sample, little-endian: int16 x, y, z, w, each component times 32767 (SPICE order is w, x, y, z).
+    Evaluated at the clock time itself; the 1.3 s light time (0.005 deg of Earth rotation) is ignored.
+    """
+    import numpy as np
+    import spiceypy as sp
+    for name in ("naif0012.tls", "de440s.bsp", "moon_pa_de440_200625.bpc", "moon_de440_250416.tf", "pck00010.tpc"):
+        sp.furnsh(str(inputs[name]["path"]))
+    try:
+        et0 = sp.str2et(EPH_START.replace("Z", ""))
+        packed = np.empty((EPH_COUNT, 4), dtype="<i2")
+        previous = None
+        for i in range(EPH_COUNT):
+            w, x, y, z = sp.m2q(sp.pxform("IAU_EARTH", FRAME, et0 + i * EPH_STEP_S))
+            q = np.array([x, y, z, w])
+            if previous is not None and float(q @ previous) < 0:
+                q = -q  # same rotation; keeps neighbouring samples on the same side for interpolation
+            previous = q
+            packed[i] = np.rint(q * 32767)
+    finally:
+        sp.kclear()
+    (out / "earth_orientation.bin").write_bytes(packed.tobytes())
+    return {"file": "earth_orientation.bin", "start_utc": EPH_START, "step_seconds": EPH_STEP_S, "count": EPH_COUNT,
+            "layout": "int16 x*32767 | y | z | w, little-endian; rotates IAU_EARTH vectors into " + FRAME,
+            "earth_frame": "IAU_EARTH (pck00010.tpc)", "light_time": "ignored (about 0.005 deg of Earth rotation)"}
 
 
 def build_polar_wide(src: pathlib.Path, out: pathlib.Path) -> dict:
@@ -281,11 +328,14 @@ def main() -> None:
         "south_pole": build_polar(inputs["ldem_80s_80m"]["path"], args.out),
         "south_pole_wide": build_polar_wide(inputs["ldem_80s_80m"]["path"], args.out),
         "features": build_features(inputs["nomenclature"]["path"], args.out),
+        "earth": build_earth(inputs["blue_marble"]["path"], args.out),
+        "earth_orientation": build_earth_orientation(inputs, args.out),
         "ephemeris": build_ephemeris(inputs, args.out),
         "sources": {name: {"url": v["url"], "sha256": v["sha256"], "bytes": v["bytes"]} for name, v in inputs.items()},
         "credits": ["NASA's Scientific Visualization Studio (CGI Moon Kit, SVS 4720; Deep Star Maps 2020, SVS 4851)",
                     "NASA LRO/LOLA Science Team (LDEM_80S_80M, PDS Geosciences Node)", "NASA/JPL NAIF (SPICE kernels, DE440)",
-                    "IAU/USGS Gazetteer of Planetary Nomenclature (feature names)"],
+                    "IAU/USGS Gazetteer of Planetary Nomenclature (feature names)",
+                    "NASA Earth Observatory, Blue Marble Next Generation (Earth texture)"],
     }
     manifest["files"] = {p.name: {"sha256": sha256(p), "bytes": p.stat().st_size}
                          for p in sorted(args.out.iterdir()) if p.name != "manifest.json"}

@@ -8,7 +8,7 @@
 </head>
 <body>
 <canvas id="view" aria-label="3D view of the Moon" role="img"></canvas>
-<div id="labels" aria-hidden="true"></div>
+<div id="labels"></div>
 
 <header class="top">
   <div>
@@ -34,6 +34,15 @@
     <dt data-i18n="earthPole">Earth elevation at the pole</dt><dd id="r-eel">–</dd>
   </dl>
   <p class="note" id="view-note"></p>
+</aside>
+
+<aside class="site-card" id="site-card" hidden aria-live="polite">
+  <header><h2 id="site-name"></h2><button type="button" id="site-close" aria-label="Close">×</button></header>
+  <p class="site-status" id="site-status"></p>
+  <dl id="site-now"></dl>
+  <dl id="site-metrics"></dl>
+  <p class="note" id="site-note"></p>
+  <button type="button" id="site-go"></button>
 </aside>
 
 <section class="panel" aria-label="Time and display controls">
@@ -63,7 +72,7 @@
 </section>
 
 <footer class="credits">
-  <span data-i18n="credits">Imagery and elevation: NASA's Scientific Visualization Studio (CGI Moon Kit) · Terrain: NASA LRO/LOLA (LDEM_80S_80M) · Geometry: NASA/JPL NAIF SPICE (DE440) · Names: IAU/USGS Gazetteer. Not a NASA product; not endorsed by NASA.</span>
+  <span data-i18n="credits">Imagery and elevation: NASA's Scientific Visualization Studio (CGI Moon Kit) · Terrain: NASA LRO/LOLA (LDEM_80S_80M) · Geometry: NASA/JPL NAIF SPICE (DE440) · Names: IAU/USGS Gazetteer · Earth: NASA Blue Marble. Not a NASA product; not endorsed by NASA.</span>
 </footer>
 
 <div id="loading" role="status"><span data-i18n="loading">Loading NASA data…</span></div>

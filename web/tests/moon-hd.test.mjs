@@ -7,7 +7,7 @@ import {execFileSync} from "node:child_process";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {createServer,moonHdFile} from "../dev-server.mjs";
-import {decodeEphemeris,indexAt,timeAt,pointsAt,bodyDirection,toGlobeScene,toPolarScene,signedLon,elevationAtSouthPole} from "../moon-hd/ephemeris.js";
+import {decodeEphemeris,indexAt,timeAt,pointsAt,bodyDirection,toGlobeScene,toPolarScene,signedLon,elevationAtSouthPole,decodeOrientation,orientationAt,rotate,decodeSiteSeries,siteSkyAt} from "../moon-hd/ephemeris.js";
 import {R_REF,CAP_LAT,stereoToLocal,localToStereo,localToScene,latLonToStereo,makeGrid,bilinearHeight,sunClearance} from "../moon-hd/polar-math.js";
 import {latLonToBodyFixed,southStereoForward} from "../lab/coords.js";
 
@@ -18,7 +18,7 @@ const close=(a,b,tol,msg)=>assert.ok(Math.abs(a-b)<=tol,`${msg||""} ${a} vs ${b}
 
 test("every published Moon HD file matches the manifest SHA-256 and size",async()=>{
  const names=Object.keys(manifest.files);
- assert.deepEqual(names.sort(),["color_4k.jpg","color_8k.jpg","ephemeris.bin","features.json","height_2k.jpg","normal_4k.jpg","south_pole_320m.bin","south_pole_80m.bin","stars_4k.jpg"]);
+ assert.deepEqual(names.sort(),["color_4k.jpg","color_8k.jpg","earth_2k.jpg","earth_orientation.bin","ephemeris.bin","features.json","height_4k.jpg","normal_4k.jpg","south_pole_320m.bin","south_pole_80m.bin","stars_4k.jpg"]);
  for(const name of names){
   const bytes=await data(name);
   assert.equal(bytes.length,manifest.files[name].bytes,name);
@@ -31,7 +31,7 @@ test("manifest keeps the honesty labels and the team's pinned NASA source hashes
  assert.equal(manifest.nasa_certified,false);
  assert.equal(manifest.sources.ldem_80s_80m.sha256,"e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc");
  assert.equal(manifest.sources["de440s.bsp"].sha256,"c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2");
- for(const source of Object.values(manifest.sources))assert.match(source.url,/^https:\/\/(svs\.gsfc\.nasa\.gov|pds-geosciences\.wustl\.edu|naif\.jpl\.nasa\.gov|asc-planetarynames-data\.s3\.us-west-2\.amazonaws\.com)\//);
+ for(const source of Object.values(manifest.sources))assert.match(source.url,/^https:\/\/(svs\.gsfc\.nasa\.gov|pds-geosciences\.wustl\.edu|naif\.jpl\.nasa\.gov|asc-planetarynames-data\.s3\.us-west-2\.amazonaws\.com|assets\.science\.nasa\.gov)\//);
 });
 
 test("local polar frame agrees with the body-fixed frame of web/lab/coords.js",()=>{
@@ -157,12 +157,56 @@ test("wide 320 m grid: reaches the cap edge, agrees with the native grid, and th
  assert.ok(grid.heightAt(sx,sy)<-2000,"Shackleton floor "+grid.heightAt(sx,sy));
 });
 
+test("Earth orientation: unit quaternions that put the sub-Moon point where the Moon can be",async()=>{
+ const view=b=>b.buffer.slice(b.byteOffset,b.byteOffset+b.length);
+ const eph=decodeEphemeris(view(await data("ephemeris.bin")),manifest.ephemeris);
+ const orientation=decodeOrientation(view(await data("earth_orientation.bin")),manifest.earth_orientation);
+ assert.equal(orientation.count,eph.count);
+ const inverse=([x,y,z,w])=>[-x,-y,-z,w];
+ let maxLat=0,previous=null,drift=0,steps=0;
+ for(let i=0;i<eph.count;i+=1){
+  if(i>3000&&i%53)continue; // every hour for the first 125 days, then a sparse sweep of the four years
+  const q=orientationAt(orientation,i),{earth}=pointsAt(eph,i);
+  close(Math.hypot(...q),1,1e-9,"unit quaternion");
+  // Moon -> Earth in the Moon frame, reversed, taken into the Earth frame: the point on Earth under the Moon.
+  const toMoon=rotate(inverse(q),bodyDirection(earth.lat,earth.lon).map(v=>-v));
+  const lat=Math.asin(toMoon[2])*180/Math.PI,lon=Math.atan2(toMoon[1],toMoon[0])*180/Math.PI;
+  maxLat=Math.max(maxLat,Math.abs(lat));
+  if(i<=3000){if(previous!==null){drift+=((lon-previous+540)%360)-180;steps++;}previous=lon;}
+ }
+ // The Moon's declination stays within about 28.7 deg (major standstill, 2024-2026); it crosses the sky westward once per 24.8 h.
+ assert.ok(maxLat>27&&maxLat<29.2,"sub-Moon latitude reaches "+maxLat);
+ close(drift/steps,-14.49,0.05,"sub-Moon longitude drift, deg per hour");
+ // Interpolating half-way between two hourly samples stays a rotation and lies between them.
+ const a=orientationAt(orientation,10),b=orientationAt(orientation,11),mid=orientationAt(orientation,10.5);
+ const dot=(p,q)=>p[0]*q[0]+p[1]*q[1]+p[2]*q[2]+p[3]*q[3];
+ assert.ok(dot(a,mid)>dot(a,b)&&dot(b,mid)>dot(a,b));
+ assert.throws(()=>decodeOrientation(new ArrayBuffer(8),{count:2}));
+});
+
+test("site card reads the team series as stored: layout, horizon interpolation and margins",async()=>{
+ const view=b=>b.buffer.slice(b.byteOffset,b.byteOffset+b.length);
+ const sites=JSON.parse(await readFile(path.join(root,"data/sites.json"),"utf8")).sites;
+ for(const site of sites){
+  const meta=JSON.parse(await readFile(path.join(root,"data/sites",site.id+".json"),"utf8"));
+  const series=decodeSiteSeries(view(await readFile(path.join(root,"data/sites",site.id+".bin"))),meta);
+  assert.equal(series.startMs,Date.parse(manifest.ephemeris.start_utc));assert.equal(series.stepMs,3600000);
+  // Recount "Sun centre above terrain" from the decoded samples: it must reproduce the catalog percentage.
+  let sun=0,earth=0;
+  for(let i=0;i<series.count;i++){const sky=siteSkyAt(series,i);if(sky.sun.margin>0)sun++;if(sky.earth.margin>0)earth++;
+   if(i%5000===0){close(sky.sun.margin,sky.sun.el-sky.sun.horizon,1e-12);assert.ok(sky.sun.az>=0&&sky.sun.az<360&&Math.abs(sky.sun.el)<8);}}
+  close(100*sun/series.count,site.metrics.sun_center_visible_pct,0.05,site.id+" Sun %");
+  close(100*earth/series.count,site.metrics.earth_center_visible_pct,0.05,site.id+" Earth %");
+ }
+ assert.throws(()=>decodeSiteSeries(new ArrayBuffer(8),{series:{count:2,start_utc:"2025-01-01T00:00:00Z",step_seconds:3600},terrain_horizon:[]}));
+});
+
 test("viewer source parses and declares its limits in both languages",async()=>{
  for(const name of ["app.js","ephemeris.js","polar-math.js"])execFileSync(process.execPath,["--check",path.join(root,"moon-hd",name)]);
  const app=await readFile(path.join(root,"moon-hd/app.js"),"utf8"),html=await readFile(path.join(root,"moon-hd.html"),"utf8");
  for(const phrase of ["NOT VALIDATED","NÃO VALIDADO","not endorsed by NASA","Shadows are cast only by terrain inside that cap","This is not how the Moon is lit at this time","shapes and shadows are not at true scale"])assert.ok(app.includes(phrase),phrase);
  assert.ok(html.includes("Not a NASA product; not endorsed by NASA."));
- for(const id of ["color","light","relief","markers","exposure","time"])assert.ok(html.includes(`id="${id}"`),id);
+ for(const id of ["color","light","relief","markers","exposure","time","site-card","site-go","site-close"])assert.ok(html.includes(`id="${id}"`),id);
  assert.ok(!/style=/.test(html),"CSP style-src 'self': no inline style attributes");
  assert.ok(!/<script(?![^>]*src=)/.test(html),"no inline scripts");
 });

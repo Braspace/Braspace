@@ -4,12 +4,15 @@
 // South cap : everything south of 80.35 S is a separate mesh on the same sphere, built from LDEM_80S_80M
 //             (320 m block means out to 80 S, native 80 m inside 164 km of the pole), with terrain shadows
 //             ray-marched in the fragment shader toward the Sun.
+// Shadows   : on the globe, rays are marched over the LOLA 16 px/deg height map (features of a few km and up);
+//             in the cap, over the 80 m / 320 m grids.
+// Sky       : Earth is NASA Blue Marble, oriented with NAIF SPICE (IAU_EARTH) and lit by the same Sun.
 // Options   : natural colour or colour by altitude; real sunlight or an even light with no night side.
 // Display only. Relief exaggeration, the photometric function, the even light, earthshine and the star
 // background are visual choices; no landing metric is computed here. See data/moonhd/manifest.json.
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.181.0/+esm";
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/controls/OrbitControls.js/+esm";
-import { decodeEphemeris, indexAt, timeAt, pointsAt, bodyDirection, toGlobeScene, signedLon, elevationAtSouthPole } from "./ephemeris.js";
+import { decodeEphemeris, indexAt, timeAt, pointsAt, bodyDirection, toGlobeScene, signedLon, elevationAtSouthPole, decodeOrientation, orientationAt, decodeSiteSeries, siteSkyAt } from "./ephemeris.js";
 import { R_REF, latLonToStereo, makeGrid, CAP_LAT, ALTITUDE_RANGE } from "./polar-math.js";
 
 const DATA = "./data/moonhd/";
@@ -32,7 +35,12 @@ const TEXT = {
     noteEven: "Even light: no night side and no shadows. This is not how the Moon is lit at this time.",
     noteAltitude: "Colour shows height above the 1,737.4 km sphere, from −7 km (blue) to +8 km (white).",
     statusTitle: "Rendered from NASA data for display. Not independently validated, not a NASA product.",
-    credits: "Imagery and elevation: NASA's Scientific Visualization Studio (CGI Moon Kit) · Terrain: NASA LRO/LOLA (LDEM_80S_80M) · Geometry: NASA/JPL NAIF SPICE (DE440) · Names: IAU/USGS Gazetteer. Not a NASA product; not endorsed by NASA.",
+    siteSun: "Sun centre now", siteEarth: "Earth centre now", above: "above the terrain by", below: "below the terrain by",
+    siteLoading: "Loading the site series…", siteFailed: "The site series could not be loaded.", siteGo: "Fly to this site", close: "Close",
+    mSun: "Sun above terrain", mEarth: "Earth above terrain", mBoth: "Both at once", mDark: "Longest darkness", mBlackout: "Longest Earth blackout",
+    siteStatus: "PRELIMINARY · team series",
+    siteNote: "Team series, hourly, 2025 to 2028: LOLA horizon traced to 100 km, centres of the Sun and Earth from SPICE. Not independently validated. It is a separate computation from the shadows drawn here.",
+    credits: "Imagery and elevation: NASA's Scientific Visualization Studio (CGI Moon Kit) · Terrain: NASA LRO/LOLA (LDEM_80S_80M) · Geometry: NASA/JPL NAIF SPICE (DE440) · Names: IAU/USGS Gazetteer · Earth: NASA Blue Marble. Not a NASA product; not endorsed by NASA.",
   },
   pt: {
     subtitle: "Imagens do LRO e relevo LOLA da NASA, Sol e Terra pelo NAIF SPICE", status: "PRODUTO VISUAL · NÃO VALIDADO",
@@ -47,7 +55,12 @@ const TEXT = {
     noteEven: "Luz uniforme: sem lado noturno e sem sombras. A Lua não está iluminada assim neste horário.",
     noteAltitude: "A cor mostra a altura acima da esfera de 1.737,4 km, de −7 km (azul) a +8 km (branco).",
     statusTitle: "Renderizado a partir de dados da NASA para exibição. Sem validação independente; não é um produto da NASA.",
-    credits: "Imagens e elevação: NASA's Scientific Visualization Studio (CGI Moon Kit) · Relevo: NASA LRO/LOLA (LDEM_80S_80M) · Geometria: NASA/JPL NAIF SPICE (DE440) · Nomes: IAU/USGS Gazetteer. Não é um produto da NASA nem tem o endosso dela.",
+    siteSun: "Centro do Sol agora", siteEarth: "Centro da Terra agora", above: "acima do relevo por", below: "abaixo do relevo por",
+    siteLoading: "Carregando a série do local…", siteFailed: "Não foi possível carregar a série do local.", siteGo: "Voar até este local", close: "Fechar",
+    mSun: "Sol acima do relevo", mEarth: "Terra acima do relevo", mBoth: "Os dois juntos", mDark: "Maior escuridão", mBlackout: "Maior bloqueio da Terra",
+    siteStatus: "PRELIMINAR · série do time",
+    siteNote: "Série do time, hora a hora, de 2025 a 2028: horizonte do LOLA traçado até 100 km, centros do Sol e da Terra pelo SPICE. Sem validação independente. É um cálculo separado das sombras desenhadas aqui.",
+    credits: "Imagens e elevação: NASA's Scientific Visualization Studio (CGI Moon Kit) · Relevo: NASA LRO/LOLA (LDEM_80S_80M) · Geometria: NASA/JPL NAIF SPICE (DE440) · Nomes: IAU/USGS Gazetteer · Terra: NASA Blue Marble. Não é um produto da NASA nem tem o endosso dela.",
   },
 };
 let lang = params.get("lang") === "pt" ? "pt" : "en";
@@ -114,8 +127,14 @@ void main(){
   gl_Position = projectionMatrix * viewMatrix * vec4(vPos, 1.0);
 }`;
 const GLOBE_FRAGMENT = SHADING + `
-uniform sampler2D colorMap, normalMap; uniform vec3 lightDir, earthDir; uniform float normalScale, capReady;
+uniform sampler2D colorMap, normalMap, heightMap; uniform vec3 lightDir, earthDir; uniform float normalScale, capReady, hMin, hMax, relief;
 varying vec2 vUv; varying vec3 vPos; varying float vH;
+const float PI = 3.141592653589793, R = ${R_REF.toFixed(1)};
+// True height (m) under a unit direction of the globe frame, from the 16 px/deg LOLA map.
+float heightAt(vec3 d){
+  vec2 uv = vec2(atan(-d.z, d.x) / (2.0 * PI) + 0.5, asin(clamp(d.y, -1.0, 1.0)) / PI + 0.5);
+  return mix(hMin, hMax, textureLod(heightMap, uv, 0.0).r);
+}
 void main(){
   vec3 up = normalize(vPos);
   if (capReady > 0.5 && up.y < ${Math.sin((CAP_LAT - 0.03) * Math.PI / 180).toFixed(6)}) discard; // the LOLA cap draws this part
@@ -124,9 +143,24 @@ void main(){
   vec3 tn = texture2D(normalMap, vUv).xyz * 2.0 - 1.0;
   vec3 N = normalize(tn.x * normalScale * east + tn.y * normalScale * north + tn.z * up);
   vec3 V = normalize(cameraPosition - vPos);
-  float day = mix(1.0, smoothstep(-0.03, 0.03, dot(up, lightDir)), realLight);
+  float graze = dot(up, lightDir);
+  float day = mix(1.0, smoothstep(-0.03, 0.03, graze), realLight);
+  float lit = day;
+  if (realLight > 0.5 && graze > -0.04 && graze < 0.45) {
+    // Terrain shadows where the Sun is low: march toward it over the height map (curvature included).
+    vec3 P = up * (1.0 + relief * heightAt(up) / R);
+    float clearance = 1.0;
+    for (int i = 1; i <= GLOBE_STEPS; i++) {
+      float f = float(i) / float(GLOBE_STEPS), tt = 0.004 + 0.14 * f * f; // lunar radii: 7 km to 250 km
+      vec3 Q = P + lightDir * tt;
+      float r = length(Q);
+      clearance = min(clearance, ((r - 1.0) * R - relief * heightAt(Q / r)) / (tt * R));
+    }
+    // One grey level of the height map is 77 m, so the edge is kept wider than the solar disc.
+    lit *= smoothstep(-0.012, 0.012, clearance);
+  }
   vec3 albedo = texture2D(colorMap, vUv).rgb;
-  vec3 col = shade(albedo, vH, N, lightDir, V, day);
+  vec3 col = shade(albedo, vH, N, lightDir, V, lit);
   col += albedo * vec3(0.55, 0.7, 1.0) * 0.012 * max(dot(up, earthDir), 0.0) * (1.0 - day) * (1.0 - colorMode);
   gl_FragColor = vec4(col, 1.0);
   #include <tonemapping_fragment>
@@ -269,13 +303,16 @@ function placeLabel(label, camera, visible) {
 // ---------------------------------------------------------------- app
 async function main() {
   const manifest = await fetchJSON(DATA + "manifest.json");
-  const [ephBuffer, catalog, gazetteer, colorTex, normalTex, heightTex, starTex] = await Promise.all([
+  const [ephBuffer, orientationBuffer, catalog, gazetteer, colorTex, normalTex, heightTex, starTex, earthTex] = await Promise.all([
     fetchBinary(DATA + manifest.ephemeris.file, manifest.ephemeris.count * 8),
+    fetchBinary(DATA + manifest.earth_orientation.file, manifest.earth_orientation.count * 8),
     fetchJSON("./data/sites.json").catch(() => ({ sites: [] })),
     fetchJSON(DATA + manifest.features.file).catch(() => ({ features: [] })),
-    loadTexture("color_4k.jpg", true), loadTexture("normal_4k.jpg", false), loadTexture("height_2k.jpg", false), loadTexture("stars_4k.jpg", true),
+    loadTexture("color_4k.jpg", true), loadTexture("normal_4k.jpg", false), loadTexture("height_4k.jpg", false), loadTexture("stars_4k.jpg", true),
+    loadTexture(manifest.earth.file, true),
   ]);
   const eph = decodeEphemeris(ephBuffer, manifest.ephemeris);
+  const earthOrientation = decodeOrientation(orientationBuffer, manifest.earth_orientation);
 
   const scene = new THREE.Scene();
   const sunDir = new THREE.Vector3(1, 0, 0), earthDir = new THREE.Vector3(1, 0, 0), lightDir = new THREE.Vector3(1, 0, 0);
@@ -289,7 +326,7 @@ async function main() {
     lightDir: { value: lightDir }, earthDir: { value: earthDir },
   };
   scene.add(new THREE.Mesh(globeGeometry(small ? 384 : 768, small ? 192 : 384),
-    new THREE.ShaderMaterial({ uniforms: globeUniforms, vertexShader: GLOBE_VERTEX, fragmentShader: GLOBE_FRAGMENT })));
+    new THREE.ShaderMaterial({ uniforms: globeUniforms, vertexShader: GLOBE_VERTEX, fragmentShader: GLOBE_FRAGMENT, defines: { GLOBE_STEPS: small ? 24 : 48 } })));
 
   // ---- sky: stars (decorative), Sun and Earth at their true angular size
   const SKY = 60;
@@ -297,11 +334,24 @@ async function main() {
     new THREE.MeshBasicMaterial({ map: starTex, color: 0x8c8c8c, side: THREE.BackSide, depthWrite: false, toneMapped: false }));
   const sunBall = new THREE.Mesh(new THREE.SphereGeometry(SKY * Math.tan(0.00465), 24, 12), new THREE.MeshBasicMaterial({ color: 0xfff4d6, toneMapped: false }));
   const earthMaterial = new THREE.ShaderMaterial({
-    uniforms: { sunDir: { value: sunDir } },
-    vertexShader: "varying vec3 vN; void main(){ vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-    fragmentShader: "uniform vec3 sunDir; varying vec3 vN; void main(){ float d = smoothstep(-0.05, 0.25, dot(normalize(vN), sunDir)); gl_FragColor = vec4(mix(vec3(0.01, 0.015, 0.03), vec3(0.25, 0.45, 0.85), d), 1.0); }",
+    uniforms: { sunDir: { value: sunDir }, map: { value: earthTex } },
+    vertexShader: "varying vec3 vN; varying vec3 vP; varying vec2 vUv; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * position); vP = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * viewMatrix * vec4(vP, 1.0); }",
+    fragmentShader: `uniform vec3 sunDir; uniform sampler2D map; varying vec3 vN; varying vec3 vP; varying vec2 vUv;
+      void main(){
+        vec3 N = normalize(vN);
+        float day = smoothstep(-0.08, 0.22, dot(N, sunDir));
+        float rim = pow(1.0 - max(dot(N, normalize(cameraPosition - vP)), 0.0), 3.0); // thin blue limb, display only
+        vec3 col = texture2D(map, vUv).rgb * (0.004 + 1.25 * day) + vec3(0.25, 0.45, 1.0) * rim * day * 0.6;
+        gl_FragColor = vec4(col, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
   });
-  const earthBall = new THREE.Mesh(new THREE.SphereGeometry(SKY * Math.tan(0.0166), 32, 16), earthMaterial);
+  // Same sphere layout as the Moon: local axes are the body-fixed frame mapped as (x, z, -y), texture centred on 0 E.
+  const earthBall = new THREE.Mesh(globeGeometry(96, 48), earthMaterial);
+  earthBall.scale.setScalar(SKY * Math.tan(0.0166));
+  const BODY_TO_SCENE = new THREE.Matrix4().set(1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1);
+  const SCENE_TO_BODY = BODY_TO_SCENE.clone().transpose(), earthRotation = new THREE.Matrix4(), earthQuaternion = new THREE.Quaternion();
   scene.add(stars, sunBall, earthBall);
 
   // ---- two cameras on the same scene: around the globe, and around a point on the ground near the south pole
@@ -325,7 +375,16 @@ async function main() {
     labels.push(label);
     return label;
   };
-  for (const s of catalog.sites || []) if (Number.isFinite(s.lat) && Number.isFinite(s.lon)) sitePoints.push(addName(s.name || s.id, s.lat, s.lon, "site"));
+  for (const s of catalog.sites || []) {
+    if (!Number.isFinite(s.lat) || !Number.isFinite(s.lon)) continue;
+    const label = addName(s.name || s.id, s.lat, s.lon, "site");
+    label.site = s;
+    sitePoints.push(label);
+    Object.assign(label.el, { tabIndex: 0 });
+    label.el.setAttribute("role", "button");
+    label.el.addEventListener("click", () => showSite(label));
+    label.el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showSite(label); } });
+  }
   for (const f of gazetteer.features || []) addName(f.name, f.lat, f.lon, f.type === "Mare" || f.type === "Oceanus" ? "mare" : "feature");
   const poleLabel = addName("", -90, 0, "feature"); poleLabel.key = "southPole";
   labels.push({ el: makeLabel("", "body"), position: sunBall.position, key: "sun", kind: "body" },
@@ -370,6 +429,59 @@ async function main() {
   }
   const capLoading = loadCap();
 
+  // ---- landing-site card: the team's precomputed series for the clicked site, read at the clock time
+  let openSite = null;
+  const seriesCache = new Map();
+  const loadSeries = id => {
+    if (!seriesCache.has(id)) seriesCache.set(id, (async () => {
+      const meta = await fetchJSON(`./data/sites/${id}.json`);
+      return decodeSiteSeries(await fetchBinary(`./data/sites/${id}.bin`, meta.series.count * 8), meta);
+    })());
+    return seriesCache.get(id);
+  };
+  const fillRows = (dl, rows) => {
+    dl.replaceChildren(...rows.flatMap(([k, v]) => {
+      const dt = document.createElement("dt"), dd = document.createElement("dd");
+      dt.textContent = k; dd.textContent = v;
+      return [dt, dd];
+    }));
+  };
+  function updateSiteCard() {
+    if (!openSite) return;
+    const { site, series, failed } = openSite, m = site.metrics || {};
+    $("site-name").textContent = site.name || site.id;
+    $("site-status").textContent = t("siteStatus");
+    $("site-note").textContent = t("siteNote");
+    $("site-go").textContent = t("siteGo");
+    $("site-close").setAttribute("aria-label", t("close"));
+    const pct = v => (Number.isFinite(v) ? v.toFixed(1) + " %" : "–"), hours = v => (Number.isFinite(v) ? v.toFixed(0) + " h" : "–");
+    fillRows($("site-metrics"), [[t("mSun"), pct(m.sun_center_visible_pct)], [t("mEarth"), pct(m.earth_center_visible_pct)],
+      [t("mBoth"), pct(m.sun_and_earth_visible_pct)], [t("mDark"), hours(m.longest_darkness_h)], [t("mBlackout"), hours(m.longest_earth_blackout_h)]]);
+    if (!series) { fillRows($("site-now"), [[failed ? t("siteFailed") : t("siteLoading"), ""]]); return; }
+    const sample = (timeAt(eph, index) - series.startMs) / series.stepMs;
+    if (!(sample >= 0 && sample <= series.count - 1)) { fillRows($("site-now"), []); return; }
+    const sky = siteSkyAt(series, sample), line = b => `${b.el.toFixed(2)}° · ${t(b.margin >= 0 ? "above" : "below")} ${Math.abs(b.margin).toFixed(2)}°`;
+    fillRows($("site-now"), [[t("siteSun"), line(sky.sun)], [t("siteEarth"), line(sky.earth)]]);
+  }
+  function showSite(label) {
+    const entry = openSite = { label, site: label.site, series: null, failed: false };
+    $("site-card").hidden = false;
+    updateSiteCard();
+    loadSeries(label.site.id).then(series => { entry.series = series; }, () => { entry.failed = true; }).then(() => { if (openSite === entry) updateSiteCard(); });
+  }
+  $("site-close").addEventListener("click", () => { openSite = null; $("site-card").hidden = true; });
+  $("site-go").addEventListener("click", () => {
+    if (!openSite) return;
+    const { normal, position } = openSite.label;
+    flyTo("pole", () => {
+      // Look at the site from 45 km up and 95 km out, on the side away from the pole.
+      const away = new THREE.Vector3(normal.x, 0, normal.z);
+      if (away.lengthSq() < 1e-8) away.set(1, 0, 0);
+      pole.controls.target.copy(position);
+      pole.camera.position.copy(position).addScaledVector(normal, 45 / R_KM).addScaledVector(away.normalize(), 95 / R_KM);
+    }).catch(fail);
+  });
+
   // ---- state
   let mode = "globe", index = indexAt(eph, Date.parse(params.get("t") || "") || Date.now()), playing = false;
   const active = () => (mode === "globe" ? globe : pole);
@@ -383,6 +495,9 @@ async function main() {
     earthDir.set(...toGlobeScene(bodyDirection(earth.lat, earth.lon)));
     sunBall.position.copy(sunDir).multiplyScalar(SKY);
     earthBall.position.copy(earthDir).multiplyScalar(SKY);
+    earthQuaternion.fromArray(orientationAt(earthOrientation, index));
+    earthBall.quaternion.setFromRotationMatrix(earthRotation.makeRotationFromQuaternion(earthQuaternion).premultiply(BODY_TO_SCENE).multiply(SCENE_TO_BODY));
+    updateSiteCard();
     $("clock").textContent = new Date(timeAt(eph, index)).toISOString().slice(0, 16).replace("T", " ") + " UTC";
     $("r-sun").textContent = fmt(sun.lat, "N", "S") + ", " + fmt(signedLon(sun.lon), "E", "W");
     $("r-earth").textContent = fmt(earth.lat, "N", "S") + ", " + fmt(signedLon(earth.lon), "E", "W");
@@ -404,19 +519,51 @@ async function main() {
     if (shared.colorMode.value > 0.5) notes.push(t("noteAltitude"));
     $("view-note").textContent = notes.join(" ");
     for (const l of labels) if (l.key) l.el.textContent = t(l.key);
+    updateSiteCard();
   }
 
-  async function setMode(next) {
+  // ---- camera flights. The direction follows a great arc and the distance changes smoothly, so the path never
+  // crosses the Moon; orientation, field of view and near plane are interpolated alongside.
+  const flyCam = new THREE.PerspectiveCamera(32, 1, 0.02, 400);
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let fly = null;
+  const snapshot = camera => ({ position: camera.position.clone(), quaternion: camera.quaternion.clone(), fov: camera.fov, near: camera.near });
+  const settled = view => { view.controls.update(); view.camera.updateMatrixWorld(); return snapshot(view.camera); };
+  async function flyTo(next, prepare, animate = true) {
     if (next === "pole" && !capUniforms) {
       const box = $("loading");
       box.firstElementChild.textContent = t("loadingPole"); box.classList.remove("done");
       try { await capLoading; } finally { box.classList.add("done"); }
     }
+    const from = fly ? snapshot(flyCam) : settled(active());
+    if (prepare) prepare();
     mode = next;
-    globe.controls.enabled = mode === "globe"; pole.controls.enabled = mode === "pole";
+    globe.controls.enabled = pole.controls.enabled = false;
+    const to = settled(active());
+    if (animate && !reduceMotion) fly = { from, to, start: performance.now(), duration: 2400 };
+    else { fly = null; active().controls.enabled = true; }
     $("view-globe").setAttribute("aria-pressed", String(mode === "globe"));
     $("view-pole").setAttribute("aria-pressed", String(mode === "pole"));
     applyText();
+  }
+  const setMode = (next, animate = true) => (next === mode && !fly ? Promise.resolve() : flyTo(next, null, animate));
+  const fromDir = new THREE.Vector3(), toDir = new THREE.Vector3();
+  function flightCamera(now) {
+    const u = Math.min(1, (now - fly.start) / fly.duration), k = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+    const { from, to } = fly, ra = from.position.length(), rb = to.position.length();
+    fromDir.copy(from.position).divideScalar(ra); toDir.copy(to.position).divideScalar(rb);
+    const angle = fromDir.angleTo(toDir), sin = Math.sin(angle);
+    if (sin > 1e-4) fromDir.multiplyScalar(Math.sin((1 - k) * angle) / sin).addScaledVector(toDir, Math.sin(k * angle) / sin);
+    else fromDir.lerp(toDir, k);
+    // A little extra height in the middle of a long arc keeps the ground from rushing past the lens.
+    flyCam.position.copy(fromDir.normalize()).multiplyScalar(ra + (rb - ra) * k + 0.5 * Math.sin(Math.PI * k) * Math.min(1, angle));
+    flyCam.quaternion.slerpQuaternions(from.quaternion, to.quaternion, k);
+    flyCam.fov = from.fov + (to.fov - from.fov) * k;
+    flyCam.near = Math.exp(Math.log(from.near) + (Math.log(to.near) - Math.log(from.near)) * k);
+    flyCam.aspect = innerWidth / innerHeight;
+    flyCam.updateProjectionMatrix(); flyCam.updateMatrixWorld();
+    if (u >= 1) { fly = null; active().controls.enabled = true; }
+    return flyCam;
   }
 
   // ---- controls
@@ -456,9 +603,10 @@ async function main() {
       if (index >= eph.count - 1) { index = eph.count - 1; playing = false; applyText(); }
       applyTime();
     }
-    const { camera, controls } = active();
-    controls.update();
-    camera.updateMatrixWorld();
+    let camera;
+    const flying = fly !== null;
+    if (flying) camera = flightCamera(now);
+    else { const view = active(); view.controls.update(); camera = view.camera; camera.updateMatrixWorld(); }
     stars.position.copy(camera.position);
     // Light: the Sun, or an even light fixed to the camera (from the upper left) that leaves no night side.
     if (shared.realLight.value > 0.5) lightDir.copy(sunDir);
@@ -473,7 +621,7 @@ async function main() {
     const names = $("markers").checked, distance = camera.position.length();
     sites.visible = names;
     for (const l of labels) {
-      let visible = l.kind === "body" || names;
+      let visible = !flying && (l.kind === "body" || names);
       if (visible && l.kind === "feature") visible = mode === "pole" || distance < 2.4;
       if (visible && l.kind === "mare") visible = mode === "globe" && distance > 2.4;
       if (visible && l.normal) visible = toCamera.copy(camera.position).sub(l.position).normalize().dot(l.normal) > (mode === "pole" ? 0.01 : 0.15);
@@ -485,7 +633,8 @@ async function main() {
   applyTime();
   // First view: from the sunlit side, looking up from the south so the polar region is in frame.
   globe.camera.position.copy(sunDir).multiplyScalar(0.75).add(earthDir.clone().multiplyScalar(0.45)).setY(-0.62).normalize().multiplyScalar(small ? 6.4 : 4.6);
-  await setMode(params.get("view") === "pole" ? "pole" : "globe");
+  await setMode(params.get("view") === "pole" ? "pole" : "globe", false);
+  globe.controls.enabled = mode === "globe"; pole.controls.enabled = mode === "pole";
   $("loading").classList.add("done");
 
   // Sharper colour on capable screens, after the first frame is already up.

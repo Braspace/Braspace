@@ -17,6 +17,8 @@ html, body { margin: 0; height: 100%; background: #000; color: var(--ink); overf
 .label.mare::before { display: none; }
 .label.body::before { background: var(--ok); }
 .label[hidden] { display: none; }
+.label.site { pointer-events: auto; cursor: pointer; }
+.label.site:hover, .label.site:focus-visible { border-color: var(--accent); outline: none; }
 
 .top { position: fixed; left: 16px; right: 16px; top: 12px; display: flex; justify-content: space-between; gap: 12px;
   align-items: flex-start; pointer-events: none; }
@@ -41,6 +43,17 @@ button[aria-pressed="true"] { background: var(--accent); color: #1b0b05; border-
 .readout dd { margin: 0; font-variant-numeric: tabular-nums; text-align: right; }
 .readout .note { margin: 8px 0 0; font-size: 11px; color: var(--dim); }
 
+.site-card { position: fixed; left: 16px; top: 124px; width: 290px; padding: 10px 12px; background: var(--glass);
+  border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(8px); }
+.site-card header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.site-card h2 { margin: 0; font-size: 15px; line-height: 1.25; }
+.site-card header button { min-height: 28px; padding: 0 9px; }
+.site-card .site-status { margin: 4px 0 8px; font-size: 10.5px; letter-spacing: .08em; color: var(--ok); }
+.site-card dl { margin: 0 0 8px; display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; }
+.site-card dt { color: var(--dim); font-size: 12px; }
+.site-card dd { margin: 0; font-variant-numeric: tabular-nums; text-align: right; font-size: 12.5px; }
+.site-card .note { margin: 0 0 8px; font-size: 11px; color: var(--dim); }
+.site-card #site-go { width: 100%; }
 .panel { position: fixed; left: 16px; right: 16px; bottom: 44px; max-width: 760px; margin: 0 auto; padding: 10px 12px;
   background: var(--glass); border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(8px); }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -67,6 +80,8 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
   .readout dl { font-size: 12px; gap: 1px 10px; }
   .readout dt { font-size: 11px; }
   .readout .note { display: none; }
+  .site-card { left: 8px; right: 8px; width: auto; top: 196px; }
+  .site-card .note { display: none; }
   .panel { left: 8px; right: 8px; bottom: 26px; }
   .row.time output { min-width: 150px; font-size: 13px; }
   .credits { font-size: 9px; left: 8px; right: 8px; bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
