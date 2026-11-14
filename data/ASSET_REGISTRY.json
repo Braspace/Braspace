@@ -28,6 +28,22 @@
       "review_note": "Global color map; not a substitute for high-resolution polar science imagery or the LOLA polar DEM."
     },
     {
+      "asset_id": "nasa-svs-14959-moon-small-glb-2026",
+      "category": "visual_model_3d",
+      "source_page": "https://svs.gsfc.nasa.gov/14959/",
+      "file_url": "https://svs.gsfc.nasa.gov/vis/a010000/a014900/a014959/moon_small.glb",
+      "file_id": "moon_small.glb",
+      "format": "glTF 2.0 binary (GLB), single textured sphere mesh, color map only, no topography",
+      "dimensions_px": {"width": 4096, "height": 4096},
+      "bytes": 13799876,
+      "sha256": "12d3b0bb7fe214903f51447d1bc61710f442e92a11c703fcaca6d4e7ff8e67d4",
+      "author_credit": "NASA's Goddard Space Flight Center; NASA SVS 14959 (producer Dan Gallagher); made with LRO imagery; color source CGI Moon Kit (SVS 4720)",
+      "allowed_use": "Educational/informational visualization with the NASA SVS credit \"NASA's Goddard Space Flight Center\"; confirm current NASA media guidance before redistribution.",
+      "redistribution_status": "approved_candidate",
+      "scientific_role": "visualization_only",
+      "review_note": "Color map wrapped on a sphere, no topography. Not a substitute for the LOLA polar DEM; shows no illumination or visibility. Embedded texture is a 4096x4096 PNG (12,171,911 bytes). Chosen over Moon_NASA_LRO_15k_Grid_Small.glb (SHA-256 f688e87b57e182d29da6040edfcc8e50360c90639b86f12370381cfde31b17ef, 7,233,908 bytes) because the grid model bakes lat/lon lines into the texture and the page itself calls its pinched poles an artifact (measured in BR41)."
+    },
+    {
       "asset_id": "nasa-svs-cgi-moon-kit-lroc-color-4k-2025",
       "category": "global_albedo_visualization",
       "source_page": "https://svs.gsfc.nasa.gov/4720/",
