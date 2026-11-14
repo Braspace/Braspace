@@ -563,38 +563,69 @@
     ];
   };
 
-  VIEWS.janelas = () => {
-    const { tr, sum } = scenario();
-    const windows = [];
+  // Windows view: a summary, a timeline bar of light and Earth visibility over the whole
+  // scenario, and one table listing each window with its duration. Geometric visibility only.
+  function runsOf(tr, key, want) {
+    const runs = [];
     let start = null;
     tr.forEach((s, i) => {
-      if (s.earth_visible && start === null) start = i;
-      if (!s.earth_visible && start !== null) { windows.push([start, i - 1]); start = null; }
+      const on = !!s[key] === want;
+      if (on && start === null) start = i;
+      if (!on && start !== null) { runs.push([start, i - 1]); start = null; }
     });
-    if (start !== null) windows.push([start, tr.length - 1]);
-    const at = i => fmt(startMs() + i * S.stepMin * 60e3);
-    return [
-      h("section", { class: "panel" },
-        h("h2", { text: "04 · Janelas de luz e de Terra" }),
-        h("dl", { class: "readout" },
-          h("dt", { text: "horas com luz" }), h("dd", { text: f1(sum.sunlitH) + " h" }),
-          h("dt", { text: "maior escuridão" }), h("dd", { text: f1(sum.darkH) + " h" }),
-          h("dt", { text: "horas com Terra visível" }), h("dd", { text: f1(sum.earthH) + " h" }),
-          h("dt", { text: "maior bloqueio da Terra" }), h("dd", { text: f1(sum.blockH) + " h" }))),
-      h("section", { class: "panel" },
-        h("h2", { text: "Janelas de Terra visível (4.7)" }),
-        windows.length === 0
-          ? h("p", { class: "note", text: "Nenhuma janela de Terra visível no intervalo." })
-          : h("div", { class: "scroll" }, h("table", { class: "table" },
-              h("thead", {}, h("tr", {}, h("th", { text: "início" }), h("th", { text: "fim" }), h("th", { class: "n", text: "horas" }))),
-              h("tbody", {}, windows.map(([a, b]) => h("tr", {}, h("td", { text: at(a) }), h("td", { text: at(b) }), h("td", { class: "n", text: f1((b - a + 1) * S.stepMin / 60) })))))),
-        h("p", { class: "note", text: "Visibilidade geométrica. Não garante enlace de rádio. Orçamento de RF não modelado." })),
-      h("section", { class: "panel span2" },
-        h("h2", { text: "Transições (4.5) · instante por amostra" }),
-        h("p", { class: "note", text: "O instante é o da primeira amostra que mudou. Bisseção (4.6) ainda pendente." }),
-        transitionsTable(tr))
-    ];
+    if (start !== null) runs.push([start, tr.length - 1]);
+    return runs;
+  }
+
+  VIEWS.janelas = () => {
+    const { tr, sum } = scenario();
+    if (!tr.length) return [noDataState("04 · Janelas de luz e de Terra")];
+    const step = S.stepMin;
+    const total = Math.max(1, tr.length);
+    const sunRuns = runsOf(tr, "sun_visible", true);
+    const earthRuns = runsOf(tr, "earth_visible", true);
+    const blockRuns = runsOf(tr, "earth_visible", false);
+    const at = i => fmt(startMs() + i * step * 60e3);
+    const hours = (a, b) => f1((b - a + 1) * step / 60);
+    const pct = i => (i / total * 100).toFixed(3) + "%";
+    const width = (a, b) => ((b - a + 1) / total * 100).toFixed(3) + "%";
+
+    const longestBlock = blockRuns.reduce((m, [a, b]) => Math.max(m, (b - a + 1) * step / 60), 0);
+    const summary = h("section", { class: "panel span2" },
+      h("div", { class: "grid four" },
+        h("div", {}, h("div", { class: "label", text: "Janelas de Terra visível" }), h("strong", { class: "num", text: String(earthRuns.length) })),
+        h("div", {}, h("div", { class: "label", text: "Janelas com luz" }), h("strong", { class: "num", text: String(sunRuns.length) })),
+        h("div", {}, h("div", { class: "label", text: "Maior bloqueio da Terra" }), h("strong", { class: "num", text: f1(longestBlock) + " h" })),
+        h("div", {}, h("div", { class: "label", text: "Horas com Terra visível" }), h("strong", { class: "num", text: f1(sum.earthH) + " h de " + f1(sum.durationH) + " h" }))));
+
+    // Timeline: two rows over the whole scenario, placed by sample index.
+    const bar = (runs, color, label) => h("div", { class: "tl-row" },
+      h("span", { class: "tl-label", text: label }),
+      h("div", { class: "tl-track", role: "img", "aria-label": label + ": " + runs.length + " janela(s)" },
+        runs.map(([a, b]) => h("span", { class: "tl-seg", title: at(a) + " até " + at(b), style: "left:" + pct(a) + ";width:" + width(a, b) + ";background:" + color }))));
+    const timeline = h("section", { class: "panel span2" },
+      h("h2", { text: "Linha do tempo da janela" }),
+      h("div", { class: "tl" },
+        bar(sunRuns, "var(--amber)", "Luz"),
+        bar(earthRuns, "var(--green)", "Terra visível")),
+      h("div", { class: "tl-axis dim" }, h("span", { text: at(0) }), h("span", { text: at(tr.length - 1) })),
+      h("p", { class: "note", text: "Cada faixa mostra uma janela. Passe o cursor sobre uma faixa para ver o início e o fim." }),
+      S.audience === "educational" ? edu("Luz e Terra visível são medidas separadamente: a nave pode ter Sol e ainda não ver a Terra, ou o contrário.") : null);
+
+    const rows = [...earthRuns.map(([a, b]) => ["Terra", a, b]), ...sunRuns.map(([a, b]) => ["Luz", a, b])].sort((x, y) => x[1] - y[1]);
+    const table = rows.length === 0
+      ? h("p", { class: "note", text: "Nenhuma janela no intervalo." })
+      : h("div", { class: "scroll" }, h("table", { class: "table" },
+          h("thead", {}, h("tr", {}, h("th", { text: "tipo" }), h("th", { text: "início (UTC)" }), h("th", { text: "fim (UTC)" }), h("th", { class: "n", text: "horas" }))),
+          h("tbody", {}, rows.slice(0, 200).map(([k, a, b]) => h("tr", {}, h("td", { text: k }), h("td", { text: at(a) }), h("td", { text: at(b) }), h("td", { class: "n", text: hours(a, b) }))))));
+    const list = h("section", { class: "panel span2" },
+      h("h2", { text: "Janelas por tipo" }),
+      table,
+      h("p", { class: "note", text: "Visibilidade geométrica. Não garante enlace de rádio: orçamento de RF não modelado." }));
+
+    return [summary, timeline, list];
   };
+
   function transitionsTable(tr) {
     const rows = [];
     M.transitions(tr, "sun_visible", S.stepMin).forEach(x => rows.push(["Luz", x.to ? "escuro → luz" : "luz → escuro", x.index]));
