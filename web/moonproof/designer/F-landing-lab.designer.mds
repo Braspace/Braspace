@@ -1,0 +1,95 @@
+# F-landing-lab · Landing Lab
+
+**Pergunta que a tela responde**
+Como pousar com segurança neste terreno, controlando empuxo, inclinação e combustível?
+
+**Quem usa e em que camada abre**
+- Público-alvo: exploradores ("Explorar a Lua") e alunos/professores em desafio extra do Kit Aula.
+- Camada em que abre: **1 Resposta** (telemetria em tempo real e instrução guiada; pode abrir **2 Por quê** pelo link "Por que −2 m/s?" ou **3 Prova** pelo cartão de terreno/evidências).
+
+**Layout**
+- **Desktop (1440×900):**
+  - **Topo:** Barra de navegação/controle em pílula escura (`Sair para Compare`, ícone + `Landing Lab`, selo `SIMULAÇÃO EDUCATIVA`, identificação da missão/sítio, seletores `Guided`/`Free` e câmera `Perseguição`/`Descida`/`Perfil`, botões circulares Pausar, Reiniciar, Ajuda `?`). Logo abaixo, faixa secundária com pílula de fase/tempo (`Fase · Descida final · T+MM:SS`) à esquerda e banner de alerta (`Descida rápida`) ao centro.
+  - **Centro:** Canvas 3D em tela cheia (`web/lab/terrain.js` + `web/lab/scene.js`) com terreno lunar, módulo de pouso, pluma do motor, guias tracejadas até a zona-alvo (elipse tracejada + mira `+` + rótulo `Zona-alvo · Ø 120 m`).
+  - **Esquerda:** Régua vertical de `Altitude` (`300` a `0`, marcador atual em destaque, unidade `m acima do solo`).
+  - **Direita:** Régua vertical de `V. vertical` (`+2` a `−10`, marcador atual em laranja quando fora do limite, unidade `m/s · limite do cenário`) e indicador `V. horizontal` (`m/s`).
+  - **Rodapé (4 cartões):** `Terreno no alvo` (selo `PRE` ou `EST`, perfil de elevação, 4 atributos: inclinação, iluminação, perigo, distância do centro), `Empuxo` (barra de controle com faixa-alvo recomendada e atalhos `↑ ↓ ou W S`), `Combustível` (barra verde-lima e autonomia estimada em segundos), e painel `GUIDED · PASSO X DE 4` (instrução contextual, link `Por que −2 m/s?`).
+- **Celular (390×844):**
+  - Canvas 3D ocupa a metade superior sem rolagem lateral; réguas de altitude e velocidade vertical compactadas nas bordas; controles de empuxo/inclinação por toque/arraste e cartão de passo guiado em folha inferior arrastável.
+
+**Componentes**
+- `BarraSuperiorLab`: saída para `compare.html`, título, selo `SIMULAÇÃO EDUCATIVA`, seletor de modo (`Guided` | `Free`), seletor de câmera (`Perseguição` | `Descida` | `Perfil`), botões `Pausar`, `Reiniciar`, `Ajuda`. Estados: rodando, pausado, pousado/falha.
+- `FaixaFaseAlerta`: pílula de fase + cronômetro `T+MM:SS` e banner de alerta dinâmico (ex.: descida rápida). Estados: normal, alerta âmbar, crítico vermelho.
+- `CanvasPouso3D`: cena Three.js com terreno LOLA/mosaico, módulo, pluma e zona-alvo. Estados: carregando, ativo, tocado no solo.
+- `ReguaAltitude`: escala vertical graduada com marcador móvel. Estados: normal, próximo ao solo.
+- `ReguaVelocidadeVertical`: escala vertical graduada com marcador móvel e leitura de `V. horizontal`. Estados: seguro, alerta âmbar, crítico vermelho.
+- `CartaoTerrenoAlvo`: perfil do terreno sob o alvo + 4 métricas (inclinação, iluminação, perigo, distância do centro). Estados: `PRE`/`EST` ou `N/D`.
+- `ControleEmpuxo`: barra interativa 0–100% com faixa recomendada destacada. Estados: manual, guiado, sem combustível (0%).
+- `MedidorCombustivel`: barra de nível e tempo restante estimado. Estados: normal, baixo (< 20%), esgotado (0%).
+- `CartaoPassoGuiado`: instrução passo a passo no modo `Guided` com link explicativo. Estados: passo 1..4, oculto no modo `Free`.
+
+**Textos**
+| pt-BR | en |
+|---|---|
+| Sair para Compare | Back to Compare |
+| Landing Lab | Landing Lab |
+| SIMULAÇÃO EDUCATIVA | EDUCATIONAL SIMULATION |
+| Guided / Free | Guided / Free |
+| Perseguição / Descida / Perfil | Chase / Descent / Profile |
+| Fase · Descida final | Phase · Final descent |
+| Descida rápida | Fast descent |
+| Zona-alvo · Ø 120 m | Target zone · Ø 120 m |
+| Altitude / m acima do solo | Altitude / m above ground |
+| V. vertical / m/s · limite do cenário | Vertical speed / m/s · scenario limit |
+| V. horizontal | Horizontal speed |
+| Terreno no alvo | Target terrain |
+| Iluminado / Sem perigo / m do centro | Lit / No hazard / m from center |
+| Empuxo / ↑ ↓ ou W S · arraste no toque | Thrust / ↑ ↓ or W S · drag on touch |
+| Combustível / ≈ s no empuxo atual | Fuel / ≈ s at current thrust |
+| Freie antes dos 100 m. | Brake before 100 m. |
+| Por que −2 m/s? | Why −2 m/s? |
+| GUIDED · PASSO X DE 4 | GUIDED · STEP X OF 4 |
+| A simulação pausa no próximo passo | Simulation pauses at next step |
+
+**Dados**
+| Elemento | Fonte exata (arquivo ou rota e campo) | Selo | O que mostrar sem dado |
+|---|---|---|---|
+| Posição, altitude, `V. vertical`, `V. horizontal`, `Empuxo`, `Combustível` | `web/lab/physics.js` (`createSim`, `stepFixed`: `s[0..2]` pos, `s[3..5]` vel, `s[6]` massa/combustível, `fuelUsed`, `tilt`, `thrustFor`) | `SIM` | `—` com selo `N/D` |
+| Sítio e coordenadas do alvo | `web/data/sites.json` (`sites[].id`, `name`, `lat`, `lon`, `site_height_m`) ou `GET /api/sites` (`sites[].id`, `name`, `coordinate`) | `PRE` | `—` com selo `N/D` |
+| Relevo / perfil do terreno no alvo | `web/data/sites/<id>.json` (`terrain_horizon[]`, `site.site_elevation_m`) e `web/lab/terrain.js` | `PRE` | `—` com selo `N/D` |
+| Iluminação no alvo | `web/data/sites.json` (`sites[].metrics.sun_center_visible_pct`) ou `GET /api/sites/{id}/sky` | `PRE` (ou `SIM` se série sintética) | `—` com selo `N/D` |
+| Perigo de pedras < 20 m | sem fonte: N/D | `N/D` | `N/D` |
+
+**Interações**
+- Teclado: `↑`/`↓` ou `W`/`S` ajustam empuxo; `A`/`D` inclinam leste–oeste e `Q`/`E` norte–sul (`tiltE`, `tiltN`); `W`/`S` e `↑`/`↓` são só empuxo; solto, o assistente amortece o desvio lateral; `Espaço` pausa/retoma; `R` reinicia.
+- Clique/Toque: arrastar na barra de `Empuxo`; trocar câmera (`Perseguição`, `Descida`, `Perfil`); alternar `Guided`/`Free`; clicar `Por que −2 m/s?` abre explicação em camada 2.
+- Ao tocar o solo: grava a tentativa em `sessionStorage` (`moonproof.landing.attempts`) e abre `debrief.html` depois de 4 s (botão "Abrir o debrief agora" abre na hora).
+
+**Ligações**
+- `compare.html` (`C-comparar`) via `Sair para Compare`.
+- `debrief.html` (`G-debrief`) automaticamente ao concluir o pouso.
+- `evidence.html` (`H-evidence`) via link de lição/origem.
+
+**Diferenças entre o desenho e a tela real**
+1. **Nenhum número fixo no HTML/JS:** valores do desenho (`142 m`, `−4,8 m/s`, `58%`, `34%`, `SR-02`) são ilustrativos e não entram no código; tudo vem de `physics.js` e `web/data/sites.json`.
+2. **Selo `VAL`:** proibido; terreno e iluminação derivados de LOLA+SPICE usam `PRE` ("PRELIMINARY not NASA-reviewed"); física do pouso usa `SIM`.
+3. **Locais reais:** usa os 5 sítios de `web/data/sites.json` (ex.: `Mons Mouton (IM-2 Athena target)`), nunca `SR-02`.
+4. **Bateria/combustível:** modelo educativo de `DEFAULT_VEHICLE` em `web/lab/physics.js`, sempre rotulado `SIM`.
+5. **Regras/limites:** limites do cenário educativo rotulados como padrão editável / "assumed limit".
+6. **Sem domínio inventado:** compartilhamento/estado pela própria URL da página.
+7. **Dado real e resolução:** resolução do relevo informada conforme os `.json` de `web/data/` (LOLA 80 m reamostrado), não "20 m/px".
+8. **Landing Lab:** reutiliza diretamente `web/lab/physics.js` (3-DOF) e `web/lab/terrain.js` sem reescrever motor físico.
+
+**Critérios de aceite**
+- Tela abre em `landing.html` sem erros de console, usando `web/lab/physics.js`.
+- Nenhum selo `VAL` ou string `SR-02` aparece na tela.
+- Controles de teclado (`W`/`S` ou `↑`/`↓`) alteram empuxo e telemetria em tempo real.
+- Funciona em `1440×900` e `390×844` sem rolagem horizontal.
+
+
+**Correções feitas pela implementação (BR80)**
+1. Passos do Guided saem da altitude e da altura de frenagem calculada da física (`brakeHeight`), não de valores do desenho; cada passo novo pausa a simulação e o botão `Continuar` retoma (o desenho não tem esse botão: sem ele o teclado não retoma em toque).
+2. Faixa recomendada de empuxo = empuxo que chega ao limite de toque do veículo no chão (`recommendedThrottle`); só existe enquanto o módulo desce acima do limite.
+3. Alerta `Descida rápida` só dispara quando a altura é menor que a necessária para frear (`alertFor`), em âmbar e depois vermelho com ✕.
+4. Selo do cartão de terreno é `PRE` (estado do dado), nunca `EST`; `Perigo de pedras` é sempre `—` + `N/D`.
+5. A cena vem de `web/lab/scene.js`: o módulo é o dourado de lá, a pluma é a de lá, sem planeta azul no céu.
