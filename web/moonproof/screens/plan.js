@@ -82,6 +82,7 @@ register({
   }
 });
 
+const escapeText = v => String(v ?? "N/D").replace(/[&<>"\x27]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","\x27":"&#39;"}[c]));
 const shell = mountShell({ screen: "compare", onLang: draw });
 const doc = await loadSites();
 const scenarios = doc.sites.slice(0, 3);
@@ -218,11 +219,19 @@ async function draw() {
   `;
 
   rulesEl.querySelector("#btn-recalc").addEventListener("click", () => {
-    rulesDraft.night = Number(rulesEl.querySelector("#r-night").value);
-    rulesDraft.blackout = Number(rulesEl.querySelector("#r-blackout").value);
-    rulesDraft.battery = Number(rulesEl.querySelector("#r-battery").value);
-    rulesDraft.mast = Number(rulesEl.querySelector("#r-mast").value);
-    rulesDraft.slope = Number(rulesEl.querySelector("#r-slope").value);
+    const fields = [["night",0,720],["blackout",0,720],["battery",0,100],["mast",0,50],["slope",0,90]];
+    const next = {};
+    for (const [key,min,max] of fields) {
+      const raw = rulesEl.querySelector("#r-" + key).value.trim(), value = Number(raw);
+      if (!raw || !Number.isFinite(value) || value < min || value > max) {
+        rulesEl.querySelector("#r-" + key).setCustomValidity("Out-of-range assumption");
+        rulesEl.querySelector("#r-" + key).reportValidity();
+        return;
+      }
+      rulesEl.querySelector("#r-" + key).setCustomValidity("");
+      next[key] = value;
+    }
+    Object.assign(rulesDraft,next);
     rulesDraft.sunMode = rulesEl.querySelector("#r-sun").value;
     rulesDraft.step = Number(rulesEl.querySelector("#r-step").value);
     setState({ night: rulesDraft.night, blackout: rulesDraft.blackout, battery: rulesDraft.battery, layer: "proof" });
@@ -234,7 +243,7 @@ async function draw() {
     <div class="mp-export-actions">
       <button id="btn-csv" class="mp-btn-white" type="button">${t("plan.csv")}</button>
       <button id="btn-json" class="mp-btn-white" type="button">${t("plan.json")}</button>
-      <button id="btn-pdf" class="mp-btn-white" type="button">${t("plan.pdf")}</button>
+      <button id="btn-pdf" class="mp-btn-white" type="button">${t("nav.evidence")}</button>
     </div>
     <div class="mp-url-box" id="plan-url"></div>
     <p class="mp-note">${t("plan.urlNote")}</p>
@@ -275,9 +284,9 @@ async function draw() {
         <thead>
           <tr>
             <th>${t("plan.colMetric")}</th><th>${t("plan.colUnit")}</th>
-            <th>${scenarios[0]?.n} · ${scenarios[0]?.name}</th>
-            <th>${scenarios[1]?.n} · ${scenarios[1]?.name}</th>
-            <th>${scenarios[2]?.n} · ${scenarios[2]?.name}</th>
+            <th>${escapeText(scenarios[0]?.n)} · ${escapeText(scenarios[0]?.name)}</th>
+            <th>${escapeText(scenarios[1]?.n)} · ${escapeText(scenarios[1]?.name)}</th>
+            <th>${escapeText(scenarios[2]?.n)} · ${escapeText(scenarios[2]?.name)}</th>
             <th>${t("plan.colRule")}</th><th>${t("plan.colMargin")}</th>
             <th>${t("plan.colUnc")}</th><th>${t("plan.colOrigin")}</th>
           </tr>
