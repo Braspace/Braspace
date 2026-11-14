@@ -168,6 +168,11 @@ function card(s, m, mobile) {
   c.append(lt);
   if (point) c.append(rows([[t("ex.pgdaSun"), v(ps, 0, "%"), ps == null ? "N/D" : sealFor(doc.status)], [t("ex.pgdaEarth"), v(pe, 0, "%"), pe == null ? "N/D" : sealFor(doc.status)], [t("ex.night"), nd(), "N/D"]]));
   else c.append(rows([[t("ex.sunVis"), v(m.sunPct.value, 0, "%"), m.sunPct.seal], [t("ex.earthVis"), v(m.earthPct.value, 0, "%"), m.earthPct.seal], [t("ex.night"), v(m.longestDarkH.value, 0, "\u00a0h"), m.longestDarkH.seal]]));
+  if (mobile && !point) { c.lastChild.remove();
+    const blk = el("div", "ex-glass-row");
+    for (const [k, val, seal] of [[t("ex.sunVis"), v(m.sunPct.value, 0, "%"), m.sunPct.seal], [t("ex.earthVis"), v(m.earthPct.value, 0, "%"), m.earthPct.seal], [t("ex.night"), v(m.longestDarkH.value, 0, "\u00a0h"), m.longestDarkH.seal]]) {
+      const b = el("div", "glass-in"); b.append(el("b", null, val), el("span", null, k), sealEl(seal)); blk.append(b); }
+    c.append(blk); }
   if (!mobile) {
     const tt = el("h4", "mp-label"); tt.append(t("ex.terrain") + " · ", el("span", "ex-jade", "DEM " + fmtNum(grid.h.native_resolution_m) + " m/px → " + fmtNum(grid.dx) + " m")); c.append(tt);
     c.append(rows([[t("mc.altitude"), v(height.value, 0, "\u00a0m"), height.seal], [t("mc.slope"), v(sl.value, 1, "°"), sl.seal]]));
@@ -225,7 +230,13 @@ function dock(s) {
   const row = el("div", "ex-dock-row");
   row.append(btn("‹", t("mc.prev"), () => go(doc.sites[(i + n - 1) % n].id)), sel, btn("›", t("mc.next"), () => go(doc.sites[(i + 1) % n].id)),
     btn("−", t("mc.zout"), () => { terrain.zoom(0.7); frame(); }), btn("+", t("mc.zin"), () => { terrain.zoom(1.4); frame(); }), form);
-  d.replaceChildren(el("p", "mc-hint", t("ex.tap")), row);
+  // Scale bar (a round length that fits ~90 px at the current zoom) and the readout of the selected point.
+  const nice = m => { const p = 10 ** Math.floor(Math.log10(m)); return [1, 2, 5, 10].map(k => k * p).filter(v => v <= m).pop(); };
+  const mpp = terrain.mpp, len = mpp ? nice(mpp * 90) : 0, info = el("div", "ex-dock-row ex-readout");
+  if (len) { const sc = el("span", "mp-pill ex-scalebar"); const bar = el("i"); bar.style.width = Math.round(len / mpp) + "px";
+    sc.append(bar, len >= 1000 ? `${fmtNum(len / 1000)} km` : `${fmtNum(len)} m`); info.append(sc); }
+  const px = point ? point : s; info.append(el("span", "mp-pill mp-coord ex-readout-xy", coordText(px.lat, px.lon, fmtNum, nd())));
+  d.replaceChildren(el("p", "mc-hint", t("ex.tap")), row, info);
 }
 function chips() {
   const c = $("chips"); c.replaceChildren();

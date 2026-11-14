@@ -50,3 +50,11 @@
 /* Fidelity audit (items 9, 15). */
 @media (min-width:1301px){.ex-left,.ex-right{top:150px}.ex-left{width:300px}.ex-right{width:310px}}
 @media (max-width:700px){.ex-sheet{background:var(--glass);border-radius:30px;bottom:92px;padding:10px 16px 16px}}
+.ex-readout{gap:8px}
+.ex-readout .mp-pill{min-height:36px;font-size:12.5px;font-weight:700;cursor:default}
+.ex-scalebar i{display:inline-block;height:4px;border:2px solid #F2F4F5;border-top:0;margin-right:8px}
+.ex-glass-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.glass-in{display:flex;flex-direction:column;gap:4px;padding:12px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)}
+.glass-in b{font-size:22px;font-weight:800;line-height:1}.glass-in span{font-size:11px;font-weight:700;color:var(--text-2)}
+.glass-in .mp-seal{align-self:flex-start}
+@media (max-width:700px){.ex-readout{display:none}}
