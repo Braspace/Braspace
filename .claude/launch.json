@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "braspace-v3-web",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["web/dev-server.mjs"],
+      "env": { "BRASPACE_WEB_PORT": "5174" },
+      "port": 5174
+    }
+  ]
+}

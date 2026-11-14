@@ -2,7 +2,7 @@ import {test,after} from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import {readFileSync} from "node:fs";
-import {createServer,onboardFile} from "../dev-server.mjs";
+import {createServer,onboardFile,v3File} from "../dev-server.mjs";
 
 const server=createServer();
 await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
@@ -25,7 +25,11 @@ test("13-tab cockpit is navigable from classic and Polar Lab",async()=>{
 test("every script the cockpit and the training form load is on the allowlist",()=>{
  for(const f of ["cockpit.html","index.html"]){
   const html=readFileSync(new URL("../onboard/"+f,import.meta.url),"utf8");
-  for(const m of html.matchAll(/<script src="([^"]+)"/g))assert.ok(onboardFile("/onboard/"+m[1]),f+" loads "+m[1]+" but dev-server.mjs would answer 404");
+  // matches plain, deferred and module scripts; ../ds/* is the shared design-system folder
+  for(const m of html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/g)){
+   const p=m[1].startsWith("../")?"/"+m[1].slice(3):"/onboard/"+m[1];
+   assert.ok(onboardFile(p)||v3File(p),f+" loads "+m[1]+" but dev-server.mjs would answer 404");
+  }
  }
 });
 test("same-origin onboard static allowlist serves only exact required assets",async()=>{

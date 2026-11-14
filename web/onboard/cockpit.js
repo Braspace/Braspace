@@ -4,6 +4,14 @@
 // All text from the API is inserted with textContent. Nothing is parsed as HTML.
 (function () {
   "use strict";
+  // Colours come from the design tokens (ds/tokens.css); read once so SVG attributes get real values.
+  const TK = (() => {
+    const cs = getComputedStyle(document.documentElement), g = (v, d) => (cs.getPropertyValue(v) || "").trim() || d;
+    return { earth: g("--c-earth", "#4C9BFF"), sun: g("--c-sun", "#FFD166"), ok: g("--c-ok", "#63C66E"), bad: g("--c-bad", "#E5484D"),
+      warn: g("--c-warn", "#F29A45"), track: g("--c-track", "#2A3038"), lineStrong: g("--c-t3", "#8E99A6"), card2: g("--c-card-2", "#0E1216"),
+      t1: g("--c-t1", "#F2F4F5"), t2: g("--c-t2", "#B7C0C9"), t3: g("--c-t3", "#8E99A6"), sim: g("--c-sim", "#B48CF2"), jade: g("--c-jade", "#2EC4A0") };
+  })();
+
 
   const M = OnboardModel, R = OnboardRequest, F = OnboardFeatures, L = OnboardLive;
   const $ = id => document.getElementById(id);
@@ -137,7 +145,9 @@
     }
   }
   function setLamp(kind, text) {
+    S.lamp = { kind, text }; // kept so the provenance strip can re-render it
     const el = $("lamp-api");
+    if (!el) return;
     const map = { ok: "chip ok", warn: "chip warn", bad: "chip bad" };
     el.className = map[kind] || "chip info";
     el.textContent = text;
@@ -272,9 +282,9 @@
         h("p", { class: "note", text: "Sem refração atmosférica. Ângulos de modelo sintético, não efeméride." })),
       h("section", { class: "panel" },
         h("h2", { text: "Linha do tempo" }),
-        strip("Luz do Sol", tr, s => s.sun_visible, "#ffb020"),
-        strip("Terra visível", tr, s => s.earth_visible, "#5fd8ff"),
-        h("div", { class: "legend" }, h("span", {}, h("i", { style: "background:#ffb020" }), "luz"), h("span", {}, h("i", { style: "background:#5fd8ff" }), "Terra visível"), h("span", {}, h("i", { style: "background:#1c3240" }), "sem")),
+        strip("Luz do Sol", tr, s => s.sun_visible, TK.sun),
+        strip("Terra visível", tr, s => s.earth_visible, TK.earth),
+        h("div", { class: "legend" }, h("span", {}, h("i", { style: "background:var(--c-sun)" }), "luz"), h("span", {}, h("i", { style: "background:var(--c-earth)" }), "Terra visível"), h("span", {}, h("i", { style: "background:var(--c-track)" }), "sem")),
         h("div", { class: "axis" }, h("span", { text: fmt(tr[0].ms) }), h("span", { text: fmt(tr[tr.length - 1].ms) })),
         h("dl", { class: "readout", style: "margin-top:10px" },
           h("dt", { text: "PRÓXIMA MUDANÇA DE LUZ" }), h("dd", { text: nextS ? fmt(tr[nextS.index].ms) + (nextS.to ? " (escurece→luz)" : " (luz→escuro)") : "nenhuma após T" }),
@@ -381,7 +391,7 @@
   }
   function strip(label, tr, pred, color) {
     const box = h("div", { class: "strip", role: "img", "aria-label": label + ": " + tr.filter(pred).length + " de " + tr.length + " amostras" });
-    tr.forEach(s => box.append(h("i", { style: "background:" + (pred(s) ? color : "#263241") })));
+    tr.forEach(s => box.append(h("i", { style: "background:" + (pred(s) ? color : TK.track) })));
     return h("div", { style: "margin:8px 0" }, h("div", { class: "dim", text: label }), box);
   }
 
@@ -410,12 +420,12 @@
 
     // grid: elevation every 2°, azimuth every 45°
     for (let e = EMIN; e <= EMAX; e += tickStep) {
-      box.append(svg("line", { x1: L, x2: W - R, y1: y(e), y2: y(e), stroke: e === 0 ? "#5fd8ff" : "#263241", "stroke-opacity": e === 0 ? ".6" : "1", "stroke-dasharray": e === 0 ? "4 4" : "" }));
+      box.append(svg("line", { x1: L, x2: W - R, y1: y(e), y2: y(e), stroke: e === 0 ? TK.earth : TK.track, "stroke-opacity": e === 0 ? ".6" : "1", "stroke-dasharray": e === 0 ? "4 4" : "" }));
       box.append(svg("text", { x: L - 8, y: y(e) + 4, "text-anchor": "end" }, (e > 0 ? "+" : "") + e + "°"));
     }
     const names = { 0: "N", 45: "NE", 90: "L", 135: "SE", 180: "S", 225: "SO", 270: "O", 315: "NO", 360: "N" };
     for (let a = 0; a <= 360; a += 45) {
-      box.append(svg("line", { x1: x(a), x2: x(a), y1: T, y2: H - B, stroke: "#263241" }));
+      box.append(svg("line", { x1: x(a), x2: x(a), y1: T, y2: H - B, stroke: TK.track }));
       box.append(svg("text", { x: x(a), y: H - B + 16, "text-anchor": "middle" }, names[a] + " " + a + "°"));
     }
 
@@ -426,29 +436,29 @@
     // horizon area
     let d = "";
     for (let a = 0; a <= 360; a += 2) d += (a === 0 ? "M" : "L") + x(a).toFixed(1) + "," + y(hz(a)).toFixed(1) + " ";
-    box.append(svg("path", { d: d + "L" + x(360) + "," + y(EMIN) + " L" + x(0) + "," + y(EMIN) + " Z", fill: "#263241", "fill-opacity": ".9", stroke: "#6f8b7c", "stroke-width": "1.5" }));
+    box.append(svg("path", { d: d + "L" + x(360) + "," + y(EMIN) + " L" + x(0) + "," + y(EMIN) + " Z", fill: TK.track, "fill-opacity": ".9", stroke: TK.t3, "stroke-width": "1.5" }));
 
     // whole-window paths as dots (no lines: azimuth wraps at 0/360)
     const stride = Math.max(1, Math.ceil(tr.length / 240));
     tr.forEach((s, i) => {
       if (i % stride) return;
-      box.append(svg("circle", { cx: x(s.sunAz), cy: y(s.sunEl), r: 1.6, fill: "#ffb020", "fill-opacity": ".35" }));
-      box.append(svg("circle", { cx: x(s.earthAz), cy: y(s.earthEl), r: 1.6, fill: "#5fd8ff", "fill-opacity": ".35" }));
+      box.append(svg("circle", { cx: x(s.sunAz), cy: y(s.sunEl), r: 1.6, fill: TK.sun, "fill-opacity": ".35" }));
+      box.append(svg("circle", { cx: x(s.earthAz), cy: y(s.earthEl), r: 1.6, fill: TK.earth, "fill-opacity": ".35" }));
     });
 
     // current instant: drop lines and markers
     const hs = hz(cur.sunAz), he = hz(cur.earthAz);
-    box.append(svg("line", { x1: x(cur.sunAz), x2: x(cur.sunAz), y1: y(cur.sunEl), y2: y(hs), stroke: "#ffb020", "stroke-dasharray": "2 2" }));
-    box.append(svg("line", { x1: x(cur.earthAz), x2: x(cur.earthAz), y1: y(cur.earthEl), y2: y(he), stroke: "#5fd8ff", "stroke-dasharray": "2 2" }));
-    box.append(svg("circle", { cx: x(cur.sunAz), cy: y(cur.sunEl), r: 6, fill: "#ffb020", stroke: "#0f1720", "stroke-width": 2 }));
-    box.append(svg("circle", { cx: x(cur.earthAz), cy: y(cur.earthEl), r: 6, fill: "#5fd8ff", stroke: "#0f1720", "stroke-width": 2 }));
+    box.append(svg("line", { x1: x(cur.sunAz), x2: x(cur.sunAz), y1: y(cur.sunEl), y2: y(hs), stroke: TK.sun, "stroke-dasharray": "2 2" }));
+    box.append(svg("line", { x1: x(cur.earthAz), x2: x(cur.earthAz), y1: y(cur.earthEl), y2: y(he), stroke: TK.earth, "stroke-dasharray": "2 2" }));
+    box.append(svg("circle", { cx: x(cur.sunAz), cy: y(cur.sunEl), r: 6, fill: TK.sun, stroke: TK.card2, "stroke-width": 2 }));
+    box.append(svg("circle", { cx: x(cur.earthAz), cy: y(cur.earthEl), r: 6, fill: TK.earth, stroke: TK.card2, "stroke-width": 2 }));
     // labels flip to the left of the marker near the right edge, so they stay inside the chart
     const lab = (a, e, text, color) => {
       const nearRight = x(a) > W - R - 60;
       box.append(svg("text", { x: x(a) + (nearRight ? -9 : 9), y: y(e) - 8, fill: color, "text-anchor": nearRight ? "end" : "start" }, text));
     };
-    lab(cur.sunAz, cur.sunEl, "SOL", "#ffb020");
-    lab(cur.earthAz, cur.earthEl, "TERRA", "#5fd8ff");
+    lab(cur.sunAz, cur.sunEl, "SOL", TK.sun);
+    lab(cur.earthAz, cur.earthEl, "TERRA", TK.earth);
 
     const slider = h("input", { type: "range", min: "0", max: String(Math.max(0, tr.length - 1)), value: String(S.t), "aria-label": "Instante do horizonte", style: "--p:" + progressPct(S.t, tr.length) + "%", oninput: e => { S.t = Number(e.target.value); renderTab(); } });
     const sunMargin = cur.sunEl - hs, earthMargin = cur.earthEl - he;
@@ -460,9 +470,9 @@
         h("label", { style: "margin:10px 0" }, "Arraste para escolher o instante", slider),
         box,
         h("div", { class: "legend" },
-          h("span", {}, h("i", { style: "background:#ffb020" }), "Sol"),
-          h("span", {}, h("i", { style: "background:#5fd8ff" }), "Terra"),
-          h("span", {}, h("i", { style: "background:#1c3240" }), skyNow() ? "horizonte da API (/api/sites/{id}/sky)" : "horizonte sintético (modelo do navegador)"),
+          h("span", {}, h("i", { style: "background:var(--c-sun)" }), "Sol"),
+          h("span", {}, h("i", { style: "background:var(--c-earth)" }), "Terra"),
+          h("span", {}, h("i", { style: "background:var(--c-track)" }), skyNow() ? "horizonte da API (/api/sites/{id}/sky)" : "horizonte sintético (modelo do navegador)"),
           h("span", {}, "pontos claros: trajetória no intervalo")),
         edu("Acima da área cinza, o Sol ou a Terra estão visíveis. Abaixo, o relevo esconde o astro. A linha tracejada mostra a altura do horizonte naquele azimute.")),
       h("section", { class: "panel" },
@@ -579,12 +589,12 @@
     const x = i => pad + (tl.length <= 1 ? 0 : (i / (tl.length - 1)) * (W - pad * 2));
     const y = v => H - pad - (v / max) * (H - pad * 2);
     const box = svg("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img", "aria-label": "Carga da bateria ao longo do cenário" });
-    box.append(svg("line", { x1: pad, y1: H - pad, x2: W - pad, y2: H - pad, stroke: "#263241" }));
+    box.append(svg("line", { x1: pad, y1: H - pad, x2: W - pad, y2: H - pad, stroke: TK.track }));
     box.append(svg("text", { x: 2, y: pad + 4 }, max.toFixed(0) + " Wh"));
-    const color = { NOMINAL: "#6dff9c", SAFE_MODE: "#ffb020", POWER_LOSS: "#ff4d4d" };
-    for (let i = 1; i < tl.length; i++) box.append(svg("line", { x1: x(i - 1), y1: y(tl[i - 1].charge_wh), x2: x(i), y2: y(tl[i].charge_wh), stroke: color[tl[i].mode] || "#5fd8ff", "stroke-width": 2 }));
+    const color = { NOMINAL: TK.ok, SAFE_MODE: TK.sun, POWER_LOSS: TK.bad };
+    for (let i = 1; i < tl.length; i++) box.append(svg("line", { x1: x(i - 1), y1: y(tl[i - 1].charge_wh), x2: x(i), y2: y(tl[i].charge_wh), stroke: color[tl[i].mode] || TK.earth, "stroke-width": 2 }));
     return h("div", { style: "margin-top:8px" }, box,
-      h("div", { class: "legend" }, h("span", {}, h("i", { style: "background:#6dff9c" }), "NOMINAL"), h("span", {}, h("i", { style: "background:#ffb020" }), "SAFE_MODE"), h("span", {}, h("i", { style: "background:#ff4d4d" }), "POWER_LOSS")));
+      h("div", { class: "legend" }, h("span", {}, h("i", { style: "background:var(--c-ok)" }), "NOMINAL"), h("span", {}, h("i", { style: "background:var(--c-warn)" }), "SAFE_MODE"), h("span", {}, h("i", { style: "background:var(--c-bad)" }), "POWER_LOSS")));
   }
 
   VIEWS.vida = () => {
@@ -640,7 +650,7 @@
       const ms = startMs() + off * 86400e3;
       const tr = M.track({ siteId: S.site, startMs: ms, stepMin: S.stepMin, count: count(), delayH: 0 });
       const sum = M.summary(tr, S.stepMin);
-      return { off, ms, sum, verdict: M.verdict(M.violations(sum, null), undefined) };
+      return { off, ms, sum, verdict: withEnergy(M.verdict(M.violations(sum, null), undefined), false) };
     });
 
     const siteRows = sites.map(id => {
@@ -701,39 +711,39 @@
       "aria-label": "Mapa polar: lugares sintéticos ao redor do polo sul" });
     const defs = svg("defs", {});
     const grad = svg("radialGradient", { id: "polarBg" });
-    grad.append(svg("stop", { offset: "0%", "stop-color": "#1b2d40" }), svg("stop", { offset: "100%", "stop-color": "#0c141d" }));
+    grad.append(svg("stop", { offset: "0%", "stop-color": TK.track }), svg("stop", { offset: "100%", "stop-color": TK.card2 }));
     defs.append(grad);
     box.append(defs);
-    box.append(svg("circle", { cx: C, cy: C, r: EDGE, fill: "url(#polarBg)", stroke: "#2b3b4d" }));
+    box.append(svg("circle", { cx: C, cy: C, r: EDGE, fill: "url(#polarBg)", stroke: TK.track }));
     [0, 45, 90, 135, 180, 225, 270, 315].forEach(a => {
       const rad = a * Math.PI / 180;
-      box.append(svg("line", { x1: C, y1: C, x2: C + EDGE * Math.cos(rad), y2: C + EDGE * Math.sin(rad), stroke: "#243447" }));
+      box.append(svg("line", { x1: C, y1: C, x2: C + EDGE * Math.cos(rad), y2: C + EDGE * Math.sin(rad), stroke: TK.track }));
     });
     // ring labels sit on the upper-left diagonal, where no site is
     [[1, "1°"], [2, "2°"], [2.5, "2,5°"]].forEach(([deg, lab]) => {
       const r = deg * K, px = C - r * Math.SQRT1_2, py = C - r * Math.SQRT1_2;
-      box.append(svg("circle", { cx: C, cy: C, r, fill: "none", stroke: "#3a526b", "stroke-width": 1.2, "stroke-dasharray": deg === 2.5 ? "" : "4 4" }));
-      box.append(svg("rect", { x: px - 18, y: py - 8, width: 36, height: 16, rx: 4, fill: "#0c141d", stroke: "#3a526b", "stroke-width": .8 }));
-      box.append(svg("text", { x: px, y: py + 4, "text-anchor": "middle", style: "fill:#c9d6e2" }, lab));
+      box.append(svg("circle", { cx: C, cy: C, r, fill: "none", stroke: TK.lineStrong, "stroke-width": 1.2, "stroke-dasharray": deg === 2.5 ? "" : "4 4" }));
+      box.append(svg("rect", { x: px - 18, y: py - 8, width: 36, height: 16, rx: 4, fill: TK.card2, stroke: TK.lineStrong, "stroke-width": .8 }));
+      box.append(svg("text", { x: px, y: py + 4, "text-anchor": "middle", style: "fill:" + TK.t2 + "" }, lab));
     });
     // longitude labels outside the edge (lon 0 is to the right, angles increase clockwise on screen)
     [[0, "0°"], [90, "90°"], [180, "180°"], [270, "270°"]].forEach(([a, lab]) => {
       const rad = a * Math.PI / 180, rr = EDGE + 11;
       const anchor = Math.abs(Math.cos(rad)) < 0.2 ? "middle" : (Math.cos(rad) > 0 ? "start" : "end");
-      box.append(svg("text", { x: C + rr * Math.cos(rad), y: C + rr * Math.sin(rad) + 4, "text-anchor": anchor, style: "fill:#7f97ab" }, lab));
+      box.append(svg("text", { x: C + rr * Math.cos(rad), y: C + rr * Math.sin(rad) + 4, "text-anchor": anchor, style: "fill:" + TK.t3 + "" }, lab));
     });
-    box.append(svg("circle", { cx: C, cy: C, r: 4, fill: "#e6edf5" }));
-    box.append(svg("text", { x: C - 10, y: C - 10, "text-anchor": "end", style: "fill:#e6edf5;font-weight:600" }, "polo sul"));
+    box.append(svg("circle", { cx: C, cy: C, r: 4, fill: TK.t1 }));
+    box.append(svg("text", { x: C - 10, y: C - 10, "text-anchor": "end", style: "fill:var(--c-t1);font-weight:600" }, "polo sul"));
     Object.entries(M.SITES).forEach(([id, s]) => {
       const r = (s.lat + 90) * K, rad = s.lon * Math.PI / 180;
       const x = C + r * Math.cos(rad), y = C + r * Math.sin(rad), on = id === S.site;
-      if (on) box.append(svg("circle", { cx: x, cy: y, r: 14, fill: "none", stroke: "#5fd8ff", "stroke-opacity": ".5" }));
-      const dot = svg("circle", { cx: x, cy: y, r: on ? 7 : 5, fill: on ? "#5fd8ff" : "#ffb020", stroke: "#0c141d", "stroke-width": 2, tabindex: "0", role: "img", "aria-label": siteTip(s) });
+      if (on) box.append(svg("circle", { cx: x, cy: y, r: 14, fill: "none", stroke: TK.earth, "stroke-opacity": ".5" }));
+      const dot = svg("circle", { cx: x, cy: y, r: on ? 7 : 5, fill: on ? TK.earth : TK.sun, stroke: TK.card2, "stroke-width": 2, tabindex: "0", role: "img", "aria-label": siteTip(s) });
       dot.append(svg("title", {}, siteTip(s)));
       box.append(dot);
       const w = s.name.length * 6.4 + 12;
-      box.append(svg("rect", { x: x + 10, y: y - 9, width: w, height: 18, rx: 4, fill: "#0c141d", "fill-opacity": ".85" }));
-      box.append(svg("text", { x: x + 16, y: y + 4, style: on ? "fill:#5fd8ff;font-weight:600" : "fill:#e6edf5" }, s.name));
+      box.append(svg("rect", { x: x + 10, y: y - 9, width: w, height: 18, rx: 4, fill: TK.card2, "fill-opacity": ".85" }));
+      box.append(svg("text", { x: x + 16, y: y + 4, style: on ? "fill:var(--c-jade);font-weight:600" : "fill:" + TK.t1 + "" }, s.name));
     });
     return box;
   }
@@ -743,7 +753,7 @@
       const on = id === S.site;
       return h("button", { type: "button", class: "site-chip", "aria-pressed": on ? "true" : "false",
         onclick: () => { S.site = id; S.api = null; renderAlarm(); renderTab(); } },
-        h("span", { class: "dot", style: "background:" + (on ? "#5fd8ff" : "#ffb020") }),
+        h("span", { class: "dot", style: "background:" + (on ? TK.earth : TK.sun) }),
         h("strong", { text: s.name }),
         h("span", { class: "dim num", text: "lat " + s.lat.toFixed(2) + "° · lon " + s.lon.toFixed(2) + "° · " + (s.lat + 90).toFixed(2) + "° do polo" }));
     }));
@@ -789,7 +799,7 @@
         h("p", { class: "note", text: "Variações dentro do modelo sintético. Não é incerteza calibrada nem probabilidade." }),
         h("div", { style: "margin-top:8px" }, tag("SIM"), " ", tag("PEND"), " ", h("span", { class: "dim", text: "método com DEM real (9.4) e Pareto (9.6) pendentes" }))),
       h("section", { class: "panel span2" },
-        h("h2", { text: "Compromissos ciência × engenharia (9.5)" }),
+        h("h2", { text: "Compromissos ciência × engenharia · Requisito 9.5" }),
         h("p", { class: "note", text: "Luz, comunicação e energia pedem coisas diferentes. Não há ranking único entre elas." }),
         h("div", { class: "scroll" }, h("table", { class: "table" },
           h("thead", {}, h("tr", {}, h("th", { text: "critério" }), h("th", { text: "situação" }), h("th", { text: "leitura" }))),
@@ -911,16 +921,16 @@
     const C = 2 * Math.PI * 70;
     const f = sum.durationH ? sum.sunlitH / sum.durationH : 0;
     const box = svg("svg", { viewBox: "0 0 200 200", width: "100%", style: "max-width:220px;display:block;margin:0 auto", role: "img", "aria-label": "Proporção de horas com luz" });
-    box.append(svg("circle", { cx: 100, cy: 100, r: 70, fill: "none", stroke: "#2b3644", "stroke-width": 26 }));
-    box.append(svg("circle", { cx: 100, cy: 100, r: 70, fill: "none", stroke: "#e8a317", "stroke-width": 26, "stroke-dasharray": (f * C).toFixed(2) + " " + C.toFixed(2), transform: "rotate(-90 100 100)" }));
+    box.append(svg("circle", { cx: 100, cy: 100, r: 70, fill: "none", stroke: TK.track, "stroke-width": 26 }));
+    box.append(svg("circle", { cx: 100, cy: 100, r: 70, fill: "none", stroke: TK.sun, "stroke-width": 26, "stroke-dasharray": (f * C).toFixed(2) + " " + C.toFixed(2), transform: "rotate(-90 100 100)" }));
     box.append(svg("text", { x: 100, y: 96, "text-anchor": "middle", style: "font-size:28px;font-weight:600;fill:var(--ink)" }, Math.round(f * 100) + "%"));
     box.append(svg("text", { x: 100, y: 118, "text-anchor": "middle" }, "com luz"));
     return h("section", { class: "panel" },
       h("h2", {}, "Luz ao longo da missão", h("em", {}, "horas")),
       box,
       h("div", { class: "legend", style: "justify-content:center" },
-        h("span", {}, h("i", { style: "background:#e8a317" }), "com luz · " + f1(sum.sunlitH, 0) + " h"),
-        h("span", {}, h("i", { style: "background:#d9e0e8" }), "escuro · " + f1(sum.durationH - sum.sunlitH, 0) + " h")),
+        h("span", {}, h("i", { style: "background:var(--c-sun)" }), "com luz · " + f1(sum.sunlitH, 0) + " h"),
+        h("span", {}, h("i", { style: "background:var(--c-t2)" }), "escuro · " + f1(sum.durationH - sum.sunlitH, 0) + " h")),
       sealNode ? h("div", { style: "text-align:center;margin-top:6px" }, sealNode) : null);
   }
 
@@ -935,12 +945,12 @@
     }
     const W = 640, H = 200, pad = 26, bw = (W - pad * 2) / Math.max(1, days.length);
     const box = svg("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img", "aria-label": "Horas de luz por dia" });
-    for (let g = 0; g <= 24; g += 6) box.append(svg("line", { x1: pad, x2: W - pad, y1: H - pad - (g / 24) * (H - pad * 2), y2: H - pad - (g / 24) * (H - pad * 2), stroke: "#263241" }));
+    for (let g = 0; g <= 24; g += 6) box.append(svg("line", { x1: pad, x2: W - pad, y1: H - pad - (g / 24) * (H - pad * 2), y2: H - pad - (g / 24) * (H - pad * 2), stroke: TK.track }));
     days.forEach((d, i) => {
       const x = pad + i * bw + bw * 0.18, w = bw * 0.64;
       const hL = (d.lit / 24) * (H - pad * 2), hD = (d.dark / 24) * (H - pad * 2);
-      box.append(svg("rect", { x, y: H - pad - hL, width: w, height: hL, fill: "#e8a317", rx: 2 }));
-      box.append(svg("rect", { x, y: H - pad - hL - hD, width: w, height: hD, fill: "#2b3644", rx: 2 }));
+      box.append(svg("rect", { x, y: H - pad - hL, width: w, height: hL, fill: TK.sun, rx: 2 }));
+      box.append(svg("rect", { x, y: H - pad - hL - hD, width: w, height: hD, fill: TK.track, rx: 2 }));
       if (i % 2 === 0) box.append(svg("text", { x: x + w / 2, y: H - 6, "text-anchor": "middle" }, "d" + (i + 1)));
     });
     return h("section", { class: "panel span2" },
@@ -1029,14 +1039,14 @@
       "aria-label": "Carga da bateria ao longo do cenário, com reserva e capacidade" });
     [0, 0.25, 0.5, 0.75, 1].forEach(f => {
       const v = cap * f;
-      box.append(svg("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "#263241" }));
+      box.append(svg("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: TK.track }));
       box.append(svg("text", { x: L - 8, y: y(v) + 4, "text-anchor": "end" }, Math.round(v) + " Wh"));
     });
-    box.append(svg("line", { x1: L, x2: W - R, y1: y(reserve), y2: y(reserve), stroke: "#e8a317", "stroke-dasharray": "5 4" }));
-    box.append(svg("text", { x: W - R, y: y(reserve) - 6, "text-anchor": "end", style: "fill:#e8a317" }, "reserva " + Math.round(reserve) + " Wh"));
-    const color = { NOMINAL: "#3fbf80", SAFE_MODE: "#e8a317", POWER_LOSS: "#e0606e" };
+    box.append(svg("line", { x1: L, x2: W - R, y1: y(reserve), y2: y(reserve), stroke: TK.sun, "stroke-dasharray": "5 4" }));
+    box.append(svg("text", { x: W - R, y: y(reserve) - 6, "text-anchor": "end", style: "fill:" + TK.sun + "" }, "reserva " + Math.round(reserve) + " Wh"));
+    const color = { NOMINAL: TK.ok, SAFE_MODE: TK.sun, POWER_LOSS: TK.bad };
     for (let i = 1; i < tl.length; i++) {
-      box.append(svg("line", { x1: x(i - 1), y1: y(tl[i - 1].charge_wh), x2: x(i), y2: y(tl[i].charge_wh), stroke: color[tl[i].mode] || "#5fd8ff", "stroke-width": 2.5, "stroke-linecap": "round" }));
+      box.append(svg("line", { x1: x(i - 1), y1: y(tl[i - 1].charge_wh), x2: x(i), y2: y(tl[i].charge_wh), stroke: color[tl[i].mode] || TK.earth, "stroke-width": 2.5, "stroke-linecap": "round" }));
     }
     const first = tl[0], last = tl[tl.length - 1];
     box.append(svg("text", { x: L, y: H - 8 }, fmt(Date.parse(first.epoch_utc)).slice(0, 16)));
@@ -1048,6 +1058,13 @@
     const map = { CONSTRAINTS_MET: ["ok", "DENTRO DOS LIMITES"], CONSTRAINTS_BREACHED: ["bad", "LIMITES VIOLADOS"] };
     const [k, label] = map[status] || ["info", status || "—"];
     return h("span", { class: "chip " + k, text: label });
+  }
+
+  // Empty state for API energy numbers: says what is missing and offers the action (was "calcule com +").
+  function energyEmpty() {
+    const b = h("button", { type: "button", class: "btnA sm", text: "Calcular energia" });
+    b.addEventListener("click", calculate);
+    return h("div", { class: "empty-energy", role: "status" }, h("span", { class: "prov nd", text: "N/D" }), h("span", { text: "Energia ainda não calculada." }), b);
   }
 
   VIEWS.energia = () => {
@@ -1062,10 +1079,10 @@
         h("div", { class: "value" }, f1(sum.sunlitH, 0), h("small", { text: " h" })),
         h("div", { class: "delta flat", text: "de " + f1(sum.durationH, 0) + " h do cenário" }), h("div", {}, sealOf(sc0))),
       h("section", { class: "panel kpi" }, h("div", { class: "label", text: "Carga mínima da bateria" }),
-        h("div", { class: "value" }, opt ? f1(opt.metrics.minimum_charge_wh, 0) : "—", h("small", { text: opt ? " Wh" : "" })),
-        h("div", { class: "delta flat", text: opt ? "reserva: " + S.power.reserve_wh + " Wh" : "calcule com +" }), opt ? h("div", {}, seal("api", { science_status: S.api.science_status })) : null),
+        h("div", { class: "value" }, opt ? f1(opt.metrics.minimum_charge_wh, 0) : "N/D", h("small", { text: opt ? " Wh" : "" })),
+        opt ? h("div", { class: "delta flat", text: "reserva: " + S.power.reserve_wh + " Wh" }) : energyEmpty(), opt ? h("div", {}, seal("api", { science_status: S.api.science_status })) : null),
       h("section", { class: "panel kpi" }, h("div", { class: "label", text: "Energia não atendida" }),
-        h("div", { class: "value" }, opt ? f1(opt.metrics.total_unserved_energy_wh, 0) : "—", h("small", { text: opt ? " Wh" : "" })),
+        h("div", { class: "value" }, opt ? f1(opt.metrics.total_unserved_energy_wh, 0) : "N/D", h("small", { text: opt ? " Wh" : "" })),
         h("div", { class: "delta " + (opt && opt.metrics.total_unserved_energy_wh > 0 ? "down" : "flat"), text: opt ? (opt.metrics.total_unserved_energy_wh > 0 ? "a carga ficou sem energia" : "a carga foi atendida") : "" })),
       h("section", { class: "panel kpi" }, h("div", { class: "label", text: "Estado do cenário" }),
         h("div", { class: "value", style: "font-size:18px;margin-top:14px" }, opt ? stateChip(opt.simulation_status) : h("span", { class: "chip info", text: "NÃO CALCULADO" })),
@@ -1076,10 +1093,10 @@
           h("h2", {}, "Carga da bateria", h("em", { text: "API · " + opt.id })),
           batteryChartBig(opt, S.power.battery_capacity_wh, S.power.reserve_wh),
           h("div", { class: "legend" },
-            h("span", {}, h("i", { style: "background:#3fbf80" }), "NOMINAL"),
-            h("span", {}, h("i", { style: "background:#e8a317" }), "SAFE_MODE"),
-            h("span", {}, h("i", { style: "background:#e0606e" }), "POWER_LOSS"),
-            h("span", {}, h("i", { style: "background:#e8a317;opacity:.5" }), "linha da reserva")),
+            h("span", {}, h("i", { style: "background:var(--c-ok)" }), "NOMINAL"),
+            h("span", {}, h("i", { style: "background:var(--c-warn)" }), "SAFE_MODE"),
+            h("span", {}, h("i", { style: "background:var(--c-bad)" }), "POWER_LOSS"),
+            h("span", {}, h("i", { style: "background:var(--c-warn);opacity:.5" }), "linha da reserva")),
           h("p", { class: "note", text: "Bateria com coeficientes da API, não de hardware real." }))
       : h("section", { class: "panel span2" },
           h("h2", {}, "Carga da bateria", h("em", { text: "ainda não calculada" })),
@@ -1092,8 +1109,8 @@
     const light = h("section", { class: "panel" },
       h("h2", {}, "Luz disponível × energia", h("em", { text: "premissas" })),
       h("div", { class: "stack" },
-        energyRow("Energia do painel, se o Sol entregasse tudo", sunlitWh, Math.max(sunlitWh, loadWh) || 1, "#e8a317"),
-        energyRow("Consumo da carga no período", loadWh, Math.max(sunlitWh, loadWh) || 1, "#5fb3d8")),
+        energyRow("Energia do painel, se o Sol entregasse tudo", sunlitWh, Math.max(sunlitWh, loadWh) || 1, TK.sun),
+        energyRow("Consumo da carga no período", loadWh, Math.max(sunlitWh, loadWh) || 1, TK.sim)),
       h("div", { class: "row", style: "margin-top:12px" },
         h("span", { class: "dim", text: "saldo estimado" }),
         h("span", { class: "num", style: "font-weight:600;color:" + (balance >= 0 ? "var(--green)" : "var(--red)"), text: (balance >= 0 ? "+" : "") + f1(balance, 0) + " Wh" })),
@@ -1145,7 +1162,7 @@
     const pressure = h("section", { class: "panel" },
       h("div", { class: "row" }, h("h2", { style: "margin:0", text: "Pressão da cabine" }), h("span", { class: "chip " + (pOk ? "ok" : "bad"), text: pOk ? "NOMINAL" : "FORA DA FAIXA" })),
       h("div", { class: "value num", style: "font-size:30px;font-weight:600;margin-top:12px" }, f1(life.cabinKpa), h("small", { style: "font-size:14px;color:var(--muted);margin-left:4px", text: "kPa" })),
-      h("div", { style: "position:relative;margin-top:14px;height:10px;border-radius:999px;background:linear-gradient(90deg,#e0606e 0%,#e0606e 25%,#3fbf80 25%,#3fbf80 75%,#e0606e 75%)" },
+      h("div", { style: "position:relative;margin-top:14px;height:10px;border-radius:999px;background:linear-gradient(90deg,var(--c-bad) 0%,var(--c-bad) 25%,var(--c-ok) 25%,var(--c-ok) 75%,var(--c-bad) 75%)" },
         h("span", { style: "position:absolute;top:-4px;width:4px;height:18px;border-radius:2px;background:var(--ink);left:calc(" + Math.max(0, Math.min(100, pPct)) + "% - 2px)" })),
       h("div", { class: "axis" }, h("span", { text: "90 kPa" }), h("span", { text: "faixa 95–105" }), h("span", { text: "110 kPa" })),
       h("p", { class: "note", text: "Pressão fixa do modelo. Não usar para segurança." }),
@@ -1197,7 +1214,8 @@
         h("span", { style: "position:absolute;top:0;bottom:0;border-radius:999px;background:" + color + ";" +
           (value >= 0 ? "left:50%;width:" + pct + "%" : "right:50%;width:" + pct + "%") }));
     };
-    const fmtDelta = x => (Math.abs(x) < 1e-9 ? "sem mudança" : (x > 0 ? "+" : "") + f1(x, 1) + " h");
+    // |Δ| < 1e-9 is a computed result of the synthetic model; a missing value is "não calculado".
+    const fmtDelta = x => (!Number.isFinite(x) ? "não calculado" : Math.abs(x) < 1e-9 ? "sem mudança (calculado)" : (x > 0 ? "+" : "") + f1(x, 1) + " h");
     const cards = h("div", { class: "grid three span2" }, rows.map(r => h("section", { class: "panel" },
       h("h2", { style: "margin:0", text: r.v.label }),
       h("div", { class: "dim", style: "margin-top:4px", text: "comparado com a base de " + f1(base.darkH, 0) + " h de escuridão" }),
@@ -1217,7 +1235,7 @@
       h("span", {}, "a linha do centro é a base"), seal("local"));
 
     const trade = h("section", { class: "panel span2" },
-      h("h2", {}, "Compromissos ciência × engenharia", h("em", { text: "9.5" })),
+      h("h2", {}, "Compromissos ciência × engenharia", h("em", { text: "Requisito 9.5" })),
       h("div", { class: "grid three" },
         h("div", { class: "panel", style: "background:var(--card2)" },
           h("div", { class: "row" }, h("strong", { text: "Mais luz" }), h("span", { class: "chip " + (base.sunlitH >= 40 ? "ok" : "warn"), text: base.sunlitH >= 40 ? "favorece energia" : "limita energia" })),
@@ -1239,13 +1257,15 @@
       cards,
       trade,
       h("section", { class: "panel span2" },
-        h("div", { class: "edu" }, "Cada cartão muda uma premissa do modelo e mostra o efeito. Não é incerteza calibrada nem probabilidade. Com DEM real e efemérides validadas, estes testes passam a ser evidência científica."))
+        h("div", { class: "edu" }, "Cada cartão muda uma premissa do modelo e mostra o efeito. \"Sem mudança (calculado)\" significa que o teste rodou e o modelo sintético não mudou o resultado (|Δ| < 1e-9 h); \"não calculado\" aparece só quando o teste não rodou. Não é incerteza calibrada nem probabilidade. Com DEM real e efemérides validadas, estes testes passam a ser evidência científica."))
     ];
   };
 
   // ---------- Replanning: redesigned view ----------
   // Replaces the earlier VIEWS.replan. Kept above the API wrapper loop, which adds the API panel.
-  const VERDICT_CHIP = { VIAVEL: ["ok", "VIÁVEL"], MARGEM_REDUZIDA: ["warn", "MARGEM REDUZIDA"], NAO_VIAVEL: ["bad", "NÃO VIÁVEL"] };
+  const VERDICT_CHIP = { VIAVEL: ["ok", "VIÁVEL"], MARGEM_REDUZIDA: ["warn", "MARGEM REDUZIDA"], NAO_VIAVEL: ["bad", "NÃO VIÁVEL"], NAO_AVALIADO: ["nd", "NÃO AVALIADO · energia"] };
+  // M.verdict() only checks geometry limits. Without an energy result a passing option is "não avaliado", never "VIÁVEL".
+  function withEnergy(verdict, hasEnergy) { return hasEnergy || verdict === "NAO_VIAVEL" ? verdict : "NAO_AVALIADO"; }
   function verdictChip(v) {
     const [k, label] = VERDICT_CHIP[v] || ["info", v];
     return h("span", { class: "chip " + k, text: label });
@@ -1266,19 +1286,20 @@
         if (o.metrics.minimum_charge_wh < S.power.reserve_wh) v.push({ code: "BATT", text: "bateria abaixo da reserva" });
         if (o.risks.some(r => r.category === "ENERGY_LOSS")) v.push({ code: "ENERGY_LOSS", text: "perda de energia" });
       }
-      return { d, sum, v, o, apiRow, verdict: apiRow ? (apiRow.v) : M.verdict(v, undefined) };
+      return { d, sum, v, o, apiRow, verdict: withEnergy(apiRow ? (apiRow.v) : M.verdict(v, undefined), !!o) };
     });
-    const viable = options.filter(x => x.verdict !== "NAO_VIAVEL");
+    const viable = options.filter(x => x.verdict === "VIAVEL" || x.verdict === "MARGEM_REDUZIDA");
     const best = options.find(x => x.verdict === "VIAVEL") || options.find(x => x.verdict === "MARGEM_REDUZIDA");
 
     // Summary: one sentence the reader can act on.
+    const pending = options.filter(x => x.verdict === "NAO_AVALIADO").length;
     const headline = best
       ? (best.d ? "Atrasar para " + delayName(best.d) + " passa nos limites declarados." : "O plano atual é viável neste cenário.")
-      : "Nenhum atraso testado é viável. Veja o motivo em cada cartão.";
+      : pending ? "Geometria dentro dos limites em " + pending + " opção(ões), mas a energia não foi calculada: sem veredito." : "Nenhum atraso testado é viável. Veja o motivo em cada cartão.";
     const summary = h("section", { class: "panel span2" },
       h("div", { class: "row" },
         h("div", {}, h("h2", { style: "margin:0", text: "Replanejamento por atraso" }), h("p", { class: "dim", style: "margin:6px 0 0", text: headline })),
-        h("span", { class: "chip " + (best ? (best.verdict === "VIAVEL" ? "ok" : "warn") : "bad"), text: viable.length + " de " + options.length + " opções viáveis" })));
+        h("span", { class: "chip " + (best ? (best.verdict === "VIAVEL" ? "ok" : "warn") : pending ? "nd" : "bad"), text: viable.length + " de " + options.length + " opções viáveis" + (pending ? " · " + pending + " não avaliadas" : "") })));
 
     // One card per delay: verdict, the two main numbers and the reasons.
     const cards = h("div", { class: "grid four span2" }, options.map(x => h("section", { class: "panel kpi" },
@@ -1286,7 +1307,7 @@
       h("div", { class: "value", style: "margin-top:10px" }, f1(x.sum.darkH, 0), h("small", { text: " h escuro" })),
       h("div", {}, x.apiRow ? seal("api", { science_status: dr.status }) : seal("local")),
       h("div", { class: "delta " + (x.sum.darkH > M.LIMITS.darkH ? "down" : "flat"), text: "limite " + M.LIMITS.darkH + " h · Terra bloqueada " + f1(x.sum.blockH, 0) + " h" }),
-      h("div", { class: "dim", style: "margin-top:8px" }, x.o ? "carga mínima " + f1(x.o.metrics.minimum_charge_wh, 0) + " Wh" : "carga mínima: — (calcule com +)"),
+      x.o ? h("div", { class: "dim", style: "margin-top:8px" }, "carga mínima " + f1(x.o.metrics.minimum_charge_wh, 0) + " Wh") : energyEmpty(),
       x.o ? h("div", {}, seal("api", { science_status: S.api.science_status })) : null,
       x.v.length
         ? h("ul", { class: "plain", style: "margin-top:10px;font-size:12px" }, x.v.map(r => h("li", { text: r.text })))
@@ -1297,9 +1318,9 @@
       const ms = startMs() + off * 86400e3;
       const tr = M.track({ siteId: S.site, startMs: ms, stepMin: S.stepMin, count: count(), delayH: 0 });
       const sum = M.summary(tr, S.stepMin);
-      return { off, ms, sum, verdict: M.verdict(M.violations(sum, null), undefined) };
+      return { off, ms, sum, verdict: withEnergy(M.verdict(M.violations(sum, null), undefined), false) };
     });
-    const cellColor = { VIAVEL: "#3fbf80", MARGEM_REDUZIDA: "#e8a317", NAO_VIAVEL: "#e0606e" };
+    const cellColor = { VIAVEL: TK.ok, MARGEM_REDUZIDA: TK.sun, NAO_VIAVEL: TK.bad, NAO_AVALIADO: "var(--c-unk)" };
     const dateStrip = h("section", { class: "panel span2" },
       h("h2", {}, "Outras datas no mesmo lugar", h("em", { text: "grade de 24 h · 7 dias" })),
       h("div", { class: "datestrip" }, days.map(d => h("div", { class: "daycell", title: fmt(d.ms) + " · " + (VERDICT_CHIP[d.verdict] || [])[1],
@@ -1308,9 +1329,10 @@
         h("span", { class: "dim", text: new Date(d.ms).toISOString().slice(5, 10) }),
         h("span", { class: "num", text: f1(d.sum.darkH, 0) + " h escuro" })))),
       h("div", { class: "legend" },
-        h("span", {}, h("i", { style: "background:#3fbf80" }), "viável"),
-        h("span", {}, h("i", { style: "background:#e8a317" }), "margem reduzida"),
-        h("span", {}, h("i", { style: "background:#e0606e" }), "não viável")),
+        h("span", {}, h("i", { style: "background:var(--c-ok)" }), "viável"),
+        h("span", {}, h("i", { style: "background:var(--c-warn)" }), "margem reduzida"),
+        h("span", {}, h("i", { style: "background:var(--c-bad)" }), "não viável"),
+        h("span", {}, h("i", { style: "background:var(--c-unk)" }), "não avaliado (energia não calculada)")),
       h("div", {}, seal("local")),
       h("p", { class: "note", text: "Grade fixa, sem otimização. Não é uma busca completa de datas." }));
 
@@ -1320,9 +1342,9 @@
       h("div", { class: "grid three" }, Object.keys(M.SITES).map(id => {
         const tr = M.track({ siteId: id, startMs: startMs(), stepMin: S.stepMin, count: count(), delayH: 0 });
         const sum = M.summary(tr, S.stepMin);
-        const v = M.verdict(M.violations(sum, undefined), undefined);
+        const v = withEnergy(M.verdict(M.violations(sum, undefined), undefined), false);
         const on = id === S.site;
-        return h("div", { class: "panel", style: on ? "border-color:var(--sky)" : "" },
+        return h("div", { class: "panel", style: on ? "border-color:var(--c-jade)" : "" },
           h("div", { class: "row" }, h("strong", { text: M.SITES[id].name + (on ? " · atual" : "") }), verdictChip(v)),
           h("dl", { class: "readout", style: "margin-top:8px" },
             h("dt", {}, "horas com luz"), h("dd", { text: f1(sum.sunlitH, 0) + " h" }),
@@ -1330,7 +1352,7 @@
             h("dt", {}, "Terra visível"), h("dd", { text: f1(sum.earthH, 0) + " h" })));
       })),
       h("div", {}, seal("local")),
-      h("p", { class: "note", text: "Sem fonte real por lugar: os três são sintéticos. Bateria só para o lugar atual." }));
+      h("p", { class: "note", text: "Os três lugares são sintéticos (SIM). Horas iguais a 0 são resultado calculado pelo modelo sintético para esta data, não dado ausente. Energia não é calculada para outros lugares, por isso nenhum recebe \"VIÁVEL\"." }));
 
     const explain = h("section", { class: "panel span2" },
       h("h2", {}, "Como o veredito é calculado"),
@@ -1502,11 +1524,24 @@
 
   // Header badges come from the API (/readyz, /v1/capabilities, /api/health, series science_status), not fixed text.
   S.badge = { apiUp: false, readyz: null, capabilities: null, seriesStatus: null };
+  S.lamp = S.lamp || { kind: "info", text: "verificando…" };
+  // v3: one provenance component instead of loose chips. The page-wide badge is SIM (synthetic model);
+  // cards only show their own badge when it differs (API-sourced = EST, no source = N/D).
   function renderBadges() {
     const box = $("badges");
     if (!box) return;
     S.badge.seriesStatus = S.series && S.series.science_status ? S.series.science_status : null;
-    box.replaceChildren(...L.badges(S.badge).map(b => h("span", { class: "chip " + b.kind, text: b.text })));
+    const old = document.querySelector("header.top > .status > #lamp-api");
+    if (old) old.remove();
+    const lamp = h("span", { class: "chip " + ({ ok: "ok", warn: "warn", bad: "bad" }[S.lamp.kind] || "info"), id: "lamp-api", text: S.lamp.text });
+    const DS = window.MoonproofDS;
+    if (!DS) { box.replaceChildren(...L.badges(S.badge).map(b => h("span", { class: "chip " + b.kind, text: b.text })), lamp); return; }
+    const items = [{ kind: "sim", text: "Protótipo · modelo sintético no navegador" }, { kind: "nd", text: "Não validado" }];
+    if (S.badge.apiUp && S.badge.readyz) items.push({ kind: "est", text: "API science: " + (S.badge.readyz.science_status || "N/D") });
+    if (S.badge.seriesStatus) items.push({ kind: "est", text: "Série: " + S.badge.seriesStatus });
+    const strip = DS.provenanceStrip({ items, note: "Sem recomendação de voo" });
+    strip.append(h("span", { class: "it" }, "API:", lamp));
+    box.replaceChildren(strip);
   }
   async function loadHealth() {
     const [r, rz, cap] = await Promise.all([OnboardApi.health(), OnboardApi.readyz(), OnboardApi.capabilities()]);
@@ -1538,40 +1573,141 @@
       if (window.console) console.error(err);
     }
     box.replaceChildren(...nodes.filter(Boolean));
+    layerize(box);
     document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.tab === S.tab ? "true" : "false"));
   }
-  function selectTab(name) {
+
+  // ---------- v3: three layers per card (Resposta / Por quê / Prova) ----------
+  // Explanatory text that used to float in or between cards (.edu "Como ler", "Como o veredito é calculado",
+  // notes, seals) is moved into the card's "Por quê" (reasoning) and "Prova" (assumptions, source, limits).
+  // A card made only of an explanation is merged into the card before it.
+  const PURE_EXPLAIN = /^(como |o que |por que |sobre )/i;
+  function layerize(box) {
+    const cards = [...box.querySelectorAll(":scope > section.panel, :scope > .grid > section.panel")];
+    cards.forEach((card, idx) => {
+      const title = card.querySelector(":scope > h2, :scope > .row h2");
+      const onlyExplain = title && PURE_EXPLAIN.test(title.textContent.trim()) && !card.querySelector(".kpi, svg, table, .readout, button, input, select");
+      if (onlyExplain && idx > 0 && cards[idx - 1].isConnected) {
+        const prev = cards[idx - 1];
+        ensureLayers(prev);
+        prev.querySelector(".lay.why").append(...[...card.children].filter(c => c !== title).filter(c => !c.classList.contains("note")));
+        prev.querySelector(".lay.proof .proof-body").append(...card.querySelectorAll(".note"));
+        card.remove();
+        return;
+      }
+      const why = [...card.querySelectorAll(":scope > .edu, :scope > div > .edu")];
+      const proof = [...card.querySelectorAll(":scope > .note, :scope > p.note, :scope > div > .tag.SINT")];
+      if (!why.length && !proof.length) return;
+      ensureLayers(card);
+      card.querySelector(".lay.why").append(...why);
+      card.querySelector(".lay.proof .proof-body").append(...proof);
+    });
+    // show the "Por quê"/"Prova" layer only when it has content
+    box.querySelectorAll(".layers").forEach(l => {
+      const hasWhy = l.querySelector(".lay.why").children.length > 1, hasProof = l.querySelector(".proof-body").children.length > 0;
+      const tabs = l.querySelectorAll(".l3-tabs button");
+      tabs[1].hidden = !hasWhy; tabs[2].hidden = !hasProof;
+    });
+  }
+  function ensureLayers(card) {
+    if (card.querySelector(":scope > .layers")) return;
+    card.dataset.level = "0";
+    const set = lvl => { card.dataset.level = String(lvl); tabs.querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", String(i === lvl))); };
+    const tabs = h("div", { class: "l3-tabs", role: "group", "aria-label": "Profundidade do cartão" },
+      ...["1 Resposta", "2 Por quê", "3 Prova"].map((t, i) => { const b = h("button", { type: "button", "aria-pressed": i === 0 ? "true" : "false", text: t }); b.addEventListener("click", () => set(i)); return b; }));
+    const why = h("div", { class: "lay why" }, h("p", { class: "lbl-s", text: "Por quê" }));
+    const proof = h("div", { class: "lay proof" }, h("p", { class: "lbl-s", text: "Prova · premissas, fonte e limites" }), h("div", { class: "proof-body" }),
+      h("p", { class: "note", text: "Origem: modelo sintético do navegador (SIM) salvo quando o selo do cartão diz outra coisa. Não é software de voo." }));
+    card.append(h("div", { class: "layers" }, tabs, why, proof));
+  }
+
+  // ---------- v3: routes #/bordo/<section>?site=  (same router helpers as the shell) ----------
+  const RT = window.MoonproofRouter;
+  const TAB_NAMES = ["visao", "entrada","geometria", "horizonte", "janelas", "energia", "vida", "replan", "visual", "sens", "historico", "lanc", "status"];
+  const TAB_TITLE = { visao: "Visão geral", entrada: "Parâmetros", geometria: "Geometria", horizonte: "Horizonte", janelas: "Janelas", energia: "Energia", vida: "Vida",
+    replan: "Replanejar", visual: "Visual", sens: "Sensibilidade", historico: "Registro", lanc: "Lançamentos", status: "Status" };
+  function routeQuery() { return RT ? RT.parseHash(location.hash).query : {}; }
+  function tabFromHash() {
+    const raw = location.hash || "";
+    const legacy = raw.replace("#", "");
+    if (TAB_NAMES.includes(legacy)) return legacy;                     // old links (#energia) still work
+    if (!RT) return null;
+    const { parts } = RT.parseHash(raw);
+    if (parts[0] !== "bordo") return null;
+    return RT.BORDO_SECTIONS[parts[1] || ""] || null;
+  }
+  function tabHash(name) {
+    const site = routeQuery().site;
+    if (!RT) return "#" + name;
+    const slug = RT.BORDO_SLUG[name];
+    return RT.buildHash("/bordo" + (slug && name !== "visao" ? "/" + slug : ""), { site });
+  }
+  function selectTab(name, moveFocus) {
     S.tab = name;
     if (name !== "geometria" && S.playing) { clearInterval(S.playing); S.playing = null; }
     renderTab();
+    document.title = TAB_TITLE[name] + " · Painel de bordo · moonproof";
+    const t = $("page-title"); if (t) { t.textContent = "Painel de bordo · " + TAB_TITLE[name]; if (moveFocus) t.focus(); }
+    if (RT) RT.saveLastRoute(tabHash(name));
   }
-
-  const TAB_NAMES = ["visao", "entrada","geometria", "horizonte", "janelas", "energia", "vida", "replan", "visual", "sens", "historico", "lanc", "status"];
-  function tabFromHash() {
-    const name = (location.hash || "").replace("#", "");
-    return TAB_NAMES.includes(name) ? name : null;
+  function renderTopnav() {
+    const nav = $("topnav"); if (!nav || !RT) return;
+    const site = routeQuery().site;
+    const link = (path, label, cls) => h("a", { class: "navp" + (cls ? " " + cls : ""), href: "../index.html" + RT.buildHash(path, { site }) }, label);
+    nav.replaceChildren(link("/explorar", "Explorar"), link("/comparar", "Comparar"),
+      h("a", { class: "navp", href: tabHash("visao"), "aria-current": "page" }, "Painel de bordo"),
+      link("/evidencias", "Evidências"), link("/terreno", "Terreno 3D", "lab"));
+  }
+  // Site selector: synthetic sites (SIM) are separated from the real sites of data/sites.json.
+  // The board's model is synthetic-only, so a real site opens in Explorar (no fake numbers for it here).
+  async function fillSites(top) {
+    const synth = h("optgroup", { label: "Sintéticos · SIM (modelo do painel)" },
+      ...Object.entries(M.SITES).map(([id, s]) => h("option", { value: id, text: "SIM · " + s.name + " (" + id + ")" })));
+    top.replaceChildren(synth);
+    try {
+      const r = await fetch("../data/sites.json", { cache: "no-cache" });
+      if (!r.ok) throw new Error(String(r.status));
+      const data = await r.json();
+      top.append(h("optgroup", { label: "Reais · LOLA + SPICE (abrem em Explorar)" },
+        ...data.sites.map(s => h("option", { value: "real:" + s.id, text: s.name + " → Explorar" }))));
+    } catch { /* real sites unavailable: only synthetic sites are listed */ }
+    top.value = S.site;
   }
   function init() {
     document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => {
-      selectTab(b.dataset.tab);
-      history.replaceState(null, "", "#" + b.dataset.tab);
+      history.pushState(null, "", tabHash(b.dataset.tab));
+      selectTab(b.dataset.tab, true);
     }));
-    window.addEventListener("hashchange", () => { const t = tabFromHash(); if (t) selectTab(t); });
+    window.addEventListener("hashchange", () => { const t = tabFromHash(); if (t) selectTab(t, true); });
+    window.addEventListener("popstate", () => { const t = tabFromHash(); if (t) selectTab(t, true); });
     const initial = tabFromHash();
     if (initial) S.tab = initial;
+    const q = routeQuery();
+    if (q.site && M.SITES[q.site]) S.site = q.site;
+    else if (q.site) S.realSite = q.site; // a real site came from the shell: say so instead of computing it here
     tickClock(); setInterval(tickClock, 1000);
     renderBadges();
+    renderTopnav();
     loadHealth();
     loadSites();
     const fab = document.getElementById("fab");
     if (fab) fab.addEventListener("click", calculate);
     const top = document.getElementById("top-site");
     if (top) {
-      top.replaceChildren(...Object.entries(M.SITES).map(([id, s]) => h("option", { value: id, text: id + " · " + s.name })));
-      top.addEventListener("change", e => { S.site = e.target.value; S.api = null; renderAlarm(); renderTab(); });
+      fillSites(top);
+      top.addEventListener("change", e => {
+        const v = e.target.value;
+        if (v.startsWith("real:")) { location.href = "../index.html" + (RT ? RT.buildHash("/explorar", { site: v.slice(5) }) : "#/explorar"); return; }
+        S.site = v; S.api = null; renderAlarm(); renderTab();
+      });
     }
     renderAlarm();
-    renderTab();
+    selectTab(S.tab, false);
+    if (S.realSite) {
+      const v = $("views");
+      v.prepend(h("div", { class: "caution span2", role: "status" }, "O local real \"" + S.realSite + "\" não é modelado pelo painel de bordo (modelo sintético). ",
+        h("a", { href: "../index.html" + (RT ? RT.buildHash("/explorar", { site: S.realSite }) : "#/explorar") }, "Abrir em Explorar com dados LOLA + SPICE")));
+    }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();

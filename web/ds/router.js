@@ -61,6 +61,11 @@ export function bordoURL(base, parts, query) {
   return base + buildHash("/bordo" + (slug ? "/" + slug : ""), { site: query.site });
 }
 
+// The onboard cockpit is a classic-script page; it uses the same router helpers through this global.
+if (typeof window !== "undefined") {
+  window.MoonproofRouter = { parseHash, buildHash, legacyRedirect, BORDO_SECTIONS, BORDO_SLUG, saveLastRoute: h => saveLastRoute(h) };
+}
+
 const LAST_KEY = "moonproof:last-route";
 export function saveLastRoute(hash) { try { localStorage.setItem(LAST_KEY, hash); } catch { /* storage unavailable */ } }
 export function loadLastRoute() { try { return localStorage.getItem(LAST_KEY); } catch { return null; } }
