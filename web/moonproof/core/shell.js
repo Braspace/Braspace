@@ -10,6 +10,7 @@ export const SCREENS = [
   { id: "cockpit", page: "cockpit.html", key: "nav.cockpit" },
   { id: "evidence", page: "evidence.html", key: "nav.evidence", short: "nav.evidence.short" },
   { id: "landing", page: "landing.html", key: "nav.landing", sim: true },
+  { id: "debrief", page: "debrief.html", key: "nav.debrief", sim: true },
 ];
 
 // Pages that are a view of a nav screen (A · Mission Control is the overview of Explore, as in capture A).
@@ -24,6 +25,7 @@ const P = {
   recover: '<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4M12 8v4l3 2"/>',
   cockpit: '<path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/>',
   evidence: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>',
+  debrief: '<path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/>',
   landing: '<path d="M12 3l3 7H9z"/><path d="M9 10l-3 9M15 10l3 9M7 19h3M14 19h3"/>',
 };
 const icon = id => P[id] ? `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[id]}</svg>` : "";

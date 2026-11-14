@@ -15,7 +15,7 @@ const fmt = (v, d = 0) => Number.isFinite(v) ? String(fmtNum(v, d)).replace("-",
 const attempts = loadAttempts(sessionStorage);
 const pick = Number(new URLSearchParams(location.search).get("attempt"));
 const A = attempts.find(a => a.n === pick) || attempts.at(-1) || null;
-const shell = mountShell({ screen: "landing", context: null, onLang: draw });
+const shell = mountShell({ screen: "debrief", context: null, onLang: draw });
 const doc = await loadSites().catch(() => null);
 let tile = null;
 if (A && doc) { const s = doc.sites.find(x => x.id === A.site); if (s?.local_tile) tile = await TerrainGrid.load(DATA_BASE + s.local_tile).catch(() => null); }
