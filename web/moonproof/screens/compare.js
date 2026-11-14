@@ -129,7 +129,7 @@ async function draw() {
   const ul = el("div", "mp-scn-list"); ul.setAttribute("role", "radiogroup"); ul.setAttribute("aria-label", t("cmp.q"));
   list.forEach((sc, i) => {
     const b = el("button", "mp-scn"); b.type = "button"; b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(i === sel)); b.tabIndex = i === sel ? 0 : -1;
-    const name = el("span", "mp-scn-name"); name.append(`${siteOf(sc.site).n} · ${siteOf(sc.site).name}`, Object.assign(el("small"), { textContent: fmtDate(Date.parse(sc.start)) }));
+    const name = el("span", "mp-scn-name"); name.append(`${siteOf(sc.site).name}`, Object.assign(el("small"), { textContent: `${siteOf(sc.site).n} · ${fmtDate(Date.parse(sc.start))}` }));
     b.append(el("span", "mp-scn-letter", L(i)), name, badge(judged[i]));
     b.onclick = () => { sel = i; draw(); };
     b.onkeydown = e => { const d = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0; if (d) { e.preventDefault(); sel = (i + d + list.length) % list.length; draw().then(() => ul.querySelector('[aria-checked="true"]')?.focus()); } };
@@ -222,8 +222,8 @@ function drawDock(list) {
   const b = (txt, aria, fn) => { const x = el("button", "mp-pill", txt); x.type = "button"; x.setAttribute("aria-label", aria); x.onclick = fn; return x; };
   const s = el("select", "mp-pill is-primary"); s.setAttribute("aria-label", t("cmp.scenario", { L: "" }));
   list.forEach((_, i) => s.append(new Option(t("cmp.scenario", { L: LETTERS[i] }), String(i), false, i === sel))); s.onchange = () => { sel = Number(s.value); draw(); };
-  dock.replaceChildren(b("‹", t("cmp.prev"), () => { sel = (sel + list.length - 1) % list.length; draw(); }), s,
-    b("›", t("cmp.next"), () => { sel = (sel + 1) % list.length; draw(); }),
+  dock.replaceChildren(b("‹", t("cmp.prev"), () => { sel = (sel + list.length - 1) % list.length; draw(); }),
+    b("›", t("cmp.next"), () => { sel = (sel + 1) % list.length; draw(); }), s,
     b("+", t("cmp.add"), () => { if (list.length < MAXSC) save([...list, { ...list[sel] }]); }));
 }
 function markRoute() {
@@ -233,6 +233,8 @@ function markRoute() {
 let terrain = null;
 terrain = await mountTerrain(document.getElementById("terrain"), { sites: doc.sites, selected: scenarios()[0].site,
   route: [...new Set(scenarios().map(s => s.site))], onSelect: id => { const i = scenarios().findIndex(s => s.site === id); if (i >= 0) { sel = i; draw(); } } });
+new MutationObserver(() => markRoute()).observe(document.getElementById("terrain"), { childList: true, subtree: true });
+markRoute();
 onState(() => draw());
 addEventListener("hashchange", () => draw());
 draw();

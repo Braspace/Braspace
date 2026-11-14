@@ -95,3 +95,50 @@
   .mp-scn-right{max-height:calc(100vh - 250px)}
 }
 @media (max-width:700px){.mp-chipg{min-height:var(--touch)}}
+
+/* BR93 · measured boxes from docs/design/MEDIDAS.md (C, D) at 1440x900. Desktop only. */
+@media (min-width:1301px){
+  .mp-context{top:85px;min-height:46px;height:46px;padding:0 4px 0 20px;font-size:14px}
+  .mp-scn-left,.mp-scn-right{top:151px}
+  .mp-scn-left{width:375px;max-height:calc(100vh - 180px)}
+  .mp-scn-right{width:405px;max-height:calc(100vh - 180px);overflow:visible}
+  .mp-scn-left .mp-glass,.mp-scn-left .mp-card,.mp-scn-right .mp-card,.mp-scn-right .mp-glass{padding:18px 20px}
+  .mp-scn-left>.mp-scn-list{width:330px}
+  .mp-scn{min-height:46px;padding:0 12px 0 10px}
+  .mp-scn-name{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mp-scn-name small{font-size:11px}
+  .mp-scn .mp-badge{padding:3px 8px;font-size:11px}
+  .mp-scn-left .mp-cmp-time{width:367px;height:144px;padding:14px 18px;bottom:28px}
+  .mp-day-chart .mp-bar{height:22px}
+  .mp-diff{font-size:13px}.mp-diff th,.mp-diff td{padding:5px 4px}
+  .mp-diff .grp th{padding-top:10px}
+  .mp-scn-right .mp-card{background:#050607}
+  .mp-scn-dock{bottom:29px}
+  .mp-scn-dock.is-corner{right:auto;left:50%;transform:translateX(-50%)}
+  .mp-exit{min-height:63px}
+  .mp-scn-right .mp-layer>a.mp-pill.is-primary{width:100%;min-height:47px}
+  .mp-scn-time{width:517px;left:50%;bottom:29px}
+  .mp-scn-time.mp-glass{padding:12px 18px;border-radius:26px}
+  .mp-scn-time .mp-time-row{grid-template-columns:70px 1fr}
+  .mp-scn-time .mp-q{margin:0 0 2px;color:#fff;font-weight:700}
+  .mp-context .mp-alert{font-size:11.5px;padding:3px 12px;margin-right:6px}
+  .mp-cmp-time{left:var(--margin)}
+}
+
+/* BR93 round 3 · mobile M2: scenario pills right under the verdict, compact table, tabs hidden by layer chips only on small screens */
+@media (max-width:700px){
+  #verdict .mp-actions .mp-pill.is-sim{display:none}
+  #verdict .mp-chips{display:none}
+  .mp-scn-list{order:2}
+  .mp-diff .grp th{padding-top:8px}
+  .mp-diff .grp small{display:none}
+  .mp-diff th,.mp-diff td{padding:4px 2px;font-size:12.5px}
+  .mp-diff th[scope=row]{width:42%;white-space:normal;font-size:12px;padding-right:6px;text-align:left}
+  #left>.mp-cmp-time{display:none}
+  #right>.mp-card .mp-foot{display:none}
+  #right>.mp-card{order:3}
+  .mp-scn-letter{background:#050607}
+}
+@media (min-width:1301px){
+  .mp-actions .mp-pill.is-sim{background:rgba(5,6,7,.7);color:#F2F4F5;border:1px solid rgba(255,255,255,.28)}
+  .mp-diff .grp small{font-size:12px}
+}
