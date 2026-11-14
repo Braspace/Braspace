@@ -81,7 +81,7 @@ function overlayRects(container) {
  *  sites: [{ id, n, name, stereo_x_m, stereo_y_m }]; route: [siteId, ...] dotted line.
  * Returns Promise<{ select(id), zoom(f), redraw(), grid, el }>.
  */
-export async function mountTerrain(container, { sites = [], selected = null, route = [], onSelect } = {}) {
+export async function mountTerrain(container, { sites = [], selected = null, route = [], onSelect, labels = true } = {}) {
   container.classList.add("mp-terrain");
   Object.assign(container.style, { position: "fixed", inset: "0", overflow: "hidden", background: "var(--bg)" });
   const grid = await loadRegion();
@@ -95,8 +95,9 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
     span: xs.length ? Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * 1.6 + 30000 : grid.nx * grid.dx };
   // Crater names on the map (IAU labels from web/data/sites.json "features", label only).
   let features = [];
-  try { features = ((await loadSites()).features || []).filter(f => !f.landing_site && Number.isFinite(f.stereo_x_m)); } catch { features = []; }
+  if (labels) try { features = ((await loadSites()).features || []).filter(f => !f.landing_site && Number.isFinite(f.stereo_x_m)); } catch { features = []; }
   container.dataset.features = String(features.length);
+  let lastMpp = 0;
   let sel = selected, focus = selected, free = null, relief = null, reliefKey = "";
   const ext = grid.nx * grid.dx;
   function frame(W, H) {
@@ -121,7 +122,7 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
   function draw() {
     const W = container.clientWidth, H = container.clientHeight, dpr = Math.min(3, devicePixelRatio || 1);
     if (!W || !H) return;
-    const { mpp, sx, sy } = frame(W, H);
+    const { mpp, sx, sy } = frame(W, H); lastMpp = mpp;
     container.dataset.free = [free.l, free.t, free.r, free.b].map(Math.round).join(",");
     const w = Math.round(W * dpr), h = Math.round(H * dpr);
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
@@ -158,7 +159,7 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
   const api = { el: container, grid, view,
     select(id) { sel = id; focus = id; const s = sites.find(x => x.id === id); if (s) { view.cx = s.stereo_x_m; view.cy = s.stereo_y_m; } draw(); },
     zoom(f) { view.span = Math.min(ext, Math.max(4000, view.span / f)); draw(); }, redraw: draw,
-    get free() { return free; } };
+    get free() { return free; }, get mpp() { return lastMpp; } };
   // Panels are rendered after the map: re-frame when the overlays change size or appear.
   let pending = 0, lastFree = "";
   const reframe = () => { if (pending) return; pending = requestAnimationFrame(() => { pending = 0;
