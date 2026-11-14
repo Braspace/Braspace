@@ -1,36 +1,75 @@
-# BRASPACE MoonProof — DESIGNER.mds
-## Proveniência do projeto visual
-Este conjunto foi derivado de docs/TEAM_MEETING_HELOISA_2026-11-14.md, docs/GAMIFIED_LUNAR_UX_AND_HUB.md, código web/lab/ da Heloísa já presente na main e requisitos relatados pelo usuário. O artefato Claude QV5ykVW5q9HvyZsH68SPf1 aparece no navegador, mas seu prompt ou código interno não estava disponível para extração. **Não é transcrição do system prompt, nem reprodução certificada de todas as telas originais.** É especificação nova para integração e revisão por @lisanogueira.
+# BRASPACE MoonProof — DESIGNER.mds — Heloísa UI Source + Implementation Map
 
-## Product brief
-BRASPACE / NASA Space Apps 2026 / Lunar Landing Site Navigator no Polo Sul. Público: estudantes, pesquisadores, educadores. Objetivo: explorar e comparar Sol/Terra em relação ao horizonte; replanejar após atrasos; apresentar riscos, dados e limitações. Coexistência com web/lab e web/onboard, sem substituir arquivos e dados da equipe.
+## Fonte verificada e limite de acesso
+- Artefato compartilhado: https://claude.ai/artifact/QV5ykVW5q9HvyZsH68SPf1 (título **BRASPACE MoonProof — Telas**). As telas renderizadas e seus textos foram consultados em 14/11/2026; as instruções internas de sistema do Claude não são expostas pela página.
+- Esta é uma transcrição **estrutural e funcional**, não uma cópia literal de um system prompt invisível nem uma exportação do projeto editável `project/*.dc.html`.
+- Outras fontes: `docs/TEAM_MEETING_HELOISA_2026-11-14.md`, `docs/GAMIFIED_LUNAR_UX_AND_HUB.md`, `web/lab/` da Heloísa, `web/onboard/` do João Victor e esquema `api/openapi.json`.
+- O render do artefato identifica explicitamente números e relevo como **ILUSTRATIVOS**. Seus exemplos (71% de Sol, 63% Terra, 46h de sombra, 38h sem Terra, 1832m e 4,6°) **não são medições a copiar para produção**. O selo visual VAL do mockup não certifica a origem. API continua `UNVERIFIED_INPUTS`/`SYNTHETIC` quando aplicável.
 
-## Screen map
-- 01 Mission Overview — designer/01-overview.designer.mds
-- 02 Explore the Pole — designer/02-explore.designer.mds
-- 03 Compare Sites — designer/03-compare.designer.mds
-- 04 Recover a Mission — designer/04-recover.designer.mds
-- 05 Science & Engineering — designer/05-science.designer.mds
-- 06 Evidence & Data — designer/06-evidence.designer.mds
-- 07 Learn & Teach — designer/07-learn.designer.mds
+## Telas originais — especificações separadas
+| Artefato | Arquivo DESIGNER | Entrega segura e conexão |
+| --- | --- | --- |
+| A Mission Control | `designer/A-mission-control.designer.mds` | `/studio/` Overview e `/onboard/cockpit.html` |
+| B Explorar | `designer/B-explorar.designer.mds` | `/studio/` Explore e `/lab.html` |
+| C Comparar | `designer/C-comparar.designer.mds` | `/studio/` Compare |
+| D Replanejar | `designer/D-replanejar.designer.mds` | `/studio/` Recover |
+| E Cockpit | `designer/E-cockpit.designer.mds` | `/onboard/cockpit.html` |
+| F Landing Lab | `designer/F-landing-lab.designer.mds` | `/lab.html` Landing Lab |
+| G Debrief | `designer/G-debrief.designer.mds` | `/lab.html` pós-pouso |
+| H Evidências | `designer/H-evidencias.designer.mds` | `/studio/` Evidence e `/lab.html` |
+| v3 Entrada por tarefa | `designer/V3-entrada-por-tarefa.designer.mds` | três perfis acionados pelo usuário |
+| v3 Resposta/Por quê/Prova | `designer/V3-camadas.designer.mds` | divulgação progressiva por cartão |
+| v3 Kit Planejamento | `designer/V3-kit-planejamento.designer.mds` | regras explícitas + exports reproduzíveis |
+| v3 Kit Aula | `designer/V3-kit-aula.designer.mds` | questões projetáveis, respostas reveláveis, privacidade |
+| Explorar celular | `designer/mobile-explorar.designer.mds` | cards compactos, ações de 44px |
+| Comparar celular | `designer/mobile-comparar.designer.mds` | resposta primeiro, detalhes por camada |
 
-## Tokens visuais
-- Background lunar: #070e1b; cards: #122037; contornos: #2c435d.
-- Acento ciano: #73d5ef; indicadores textuais de ciência em âmbar #ffcf95.
-- Desktop: sidebar 238px + conteúdo flexível; mobile: navegação horizontal e cartões empilhados.
-- Tipografia de sistema; legendas de tabela e unidades explícitas; aria-live, skip-link, foco visível e reduce-motion.
+As **sete telas técnicas** já implementadas possuem também seus arquivos `01-overview` até `07-learn` em `web/studio/designer/`. O espelho estrutural A-H cobre as **telas originais**, mesmo quando a experiência executável aproveita Lab/Cockpit existentes em vez de duplicar motores.
 
-## Estados e integridade
-- API em mesma origem, sem credenciais no browser.
-- Não gerar observações ou números de comparação quando não há série/dados AVAILABLE.
-- UTC obrigatório; não corrigir silenciosamente janelas fora da cobertura ou da grade.
-- Diferenciar modelo sintético do onboard de observação NASA derivada e ainda PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED.
-- Nunca interpretar visibilidade geométrica como RF garantido ou resultado didático como pouso validado.
-- Dados da API chegam ao DOM via textContent, sem HTML dinâmico.
-- Unidades, fonte, ephemeris ID, MOON_ME, SHA e limitações ficam auditáveis.
+## Linguagem visual Heloísa
+| Token | Valor do artefato |
+|---|---|
+| `background` | `#07090C` |
+| `card-number` | `#050607` |
+| `glass-context` | `rgba(12,15,18,.58)` com blur 22px |
+| `pill` | `#F2F4F5` |
+| `accent-jade` | `#2EC4A0`, texto `#04110D` |
+| `text-secondary` | `#B7C0C9` |
+| `sun` | `#FFD166` |
+| `earth` | `#4C9BFF` |
+| `simulation` | `#B48CF2` |
+| `observed` | `#D5DEE7` + contorno |
+| `unknown` | `#808C99` + indicação textual |
+| `failure` | `#E5484D` + símbolo/texto |
 
-## Implementação
-web/studio/index.html, web/studio/studio.css, web/studio/app.js, web/studio/api.js; servidos por web/dev-server.mjs em allowlist explícita. Testes web/tests/studio-api.test.mjs e web/tests/studio-routes.test.mjs.
+Tipografia: **Manrope** + **IBM Plex Mono** (fallbacks locais se as fontes não estiverem instaladas; não incorporar arquivos de fontes). Título de tela 60px/800; resposta 22px/800; título de cartão 16px/700; corpo 14–15px/500; label 12,5px/600; número 26px/800 tabular. Raio de cartões 26px, internos 18px, pílulas 999px; alvos de toque mínimos de 44px; margem de tela 28px.
 
-## Critérios de revisão
-@lisanogueira: fluxo e fidelidade ao artefato original; @Ninzinhu: mobile e acessibilidade; @gfreiresjrp: contratos API; @joeljato: física e alegações de validação; equipe: PR e CI do HEAD final. Manter o repositório privado, preparando link público do demo separadamente.
+## Núcleo, camadas e kits — V3
+1. **Resposta**: uma frase compreensível com no máximo três números, sobre o dado real e seus limites. Estado inicial quando a pessoa escolhe “Explorar a Lua”.
+2. **Por quê**: explicação, visualização temporal, causa da mudança, termos pedagogicamente corretos. Estado inicial de “Dar uma aula”.
+3. **Prova**: definição, inputs, unidades, fonte, versão, incerteza, metodologia e exportação. Estado inicial de “Planejar uma missão”.
+4. **Kits somam, não substituem**: o kit do professor e o de planejamento agregam ferramentas; todos podem mudar qualquer cartão de camada. O mesmo botão **nunca muda sua semântica pelo perfil**; não criar modos globais que escondam fatos.
+5. O perfil é **explicitamente escolhido** e não adivinhado. Camada ativa sempre aparente.
+6. Acompanhar `NO_SERIES_DATA`, `OUTSIDE_COVERAGE`, `GRID_NOT_ALIGNED`, `ENGINE_UNAVAILABLE`; dados ausentes continuam ausentes. Não inventar pesos, tolerâncias ou séries.
+
+## Contracts / API
+`GET /api/sites`, `GET /api/sites/{id}/sky`, `POST /api/compare`, `POST /api/scenarios/delay` são a verdade científica Go/Rust/Postgres no Mission Studio. Módulos `web/lab/` usam seus próprios assets LOLA/NAIF preliminares e o `web/onboard/` é simulação com hipóteses.
+
+- Números de comparação somente se `data_status == AVAILABLE`.
+- Horizonte sem extrapolar, ephemeris sem interpolações escondidas.
+- Rótulo `VALIDATED` jamais sem `scientifically_validated === true`, provenance e revisão; não reivindicar NASA certification.
+- Sol visível ≠ eletricidade garantida; Terra geometricamente visível ≠ link RF/DSN garantido.
+- Links/QR de sala de aula só ativos quando realmente compartilháveis e sem expor dados privados; não inventar domínio moonproof.app ou códigos de aula.
+- Exportação só se bytes/dados/cálculos e versões comprovadamente disponíveis.
+
+## Backlog de fidelidade/aceitação
+- `web/studio/`: telas e disclosure cards com fonte dinâmica.
+- `web/lab/`: preservar a renderização 3D, Landing Lab e Debrief da Heloísa; validar desempenho e precisão científica separadamente.
+- `web/onboard/`: preservar o cockpit do João Victor e seus testes.
+- Aula: perguntas, notas privadas e opção projetor só quando controle de privacidade for implementado/testado.
+- Planejamento: parâmetros e JSON/CSV/relatório com fonte/cálculo exato; sem prometer PDF não implementado.
+- QA: telas desktop e 390px mobile, teclado, foco, linguagem, sem API, dados sintéticos, labels e limites de resolução.
+- Aprovação: @lisanogueira (fidelidade UX), @gfreiresjrp (contratos), @joeljato (ciência), @Ninzinhu (QA); CI no HEAD final.
+
+## Aviso de direitos
+A interface é proposta da equipe; conservar autoria e atribuição. Relevo/produtos oficiais exigem fonte/licença específica; render procedural é apenas ilustração. Não copiar código de concorrentes por scraping.
