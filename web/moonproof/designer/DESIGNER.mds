@@ -43,3 +43,10 @@
 - Os módulos `workflow.js` cobrem as telas restantes: Cockpit/Evidências/Landing/Debrief/Kit Aula simplificado. Não alegar que debrief contém uma tentativa de pouso se o simulador não forneceu a trilha.
 - Contratos corrigidos no planejamento: `/api/compare` aceita `site_ids/start_utc/duration_hours`, o CSV recebe amostras da série horária, o PDF é apenas link para passaporte, e não se chama a API onboard sem parâmetros completos do equipamento.
 - A navegação Aula deve abrir `present.html` (implementação especialista), e o planner deve abrir `plan.html`. O arquivo `learn.html` permanece um exercício adicional.
+
+## Segunda integração: telas especialistas E/F/G/H
+- #167 @Luana: `cockpit.html`, `evidence.html`, `screens/cockpit.js`, `screens/evidence.js`, modelos de fonte, componentes e testes. E já reproduz instrumentos de bordo usando um modelo assinalado SIM; H tem passaporte e registro de origem.
+- #169 @Renata: `landing.html`, `debrief.html`, `screens/landing.js` e `screens/debrief.js`; simulador educativo executável com tentativa transmitida ao debrief por sessionStorage, sujeito ao sandbox local da aba. Não chamar de flight-ready.
+- As telas originais A/B da #164, C/D da #163 e K1/K2/K3 da #160 foram preservadas no mesmo branch de integração, com os próprios arquivos CSS, JS e testes. O `screens/workflow.js` passa a cobrir somente telas adicionais `learn.html` e reutilizações não especializadas; não é mais a implementação principal de E/F/G/H.
+- #166 entregou `Dockerfile` multi-estágio `test-go`, `test-rust`, `test-web`, `test-science`, `test` e `release`; `scripts/ci-local.sh`; `.dockerignore`. A branch incorpora esses arquivos sem desabilitar controles de privacidade nem eliminar workflows científicos paralelos. 
+- Os testes de integração do PR #165 incluem o frontend de todos os donos, mas CI GitHub Actions continua não verificado na HEAD devido à indisponibilidade de execução apontada em issue #146.
