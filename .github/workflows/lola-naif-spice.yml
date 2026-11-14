@@ -38,7 +38,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 science/spice_lunar_angles.py --horizon science/evidence/connecting-ridge-LOLA-PRELIMINARY.json --kernels-dir "$RUNNER_TEMP/naif" --start-utc "2026-11-15T00:00:00Z" --hours 72 --step-minutes 60 --output-series evidence/connecting-ridge-NAIF-PRELIMINARY.series.json --output-metadata evidence/connecting-ridge-NAIF-PRELIMINARY.metadata.json
-          python3 -c 'import json; s=json.load(open("evidence/connecting-ridge-NAIF-PRELIMINARY.series.json")); m=json.load(open("evidence/connecting-ridge-NAIF-PRELIMINARY.metadata.json")); assert s["science_status"]=="UNVERIFIED" and len(s["samples"])==72 and len(s["terrain_horizon"])==36; assert m["validated_against_independent_reference"] is False; print("NAIF real-source result, UNVERIFIED:",s["samples"][0])'
+          python3 -c 'import json; s=json.load(open("evidence/connecting-ridge-NAIF-PRELIMINARY.series.json")); m=json.load(open("evidence/connecting-ridge-NAIF-PRELIMINARY.metadata.json")); assert s["science_status"]=="UNVERIFIED" and len(s["samples"])==72 and len(s["terrain_horizon"])==36; assert m["validated_against_independent_reference"] is False; assert s==json.load(open("api/sitedata/series/connecting-ridge-NAIF-PRELIMINARY.json")), "Committed candidate differs from actual JPL/NAIF source calculation"; print("MATCH: committed 72h series reproduces PDS/NAIF computation; unverified scientifically")'
       - name: Upload derived series only (no kernels)
         uses: actions/upload-artifact@v4
         with:
