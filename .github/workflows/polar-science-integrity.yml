@@ -1,0 +1,38 @@
+name: BRASPACE Polar Lab Scientific Asset Integrity
+on:
+  pull_request:
+    paths:
+      - "science/**"
+      - "web/data/**"
+      - ".github/workflows/polar-science-integrity.yml"
+  push:
+    branches:
+      - "integration/heloisa-polar-lab-api-20261114"
+permissions:
+  contents: read
+jobs:
+  offline-science:
+    name: NASA-derived asset checksums and synthetic horizon contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Syntax checks
+        run: python -m compileall -q science
+      - name: Projection / UTC and source-asset SHA256 regression
+        run: python -m unittest discover -s science/tests -v
+      - name: Explicit unreviewed scientific status
+        run: |
+          python - <<'PY'
+          import json
+          idx=json.load(open("web/data/sites.json"))
+          validation=json.load(open("science/results/validation_pgda.json"))
+          assert idx["science_status"]=="PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED"
+          critical=[(v["site"],v["diff_sun_pp"]) for v in validation["results"] if abs(v["diff_sun_pp"])>5]
+          assert critical, "Known independent discrepancy removed without reviewed evidence"
+          print("UNRESOLVED independent PGDA solar difference (percentage points):",critical)
+          print("PASS software/source checksum checks; this DOES NOT certify numerical NASA accuracy")
+          PY

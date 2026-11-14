@@ -10,6 +10,8 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -77,7 +79,22 @@ type layerCatalog struct {
 // exact source_url registered for a "proxy" layer.
 var allowedAssetHosts = map[string]bool{"svs.gsfc.nasa.gov": true}
 
-const maxProxyBytes = 8 << 20
+const (
+	// Images are small and kept in memory after the first verified fetch.
+	maxProxyBytes = 8 << 20
+	// 3D models (glTF binary) are larger: they are verified while being
+	// written to a disk cache and then streamed from the file, never held in
+	// memory (the public API container has 256 MB).
+	maxProxyModelBytes = 16 << 20
+	modelFormat        = "model/gltf-binary"
+	imageFetchTimeout  = 15 * time.Second
+	modelFetchTimeout  = 60 * time.Second
+	// A slow 3 Mbit/s phone needs about 40 s for 14 MB, longer than the
+	// server-wide WriteTimeout; the asset route extends its own deadline.
+	modelWriteTimeout = 3 * time.Minute
+)
+
+func isModelFormat(f string) bool { return f == modelFormat }
 
 func loadLayers(raw []byte, st *siteStore) (*layerCatalog, error) {
 	var c layerCatalog
@@ -106,8 +123,10 @@ func loadLayers(raw []byte, st *siteStore) (*layerCatalog, error) {
 			return nil, fmt.Errorf("layer %s: delivery must be proxy or external", l.ID)
 		}
 		if l.Delivery == "proxy" {
-			if !allowedAssetHosts[u.Host] || l.ScientificRole != "visualization_only" || !strings.HasPrefix(l.Format, "image/") || l.Bytes > maxProxyBytes {
-				return nil, fmt.Errorf("layer %s: only small visualization images from allowed hosts can be proxied", l.ID)
+			isImage := strings.HasPrefix(l.Format, "image/") && l.Bytes <= maxProxyBytes
+			isModel := isModelFormat(l.Format) && l.Kind == "visual_model_3d" && l.Bytes <= maxProxyModelBytes
+			if !allowedAssetHosts[u.Host] || l.ScientificRole != "visualization_only" || !(isImage || isModel) {
+				return nil, fmt.Errorf("layer %s: only small visualization images or 3D visual models from allowed hosts can be proxied", l.ID)
 			}
 			l.AssetPath = "/api/layers/" + l.ID + "/asset"
 		}
@@ -130,30 +149,71 @@ func loadLayers(raw []byte, st *siteStore) (*layerCatalog, error) {
 	return &c, nil
 }
 
-// assetCache fetches a registered asset once, verifies size and SHA-256, and
-// keeps it in memory. Failures are not cached, so a later request can retry.
+// assetCache fetches a registered asset once and verifies size and SHA-256.
+// Images (small) are kept in memory; 3D models are written to a disk cache
+// while being hashed and served from the file. Failures are not cached, so a
+// later request can retry.
 type assetCache struct {
 	client *http.Client
 	mu     sync.Mutex
 	data   map[string][]byte
+	// dir holds verified model files named <sha256>.glb. A file only gets that
+	// name after its size and checksum matched, so a cache hit is trusted.
+	dir     string
+	fetchMu sync.Mutex // one model download at a time: no thundering herd on first use
 }
 
 var errAssetUnavailable = errors.New("asset unavailable")
+
+func defaultAssetCacheDir() string {
+	if d := os.Getenv("ASSET_CACHE_DIR"); d != "" {
+		return d
+	}
+	return filepath.Join(os.TempDir(), "braspace-asset-cache")
+}
 
 func newAssetCache() *assetCache {
 	// Never follow redirects from the registered NASA asset URL. Go's
 	// default client follows Location headers across hosts and schemes,
 	// bypassing our catalog host allowlist before the checksum is checked.
 	// ErrUseLastResponse returns the original 3xx to get(), which rejects it.
+	// The deadline is per request (context), because models need longer.
 	return &assetCache{
 		client: &http.Client{
-			Timeout: 15 * time.Second,
 			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
 				return http.ErrUseLastResponse
 			},
 		},
 		data: map[string][]byte{},
+		dir:  defaultAssetCacheDir(),
 	}
+}
+
+// open performs the checked GET shared by images and models.
+func (a *assetCache) open(ctx context.Context, l *layer) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, l.SourceURL, nil)
+	if err != nil {
+		return nil, errAssetUnavailable
+	}
+	resp, err := a.client.Do(req)
+	if err != nil {
+		return nil, errAssetUnavailable
+	}
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, errAssetUnavailable
+	}
+	// The SHA-256 pin already fixes the bytes; a mismatched type is still refused.
+	if ct, _, _ := mime.ParseMediaType(resp.Header.Get("Content-Type")); ct != l.Format {
+		resp.Body.Close()
+		return nil, fmt.Errorf("%w: unexpected content type %q", errAssetUnavailable, ct)
+	}
+	// A declared length above the registered size is refused before reading.
+	if resp.ContentLength > l.Bytes {
+		resp.Body.Close()
+		return nil, fmt.Errorf("%w: upstream is larger than the registered size", errAssetUnavailable)
+	}
+	return resp, nil
 }
 
 func (a *assetCache) get(ctx context.Context, l *layer) ([]byte, error) {
@@ -163,22 +223,13 @@ func (a *assetCache) get(ctx context.Context, l *layer) ([]byte, error) {
 		return b, nil
 	}
 	a.mu.Unlock()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, l.SourceURL, nil)
+	ctx, cancel := context.WithTimeout(ctx, imageFetchTimeout)
+	defer cancel()
+	resp, err := a.open(ctx, l)
 	if err != nil {
-		return nil, errAssetUnavailable
-	}
-	resp, err := a.client.Do(req)
-	if err != nil {
-		return nil, errAssetUnavailable
+		return nil, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, errAssetUnavailable
-	}
-	// The SHA-256 pin already fixes the bytes; a mismatched type is still refused.
-	if ct, _, _ := mime.ParseMediaType(resp.Header.Get("Content-Type")); ct != l.Format {
-		return nil, fmt.Errorf("%w: unexpected content type %q", errAssetUnavailable, ct)
-	}
 	b, err := io.ReadAll(io.LimitReader(resp.Body, l.Bytes+1))
 	if err != nil || int64(len(b)) != l.Bytes {
 		return nil, errAssetUnavailable
@@ -191,6 +242,50 @@ func (a *assetCache) get(ctx context.Context, l *layer) ([]byte, error) {
 	a.data[l.ID] = b
 	a.mu.Unlock()
 	return b, nil
+}
+
+// modelPath returns the verified disk copy of a model layer, downloading it
+// on first use. Memory use is one 32 KiB copy buffer, not the file size.
+func (a *assetCache) modelPath(ctx context.Context, l *layer) (string, error) {
+	final := filepath.Join(a.dir, l.SHA256+".glb")
+	if fi, err := os.Stat(final); err == nil && fi.Size() == l.Bytes {
+		return final, nil
+	}
+	a.fetchMu.Lock()
+	defer a.fetchMu.Unlock()
+	if fi, err := os.Stat(final); err == nil && fi.Size() == l.Bytes {
+		return final, nil // another request finished the download while we waited
+	}
+	if err := os.MkdirAll(a.dir, 0o755); err != nil {
+		return "", fmt.Errorf("%w: cache dir: %v", errAssetUnavailable, err)
+	}
+	ctx, cancel := context.WithTimeout(ctx, modelFetchTimeout)
+	defer cancel()
+	resp, err := a.open(ctx, l)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	tmp, err := os.CreateTemp(a.dir, "dl-*.part")
+	if err != nil {
+		return "", fmt.Errorf("%w: cache file: %v", errAssetUnavailable, err)
+	}
+	defer os.Remove(tmp.Name()) // no-op after a successful rename
+	h := sha256.New()
+	n, err := io.Copy(io.MultiWriter(tmp, h), io.LimitReader(resp.Body, l.Bytes+1))
+	if cerr := tmp.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil || n != l.Bytes {
+		return "", errAssetUnavailable
+	}
+	if hex.EncodeToString(h.Sum(nil)) != l.SHA256 {
+		return "", fmt.Errorf("%w: checksum mismatch", errAssetUnavailable)
+	}
+	if err := os.Rename(tmp.Name(), final); err != nil {
+		return "", errAssetUnavailable
+	}
+	return final, nil
 }
 
 type layersAPI struct {
@@ -250,15 +345,42 @@ func (l *layersAPI) asset(w http.ResponseWriter, r *http.Request) {
 		writeError(w, errf(http.StatusNotFound, "LAYER_NOT_PROXIED", "this layer is linked at its source_url, not served here"))
 		return
 	}
-	b, err := l.assets.get(r.Context(), ly)
-	if err != nil {
+	setAssetHeaders := func(w http.ResponseWriter) {
+		w.Header().Set("Content-Type", ly.Format)
+		w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
+		w.Header().Set("ETag", `"`+ly.SHA256+`"`)
+		w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
+	}
+	unavailable := func() {
 		writeError(w, errf(http.StatusBadGateway, "LAYER_UNAVAILABLE", "registered source could not be fetched or failed its checksum; use the fallback rendering"))
+	}
+	if isModelFormat(ly.Format) {
+		path, err := l.assets.modelPath(r.Context(), ly)
+		if err != nil {
+			unavailable()
+			return
+		}
+		f, err := os.Open(path)
+		if err != nil {
+			unavailable()
+			return
+		}
+		defer f.Close()
+		// Slow clients: extend this response's own write deadline (the
+		// server-wide 30 s would cut a 14 MB body on a 3 Mbit/s link).
+		_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(modelWriteTimeout))
+		setAssetHeaders(w)
+		// ServeContent streams from the file, answers If-None-Match with 304
+		// (the ETag is the registered SHA-256) and supports Range requests.
+		http.ServeContent(w, r, "", time.Time{}, f)
 		return
 	}
-	w.Header().Set("Content-Type", ly.Format)
-	w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
-	w.Header().Set("ETag", `"`+ly.SHA256+`"`)
-	w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
+	b, err := l.assets.get(r.Context(), ly)
+	if err != nil {
+		unavailable()
+		return
+	}
+	setAssetHeaders(w)
 	_, _ = w.Write(b)
 }
 

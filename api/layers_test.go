@@ -66,7 +66,7 @@ func TestLayersEndpoints(t *testing.T) {
 		Layers []layer `json:"layers"`
 	}
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
-	if rec.Code != 200 || len(out.Layers) != 3 {
+	if rec.Code != 200 || len(out.Layers) != 4 {
 		t.Fatalf("%d %d", rec.Code, len(out.Layers))
 	}
 	for _, ly := range out.Layers {

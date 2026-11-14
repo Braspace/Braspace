@@ -26,3 +26,7 @@ test("computed runs print the report with consumables",()=>{
  assert.match(app,/"\/api\/onboard\/site-report"/);
  assert.match(app,/state\.lastSiteRequest=null/);
 });
+
+test("risk counter includes consumable risks",()=>{
+ assert.match(app,/consumables\?\.risks\?\.length/);
+});

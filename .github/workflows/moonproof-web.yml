@@ -7,6 +7,7 @@ on:
       - ".github/workflows/moonproof-web.yml"
   push:
     branches:
+      - "main"
       - "feat/moonproof-3d-web-20261114"
 
 permissions:
@@ -27,3 +28,5 @@ jobs:
         run: npm --prefix web run lint
       - name: Run same-origin server and science-honesty tests
         run: npm --prefix web test
+      - name: Unit regressions for synthetic onboard cockpit (13 tabs, 75 features)
+        run: node --test web/onboard/test/*.mjs

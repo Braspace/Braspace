@@ -30,6 +30,32 @@
       "note": "Same-origin copy for the 3D globe, fetched only from source_url and checked against sha256. Not terrain data."
     },
     {
+      "id": "svs-14959-moon-small-glb",
+      "title": "NASA SVS 14959 Moon 3D model, small (moon_small.glb, color map, no topography)",
+      "kind": "visual_model_3d",
+      "registry_ref": "data/ASSET_REGISTRY.json#nasa-svs-14959-moon-small-glb-2026",
+      "source_page": "https://svs.gsfc.nasa.gov/14959/",
+      "source_url": "https://svs.gsfc.nasa.gov/vis/a010000/a014900/a014959/moon_small.glb",
+      "format": "model/gltf-binary",
+      "bytes": 13799876,
+      "sha256": "12d3b0bb7fe214903f51447d1bc61710f442e92a11c703fcaca6d4e7ff8e67d4",
+      "width_px": 4096,
+      "height_px": 4096,
+      "projection": "textured UV sphere, 1 mesh, 23,232 triangles; texture is a 4096x4096 cube-face cross (no polar pinch)",
+      "frame": "model-local: +Y north pole, longitude 0 toward -Z, east toward -X; radius about 1.278 units; not a SPICE/PCK frame",
+      "coverage": {
+        "latitude_min_deg": -90,
+        "latitude_max_deg": 90
+      },
+      "resolution_km_per_px_equator": null,
+      "attribution": "NASA's Goddard Space Flight Center; NASA SVS 14959 (producer Dan Gallagher); made with LRO imagery; color source CGI Moon Kit (SVS 4720)",
+      "rights": "Educational/informational visualization with the NASA SVS credit \"NASA's Goddard Space Flight Center\"; confirm current NASA media guidance before redistribution.",
+      "redistribution_status": "approved_candidate",
+      "scientific_role": "visualization_only",
+      "delivery": "proxy",
+      "note": "Same-origin copy for the 3D globe, written to a disk cache while its size and sha256 are checked, then streamed (never held whole in memory). Visual model only: no topography, no illumination, no visibility; not terrain data."
+    },
+    {
       "id": "lola-ldem-80s-80m",
       "title": "LRO LOLA south polar DEM, 80 m/px (LDEM_80S_80M V2.0)",
       "kind": "science_elevation",
