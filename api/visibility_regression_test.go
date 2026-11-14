@@ -18,7 +18,7 @@ func TestVisibilityBoundaryRegression(t *testing.T) {
         contentType string
         want int
     }{
-        {"valid request but engine absent", validBody, "application/json", 502},
+        {"valid request but engine absent", validBody, "application/json", 503},
         {"invalid sun negative elevation", strings.Replace(validBody, `"elevation_deg":2`, `"elevation_deg":-91`, 1), "application/json", 422},
         {"azimuth equal to 360", strings.Replace(validBody, `"azimuth_deg":0`, `"azimuth_deg":360`, 1), "application/json", 422},
         {"negative azimuth", strings.Replace(validBody, `"azimuth_deg":0`, `"azimuth_deg":-1`, 1), "application/json", 422},

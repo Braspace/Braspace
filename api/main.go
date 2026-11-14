@@ -6,7 +6,6 @@ package main
 import (
  "bytes"
  "crypto/sha256"
- "context"
  "encoding/json"
  "errors"
  "fmt"
@@ -15,7 +14,6 @@ import (
  "math"
  "net/http"
  "os"
- "os/exec"
  "strings"
  "time"
  "github.com/Braspace/Braspace/api/onboard"
@@ -109,24 +107,15 @@ func routes(binary string) http.Handler {
   if err=validate(req); err!=nil { writeJSON(w,http.StatusUnprocessableEntity,map[string]string{"error":err.Error()}); return }
   normalized,err:=json.Marshal(req)
   if err!=nil { writeJSON(w,http.StatusBadRequest,map[string]string{"error":"invalid JSON"}); return }
-  ctx,cancel:=context.WithTimeout(r.Context(),2*time.Second); defer cancel()
-  cmd:=exec.CommandContext(ctx,binary)
-  cmd.Stdin=bytes.NewReader(normalized)
-  var stdout,stderr bytes.Buffer
-  cmd.Stdout=&stdout; cmd.Stderr=&stderr
-  if err=cmd.Run(); err!=nil {
-   msg:="engine execution failed"
-   if errors.Is(ctx.Err(),context.DeadlineExceeded) { msg="engine deadline exceeded" }
-   // Do not expose internal paths, source content or stderr to API clients.
-   log.Printf("engine error: %v; stderr: %.300s",err,stderr.String())
-   writeJSON(w,http.StatusBadGateway,map[string]string{"error":msg}); return
-  }
-  if _,err:=parseEngineResult(req,stdout.Bytes());err!=nil {
-   writeJSON(w,http.StatusBadGateway,map[string]string{"error":"engine returned invalid contract"}); return
+  engine:=newEngineClient(binary)
+  _,out,err:=engine.callRaw(r.Context(),req)
+  if err!=nil {
+   // Same codes as the mission routes: 503 ENGINE_UNAVAILABLE, 504 ENGINE_TIMEOUT, 502 ENGINE_ERROR.
+   writeError(w,err); return
   }
   var result map[string]any
-  if json.Unmarshal(stdout.Bytes(),&result)!=nil {
-   writeJSON(w,http.StatusBadGateway,map[string]string{"error":"engine returned invalid contract"}); return
+  if json.Unmarshal(out,&result)!=nil {
+   writeError(w,errEngineContract); return
   }
   // A reproducibility fingerprint of the exact normalized request, NOT of NASA assets.
   // Caller-supplied source identifiers are always labeled as *claimed*.
