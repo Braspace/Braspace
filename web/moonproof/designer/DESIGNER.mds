@@ -35,3 +35,11 @@
 - Source-grade visual differences remain: 400 m LOLA false-color vs the 20 m/pixel illustrative artwork; true API-supplied 3D terrain/GLB should be reviewed under PR #142.
 - No NASA approval, photorealistic LROC texture claim, RF guarantee or full-featured onboard hardware certification.
 - CI must pass at the exact final HEAD; do not merge stacked PRs before #148 owner review and new Docker/Chromium results.
+
+## Implementações especializadas integradas nesta branch
+- #164 (Mission Control/Explore) preservado literalmente no código de `screens/mission.js`, `screens/explore.js`, `screens/mission-calc.js` e CSS correspondentes, com fonte e testes próprios.
+- #163 (Compare/Recover) preservado em `screens/compare.js`, `screens/recover.js`, `screens/scenario-data.js`, `screens/scenario-calc.js`; as telas executam cálculos e explicações de critérios.
+- #160 (Kits) integrado em `screens/plan.js`, `screens/present.js` e `screens/activity.js`, com as três páginas `plan.html`, `present.html` e `activity.html` e testes de agente.
+- Os módulos `workflow.js` cobrem as telas restantes: Cockpit/Evidências/Landing/Debrief/Kit Aula simplificado. Não alegar que debrief contém uma tentativa de pouso se o simulador não forneceu a trilha.
+- Contratos corrigidos no planejamento: `/api/compare` aceita `site_ids/start_utc/duration_hours`, o CSV recebe amostras da série horária, o PDF é apenas link para passaporte, e não se chama a API onboard sem parâmetros completos do equipamento.
+- A navegação Aula deve abrir `present.html` (implementação especialista), e o planner deve abrir `plan.html`. O arquivo `learn.html` permanece um exercício adicional.
