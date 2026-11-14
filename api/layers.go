@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -173,6 +174,10 @@ func (a *assetCache) get(ctx context.Context, l *layer) ([]byte, error) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, errAssetUnavailable
+	}
+	// The SHA-256 pin already fixes the bytes; a mismatched type is still refused.
+	if ct, _, _ := mime.ParseMediaType(resp.Header.Get("Content-Type")); ct != l.Format {
+		return nil, fmt.Errorf("%w: unexpected content type %q", errAssetUnavailable, ct)
 	}
 	b, err := io.ReadAll(io.LimitReader(resp.Body, l.Bytes+1))
 	if err != nil || int64(len(b)) != l.Bytes {

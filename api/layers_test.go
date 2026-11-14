@@ -99,7 +99,11 @@ func TestLayerAssetProxyVerifiesChecksum(t *testing.T) {
 	l, h := testLayers(t)
 	ly := l.byID["lroc-color-2k"]
 	good := make([]byte, ly.Bytes) // stand-in bytes; checksum patched below
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write(good) }))
+	contentType := "image/jpeg"
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", contentType)
+		_, _ = w.Write(good)
+	}))
 	defer upstream.Close()
 	ly.SourceURL = upstream.URL
 
@@ -110,8 +114,14 @@ func TestLayerAssetProxyVerifiesChecksum(t *testing.T) {
 	if len(l.assets.data) != 0 {
 		t.Fatal("a failed fetch must not be cached")
 	}
-	// Matching checksum: served same-origin with caching headers.
+	// Right bytes but wrong declared type: refused.
 	ly.SHA256 = sha256Hex(good)
+	contentType = "text/html"
+	if rec := do(h, "GET", "/api/layers/lroc-color-2k/asset", ""); rec.Code != 502 {
+		t.Fatalf("unexpected content type must be refused: %d", rec.Code)
+	}
+	contentType = "image/jpeg; charset=binary"
+	// Matching checksum and type: served same-origin with caching headers.
 	rec := do(h, "GET", "/api/layers/lroc-color-2k/asset", "")
 	if rec.Code != 200 || rec.Header().Get("Content-Type") != "image/jpeg" || rec.Body.Len() != int(ly.Bytes) || rec.Header().Get("ETag") == "" {
 		t.Fatalf("%d %v", rec.Code, rec.Header())
