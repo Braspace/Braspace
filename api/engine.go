@@ -162,7 +162,7 @@ func parseEngineResult(req visibilityRequest, payload []byte) (engineResult, err
 	}
 	var res engineResult
 	dec := json.NewDecoder(bytes.NewReader(payload))
-	_ = dec
+	dec.DisallowUnknownFields()
 	if err := dec.Decode(&res); err != nil ||
 		res.SiteID != req.SiteID || res.EpochUTC != req.EpochUTC ||
 		res.ScienceStatus != "UNVERIFIED_INPUTS" ||
