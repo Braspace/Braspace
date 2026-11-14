@@ -40,6 +40,7 @@ type skyResponse struct {
 	StepSeconds     int              `json:"step_seconds"`
 	TerrainHorizon  []horizonSample  `json:"terrain_horizon"`
 	Samples         []skySample      `json:"samples"`
+	NextTransitions *nextTransitions `json:"next_transitions"`
 	Limitations     []string         `json:"limitations"`
 }
 
@@ -139,6 +140,15 @@ func (m *missionAPI) siteSky(w http.ResponseWriter, r *http.Request) {
 		writeError(w, errors.New("sky: sample count mismatch"))
 		return
 	}
+	var native []engineResult
+	if stride == 1 {
+		native = res
+	}
+	nt, err := findTransitions(ctx, ev, ser, from, to, native)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
 	out := make([]skySample, 0, count)
 	for k, rr := range res {
 		i := from + k*stride
@@ -151,10 +161,11 @@ func (m *missionAPI) siteSky(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, skyResponse{
 		APIVersion: missionAPIVersion, SiteID: s.ID, ScienceStatus: ser.ScienceStatus, Provenance: ser.Provenance,
 		ObserverHeightM: ser.ObserverHeightM, StartUTC: out[0].EpochUTC, EndUTC: ser.epoch(from + n).Format(time.RFC3339),
-		StepSeconds: ser.StepSeconds * stride, TerrainHorizon: ser.TerrainHorizon, Samples: out,
+		StepSeconds: ser.StepSeconds * stride, TerrainHorizon: ser.TerrainHorizon, Samples: out, NextTransitions: nt,
 		Limitations: append([]string{
 			"Angles and horizon are the stored series values, copied unchanged; nothing is interpolated.",
 			"science_status is the series state and is never promoted by this route.",
+			"next_transitions compares stored samples at the native series step only: the change happened after last_unchanged_utc and no later than epoch_utc.",
 		}, limitations...),
 	})
 }
