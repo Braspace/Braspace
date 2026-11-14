@@ -3,8 +3,9 @@
 // BR91: the relief is shaded per DEVICE pixel (bilinear heights, devicePixelRatio) instead of
 // stretching an 850×850 bitmap, and the view keeps the chosen site in the FREE area of the
 // screen (viewport minus the fixed panels laid over the map).
-import { loadRegion, loadSites } from "./data.js";
+import { loadRegion } from "./data.js";
 import { t } from "./i18n.js";
+import { southStereoForward } from "../../lab/coords.js";
 
 // Two lights (key from the upper left, soft fill from the right) + slope occlusion, grey ramp.
 const KEY = norm([-0.62, 0.52, 0.58]), FILL = norm([0.7, -0.2, 0.68]);
@@ -77,6 +78,32 @@ function overlayRects(container) {
 }
 
 /**
+ * Greedy label placement: tries centred, above, below, right, left of the anchor; drops a label that
+ * collides with a placed one or with a blocked rect (panels, markers). items: {x,y,w,h} CSS px, x/y = centre.
+ */
+export function placeLabels(items, blocked = []) {
+  const hit = (a, b) => Math.abs(a.x - b.x) * 2 < a.w + b.w && Math.abs(a.y - b.y) * 2 < a.h + b.h;
+  const out = [], taken = blocked.map(r => ({ x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }));
+  for (const it of items) {
+    for (const [ox, oy] of [[0, 0], [0, -it.h - 2], [0, it.h + 2], [it.w / 2 + 8, 0], [-it.w / 2 - 8, 0]]) {
+      const b = { ...it, x: it.x + ox, y: it.y + oy };
+      if (!taken.some(q => hit(b, q))) { out.push(b); taken.push(b); break; }
+    }
+  }
+  return out;
+}
+
+// IAU/USGS names (data/features.json, label only). Lat/lon → stereo metres with the same forward
+// transform as the sites; a failed fetch means no labels, never invented ones.
+const MAX_LABELS = 8;
+let featP = null;
+function loadFeatures() {
+  return featP ||= fetch(new URL("../data/features.json", import.meta.url)).then(r => r.ok ? r.json() : { features: [] })
+    .then(d => (d.features || []).map(f => { const [x, y] = southStereoForward(f.lat, f.lon_e); return { name: f.name, type: f.type, d: f.diameter_km, stereo_x_m: x, stereo_y_m: y }; }))
+    .catch(() => []);
+}
+
+/**
  * mountTerrain(container, { sites, selected, route, onSelect })
  *  sites: [{ id, n, name, stereo_x_m, stereo_y_m }]; route: [siteId, ...] dotted line.
  * Returns Promise<{ select(id), zoom(f), redraw(), grid, el }>.
@@ -87,15 +114,15 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
   const grid = await loadRegion();
   const cv = document.createElement("canvas"); cv.setAttribute("role", "img"); cv.setAttribute("aria-label", t("terrain.label"));
   Object.assign(cv.style, { position: "absolute", inset: "0", width: "100%", height: "100%" });
+  const labelsEl = document.createElement("div"); labelsEl.className = "mp-terrain-labels"; labelsEl.setAttribute("aria-hidden", "true");
   const layer = document.createElement("div"); Object.assign(layer.style, { position: "absolute", inset: "0", pointerEvents: "none" });
-  container.append(cv, layer);
+  container.append(cv, labelsEl, layer);
   // view: centre (metres) and span (metres across the free area's short side).
   const xs = sites.map(s => s.stereo_x_m), ys = sites.map(s => s.stereo_y_m);
   const view = { cx: xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0, cy: ys.length ? (Math.min(...ys) + Math.max(...ys)) / 2 : 0,
     span: xs.length ? Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * 1.6 + 30000 : grid.nx * grid.dx };
-  // Crater names on the map (IAU labels from web/data/sites.json "features", label only).
-  let features = [];
-  if (labels) try { features = ((await loadSites()).features || []).filter(f => !f.landing_site && Number.isFinite(f.stereo_x_m)); } catch { features = []; }
+  // Crater and mons names on the map (IAU/USGS, web/moonproof/data/features.json, label only).
+  const features = labels ? await loadFeatures() : [];
   container.dataset.features = String(features.length);
   let lastMpp = 0, lastSx = 0, lastSy = 0, lastW = 0, lastH = 0;
   let sel = selected, focus = selected, free = null, relief = null, reliefKey = "";
@@ -134,10 +161,6 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
     const vg = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .78);
     vg.addColorStop(0, "rgba(7,9,12,0)"); vg.addColorStop(1, "rgba(7,9,12,.88)"); g.fillStyle = vg; g.fillRect(0, 0, W, H);
     const toPx = (x, y) => [W / 2 + (x - sx) / mpp, H / 2 - (y - sy) / mpp];
-    g.font = "500 12.5px Manrope, system-ui, sans-serif"; g.textAlign = "center"; g.fillStyle = "rgba(242,244,245,.78)";
-    g.shadowColor = "rgba(0,0,0,.8)"; g.shadowBlur = 4;
-    for (const f of features) { const [x, y] = toPx(f.stereo_x_m, f.stereo_y_m); if (x > 0 && y > 0 && x < W && y < H) g.fillText(f.name.replace(/ crater$/i, ""), x, y); }
-    g.shadowBlur = 0;
     const pts = route.map(id => sites.find(s => s.id === id)).filter(Boolean).map(s => toPx(s.stereo_x_m, s.stereo_y_m));
     if (pts.length > 1) { g.setLineDash([1, 9]); g.lineCap = "round"; g.lineWidth = 2.4; g.strokeStyle = "#F2F4F5"; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); g.setLineDash([]); }
     layer.replaceChildren(...sites.map(s => {
@@ -150,11 +173,22 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
       return b;
     }));
     // A marker under a panel is hidden (not focusable): the site stays reachable by the ‹ › selector.
-    requestAnimationFrame(() => { for (const b of layer.children) {
-      const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      const hit = cx >= 0 && cy >= 0 && cx < W && cy < H ? document.elementFromPoint(cx, cy) : null;
-      b.dataset.covered = String(!(hit && (hit === b || b.contains(hit))) && b.getAttribute("aria-pressed") !== "true");
-    } });
+    requestAnimationFrame(() => {
+      for (const b of layer.children) {
+        const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const hit = cx >= 0 && cy >= 0 && cx < W && cy < H ? document.elementFromPoint(cx, cy) : null;
+        b.dataset.covered = String(!(hit && (hit === b || b.contains(hit))) && b.getAttribute("aria-pressed") !== "true");
+      }
+      // Names: plain text, larger features first; hidden under panels, visible markers and each other.
+      const marks = [...layer.querySelectorAll(".mp-marker:not([data-covered=true]), .mp-marker:not([data-covered=true]) .mp-marker-label")].map(e => e.getBoundingClientRect());
+      const cands = features.filter(f => !sites.some(s => s.name && s.name.startsWith(f.name))).sort((a, b) => b.d - a.d)
+        .map(f => { const [x, y] = toPx(f.stereo_x_m, f.stereo_y_m); return { f, x, y, w: f.name.length * 7 + 6, h: 16 }; })
+        .filter(c => c.x > c.w / 2 && c.y > c.h / 2 && c.x < W - c.w / 2 && c.y < H - c.h / 2);
+      const placed = placeLabels(cands, [...overlayRects(container), ...marks]).slice(0, MAX_LABELS);
+      labelsEl.replaceChildren(...placed.map(p => { const e = document.createElement("span"); e.className = "mp-feature"; e.dataset.type = p.f.type; e.textContent = p.f.name;
+        Object.assign(e.style, { left: p.x + "px", top: p.y + "px" }); return e; }));
+      container.dataset.labels = String(placed.length);
+    });
   }
   const api = { el: container, grid, view,
     select(id) { sel = id; focus = id; const s = sites.find(x => x.id === id); if (s) { view.cx = s.stereo_x_m; view.cy = s.stereo_y_m; } draw(); },

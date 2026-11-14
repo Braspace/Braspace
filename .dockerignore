@@ -2,6 +2,7 @@
 .github
 docs/*
 !docs/ASSET_LICENSE_MATRIX.md
+!docs/SCIENTIFIC_ACCEPTANCE.md
 *.md
 !README.md
 !docs/ASSET_LICENSE_MATRIX.md
@@ -9,3 +10,4 @@ docs/*
 **/.env
 **/.env.*
 .DS_Store
+!docs/SCIENTIFIC_ACCEPTANCE.md

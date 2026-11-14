@@ -8,7 +8,7 @@ import { loadSites, windowMetrics, dailySun, sealFor, apiOnline, api, loadRegion
 import { createLayerCard, statCircle, barEl, sealEl } from "../core/layers.js";
 import { t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
-import { runs, dayOf, fmtVal, mapDir, skyNext, batteryMargin, pgdaAt } from "./mission-calc.js";
+import { runs, dayOf, fmtVal, mapDir, skyNext, batteryMargin, pgdaAt, compassIndex } from "./mission-calc.js";
 import "./mission-i18n.js";
 
 const H = 3600e3, DAY = 24;
@@ -113,9 +113,11 @@ async function draw() {
 
   // ---- right column
   const right = $("right"); right.replaceChildren(await numbersCard(s, m), await nowCard(s, m));
+  // Earth compass: azimuth of the Earth at the window start, from the stored series (cur.geo); missing -> "—".
   const comp = el("div", "mc-compass"); comp.setAttribute("role", "img");
-  const az = cur.geo?.earthAz; comp.setAttribute("aria-label", t("mc.compass") + " " + deg(az));
-  comp.append(el("small", null, t("mc.compass")), el("b", null, az == null ? nd() : ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(az / 45) % 8]), el("span", "mp-coord", deg(az)));
+  const az = cur.geo?.earthAz, ci = compassIndex(az);
+  comp.setAttribute("aria-label", `${t("mc.compass")} ${ci == null ? nd() : t("mc.dir." + ci)} ${fmtVal(az, fmtNum, nd(), 0, "°")}`);
+  comp.append(el("small", null, t("mc.compass")), el("b", null, ci == null ? nd() : t("mc.dir." + ci)), el("span", "mp-coord", fmtVal(az, fmtNum, nd(), 0, "°")));
   right.append(comp);
   dock(s); frame();
 }
@@ -179,23 +181,30 @@ async function numbersCard(s, m) {
   if (!others.some(x => x.id === otherId)) otherId = others[0].id;
   const o = others.find(x => x.id === otherId), om = (await compute(o)).m;
   const c = el("article", "mp-card mc-numbers"); c.id = "card-numbers";
-  const head = el("div", "mp-layer-head"); head.append(el("h3", null, t("mc.numbers", { site: s.name })));
-  const sel = el("select"); sel.setAttribute("aria-label", t("mc.vs"));
-  for (const x of others) sel.append(new Option(`${t("mc.vs")} ${x.n} · ${x.name}`, x.id, false, x.id === otherId));
-  sel.onchange = () => { otherId = sel.value; draw(); }; sel.className = "mc-vs"; c.append(head, sel);
+  const head = el("div", "mc-num-head"); head.append(el("h3", null, t("mc.numbers", { site: `${t("ctx.site")} ${s.n}` })));
+  // Window length: the whole screen recomputes for it (state.hours). The current value is always an option.
+  const wsel = el("select", "mc-win"); wsel.setAttribute("aria-label", t("mc.window"));
+  for (const h of [...new Set([7 * DAY, 14 * DAY, 28 * DAY, hours()])].sort((x, y) => x - y)) wsel.append(new Option(t("ctx.days", { n: fmtNum(h / DAY) }), String(h), false, h === hours()));
+  wsel.onchange = () => setState({ hours: Number(wsel.value) }); head.append(wsel); c.append(head);
+  const sel = el("select", "mc-vs"); sel.setAttribute("aria-label", `${t("mc.vs")} ${o.name}`);
+  for (const x of others) { const op = new Option(`${t("mc.vs")} ${x.n}`, x.id, false, x.id === otherId); op.title = x.name; sel.append(op); }
+  sel.onchange = () => { otherId = sel.value; draw(); };
   const h = (x) => x.value == null ? null : x.value * hours() / 100;
   const both = w => w.raw.status === "COMPUTED" ? w.raw.bothPct * hours() / 100 : null;
-  const table = (title, rows, lowerBetter) => {
-    c.append(el("h4", "mp-label", title)); const tb = el("table", "mc-table");
-    const hr = tb.createTHead().insertRow(); hr.append(el("th"), el("th", null, `${s.n}`), el("th", null, `${o.n}`));
-    for (const [lab, a, b] of rows) { const tr = tb.insertRow(); tr.append(el("th", null, lab)); const ta = tr.insertCell(), tb2 = tr.insertCell();
+  const table = (title, rows, lowerBetter, withVs) => {
+    const [a, b] = title.split(" · "), hd = el("div", "mc-num-sub"), hh = el("h4", "mp-label"); hh.append(el("strong", null, a)); if (b) hh.append(el("span", null, " · " + b));
+    hd.append(hh); if (withVs) hd.append(sel); c.append(hd);
+    const tb = el("table", "mc-table"); const hr = tb.createTHead().insertRow(); hr.append(el("th"), el("th", null, `${s.n}`), el("th", null, `${o.n}`));
+    const body = tb.createTBody();
+    for (const [lab, a, b] of rows) { const tr = body.insertRow(); tr.append(el("th", null, lab)); const ta = tr.insertCell(), tb2 = tr.insertCell();
       ta.textContent = fmtVal(a, fmtNum, nd()); tb2.textContent = fmtVal(b, fmtNum, nd());
       if (a != null && b != null && a !== b) { const worse = lowerBetter ? (a > b ? ta : tb2) : (a < b ? ta : tb2); worse.classList.add("is-worse"); worse.title = t("mc.worse"); } }
     c.append(tb);
   };
-  table(t("mc.windows"), [[t("mc.sunVisible"), h(m.sunPct), h(om.sunPct)], [t("mc.earth"), h(m.earthPct), h(om.earthPct)], [t("mc.sunAndEarth"), both(m), both(om)]], false);
-  table(t("mc.risks"), [[t("mc.shadow"), m.longestDarkH.value, om.longestDarkH.value], [t("mc.loss.long"), m.longestBlackoutH.value, om.longestBlackoutH.value]], true);
-  const f = el("p", "mp-label"); f.append(sealEl(m.sunPct.seal), " " + (m.series.meta.provenance?.terrain || "") + " · " + (m.series.meta.provenance?.ephemeris || "")); c.append(f);
+  table(t("mc.windows"), [[t("mc.sunVisible"), h(m.sunPct), h(om.sunPct)], [t("mc.earth"), h(m.earthPct), h(om.earthPct)], [t("mc.sunAndEarth"), both(m), both(om)]], false, true);
+  table(t("mc.risks"), [[t("mc.shadow"), m.longestDarkH.value, om.longestDarkH.value], [t("mc.loss.long"), m.longestBlackoutH.value, om.longestBlackoutH.value]], true, false);
+  const prov = `${m.series.meta.provenance?.terrain || ""} · ${m.series.meta.provenance?.ephemeris || ""}`;
+  const f = el("p", "mp-label mc-prov"); const ft = el("span", null, prov); ft.title = prov; f.append(sealEl(m.sunPct.seal), ft); c.append(f);
   return c;
 }
 
@@ -210,9 +219,16 @@ async function nowCard(s, m) {
     if (nc.status === "COMPUTED" && Number.isFinite(nc.hours)) r = { seal: sealFor(doc.status), hours: nc.hours, kind: nc.visible ? "sunset" : "sunrise", reason: null };
     src = t("mc.now.local") + (r.reason ? "" : "");
   }
-  const head = el("div", "mp-layer-head"); head.append(el("h3", null, t("mc.now")), sealEl(r.seal)); c.append(head);
+  // The data origin (API route or stored-series fallback) lives in the tooltip; the context bar already says offline.
+  c.title = src;
+  const txt = el("div", "mc-now-txt"), head = el("div", "mc-now-head"); head.append(el("h3", "mp-label", t("mc.now")), sealEl(r.seal));
   const big = el("p", "mp-num mc-now-big"); big.textContent = r.hours == null ? nd() : `${fmtNum(Math.floor(r.hours))} h ${String(Math.round((r.hours % 1) * 60)).padStart(2, "0")}`;
-  c.append(big, el("p", null, r.hours == null ? (r.reason || t("mc.now.none")) : t("mc.now." + r.kind)), el("p", "mp-label", src));
+  txt.append(head, big, el("p", "mp-label mc-now-sub", r.hours == null ? (r.reason || t("mc.now.none")) : t("mc.now." + r.kind)));
+  const ico = el("div", "mc-now-ico"); ico.setAttribute("aria-hidden", "true");
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "-12 -12 24 24"); svg.setAttribute("width", "26"); svg.setAttribute("height", "26");
+  svg.setAttribute("fill", "none"); svg.setAttribute("stroke", "currentColor"); svg.setAttribute("stroke-width", "1.8"); svg.setAttribute("stroke-linecap", "round");
+  svg.innerHTML = '<circle r="4.2"/>' + [0, 45, 90, 135, 180, 225, 270, 315].map(a => `<path d="M0 -7.5V-10.5" transform="rotate(${a})"/>`).join("");
+  ico.append(svg); c.append(txt, ico);
   return c;
 }
 
@@ -225,7 +241,7 @@ function dock(s) {
   sel.onchange = () => setState({ site: sel.value });
   sel.onkeydown = e => { if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); setState({ site: doc.sites[(i + (e.key === "ArrowLeft" ? n - 1 : 1)) % n].id }); } };
   const row = el("div", "mc-dock-row");
-  row.append(btn("‹", t("mc.prev"), () => setState({ site: doc.sites[(i + n - 1) % n].id })), sel, btn("›", t("mc.next"), () => setState({ site: doc.sites[(i + 1) % n].id })),
+  row.append(btn("‹", t("mc.prev"), () => setState({ site: doc.sites[(i + n - 1) % n].id })), btn("›", t("mc.next"), () => setState({ site: doc.sites[(i + 1) % n].id })), sel,
     btn("−", t("mc.zout"), () => { terrain.zoom(0.7); frame(); }), btn("+", t("mc.zin"), () => { terrain.zoom(1.4); frame(); }));
   d.replaceChildren(hint, row);
 }

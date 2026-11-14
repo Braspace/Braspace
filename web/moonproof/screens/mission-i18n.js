@@ -2,6 +2,7 @@
 import { register } from "../core/i18n.js";
 register({
   en: {
+    "mc.dir.0": "N", "mc.dir.1": "NE", "mc.dir.2": "E", "mc.dir.3": "SE", "mc.dir.4": "S", "mc.dir.5": "SW", "mc.dir.6": "W", "mc.dir.7": "NW", "mc.window": "Window length",
     "mc.overview": "Overview", "mc.worse": "worse of the two", "mc.notes": "Notes", "mc.battery": "Reference battery: H1 (hypothetical)",
     "mc.sunVisible": "Sun visible", "mc.earth": "Earth", "mc.nights": "nights", "mc.longest": "longest", "mc.set": "set", "mc.rise": "rise",
     "mc.losses": "losses", "mc.loss": "goes", "mc.back": "back", "mc.altitude": "Altitude", "mc.slope": "Slope",
@@ -31,7 +32,7 @@ register({
     "ex.leg.sun": "PGDA mean solar disc visible; 0 = permanent shadow", "ex.leg.earth": "PGDA mean Earth visibility",
     "ex.leg.natural": "NASA SVS LROC WAC colour mosaic (2048 px global), no science value",
     "ex.light": "Light and contact", "ex.terrain": "Terrain", "ex.sunVis": "Sun visible", "ex.earthVis": "Earth visible", "ex.night": "Longest night",
-    "ex.pgdaSun": "Sun (PGDA mean)", "ex.pgdaEarth": "Earth (PGDA mean)",
+    "ex.pgdaSun": "Sun (PGDA mean)", "ex.pgdaLong": "long-term mean (PGDA), not this window", "ex.pgdaEarth": "Earth (PGDA mean)",
     "ex.from": "What you see from here", "ex.now": "now", "ex.compare": "Compare", "ex.land": "Land", "ex.close": "Close",
     "ex.from.ans": "The Sun is {s} the terrain horizon and Earth is {e}.", "ex.above": "{n} above", "ex.below": "{n} below",
     "ex.from.nd": "No horizon profile for this point: only the five catalogued sites have one.",
@@ -40,6 +41,7 @@ register({
     "ex.outside": "Outside the LOLA grid",
   },
   "pt-BR": {
+    "mc.dir.0": "N", "mc.dir.1": "NE", "mc.dir.2": "L", "mc.dir.3": "SE", "mc.dir.4": "S", "mc.dir.5": "SO", "mc.dir.6": "O", "mc.dir.7": "NO", "mc.window": "Duração da janela",
     "mc.overview": "Visão geral", "mc.worse": "pior dos dois", "mc.notes": "Notas", "mc.battery": "Bateria de referência: H1 (hipotética)",
     "mc.sunVisible": "Sol visível", "mc.earth": "Terra", "mc.nights": "noites", "mc.longest": "maior", "mc.set": "pôr", "mc.rise": "nasce",
     "mc.losses": "perdas", "mc.loss": "some", "mc.back": "volta", "mc.altitude": "Altitude", "mc.slope": "Declividade",
@@ -69,7 +71,7 @@ register({
     "ex.leg.sun": "Média PGDA do disco solar visível; 0 = sombra permanente", "ex.leg.earth": "Média PGDA da Terra visível",
     "ex.leg.natural": "Mosaico de cor LROC WAC do NASA SVS (global, 2048 px), sem valor científico",
     "ex.light": "Luz e contato", "ex.terrain": "Terreno", "ex.sunVis": "Sol visível", "ex.earthVis": "Terra visível", "ex.night": "Maior noite",
-    "ex.pgdaSun": "Sol (média PGDA)", "ex.pgdaEarth": "Terra (média PGDA)",
+    "ex.pgdaSun": "Sol (média PGDA)", "ex.pgdaLong": "média de longo prazo (PGDA), não esta janela", "ex.pgdaEarth": "Terra (média PGDA)",
     "ex.from": "O que se vê daqui", "ex.now": "agora", "ex.compare": "Comparar", "ex.land": "Pousar", "ex.close": "Fechar",
     "ex.from.ans": "O Sol está {s} do horizonte do relevo e a Terra {e}.", "ex.above": "{n} acima", "ex.below": "{n} abaixo",
     "ex.from.nd": "Sem perfil de horizonte para este ponto: só os cinco locais do catálogo têm.",

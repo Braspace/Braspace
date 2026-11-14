@@ -214,3 +214,66 @@ fn rejects_empty_or_overlong_site_id_and_empty_provenance() {
     req["provenance"]["terrain_dataset_id"] = json!("");
     assert!(!run(req.to_string().as_bytes()).status.success());
 }
+
+// ---- Casos trazidos do PR #205 que a main (#201) ainda não cobria ----
+
+#[test]
+fn horizon_sample_at_pole_elevation_is_accepted() {
+    let mut req = fixture();
+    req["terrain_horizon"] = json!([
+        {"azimuth_deg": 0.0, "elevation_deg": 90.0},
+        {"azimuth_deg": 180.0, "elevation_deg": -90.0}
+    ]);
+    assert!(evaluate(&req)["sun_horizon_deg"].as_f64().is_some());
+}
+
+#[test]
+fn horizon_interpolates_between_last_sample_and_first_plus_360() {
+    // Amostra em az 0.0 e outra em 359.9: o segmento de fechamento (359.9 -> 360) é curto.
+    // Em 359.95 o horizonte vale exatamente 5 (metade de 10 -> 0).
+    let mut req = fixture();
+    req["terrain_horizon"] = json!([
+        {"azimuth_deg": 0.0, "elevation_deg": 0.0},
+        {"azimuth_deg": 359.9, "elevation_deg": 10.0}
+    ]);
+    req["sun"] = json!({"azimuth_deg": 359.95, "elevation_deg": 0.0});
+    req["earth"] = json!({"azimuth_deg": 0.0, "elevation_deg": 0.0});
+    let out = evaluate(&req);
+    let h = out["sun_horizon_deg"].as_f64().unwrap();
+    assert!((h - 5.0).abs() < 1e-9, "horizonte em 359.95 deve ser 5, obtido {h}");
+    assert_eq!(out["earth_horizon_deg"], 0.0);
+}
+
+#[test]
+fn earth_azimuth_360_is_rejected_but_359_999_is_accepted() {
+    // Mesma regra de [0,360) vale para o campo `earth`, não só para `sun`.
+    let mut req = fixture();
+    req["earth"] = json!({"azimuth_deg": 359.999, "elevation_deg": 10.0});
+    assert_eq!(evaluate(&req)["earth_visible"], true);
+    req["earth"] = json!({"azimuth_deg": 360.0, "elevation_deg": 10.0});
+    assert!(!run(req.to_string().as_bytes()).status.success());
+}
+
+#[test]
+fn unit_suffix_other_than_deg_is_rejected_as_unknown_key() {
+    let mut req = fixture();
+    req["sun"] = json!({"azimuth_rad": 1.5708, "elevation_rad": 0.1745});
+    assert!(!run(req.to_string().as_bytes()).status.success());
+}
+
+#[test]
+fn negative_azimuth_in_degrees_is_rejected() {
+    let mut req = fixture();
+    req["sun"] = json!({"azimuth_deg": -10.0, "elevation_deg": 5.0});
+    assert!(!run(req.to_string().as_bytes()).status.success());
+}
+
+#[test]
+#[ignore = "lacuna #13-unidades: o motor não tem como distinguir radianos de graus sob o nome _deg; aceita e trata como grau"]
+fn radians_passed_under_deg_name_is_a_known_gap() {
+    // 0.1745 "graus" seria ~10 graus reais se fosse radiano. Esperado: recusar ou exigir unidade
+    // explícita. Hoje passa sem aviso (ver units_are_degrees_not_radians para o contrato atual).
+    let mut req = fixture();
+    req["sun"] = json!({"azimuth_deg": 1.5708, "elevation_deg": 0.1745});
+    assert!(!run(req.to_string().as_bytes()).status.success());
+}
