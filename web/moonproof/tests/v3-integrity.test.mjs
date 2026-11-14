@@ -23,10 +23,20 @@ test("specialized A-H scripts remain in place after branch reconciliation",()=>{
  for(const [page,script] of Object.entries(map)){
   assert.ok(read(page+".html").includes("screens/"+script+".js"),"specialized screen script lost: "+page);
  }
- for(const page of ["cockpit","landing","debrief","evidence","learn"]){
+ for(const page of ["learn"]){
   assert.ok(read(page+".html").includes("screens/workflow.js"),"additional screen must use source-gated adapter "+page);
  }
 });
+test("E/F/G/H specialist source screens have their original engines and code ownership",()=>{
+ for(const [screen,script] of Object.entries({cockpit:"cockpit",evidence:"evidence",landing:"landing",debrief:"debrief"})){
+  assert.ok(read(screen+".html").includes("screens/"+script+".js"));
+ }
+ for(const name of ["cockpit-model.js","evidence-model.js","landing-model.js","debrief.js"]){
+  assert.ok(read("screens/"+name).length>500);
+ }
+ assert.match(read("screens/landing.js"),/saveAttempt\(sessionStorage/);
+});
+
 test("planning API parameters match typed OpenAPI and no fabricated onboard response is sent",()=>{
  const src=read("screens/plan.js");
  assert.match(src,/site_ids: scenarios\.map/);
