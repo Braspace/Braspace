@@ -39,7 +39,12 @@ export function metricsFor(result){
  if(result?.data_status!=="AVAILABLE"||!result?.evaluation?.metrics)return null;
  const m=result.evaluation.metrics;
  const keys=["sun_visible_fraction","earth_visible_fraction","longest_continuous_dark_hours","longest_continuous_comm_gap_hours"];
- return keys.every(k=>typeof m[k]==="number"&&Number.isFinite(m[k]))?m:null;
+ // A declared AVAILABLE series is not sufficient if the numeric payload is malformed.
+ // Visibility fractions must be in [0,1]; longest gaps must fit the <=720h API window.
+ const fractions=["sun_visible_fraction","earth_visible_fraction"];
+ const gaps=["longest_continuous_dark_hours","longest_continuous_comm_gap_hours"];
+ return keys.every(k=>typeof m[k]==="number"&&Number.isFinite(m[k]))&&
+  fractions.every(k=>m[k]>=0&&m[k]<=1)&&gaps.every(k=>m[k]>=0&&m[k]<=720)?m:null;
 }
 export const api={
  sites:(fetcher)=>json("/api/sites",{},fetcher),
