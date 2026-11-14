@@ -105,18 +105,19 @@ func TestDBIngestReadbackAndManifest(t *testing.T) {
 	if _, err := ingest(ctx, db, embeddedFS(t), nil); err != nil {
 		t.Fatal(err)
 	}
-	var n int
-	_ = db.QueryRow(ctx, `SELECT count(*) FROM ephemeris_samples`).Scan(&n)
-	st, err := loadStore(embeddedFS(t))
+	// Expected rows come from the source data, so adding real series keeps this valid.
+	src, err := loadStore(embeddedFS(t))
 	if err != nil {
 		t.Fatal(err)
 	}
-	var expected int
-	for _, series := range st.series {
-		expected += len(series.Samples)
+	want := 0
+	for _, ser := range src.series {
+		want += len(ser.Samples)
 	}
-	if n != expected {
-		t.Fatalf("ephemeris rows after re-ingest = %d; expected %d from source files", n, expected)
+	var n int
+	_ = db.QueryRow(ctx, `SELECT count(*) FROM ephemeris_samples`).Scan(&n)
+	if n != want {
+		t.Fatalf("ephemeris rows after re-ingest = %d, want %d (one row per source sample)", n, want)
 	}
 }
 

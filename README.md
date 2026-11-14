@@ -1,57 +1,125 @@
-# BRASPACE | Lunar Landing Site Navigator — NASA Space Apps 2026
+# BRASPACE — Lunar Landing Site Navigator (MoonProof)
 
-BRASPACE is a six-person Brazilian team in Uberlândia, Minas Gerais, working on the [official Lunar Landing Site Navigator challenge](https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/).
+**NASA Space Apps Challenge 2026** | [Portuguese version (`README.pt-BR.md`)](README.pt-BR.md)
 
-**CURRENT STATE (2026-11-14): Engineering bootstrap, not a validated lunar-planning product.** The Go API and Rust executable classify **caller-supplied** Sun/Earth look angles relative to **caller-supplied** terrain-horizon samples. No authoritative NASA elevation file, SPICE ephemerides, geographic site selection, time-series ranking, or flight-grade prediction is implemented by this bootstrap. Every response is marked `UNVERIFIED_INPUTS`. The included example is **synthetic**, not NASA-derived.
+BRASPACE / MoonProof is an educational and engineering prototype for evaluating lunar south pole landing sites, Sun/Earth visibility windows, terrain horizon masking, and crew/consumables mission planning.
 
-## Run the existing integration
+---
 
-Requires Docker with Compose plugin:
+## Live Demo & API
 
-```sh
-docker compose up --build -d
-curl -fsS http://127.0.0.1:8080/readyz
-curl -fsS -H 'Content-Type: application/json' \
-  --data-binary @examples/visibility.synthetic.json \
-  http://127.0.0.1:8080/v1/visibility
-docker compose down
+Verified on **2026-11-14** (`HTTP 200`):
+
+- **Web App (GitHub Pages):** https://braspace.github.io/
+  - Polar Lab: https://braspace.github.io/lab.html
+  - Onboard Mission Computer: https://braspace.github.io/onboard/cockpit.html
+  - Polar Elevation Map Demo: https://braspace.github.io/polar-map-demo.html
+- **Public API:** https://braspace-api.srv1898743.hstgr.cloud
+  - Health: https://braspace-api.srv1898743.hstgr.cloud/api/health
+  - Readiness: https://braspace-api.srv1898743.hstgr.cloud/readyz
+  - Capabilities: https://braspace-api.srv1898743.hstgr.cloud/v1/capabilities
+  - Site Catalog: https://braspace-api.srv1898743.hstgr.cloud/api/sites
+
+> **Scientific honesty:** `/readyz` reports `"science_status": "UNVERIFIED_INPUTS"` and `/v1/capabilities` reports `"scientifically_validated": false`.
+
+---
+
+## Real Data vs. Simulation
+
+| NASA / External Source | Product in Repo | Status | Notes |
+|---|---|---|---|
+| **NASA LOLA (`LDEM_80S_80M`) + NAIF SPICE** | `api/sitedata/series/{connecting-ridge,malapert-massif,mons-mouton-im2,nobile-rim-1,peak-near-shackleton}.json` & `web/data/sites/*`, `web/data/terrain/*` | **PRELIMINARY** (not flight-validated) | Offline pipeline (`science/`) computes terrain horizon and Sun/Earth angles. |
+| **Synthetic demo series** | `api/sitedata/series/synthetic-demo-{a,b}.json` | **SYNTHETIC** | Labelled synthetic time series for end-to-end testing and UI demos. |
+| **Onboard consumables / battery** | `api/onboard/` & `web/onboard/` | **SIMULATION** | Educational mission computer model; not flight-certified. |
+| **NASA PGDA & JPL Horizons** | `web/data/validation/validation_{pgda,horizons}.json` | **BENCHMARK** | Reference comparison datasets for offline science checks. |
+| **NASA LROC / SVS** | `web/data/moon/lroc_color_2k.jpg` & layer proxy | **VISUAL ASSET** | See [`docs/ASSET_LICENSE_MATRIX.md`](docs/ASSET_LICENSE_MATRIX.md). |
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Browser["Static Web App<br/>(web/, GitHub Pages)"] -->|HTTPS JSON| API["Go API Server<br/>(api/, :8080)"]
+    API -->|stdin/stdout JSON| Engine["Rust Visibility Engine<br/>(engine/, braspace-lunar-engine)"]
+    API -->|SQL| DB[("PostgreSQL 16 + pgvector<br/>(compose.db.yaml)")]
+    Science["Python Science Pipeline<br/>(science/, LOLA + SPICE)"] -.->|generates offline JSON/BIN| API
+    Science -.->|generates offline JSON/BIN| Browser
 ```
 
-The response includes an `evidence_passport` with a SHA-256 of the exact normalized **caller request**, claimed source IDs, and explicit false flags for source verification and scientific validation. This is a reproducibility fingerprint **not a NASA dataset integrity certificate**. `GET /v1/capabilities` publishes exactly which scientific capabilities are not implemented.
+---
 
-Expected from the synthetic test: `science_status=UNVERIFIED_INPUTS`, `sun_visible=true`, `earth_visible=false`. These are checks of the software contract, **not scientific validation**. `GET /healthz` tests HTTP liveness; `GET /readyz` tests presence of an executable Rust engine, not NASA data readiness. No secrets or public service exposure are required; Compose binds to loopback by default.
+## Running Locally
 
-Local checks (with Go 1.23+ and Rust/Cargo available):
+### Quick Start (API + Rust Engine)
 
-```sh
-(cd api && go test ./...)
-cargo test --manifest-path engine/Cargo.toml
-cargo build --manifest-path engine/Cargo.toml
-(cd api && RUST_ENGINE_BIN=../engine/target/debug/braspace-lunar-engine go run .)
+```bash
+cp .env.example .env
+docker compose up -d --build
+curl -fsS http://127.0.0.1:8080/api/health
 ```
 
-## The six-person MVP, frozen for judging
+- **Default port:** `127.0.0.1:${BRASPACE_PORT:-8080}:8080`
+- **With PostgreSQL:** `docker compose -f compose.yaml -f compose.db.yaml up -d --build`
+- **With optional pgvector metadata search:** `docker compose -f compose.yaml -f compose.db.yaml -f compose.vector.yaml up -d --build`
+- **Environment variables (by name):** `BRASPACE_PORT`, `CORS_ALLOWED_ORIGINS`, `POSTGRES_PASSWORD` (see [`.env.example`](.env.example) and [`docs/DEPLOY.md`](docs/DEPLOY.md)).
 
-- Select **three traceable candidate coordinates** and one real NASA LOLA terrain source; record IDs, frames, physical units, checksums and license/credit.
-- Produce **one reproducible terrain skyline** from real LOLA elevation at a named site, then evaluate Sun and Earth from approved SPICE kernels, with independent comparison and error budget.
-- Compare three sites with transparent values, not fabricated single-score certainty; display unknown/unvalidated measures as unavailable.
-- Present the mission result through an accessible UI and a **maximum seven-slide** reviewable demo; independently verify anonymous public access.
-- Archive immutable source, tests, evidence, AI-assistance disclosure and the authorized NASA submission confirmation.
+---
 
-Detailed criteria: [MVP scope](docs/MVP_SCOPE.md), [Architecture and ADR](docs/architecture.md), [Competitor audit](docs/COMPETITOR_AUDIT.md), [Scientific acceptance](docs/SCIENTIFIC_ACCEPTANCE.md), [Team evidence sync](docs/TEAM_SYNC.md), [Submission checklist](docs/SUBMISSION_CHECKLIST.md).
+## Testing
 
-## What would make BRASPACE genuinely different?
+All suites verified against `main` (`0e646c3c50ad665c34013415809e951e489a3b0f`):
 
-Our proposed **Mission Evidence Passport** joins a Pareto-style mission trade-off explorer, constraint-by-constraint explanations, reproducibility fingerprints (source checksum, frame, epoch, algorithm, commit SHA), stress-testing the decision under landing/height/terrain uncertainty, and a teaching view that clearly separates measurements from assumptions. Several competitors already provide parts of this; the differentiator must be the **end-to-end audit trail and human-readable scientific honesty**, not an unsubstantiated claim to be first or more accurate.
+| Suite | Command | Result |
+|---|---|---|
+| **Web (Node test runner)** | `npm --prefix web test` | 74 passed, 0 failed |
+| **Onboard Cockpit** | `node --test web/onboard/test/*.mjs` | 49 passed, 0 failed, 1 skipped |
+| **Go API** | `cd api && go test ./...` | `api` & `api/onboard` pass |
+| **Rust Engine** | `cd engine && cargo test` | 3 unit + 6 integration passed |
+| **Python Science** | `python3 -m unittest discover -s science/tests` | 21 tests OK |
+| **Python Root** | `python3 -m unittest discover -s tests` | 9 tests OK |
 
-**IMPORTANT:** These advanced features are roadmap items, not currently shipped or validated. Do not represent these ideas, screenshots, example figures, or AI-assisted artifacts as outputs from NASA or flight-qualified software.
+See [`docs/TESTING.md`](docs/TESTING.md) for details.
 
-## Team / ownership
+---
 
-Lead/integration @gustavofullstack; data @maccachera; Rust science @joeljato; Go backend @gfreiresjrp; UX @lisanogueira; QA/release @Ninzinhu. Official tracking is GitHub Issues [#1–#43](https://github.com/Braspace/Braspace/issues), with eight lead issues [#7](https://github.com/Braspace/Braspace/issues/7), [#8](https://github.com/Braspace/Braspace/issues/8), [#9](https://github.com/Braspace/Braspace/issues/9), [#10](https://github.com/Braspace/Braspace/issues/10), [#11](https://github.com/Braspace/Braspace/issues/11), [#12](https://github.com/Braspace/Braspace/issues/12), [#37](https://github.com/Braspace/Braspace/issues/37), [#43](https://github.com/Braspace/Braspace/issues/43).
+## Repository Structure
 
-Independent open-source projects were consulted for **ideas and gap analysis only**. No competitor source code, datasets, or images were copied into this repository by this change. Respect upstream license notices if future code/data is reused.
+| Path | Purpose |
+|---|---|
+| `api/` | Go HTTP API server (`braspace.mission.v1`), OpenAPI spec (`api/openapi.json`), site catalog & series (`api/sitedata/`). |
+| `engine/` | Rust deterministic visibility engine (`braspace-lunar-engine`). |
+| `web/` | Static frontend, Polar Lab (`lab.html`), Onboard Cockpit (`onboard/cockpit.html`), polar map demo (`polar-map-demo.html`), and precomputed data (`web/data/`). |
+| `science/` | Python offline pipeline for NASA LOLA DEMs, NAIF SPICE kernels, and PGDA/Horizons benchmarks. |
+| `docs/` | Architecture, API reference, data provenance, testing, deploy, and team documentation ([`docs/README.md`](docs/README.md)). |
+| `scripts/` | Audit, smoke-test (`smoke-publico.sh`), and verification scripts. |
+| `tests/` | Repository-level Python unit tests. |
+| `compose*.yaml` | Docker Compose definitions for API, PostgreSQL, and optional pgvector. |
 
-## Responsibility and limits
+---
 
-Not affiliated with or endorsed by NASA. This educational prototype is **not suitable for flight operations**, autonomous landing, energy or communications certification. Human review is required for final submission and scientific claims. AI-assisted code/documentation is disclosed in the submission checklist.
+## Team & Roles
+
+From [`docs/TEAM_ROLES_AND_HANDOFFS_2026.md`](docs/TEAM_ROLES_AND_HANDOFFS_2026.md):
+
+- **Gustavo** — Integration, Infrastructure & Release
+- **Gabriel Maccachero** — Data & NASA Sources
+- **Gabriel Freire** — Backend API & Database
+- **Joel** — Rust Engine & Scientific Calculations
+- **Heloísa** — UX/UI & Frontend
+- **João Victor** — QA & Onboard Mission Computer
+
+---
+
+## License & NASA Credits
+
+- Code: [MIT License](LICENSE) (`Copyright (c) 2026 Braspace`).
+- NASA & external assets: see [`docs/ASSET_LICENSE_MATRIX.md`](docs/ASSET_LICENSE_MATRIX.md) and [`docs/ATTRIBUTION_AND_LICENSES.md`](docs/ATTRIBUTION_AND_LICENSES.md).
+
+---
+
+## Honest Limitations
+
+- **Not flight-certified:** `/readyz` reports `UNVERIFIED_INPUTS` and `/v1/capabilities` reports `scientifically_validated: false`.
+- **Partial series coverage:** `/api/health` reports `16` catalog sites, of which `7` have stored time series (`5` `PRELIMINARY`, `2` `SYNTHETIC`); the remaining `9` sites have no stored visibility series yet.
+- **Offline science pipeline:** LOLA + SPICE computations run offline in `science/` and are loaded as static JSON/BIN artifacts rather than computed dynamically per HTTP request.
