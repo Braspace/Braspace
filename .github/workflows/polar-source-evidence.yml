@@ -1,0 +1,33 @@
+name: Polar source provenance integrity
+
+on:
+  pull_request:
+    paths:
+      - "data/POLAR_SOURCE_EVIDENCE.json"
+      - "docs/POLAR_DATA_INGESTION.md"
+      - "scripts/validate_polar_source_evidence.py"
+      - "tests/test_polar_source_evidence.py"
+      - ".github/workflows/polar-source-evidence.yml"
+  push:
+    branches: [main]
+    paths:
+      - "data/POLAR_SOURCE_EVIDENCE.json"
+      - "scripts/validate_polar_source_evidence.py"
+      - "tests/test_polar_source_evidence.py"
+
+permissions:
+  contents: read
+
+jobs:
+  provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check catalog integrity (not scientific validation)
+        run: python3 scripts/validate_polar_source_evidence.py
+      - name: Fail-closed regression tests
+        run: python3 -m unittest discover -s tests -p 'test_polar_source_evidence.py'
