@@ -35,3 +35,5 @@ function render() {
 setLang(pickLang(getState().lang));
 document.getElementById("lang").addEventListener("click", () => { const l = lang() === "en" ? "pt-BR" : "en"; setState({ lang: l }); setLang(l); render(); });
 render();
+// Background: the same NASA LOLA relief as the other screens (no markers); the page works without it.
+import("../core/terrain.js").then(m => m.mountTerrain(document.getElementById("terrain"), { labels: false })).catch(() => {});
