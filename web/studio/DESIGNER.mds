@@ -1,0 +1,36 @@
+# BRASPACE MoonProof — DESIGNER.mds
+## Proveniência do projeto visual
+Este conjunto foi derivado de docs/TEAM_MEETING_HELOISA_2026-11-14.md, docs/GAMIFIED_LUNAR_UX_AND_HUB.md, código web/lab/ da Heloísa já presente na main e requisitos relatados pelo usuário. O artefato Claude QV5ykVW5q9HvyZsH68SPf1 aparece no navegador, mas seu prompt ou código interno não estava disponível para extração. **Não é transcrição do system prompt, nem reprodução certificada de todas as telas originais.** É especificação nova para integração e revisão por @lisanogueira.
+
+## Product brief
+BRASPACE / NASA Space Apps 2026 / Lunar Landing Site Navigator no Polo Sul. Público: estudantes, pesquisadores, educadores. Objetivo: explorar e comparar Sol/Terra em relação ao horizonte; replanejar após atrasos; apresentar riscos, dados e limitações. Coexistência com web/lab e web/onboard, sem substituir arquivos e dados da equipe.
+
+## Screen map
+- 01 Mission Overview — designer/01-overview.designer.mds
+- 02 Explore the Pole — designer/02-explore.designer.mds
+- 03 Compare Sites — designer/03-compare.designer.mds
+- 04 Recover a Mission — designer/04-recover.designer.mds
+- 05 Science & Engineering — designer/05-science.designer.mds
+- 06 Evidence & Data — designer/06-evidence.designer.mds
+- 07 Learn & Teach — designer/07-learn.designer.mds
+
+## Tokens visuais
+- Background lunar: #070e1b; cards: #122037; contornos: #2c435d.
+- Acento ciano: #73d5ef; indicadores textuais de ciência em âmbar #ffcf95.
+- Desktop: sidebar 238px + conteúdo flexível; mobile: navegação horizontal e cartões empilhados.
+- Tipografia de sistema; legendas de tabela e unidades explícitas; aria-live, skip-link, foco visível e reduce-motion.
+
+## Estados e integridade
+- API em mesma origem, sem credenciais no browser.
+- Não gerar observações ou números de comparação quando não há série/dados AVAILABLE.
+- UTC obrigatório; não corrigir silenciosamente janelas fora da cobertura ou da grade.
+- Diferenciar modelo sintético do onboard de observação NASA derivada e ainda PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED.
+- Nunca interpretar visibilidade geométrica como RF garantido ou resultado didático como pouso validado.
+- Dados da API chegam ao DOM via textContent, sem HTML dinâmico.
+- Unidades, fonte, ephemeris ID, MOON_ME, SHA e limitações ficam auditáveis.
+
+## Implementação
+web/studio/index.html, web/studio/studio.css, web/studio/app.js, web/studio/api.js; servidos por web/dev-server.mjs em allowlist explícita. Testes web/tests/studio-api.test.mjs e web/tests/studio-routes.test.mjs.
+
+## Critérios de revisão
+@lisanogueira: fluxo e fidelidade ao artefato original; @Ninzinhu: mobile e acessibilidade; @gfreiresjrp: contratos API; @joeljato: física e alegações de validação; equipe: PR e CI do HEAD final. Manter o repositório privado, preparando link público do demo separadamente.
