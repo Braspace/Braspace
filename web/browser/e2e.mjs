@@ -77,6 +77,11 @@ try{
  await mobile.screenshot({path:path.join(out,"polar-lab-mobile.png"),fullPage:true});
  const overflow=await mobile.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
  assert(overflow.width<=overflow.viewport+4,"mobile horizontal overflow: "+JSON.stringify(overflow));
+ const mobileCockpit=await mobile.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});
+ assert(mobileCockpit?.status()===200,"mobile cockpit HTTP status");
+ await mobile.locator("nav.tabs button[data-tab='status']").click();
+ assert((await mobile.locator("#views").innerText()).length>80,"mobile cockpit status empty");
+ await mobile.screenshot({path:path.join(out,"onboard-cockpit-mobile.png"),fullPage:true});
  assert(errors.length===0,"browser JS errors: "+errors.join(" | "));
  console.log("PASS Chromium Polar Lab desktop+mobile navigation, disclaimers, evidence and screenshots",out);
 }catch(e){console.error("FAIL Chromium QA",e?.stack||e);console.error(diagnostics);process.exitCode=1;}
