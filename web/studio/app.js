@@ -13,6 +13,64 @@ const meta={
  learn:["Learn & teach","Educational exercises tied to source evidence and explicit assumptions."]
 };
 let catalog=[];
+let comparisonSnapshot=null;
+const lessonSteps=[
+ ["If the Earth is visible above the terrain, is an RF link guaranteed?",
+  "No. Geometric line-of-sight is necessary but insufficient; antennas, power, frequencies, link budget and ground networks must also work."],
+ ["Why can a nearby ridge make sunlight scarce at the lunar South Pole?",
+  "The Sun remains low near the horizon. Terrain can hide the solar disc even when a flat-horizon model suggests sunlight."],
+ ["Does a successful educational Landing Lab touchdown certify an Artemis landing site?",
+  "No. A hypothetical 3-DOF simulator cannot resolve unmodeled small obstacles, spacecraft design or mission safety."],
+ ["What must you verify before comparing two lunar landing regions?",
+  "Use the same UTC time window and sampling interpretation. Check sources, coverage, uncertainty and whether each site actually has stored series."]
+];
+let lessonStep=0;
+function setLayer(container,layer){
+ if(!container||!["answer","why","proof"].includes(layer))return;
+ for(const b of container.querySelectorAll("[data-layer]")){
+  const selected=b.dataset.layer===layer;
+  b.setAttribute("aria-pressed",selected?"true":"false");
+ }
+ for(const panel of container.querySelectorAll("[data-layer-panel]"))panel.hidden=panel.dataset.layerPanel!==layer;
+ container.dataset.activeLayer=layer;
+}
+for(const container of document.querySelectorAll(".layer-card")){
+ for(const button of container.querySelectorAll("[data-layer]"))button.addEventListener("click",()=>setLayer(container,button.dataset.layer));
+ setLayer(container,container.dataset.initialLayer||"answer");
+}
+function selectExperience(role){
+ const opening={public:"answer",educator:"why",researcher:"proof"}[role]||"answer";
+ document.body.dataset.role=role;
+ el("role").value=role;
+ for(const container of document.querySelectorAll(".layer-card"))setLayer(container,opening);
+ if(role==="educator")switchScreen("learn");
+ else if(role==="researcher")switchScreen("compare");
+ else switchScreen("overview");
+ setFeedback("Experience selected by you: "+role+". Explanation starts at "+opening+"; every card remains independently adjustable.");
+}
+for(const button of document.querySelectorAll("[data-task]"))button.addEventListener("click",()=>selectExperience(button.dataset.task));
+function showLesson(){
+ el("lesson-question").textContent="Question "+(lessonStep+1)+" / "+lessonSteps.length+": "+lessonSteps[lessonStep][0];
+ el("lesson-answer").textContent=lessonSteps[lessonStep][1];
+ el("lesson-answer").hidden=true;
+}
+el("reveal-answer").addEventListener("click",()=>{el("lesson-answer").hidden=false;});
+el("next-question").addEventListener("click",()=>{
+ lessonStep=(lessonStep+1)%lessonSteps.length;showLesson();
+});
+showLesson();
+el("export-compare").addEventListener("click",()=>{
+ if(!comparisonSnapshot)return;
+ const payload={export_type:"BRASPACE_MOONPROOF_GO_COMPARE",exported_at_utc:new Date().toISOString(),
+  assurance:"NOT NASA CERTIFIED. No independent scientific validation is inferred.",
+  request:comparisonSnapshot.request,raw_api_response:comparisonSnapshot.response};
+ const blob=new Blob([JSON.stringify(payload,null,2)+"\n"],{type:"application/json"});
+ const url=URL.createObjectURL(blob),link=document.createElement("a");
+ link.href=url;link.download="moonproof-compare-evidence.json";
+ document.body.append(link);link.click();link.remove();
+ URL.revokeObjectURL(url);
+});
+
 
 function setFeedback(message){el("feedback").textContent=message;}
 function setConnection(message){el("connection").textContent=message;}
@@ -28,6 +86,9 @@ function pct(v){return typeof v==="number"&&Number.isFinite(v)?(v*100).toFixed(1
 function selected(){return catalog.find(s=>s.id===el("site").value);}
 function params(){return {id:el("site").value,utc:el("epoch").value,hours:el("hours").value};}
 function clearData(){
+ comparisonSnapshot=null;
+ el("export-compare").disabled=true;
+ el("compare-answer").textContent="Run the API comparison to read available results.";
  emptyTable("sky-body","No API sky samples loaded.",5);
  emptyTable("compare-body","No comparison run with these parameters.",6);
  emptyTable("recover-body","No scenario run with these parameters.",6);
@@ -115,6 +176,11 @@ async function showCompare(){
  setFeedback("Requesting equal-window comparison from Go API…");
  const result=await api.compare(req);
  if(!Array.isArray(result.results)||typeof result.scientifically_validated!=="boolean")throw new Error("INVALID_COMPARE_RESPONSE");
+ comparisonSnapshot={request:req,response:result};
+ el("export-compare").disabled=false;
+ el("export-note").textContent="Download includes the request and unchanged API response with all source status and limitations.";
+ const first=result.results.find(item=>metricsFor(item));
+ el("compare-answer").textContent=first?"For "+(first.site?.name||first.site?.id||"a covered site")+", Sun is geometrically visible in "+pct(metricsFor(first).sun_visible_fraction)+" of stored samples; assess your own constraints and evidence before judging suitability.":"None of the requested regions has AVAILABLE metrics for this exact window.";
  const body=el("compare-body");body.replaceChildren();
  for(const site of result.results){
   const m=metricsFor(site);
@@ -167,12 +233,8 @@ async function showEvidence(){
 }
 for(const button of nav)button.addEventListener("click",()=>switchScreen(button.dataset.screen));
 for(const button of document.querySelectorAll("[data-go]"))button.addEventListener("click",()=>switchScreen(button.dataset.go));
-el("role").addEventListener("change",event=>{
- const allowed=["public","researcher","educator"];const role=event.target.value;
- document.body.dataset.role=allowed.includes(role)?role:"public";
- if(role==="educator")switchScreen("learn");
- if(role==="researcher")switchScreen("evidence");
-});
+el("role").addEventListener("change",event=>selectExperience(event.target.value));
+
 for(const id of ["site","epoch","hours","site-two","site-three"])el(id).addEventListener("change",()=>{
  if(id==="site")updateTimeFromSeries();else {clearData();setFeedback("Parameters changed. Run a new API request for these parameters.");}
 });
