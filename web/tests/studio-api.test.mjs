@@ -31,6 +31,21 @@ test("comparison numbers appear ONLY when data_status is AVAILABLE",()=>{
  assert.equal(metricsFor({data_status:"AVAILABLE",evaluation:{metrics}})?.sun_visible_fraction,0.45);
  assert.equal(metricsFor({data_status:"AVAILABLE",evaluation:{metrics:{sun_visible_fraction:0.45}}}),null);
 });
+test("malformed AVAILABLE metrics fail closed: invalid percentages and gap durations render as unavailable",()=>{
+ const valid={sun_visible_fraction:0,earth_visible_fraction:1,longest_continuous_dark_hours:0,longest_continuous_comm_gap_hours:720};
+ const wrap=metrics=>({data_status:"AVAILABLE",evaluation:{metrics}});
+ assert.deepEqual(metricsFor(wrap(valid)),valid,"zero and inclusive bounds are valid");
+ for(const [key,value] of [
+  ["sun_visible_fraction",-0.01],["sun_visible_fraction",1.01],
+  ["earth_visible_fraction",-0.1],["earth_visible_fraction",1.1],
+  ["longest_continuous_dark_hours",-1],["longest_continuous_dark_hours",721],
+  ["longest_continuous_comm_gap_hours",-1],["longest_continuous_comm_gap_hours",721],
+  ["sun_visible_fraction",NaN],["earth_visible_fraction",Infinity],
+ ]){
+   assert.equal(metricsFor(wrap({...valid,[key]:value})),null,`${key}=${value} cannot be displayed`);
+ }
+});
+
 test("forged VALIDATED and missing provenance cannot promote the badge",()=>{
  const p={terrain_sha256:"a".repeat(64),ephemeris_id:"DE440",frame:"MOON_ME"};
  assert.match(validationBadge({scientifically_validated:false,science_status:"VALIDATED",provenance:p}),/UNVERIFIED/);
