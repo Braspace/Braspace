@@ -1,0 +1,96 @@
+# G-debrief · Debrief do pouso
+
+**Pergunta que a tela responde**
+Como foi o pouso, por que o combustível acabou rápido (ou sobrou) e o que mudar na próxima tentativa?
+
+**Quem usa e em que camada abre**
+- Público-alvo: exploradores e alunos após uma tentativa no Landing Lab.
+- Camada em que abre: **1 Resposta** (veredito do pouso e 4 métricas) + **2 Por quê** (gráfico de velocidade de descida e pontos `1` e `2` na trajetória), com acesso à **3 Prova** (limites e lição).
+
+**Layout**
+- **Desktop (1440×900):**
+  - **Topo:** Barra de navegação global em pílulas (`Explorar`, `Comparar`, `Replanejar`, `Cockpit`, `Evidências`, `Landing Lab` ativo em lilás; ajuda `?`, idioma `BR`/`EN`). Logo abaixo, barra de contexto (`Landing Lab · Debrief • Missão/Sítio • tentativa N`, selo `SIMULAÇÃO`, botão `Alterar`).
+  - **Coluna esquerda:**
+    - Cartão de resumo (`Como foi o pouso?`, ícone `✓` ou `✕`, veredito em 1 frase e explicação causal).
+    - 4 pílulas brancas de telemetria final (`Velocidade vertical`, `Distância do alvo`, `Inclinação do solo`, `Combustível no fim`) com selo `OK` ou `BAIXO`/`FALHA`.
+    - Cartão de gráfico de barras (`Velocidade de descida`, intervalo `a cada 7 s`, destaque em laranja para o pico).
+  - **Centro:** Mapa lunar com trajetória real (linha tracejada branca com marcadores `Início`, `1`, `2`, ponto de toque `✓`) comparada à `rota ideal` (linha tracejada jade) e zona-alvo.
+  - **Coluna direita:**
+    - Cartão `Regras do pouso` (contador `X de 7`, lista de 7 critérios com `OK`/`BAIXA`/`FALHA`, nota de rodapé).
+    - Cartão `Na próxima tentativa` (3 passos numerados + link para lição `Gravidade e frenagem`).
+  - **Rodapé central:** 3 botões em pílula (`Tentar de novo`, `Comparar tentativas`, `Explorar <sítio>`).
+- **Celular (390×844):**
+  - Mapa com trajetória no topo; resumo, pílulas de métricas, gráfico, regras e ações empilhados na folha inferior sem rolagem lateral.
+
+**Componentes**
+- `ShellNav` + `BarraContexto`: navegação global e contexto da tentativa.
+- `CartaoResumoPouso`: veredito (`✓` verde ou `✕` vermelho) e diagnóstico textual. Estados: pouso seguro, pouso com alerta, falha.
+- `PilulaMetricaPouso` (×4): valor final + selo `OK` | `BAIXO` | `FALHA`.
+- `GraficoVelocidadeDescida`: barras verticais por intervalo de tempo, destacando picos acima do limite.
+- `MapaTrajetoriaDebrief`: terreno + rota real vs. rota ideal + marcadores de eventos.
+- `CartaoRegrasPouso`: checklist de 7 regras com contador e selo por item.
+- `CartaoProximaTentativa`: recomendações acionáveis + link para `evidence.html`.
+- `BarraAcoesDebrief`: `Tentar de novo`, `Comparar tentativas`, `Explorar <sítio>`.
+
+**Textos**
+| pt-BR | en |
+|---|---|
+| Debrief do pouso | Landing Debrief |
+| Como foi o pouso? | How was the landing? |
+| Pousou, mas com pouco combustível. | Landed, but low on fuel. |
+| Velocidade vertical | Vertical speed |
+| Distância do alvo | Distance from target |
+| Inclinação do solo | Ground slope |
+| Combustível no fim | Remaining fuel |
+| Velocidade de descida / a cada 7 s | Descent speed / every 7 s |
+| rota ideal | ideal route |
+| Regras do pouso | Landing rules |
+| Limites definidos no cenário educativo. | Limits defined in the educational scenario. |
+| Na próxima tentativa | Next attempt |
+| Gravidade e frenagem | Gravity and braking |
+| Tentar de novo / Comparar tentativas / Explorar | Try again / Compare attempts / Explore |
+| Landing Lab · Debrief | Landing Lab · Debrief |
+| Alterar / SIMULAÇÃO | Change / SIMULATION |
+| Início · 600 m | Start · 600 m |
+| Dentro da zona-alvo / Descida lenta no toque / Pouco movimento lateral / Solo pouco inclinado / Local iluminado / Terra à vista / Reserva de combustível | Inside target zone / Slow descent at touchdown / Low lateral movement / Low ground slope / Lit site / Earth in view / Fuel reserve |
+
+**Dados**
+| Elemento | Fonte exata (arquivo ou rota e campo) | Selo | O que mostrar sem dado |
+|---|---|---|---|
+| Telemetria final e histórico da descida | Estado da última tentativa de `web/lab/physics.js` (`stepFixed`, gravado pela tela F em `sessionStorage`, chave `moonproof.landing.attempts`) | `SIM` | `—` com selo `N/D` |
+| Nome e coordenadas do sítio | `web/data/sites.json` (`sites[].id`, `name`, `lat`, `lon`) ou `GET /api/sites` | `PRE` | `—` com selo `N/D` |
+| Iluminação e visibilidade da Terra no sítio | `web/data/sites.json` (`metrics.sun_center_visible_pct`, `metrics.earth_center_visible_pct`) | `PRE` | `—` com selo `N/D` |
+| Regras do pouso (limites) | Padrão editável do cenário educativo (`core/state.js`) | `SIM` | `—` |
+
+**Interações**
+- Clique em `Tentar de novo` volta para `landing.html` no mesmo sítio.
+- Clique em `Comparar tentativas` abre histórico/comparação de tentativas.
+- Clique em `Explorar <sítio>` abre `explore.html?site=<id>`.
+- Clique em `Gravidade e frenagem` abre `evidence.html#lessons`.
+
+**Ligações**
+- `landing.html` (`F-landing-lab`), `explore.html` (`B-explorar`), `evidence.html` (`H-evidence`).
+
+**Diferenças entre o desenho e a tela real**
+1. **Nenhum número fixo:** `−1,9 m/s`, `38 m`, `3,2°`, `9%`, `31%`, `22 s`, `SR-02` são ilustrativos; vêm da simulação real em `physics.js`.
+2. **Selo `VAL`:** nunca aparece; simulação de pouso é `SIM` e terreno é `PRE`.
+3. **Locais reais:** exibe o nome real do sítio de `web/data/sites.json`.
+4. **Bateria/combustível:** valores do modelo educativo `physics.js`, rotulados `SIM`.
+5. **Regras:** limites do cenário educativo rotulados como "assumed limit".
+6. **Sem domínio inventado:** link usa URL local com query string.
+7. **Dado real:** fontes de terreno citam `web/data/` (LOLA 80 m reamostrado).
+8. **Landing Lab:** lê exclusivamente a saída de `web/lab/physics.js`.
+
+**Critérios de aceite**
+- Exibe os dados reais da última tentativa do `landing.html` (ou estado vazio honesto `N/D` se aberto direto sem tentativa).
+- Nenhum valor fixo do desenho (`SR-02`, `38 m`, `9%`) hardcoded.
+- Funciona em `1440×900` e `390×844` sem rolagem horizontal.
+
+
+**Correções feitas pela implementação (BR80)**
+1. Sem tentativa no `sessionStorage`, G mostra "Nenhuma tentativa para mostrar", selo `N/D` e leva a F; nenhum número é exibido.
+2. As 7 regras vêm de `evaluateRules`: dado ausente vira `N/D`, nunca aprovado. O contador é `n de 7` real.
+3. O veredito tem 6 casos (`safe`, `lowfuel`, `warn`, `hard`, `crash`, `out`); o ícone é ✓ só em `safe`.
+4. A "rota ideal" é a reta do início ao centro da zona-alvo (referência geométrica) e está dita assim na camada Prova.
+5. O gráfico agrupa o pico por intervalo do traço (múltiplo de 0,5 s), sem fixar `7 s`.
+6. `Comparar tentativas` abre a tabela das tentativas da sessão (`?compare=1`).

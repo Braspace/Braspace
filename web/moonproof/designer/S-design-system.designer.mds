@@ -1,0 +1,42 @@
+# S · Design system
+
+**Pergunta que a tela responde:** com que peças toda tela do MoonProof é montada?
+
+**Quem usa e em que camada abre:** quem constrói as telas (agentes e pessoas). Não é tela do produto; vira `core/tokens.css` e `core/components.css`.
+
+**Layout:** referência `ref/front/heloisa-telas/S-design-system.png`: cabeçalho com princípios, painel "Componentes sobre o terreno", cores, tipografia, botões, medidas. Celular: as mesmas peças; a navegação vira barra inferior (≤700 px).
+
+**Componentes**
+- Navegação em pílulas (`.mp-pill`; ativa = Jade com `aria-current`; Landing Lab = `.is-sim` lilás).
+- Pílula branca (`.mp-pill.is-white`) e pílula selecionada (Jade).
+- Cartão preto de dados (`.mp-card`, `#050607`): só números.
+- Cartão de vidro (`.mp-glass`, `rgba(12,15,18,.58)` blur 22): explicação e ação.
+- Selos (`.mp-seal[data-seal]`): `VAL` contorno cheio, `PRE` contorno cheio (estado preliminar), `EST` tracejado, `SIM` lilás hachurado, `N/D` cinza hachurado, `FALHA` vermelho com ✕. Nunca só pela cor.
+- Círculo de estatística com 4 satélites (`statCircle`).
+- Marcadores numerados (`.mp-marker`, 44 px, selecionado com anel Jade) e rota pontilhada (`mountTerrain`).
+- Chips de camada "1 Resposta · 2 Por quê · 3 Prova" (`.mp-chip`, `aria-pressed`).
+- Doca inferior: anterior, seletor central, próximo, zoom.
+
+**Textos:** princípios — pt-BR "Mapa primeiro. Uma pergunta por tela." / en "Map first. One question per screen."; "O terreno ocupa a tela: painéis nas bordas" / "Terrain fills the screen; panels at the edges"; "Cada tela responde a uma pergunta" / "Each screen answers one question"; "Todo número diz de onde vem" / "Every number says where it comes from". Camadas: Resposta/Answer, Por quê/Why, Prova/Proof.
+
+**Dados**
+| elemento | fonte exata | selo | sem dado |
+|---|---|---|---|
+| cores, tipos, medidas | `core/tokens.css` (valores do artefato) | — | — |
+| números de exemplo do desenho (+1.832 m, 71%, 46 h, SR-02) | nenhuma: ilustrativos | — | não entram no código |
+
+**Interações:** foco visível Jade (`:focus-visible`, contorno 2 px com folga 3 px); alvo mínimo 44 px; pílulas e chips por teclado (botões e links nativos).
+
+**Ligações:** base de todas as telas A–H, V3 e kits.
+
+**Diferenças entre o desenho e a tela real**
+- Números do painel (SR-02 · 14 mar 2027, +1.832 m, 238/161, 46/68, 71%, 3 noites, D2/D4) são ilustrativos: não existem no código; o teste `core-no-design-numbers` falha se aparecerem.
+- Selo novo `PRE` (não está no desenho): o dado LOLA+SPICE é "PRELIMINARY not NASA-reviewed"; mesmo estilo de contorno do "dado real". `VAL` só com origem `VALIDATED` (hoje nada).
+- Fontes Manrope e IBM Plex Mono: não foram trazidas para `fonts/` nesta entrega; a pilha cai para a fonte do sistema (CSP `font-src 'self'`, sem servidor externo).
+- Relevo do desenho é render procedural; a tela usa o sombreamento do LOLA 400 m real.
+
+**Critérios de aceite**
+- [ ] `tokens.css` tem as 6 cores base, as 6 de ciência, as 7 escalas de tipo e as medidas 26/18/999/44/28.
+- [ ] cada selo tem padrão de borda ou preenchimento diferente, além da cor.
+- [ ] `sealFor` só devolve `VAL` para `VALIDATED` (`tests/core-seal.test.mjs`).
+- [ ] nenhum número do desenho no código (`tests/core-no-design-numbers.test.mjs`).

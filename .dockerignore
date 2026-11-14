@@ -1,9 +1,10 @@
 .git
 .github
-docs
-data
+docs/*
+!docs/ASSET_LICENSE_MATRIX.md
 *.md
 !README.md
+!docs/ASSET_LICENSE_MATRIX.md
 **/target
 **/.env
 **/.env.*

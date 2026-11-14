@@ -138,3 +138,8 @@ body.reduced * { transition: none !important; animation: none !important; }
   .legend { max-width: 60%; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+.seal { margin-left: 8px; padding: 1px 8px; border-radius: 99px; border: 1px solid #5b6b7d; color: #c7d2de; font-size: 11px; }
+.seal.unverified { border-color: #b8860b; color: #ffd166; }
+.seal.validated { border-color: #1f7a5a; color: #7dffd0; }
+.seal.offline { border-color: #5b6b7d; }

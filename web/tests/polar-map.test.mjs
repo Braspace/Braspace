@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
-import {latLonToPixel,pixelToLatLon} from "../polar-map.js";
+import {latLonToPixel,pixelToLatLon,labelBox,countGraticuleCrossings,chooseLabelPlacement} from "../polar-map.js";
 
 const meta=JSON.parse(await readFile(new URL("../assets/polar-elevation-87s.json",import.meta.url),"utf8"));
 
@@ -33,4 +33,21 @@ test("square corners lie outside 87°S, so the component crops to a circle at th
  assert.match(src,/clipPath/);
  assert.match(src,/resampled from/);
  assert.equal(meta.source.meters_per_pixel_native,80);
+});
+
+test("site labels avoid crossing graticule meridians and parallels (BR106)", () => {
+  const sites = [
+    { name: "Faustini Rim A", lat: -88.1, lon: 90.0 },
+    { name: "Connecting Ridge Extension", lat: -89.08, lon: -101.0 },
+    { name: "de Gerlache Rim 2", lat: -88.25, lon: -58.0 },
+  ];
+  const faustiniP = latLonToPixel(meta, sites[0].lat, sites[0].lon);
+  const oldBox = labelBox(sites[0].name, faustiniP, -11, 4, "end");
+  assert.ok(countGraticuleCrossings(oldBox, meta) > 0, "old Faustini Rim A placement crossed 90°E");
+
+  for (const s of sites) {
+    const p = latLonToPixel(meta, s.lat, s.lon);
+    const chosen = chooseLabelPlacement(s.name, p, meta);
+    assert.equal(chosen.hits, 0, `${s.name} still crosses graticule: ${JSON.stringify(chosen)}`);
+  }
 });

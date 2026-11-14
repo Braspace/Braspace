@@ -1,0 +1,15 @@
+# Comparar · celular
+
+**Origem visual:** Heloísa · BRASPACE MoonProof — Telas · https://claude.ai/artifact/QV5ykVW5q9HvyZsH68SPf1
+
+## Estrutura de tela, componentes e ações
+Resposta em uma frase, cartões A/B/C compactos e tabela de diferenças com maior noite, folga bateria, Terra visível e blackout; por camada expandir provas.
+
+## Tradução segura para implementação
+Viewport 390px, tabela rolável só internamente, scroll de página <= viewport; não usar cor como único indicador de aprovação.
+
+## Estados e validação
+- Placeholder, erro, sem série e offline precisam ser distintos; zero nunca substitui ausente.
+- Fontes científicas com units/UTC/frame/resolução e selo textual; dados do mockup são ILUSTRATIVOS.
+- Accessibility: foco visível, legenda de tabela, alvos de 44px, reduced motion e mobile responsivo.
+- Revisão pela autora de UX antes de declarar equivalência visual ao artefato.

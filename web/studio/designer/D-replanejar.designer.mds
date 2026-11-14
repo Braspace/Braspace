@@ -1,0 +1,15 @@
+# D · Replanejar
+
+**Origem visual:** Heloísa · BRASPACE MoonProof — Telas · https://claude.ai/artifact/QV5ykVW5q9HvyZsH68SPf1
+
+## Estrutura de tela, componentes e ações
+Passo 1 atraso; passo 2 mudanças em sombras, folga de bateria e Terra; passo 3 esperar/trocar local/reduzir duração; passo 4 comparar e decidir. Marcadores de alternativas e critérios violados.
+
+## Tradução segura para implementação
+Studio Recover tem +24/+48/+72 e contraintes declaradas. Alternativa faltante deve dizer sem dados; não inferir consumo elétrico ausente.
+
+## Estados e validação
+- Placeholder, erro, sem série e offline precisam ser distintos; zero nunca substitui ausente.
+- Fontes científicas com units/UTC/frame/resolução e selo textual; dados do mockup são ILUSTRATIVOS.
+- Accessibility: foco visível, legenda de tabela, alvos de 44px, reduced motion e mobile responsivo.
+- Revisão pela autora de UX antes de declarar equivalência visual ao artefato.
