@@ -78,3 +78,35 @@ User can alter: (1) site, (2) landing date, (3) 7-day vs 14-day mission, (4) mas
 7. Educational/mission-planning impact, limitations, team, source links and AI credits.
 
 **Version control:** Draft-only strategy in `ops/spaceapps-2026-coordination` and PR #44. It should not silently alter implementation, claims or NASA submission.
+
+---
+
+## 2026-11-14 update — 15 competitors, Heloísa's team notes and revised scope
+
+This original strategy evaluated 5 repositories. A further **10** user-supplied projects have now been inspected where accessible; see the linked [15-project evidence matrix](COMPETITORS_2026_15_REPOS.md). **The new review changes our differentiation claim:**
+
+- [Lunar Horizon Wheel](https://github.com/NetRunnerXD/lunar-horizon-wheel) already documents P10–P90 uncertainty, lunar energy, traverse and DSN; **uncertainty by itself is not novel**.
+- [BroBYW's CLPS browser](https://github.com/BroBYW/CLPS-Lunar-Mission-Website) already includes a lunar-night survival game; **educational gameplay alone is not novel**.
+- [EmanuelAbasto](https://github.com/EmanuelAbasto/CLPS-Lunar-Mission-Browser) already offers simple/expert modes; the value of our UX must come from *how it supports decisions and recovery*.
+- [dundaryusuf566-maker](https://github.com/dundaryusuf566-maker/clps-lunar-browser) extends planning to translunar transfer and acknowledges some scientific validation failures. **We will not expand the deadline MVP into transfer/trajectory optimization**.
+- [RootVandal's LUNAR//OPS](https://github.com/RootVandal/lunar-ops) already supports constraint failures, date windows and robustness. The proposed BRASPACE wedge is a **coupled, evidence-backed science–engineering negotiation plus contingency history**, not claiming re-planning is new worldwide.
+
+### Full team requirement coverage
+
+The team has marked **19 baseline items as required**, including custom coordinates, local-horizon Sun/Earth azimuth/elevation, multiple sites/dates, next transitions, dark/blackout intervals, terrain and lunar libration, 2D/3D views, animated timelines, nearby alternatives, schedule-delay replan, varied audiences, science/engineering collaboration and data provenance. The requirements and **9** further differentiator/release controls are now mapped to issue owners and evidence in [PRODUCT_REQUIREMENTS_TRACEABILITY.md](PRODUCT_REQUIREMENTS_TRACEABILITY.md).
+
+### Heloísa's reported feedback — product direction
+
+Consolidated in [TEAM_MEETING_HELOISA_2026-11-14.md](TEAM_MEETING_HELOISA_2026-11-14.md):
+
+- Keep the GitHub source repository private until the team approves any change; public demo/project URLs still must work anonymously before submission.
+- Use competitor research as inspiration with license/attribution review rather than code copying.
+- Prioritize a **single intuitive five-area hub** over dozens of controls: **Explore · Compare · Recover · Science & Engineering · Evidence & Learn**.
+- Offer progressive detail for planners, educators and the public. A visual/educational narrative must be grounded in the same physics as expert mode.
+- Treat launch/hardware delays as first-class events requiring **replanning, margin explanation and alternative site/date scenarios**.
+- Include science and engineering in the *same* scenario with transparent trade-offs, not opaque ratings.
+- The implementation language is secondary to getting a verifiable end-to-end decision workflow functioning.
+
+**New issue assignments:** [BS-044 / #46](https://github.com/Braspace/Braspace/issues/46) replan; [BS-045 / #47](https://github.com/Braspace/Braspace/issues/47) five-area UX; [BS-046 / #48](https://github.com/Braspace/Braspace/issues/48) stakeholder/Pareto; [BS-047 / #49](https://github.com/Braspace/Braspace/issues/49) sensitivity; [BS-048 / #50](https://github.com/Braspace/Braspace/issues/50) requirements QA; [BS-049 / #51](https://github.com/Braspace/Braspace/issues/51) competitor evidence; [BS-050 / #52](https://github.com/Braspace/Braspace/issues/52) sourced dates/site catalog.
+
+**MVP cut line unchanged:** NASA data actually integrated + one scientific horizon and Sun/Earth geometry validated + two reproducible configurations + one contingency explanation + public English 7-slide demo and final project link. Record every additional capability as planned/partial until tested. The GitHub organization repo remains private; no merges or claim of NASA endorsement.
