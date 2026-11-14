@@ -1,6 +1,6 @@
 // Core demo (A · Mission Control, minimal): terrain, 5 real sites, context bar, stat circle, one 3-layer card.
 // Every number comes from web/data/ (PRELIMINARY → seal PRE). The full screen A is card BR77.
-import { mountShell } from "../core/shell.js";
+import { mountShell, dockEl, hintEl } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
 import { loadSites, windowMetrics, dailySun, sealFor, apiOnline } from "../core/data.js";
 import { createLayerCard, statCircle, barEl } from "../core/layers.js";
@@ -43,12 +43,10 @@ async function draw() {
       [t("proof.sha"), Object.assign(document.createElement("code"), { className: "mp-coord", textContent: m.sunPct.detail.sha256 })],
       [t("proof.status"), `${m.sunPct.status} · ${t("seal." + m.sunPct.seal)}`]] });
   document.getElementById("right").replaceChildren(card.el);
-  const dock = document.getElementById("dock"); const i = doc.sites.indexOf(site), n = doc.sites.length;
-  const btn = (txt, label, fn, cls = "") => { const b = document.createElement("button"); b.type = "button"; b.className = "mp-pill " + cls; b.textContent = txt; b.setAttribute("aria-label", label); b.onclick = fn; return b; };
-  dock.replaceChildren(btn("‹", "previous", () => setState({ site: doc.sites[(i + n - 1) % n].id })),
-    btn(`${t("ctx.site")} ${site.n} · ${site.name}`, site.name, () => terrain.select(site.id), "is-primary mp-sel"),
-    btn("›", "next", () => setState({ site: doc.sites[(i + 1) % n].id })),
-    btn("−", "zoom out", () => terrain.zoom(0.7)), btn("+", "zoom in", () => terrain.zoom(1.4)));
+  const i = doc.sites.indexOf(site), n = doc.sites.length;
+  document.getElementById("dock").replaceChildren(dockEl({ label: `${t("ctx.site")} ${site.n}`,
+    onPrev: () => setState({ site: doc.sites[(i + n - 1) % n].id }), onNext: () => setState({ site: doc.sites[(i + 1) % n].id }),
+    onSelect: () => terrain.select(site.id), onZoomOut: () => terrain.zoom(0.7), onZoomIn: () => terrain.zoom(1.4) }), hintEl(t("hint.map")));
 }
 let last = getState().site;
 onState(s => { if (s.site !== last) { last = s.site; terrain.select(s.site); } draw(); });

@@ -91,3 +91,45 @@
 .mp-marker[aria-pressed="true"] .mp-marker-label{background:var(--jade);color:var(--jade-text)}
 .mp-help-pop{position:fixed;z-index:30;top:calc(var(--margin) + var(--touch) + 8px);right:var(--margin);width:300px;padding:var(--s2) var(--s3);animation:mp-in var(--t) var(--ease)}
 .mp-help-pop p{margin:var(--s1) 0;display:flex;align-items:center;gap:var(--s1);color:var(--text-2);font-size:13px}
+/* ===== Y01: shell at the boxes of docs/design/MEDIDAS.md (1440×900, capture A) ===== */
+/* Nav: logo x=29 y=32 · pills 45 px tall, top y=23, gap 9, first pill x=313 · help Ø42 at cx=1336 · BR disc 45 at x=1366. */
+.mp-top{top:23px;left:29px;right:29px;height:45px;gap:9px}
+.mp-brand{position:absolute;left:0;top:9px;height:29px;min-height:0;font-size:22px;gap:8px;margin:0}
+.mp-brand .mp-logo{width:26px;height:26px}
+.mp-nav{position:absolute;left:284px;top:0;gap:9px}
+.mp-top .mp-pill{height:45px;min-height:45px;padding:0 18px 0 16px;gap:8px;font-size:14.5px;background:rgba(10,13,16,.72);border-color:rgba(255,255,255,.12)}
+.mp-top .mp-pill svg{width:18px;height:18px}
+.mp-top .mp-pill[aria-current="page"]{background:var(--jade);color:var(--jade-text);border-color:transparent}
+.mp-nav-right{position:absolute;right:0;top:0;gap:9px;align-items:center;margin:0}
+.mp-nav-right .mp-help{width:42px;height:42px;min-height:42px;font-size:16px}
+.mp-nav-right .mp-lang{width:45px;height:45px;background:var(--card);color:var(--jade);border-color:transparent;font-weight:800;font-size:13px}
+.mp-nav-right .mp-kit:not([aria-pressed="true"]){display:none}
+.mp-help-pop .mp-kits{display:flex;gap:8px;margin-top:var(--s2)}
+.mp-help-pop .mp-kits .mp-pill{min-height:36px;padding:0 14px;font-size:13px}
+/* Context bar: 46 px, top y=85, centred. */
+.mp-context{top:85px;height:46px;min-height:46px;padding:0 6px 0 20px;gap:14px;font-size:14px;background:rgba(10,16,26,.72);border-color:rgba(255,255,255,.1)}
+.mp-context .mp-pill{min-height:29px;height:29px;padding:0 14px;font-size:13px;font-weight:700}
+.mp-context select{min-height:29px;height:29px;background:rgba(255,255,255,.08);border:0;font-size:13px}
+.mp-context .mp-seal{height:20px;font-size:10.5px}
+/* Footer dock (selector Ø/size from MEDIDAS: bar y=823 h=48; selector 171×47 at x=634; round buttons 42–43). */
+.mp-dock{position:fixed;z-index:12;top:823px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;height:48px}
+.mp-dock .mp-pill{height:44px;min-height:44px;width:44px;padding:0;background:rgba(10,13,16,.72);border-color:rgba(255,255,255,.14)}
+.mp-dock .mp-pill svg{width:18px;height:18px}
+.mp-dock .mp-sel{width:auto;min-width:171px;max-width:240px;height:47px;padding:0 18px;background:var(--jade);color:var(--jade-text);font-weight:800;margin:0 10px;overflow:hidden;text-overflow:ellipsis}
+@media (max-height:899px){.mp-dock{top:auto;bottom:29px}}
+/* Hint pill (A: x=539 y=773 w=359 h=33). */
+.mp-hint{position:fixed;z-index:12;top:773px;left:50%;transform:translateX(-50%);height:33px;display:flex;align-items:center;gap:9px;padding:0 16px;border-radius:var(--r-pill);background:rgba(18,21,24,.7);border:1px solid var(--line);font-size:13px;color:var(--text);white-space:nowrap;pointer-events:none}
+.mp-hint::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--jade)}
+@media (max-height:899px){.mp-hint{top:auto;bottom:87px}}
+/* IAU crater/mons names over the terrain: plain white, no box (design A). */
+.mp-terrain-labels{position:absolute;inset:0;pointer-events:none}
+.mp-feature{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:12.5px;font-weight:500;color:rgba(242,244,245,.82);text-shadow:0 1px 3px rgba(0,0,0,.85)}
+.mp-feature[data-type="Mons"]{font-style:italic}
+.mp-marker-label{background:transparent;padding:2px 6px;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+@media (max-width:700px){
+  .mp-top{top:12px;left:12px;right:12px;height:auto}
+  .mp-brand,.mp-nav-right{position:static}.mp-nav-right{margin-left:auto}
+  .mp-context{top:74px;height:auto}
+  .mp-dock{top:auto;bottom:96px}.mp-hint{display:none}
+  .mp-bottomnav .mp-pill svg{width:20px;height:20px}
+}

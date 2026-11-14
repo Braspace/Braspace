@@ -2,6 +2,7 @@
 import { t, setLang, pickLang, apply, lang } from "./i18n.js";
 import { getState, setState, hrefTo, LAYERS } from "./state.js";
 import { sealEl } from "./layers.js";
+import { icon as svgIcon, ICON_NAMES } from "./icons.js";
 
 export const SCREENS = [
   { id: "explore", page: "explore.html", key: "nav.explore" },
@@ -17,16 +18,9 @@ const ALIAS = { mission: "explore" };
 /** Which nav pill is current for a page's screen id ("" = none). */
 export function currentNav(screen) { const id = ALIAS[screen] || screen; return SCREENS.some(s => s.id === id) ? id : ""; }
 
-// Line icons (24 px grid, 1.7 stroke) as in the design's nav pills.
-const P = {
-  explore: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>',
-  compare: '<path d="M5 20V9M12 20V4M19 20v-7"/>',
-  recover: '<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4M12 8v4l3 2"/>',
-  cockpit: '<path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/>',
-  evidence: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>',
-  landing: '<path d="M12 3l3 7H9z"/><path d="M9 10l-3 9M15 10l3 9M7 19h3M14 19h3"/>',
-};
-const icon = id => P[id] ? `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[id]}</svg>` : "";
+// Y01: nav icons come from the shared set (core/icons.js, PR 172).
+const ICON_OF = { explore: "explore", compare: "compare", recover: "replan", cockpit: "cockpit", evidence: "evidence", landing: "lab" };
+const icon = id => { const n = ICON_OF[id] || id; return ICON_NAMES.includes(n) ? svgIcon(n) : ""; };
 
 function pill(text, { href, current, cls = "", onClick, pressed, ico, label } = {}) {
   const el = document.createElement(href ? "a" : "button");
@@ -60,11 +54,14 @@ export function mountShell({ screen, context = null, onLang } = {}) {
     brand.innerHTML = '<span class="mp-logo" aria-hidden="true"></span>'; brand.append(t("brand"));
     const nav = document.createElement("nav"); nav.className = "mp-nav"; nav.setAttribute("aria-label", t("nav.main"));
     for (const s of SCREENS) nav.append(pill(t(s.key), { href: hrefTo(s.page), current: s.id === active, cls: s.sim ? "is-sim" : "", ico: s.id }));
+    const kits = () => [
+      pill(t("nav.class"), { cls: "mp-kit", pressed: st.task === "class", onClick: () => { setState({ task: st.task === "class" ? null : "class" }); render(); } }),
+      pill(t("nav.plan"), { cls: "mp-kit", pressed: st.task === "plan", onClick: () => { setState({ task: st.task === "plan" ? null : "plan" }); render(); } })];
     const right = document.createElement("div"); right.className = "mp-nav-right";
     right.append(
       pill(t("nav.class"), { cls: "mp-kit", pressed: st.task === "class", onClick: () => { setState({ task: st.task === "class" ? null : "class" }); render(); } }),
       pill(t("nav.plan"), { cls: "mp-kit", pressed: st.task === "plan", onClick: () => { setState({ task: st.task === "plan" ? null : "plan" }); render(); } }),
-      helpPill(),
+      helpPill(kits),
       pill(t("nav.lang.short"), { cls: "is-round mp-lang", label: t("nav.lang"), onClick: () => { const l = lang() === "en" ? "pt-BR" : "en"; setState({ lang: l }); setLang(l); render(); apply(); onLang && onLang(l); } }),
     );
     top.replaceChildren(brand, nav, right);
@@ -77,10 +74,10 @@ export function mountShell({ screen, context = null, onLang } = {}) {
     const st = getState();
     const b = document.createElement("b"); b.textContent = cur.site ?? t("nd");
     const txt = document.createElement("span"); txt.className = "mp-ctx-text";
-    txt.append(b, " • ", cur.date ?? t("nd"), " • ", cur.days != null ? t("ctx.days", { n: cur.days }) : t("nd"));
+    txt.append(b, " · ", cur.date ?? t("nd"), " · ", cur.days != null ? t("ctx.days", { n: cur.days }) : t("nd"));
     const parts = [txt];
     const seal = sealEl(cur.seal || "N/D");
-    const net = document.createElement("span"); net.className = "mp-label"; net.textContent = cur.online ? t("ctx.online") : t("ctx.offline");
+    const net = document.createElement("span"); net.className = "mp-label mp-net"; net.textContent = cur.online ? t("ctx.online") : t("ctx.offline");
     const lab = document.createElement("label"); lab.className = "mp-label"; lab.textContent = t("ctx.openIn") + " ";
     const sel = document.createElement("select");
     for (const l of LAYERS) { const o = new Option(t("layer." + l), l, false, l === st.layer); sel.append(o); }
@@ -95,14 +92,15 @@ export function mountShell({ screen, context = null, onLang } = {}) {
 }
 
 /** "?" — legend of the seals (each seal's meaning comes from i18n, nothing invented). */
-function helpPill() {
-  const b = pill("?", { cls: "is-round mp-help" }); b.setAttribute("aria-label", t("nav.help")); b.setAttribute("aria-expanded", "false");
+function helpPill(kits) {
+  const b = pill("", { cls: "is-round mp-help", ico: "help" }); b.setAttribute("aria-label", t("nav.help")); b.setAttribute("aria-expanded", "false");
   b.onclick = () => {
     let pop = document.getElementById("mp-help"); const open = !pop;
     if (pop) pop.remove();
     else {
       pop = document.createElement("div"); pop.id = "mp-help"; pop.className = "mp-glass mp-help-pop"; pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", t("nav.help"));
       for (const k of ["VAL", "PRE", "EST", "SIM", "N/D", "FALHA"]) { const r = document.createElement("p"); r.append(sealEl(k), " ", t("seal." + k)); pop.append(r); }
+      if (kits) { const k = document.createElement("div"); k.className = "mp-kits"; k.append(...kits()); pop.append(k); }
       document.body.append(pop);
     }
     b.setAttribute("aria-expanded", String(open));
@@ -137,3 +135,17 @@ function wireSheet() {
   addEventListener("resize", () => set(frac));
   set(frac);
 }
+
+/**
+ * Y01 (additive): footer dock at the measured box (‹ › · site selector · − +) and the hint pill.
+ * dockEl({ label, onPrev, onNext, onSelect, onZoomOut, onZoomIn }) → <div class="mp-dock">; hintEl(text) → <div class="mp-hint">.
+ */
+export function dockEl({ label = "", onPrev, onNext, onSelect, onZoomOut, onZoomIn } = {}) {
+  const d = document.createElement("div"); d.className = "mp-dock";
+  const b = (ico, aria, fn, cls = "", text) => { const e = pill(text ?? "", { cls, ico, label: aria, onClick: fn }); return e; };
+  d.append(b("chevron-left", t("dock.prev"), onPrev), b("chevron-right", t("dock.next"), onNext),
+    b("chevron-down", label, onSelect, "mp-sel", label), b("minus", t("dock.zoomOut"), onZoomOut), b("plus", t("dock.zoomIn"), onZoomIn));
+  const sel = d.querySelector(".mp-sel"); if (sel) { sel.removeAttribute("title"); const svg = sel.querySelector("svg"); if (svg) sel.append(svg); }
+  return d;
+}
+export function hintEl(text) { const h = document.createElement("div"); h.className = "mp-hint"; h.setAttribute("role", "note"); h.textContent = text; return h; }
