@@ -937,6 +937,161 @@
     ];
   };
 
+  // ---------- Energy and life support: redesigned views ----------
+  // These replace the earlier VIEWS.energia and VIEWS.vida. They must stay above the API
+  // wrapper loop below, which wraps VIEWS.energia.
+
+  // Battery chart: capacity ceiling, reserve line, charge curve coloured by state.
+  function batteryChartBig(o, cap, reserve) {
+    const W = 640, H = 230, L = 52, R = 14, T = 16, B = 30;
+    const tl = o.timeline;
+    const x = i => L + (tl.length <= 1 ? 0 : (i / (tl.length - 1)) * (W - L - R));
+    const y = v => T + (1 - Math.max(0, Math.min(cap, v)) / cap) * (H - T - B);
+    const box = svg("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img",
+      "aria-label": "Carga da bateria ao longo do cenário, com reserva e capacidade" });
+    [0, 0.25, 0.5, 0.75, 1].forEach(f => {
+      const v = cap * f;
+      box.append(svg("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "#263241" }));
+      box.append(svg("text", { x: L - 8, y: y(v) + 4, "text-anchor": "end" }, Math.round(v) + " Wh"));
+    });
+    box.append(svg("line", { x1: L, x2: W - R, y1: y(reserve), y2: y(reserve), stroke: "#e8a317", "stroke-dasharray": "5 4" }));
+    box.append(svg("text", { x: W - R, y: y(reserve) - 6, "text-anchor": "end", style: "fill:#e8a317" }, "reserva " + Math.round(reserve) + " Wh"));
+    const color = { NOMINAL: "#3fbf80", SAFE_MODE: "#e8a317", POWER_LOSS: "#e0606e" };
+    for (let i = 1; i < tl.length; i++) {
+      box.append(svg("line", { x1: x(i - 1), y1: y(tl[i - 1].charge_wh), x2: x(i), y2: y(tl[i].charge_wh), stroke: color[tl[i].mode] || "#5fd8ff", "stroke-width": 2.5, "stroke-linecap": "round" }));
+    }
+    const first = tl[0], last = tl[tl.length - 1];
+    box.append(svg("text", { x: L, y: H - 8 }, fmt(Date.parse(first.epoch_utc)).slice(0, 16)));
+    box.append(svg("text", { x: W - R, y: H - 8, "text-anchor": "end" }, fmt(Date.parse(last.epoch_utc)).slice(0, 16)));
+    return box;
+  }
+
+  function stateChip(status) {
+    const map = { CONSTRAINTS_MET: ["ok", "DENTRO DOS LIMITES"], CONSTRAINTS_BREACHED: ["bad", "LIMITES VIOLADOS"] };
+    const [k, label] = map[status] || ["info", status || "—"];
+    return h("span", { class: "chip " + k, text: label });
+  }
+
+  VIEWS.energia = () => {
+    const { sum } = scenario();
+    const opt = apiOption(0);
+    const sunlitWh = S.power.solar_generation_w * sum.sunlitH;
+    const loadWh = S.power.load_w * sum.durationH;
+    const balance = sunlitWh - loadWh;
+    const cards = h("div", { class: "grid four span2" },
+      h("section", { class: "panel kpi" }, h("div", { class: "label", text: "Horas com luz" }),
+        h("div", { class: "value" }, f1(sum.sunlitH, 0), h("small", { text: " h" })),
+        h("div", { class: "delta flat", text: "de " + f1(sum.durationH, 0) + " h do cenário" })),
+      h("section", { class: "panel kpi" }, h("div", { class: "label", text: "Carga mínima da bateria" }),
+        h("div", { class: "value" }, opt ? f1(opt.metrics.minimum_charge_wh, 0) : "—", h("small", { text: opt ? " Wh" : "" })),
+        h("div", { class: "delta flat", text: opt ? "reserva: " + S.power.reserve_wh + " Wh" : "calcule com +" })),
+      h("section", { class: "panel kpi" }, h("div", { class: "label", text: "Energia não atendida" }),
+        h("div", { class: "value" }, opt ? f1(opt.metrics.total_unserved_energy_wh, 0) : "—", h("small", { text: opt ? " Wh" : "" })),
+        h("div", { class: "delta " + (opt && opt.metrics.total_unserved_energy_wh > 0 ? "down" : "flat"), text: opt ? (opt.metrics.total_unserved_energy_wh > 0 ? "a carga ficou sem energia" : "a carga foi atendida") : "" })),
+      h("section", { class: "panel kpi" }, h("div", { class: "label", text: "Estado do cenário" }),
+        h("div", { class: "value", style: "font-size:18px;margin-top:14px" }, opt ? stateChip(opt.simulation_status) : h("span", { class: "chip info", text: "NÃO CALCULADO" })),
+        h("div", { class: "delta flat", text: "resultado da API" })));
+
+    const chart = opt
+      ? h("section", { class: "panel span2" },
+          h("h2", {}, "Carga da bateria", h("em", { text: "API · " + opt.id })),
+          batteryChartBig(opt, S.power.battery_capacity_wh, S.power.reserve_wh),
+          h("div", { class: "legend" },
+            h("span", {}, h("i", { style: "background:#3fbf80" }), "NOMINAL"),
+            h("span", {}, h("i", { style: "background:#e8a317" }), "SAFE_MODE"),
+            h("span", {}, h("i", { style: "background:#e0606e" }), "POWER_LOSS"),
+            h("span", {}, h("i", { style: "background:#e8a317;opacity:.5" }), "linha da reserva")),
+          h("p", { class: "note", text: "Bateria com coeficientes da API, não de hardware real." }))
+      : h("section", { class: "panel span2" },
+          h("h2", {}, "Carga da bateria", h("em", { text: "ainda não calculada" })),
+          h("div", { class: "empty" },
+            h("strong", { text: "Calcule o cenário para ver a curva da bateria." }),
+            h("span", { text: "1. Ajuste capacidade, carga e solar abaixo." }),
+            h("span", { text: "2. Clique no botão + no canto inferior direito." }),
+            h("span", { text: "3. A curva mostra a carga ao longo do tempo, com a reserva e os estados." })));
+
+    const light = h("section", { class: "panel" },
+      h("h2", {}, "Luz disponível × energia", h("em", { text: "premissas" })),
+      h("div", { class: "stack" },
+        energyRow("Energia do painel, se o Sol entregasse tudo", sunlitWh, Math.max(sunlitWh, loadWh) || 1, "#e8a317"),
+        energyRow("Consumo da carga no período", loadWh, Math.max(sunlitWh, loadWh) || 1, "#5fb3d8")),
+      h("div", { class: "row", style: "margin-top:12px" },
+        h("span", { class: "dim", text: "saldo estimado" }),
+        h("span", { class: "num", style: "font-weight:600;color:" + (balance >= 0 ? "var(--green)" : "var(--red)"), text: (balance >= 0 ? "+" : "") + f1(balance, 0) + " Wh" })),
+      h("div", { class: "edu" }, "Luz do Sol não é energia elétrica. O painel precisa de área, eficiência e ângulo. Aqui a energia é só uma premissa de W com Sol."),
+      h("div", { style: "margin-top:10px" }, tag("ESQ"), " ", h("span", { class: "dim", text: "modelo de painel (5.3) sem parâmetros de hardware" })));
+
+    const premises = h("section", { class: "panel" },
+      h("h2", {}, "Premissas do cenário", h("em", { text: "editar na entrada" })),
+      h("dl", { class: "readout" },
+        h("dt", {}, "capacidade da bateria"), h("dd", { text: S.power.battery_capacity_wh + " Wh" }),
+        h("dt", {}, "carga inicial"), h("dd", { text: S.power.initial_charge_wh + " Wh" }),
+        h("dt", {}, "reserva mínima"), h("dd", { text: S.power.reserve_wh + " Wh" }),
+        h("dt", {}, "solar com Sol"), h("dd", { text: S.power.solar_generation_w + " W" }),
+        h("dt", {}, "carga"), h("dd", { text: S.power.load_w + " W" })));
+
+    return [cards, chart, light, premises];
+  };
+
+  // One labelled bar: value against a reference, used for energy comparisons.
+  function energyRow(label, value, max, color) {
+    const pct = Math.max(0, Math.min(100, (value / max) * 100));
+    return h("div", { style: "margin:8px 0" },
+      h("div", { class: "row" }, h("span", { text: label }), h("span", { class: "num", text: f1(value, 0) + " Wh" })),
+      h("div", { class: "bar", style: "margin-top:6px" }, h("span", { style: "width:" + pct + "%;background:" + color })));
+  }
+
+  // Gauge with a coloured zone, used for life-support values.
+  function gaugeCard(title, valueText, unit, pct, status, detail, illustrative) {
+    const map = { ok: ["ok", "OK"], warn: ["warn", "ATENÇÃO"], bad: ["bad", "ESGOTADO"] };
+    const [k, label] = map[status] || ["info", "—"];
+    return h("section", { class: "panel" },
+      h("div", { class: "row" }, h("h2", { style: "margin:0", text: title }), h("span", { class: "chip " + k, text: label })),
+      h("div", { class: "value num", style: "font-size:30px;font-weight:600;margin-top:12px" }, valueText, h("small", { style: "font-size:14px;color:var(--muted);margin-left:4px", text: unit })),
+      h("div", { class: "bar " + (status === "bad" ? "bad" : status === "warn" ? "warn" : ""), style: "margin-top:12px" },
+        h("span", { style: "width:" + Math.max(0, Math.min(100, pct)) + "%" })),
+      h("p", { class: "note", text: detail }),
+      illustrative ? h("div", { style: "margin-top:8px" }, tag("SINT"), " ", h("span", { class: "dim", text: "valor ilustrativo, sem fonte" })) : null);
+  }
+
+  VIEWS.vida = () => {
+    const { life } = scenario();
+    const fuelStatus = life.fuelRemainingKg <= 0 ? "bad" : life.fuelMarginKg < 0 ? "bad" : life.fuelMarginKg < 50 ? "warn" : "ok";
+    const fuelDetail = life.fuelMarginKg < 0
+      ? "Abaixo da reserva mínima de " + M.LIMITS.fuelReserveKg + " kg em " + f1(-life.fuelMarginKg, 0) + " kg."
+      : "Margem de " + f1(life.fuelMarginKg, 0) + " kg sobre a reserva de " + M.LIMITS.fuelReserveKg + " kg.";
+    const foodStatus = life.foodLeftKg <= 0 ? "bad" : life.foodLeftKg < 100 ? "warn" : "ok";
+    const o2Status = life.o2StockKg <= 0 ? "bad" : life.o2StockKg < 20 ? "warn" : "ok";
+    const pOk = life.cabinKpa >= 95 && life.cabinKpa <= 105;
+    const pPct = ((life.cabinKpa - 90) / 20) * 100;
+    const pressure = h("section", { class: "panel" },
+      h("div", { class: "row" }, h("h2", { style: "margin:0", text: "Pressão da cabine" }), h("span", { class: "chip " + (pOk ? "ok" : "bad"), text: pOk ? "NOMINAL" : "FORA DA FAIXA" })),
+      h("div", { class: "value num", style: "font-size:30px;font-weight:600;margin-top:12px" }, f1(life.cabinKpa), h("small", { style: "font-size:14px;color:var(--muted);margin-left:4px", text: "kPa" })),
+      h("div", { style: "position:relative;margin-top:14px;height:10px;border-radius:999px;background:linear-gradient(90deg,#e0606e 0%,#e0606e 25%,#3fbf80 25%,#3fbf80 75%,#e0606e 75%)" },
+        h("span", { style: "position:absolute;top:-4px;width:4px;height:18px;border-radius:2px;background:var(--ink);left:calc(" + Math.max(0, Math.min(100, pPct)) + "% - 2px)" })),
+      h("div", { class: "axis" }, h("span", { text: "90 kPa" }), h("span", { text: "faixa 95–105" }), h("span", { text: "110 kPa" })),
+      h("p", { class: "note", text: "Pressão fixa do modelo. Não usar para segurança." }),
+      h("div", { style: "margin-top:8px" }, tag("SINT")));
+    const o2Pressure = h("section", { class: "panel" },
+      h("div", { class: "row" }, h("h2", { style: "margin:0", text: "Oxigênio" }), h("span", { class: "chip " + (life.o2PartialKpa >= 19 ? "ok" : "bad"), text: life.o2PartialKpa >= 19 ? "PRESSÃO OK" : "BAIXA" })),
+      h("dl", { class: "readout", style: "margin-top:10px" },
+        h("dt", {}, "pressão parcial"), h("dd", { text: f1(life.o2PartialKpa) + " kPa (mín. 19)" }),
+        h("dt", {}, "estoque restante"), h("dd", { text: life.o2StockKg > 0 ? f1(life.o2StockKg) + " kg" : "ESGOTADO" })),
+      h("p", { class: "note", text: "Estoque de O2 consumido por " + life.people + " pessoas ao longo do período." }),
+      h("div", { style: "margin-top:8px" }, tag("SINT"), " ", h("span", { class: "chip " + o2Status, text: o2Status === "bad" ? "ESGOTADO" : o2Status === "warn" ? "ATENÇÃO" : "OK" })));
+
+    return [
+      h("div", { class: "span2 caution", role: "note" }, "Estes valores são ilustrativos, sem fonte nem validação. Não devem ser lidos como condição de vida. Suporte de vida ainda não está na lista de requisitos do desafio (#7)."),
+      h("div", { class: "grid three span2" },
+        gaugeCard("Combustível", life.fuelRemainingKg > 0 ? f1(life.fuelRemainingKg, 0) : "0", "kg", life.fuelRemainingKg / 450 * 100, fuelStatus, fuelDetail, true),
+        gaugeCard("Alimentação", f1(life.foodLeftKg, 0), "kg", life.foodLeftKg / 500 * 100, foodStatus,
+          life.people + " pessoas · 0,62 kg por pessoa e dia · racionamento " + (life.foodLeftKg > 100 ? "normal" : "reduzido") + ".", true),
+        gaugeCard("Estoque de O2", f1(life.o2StockKg, 0), "kg", life.o2StockKg / 64 * 100, o2Status,
+          "0,84 kg por pessoa e dia. Abaixo de 20 kg, o estoque entra em atenção.", true)),
+      h("div", { class: "grid two span2" }, pressure, o2Pressure)
+    ];
+  };
+
   // ---------- API panels (linked to the Go API in main) ----------
   // Each panel calls one endpoint on demand and keeps the last response in S.apiResults.
   // Nothing here replaces the synthetic panels: they are shown above them, labelled as API data.
