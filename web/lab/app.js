@@ -328,7 +328,7 @@ async function fillCompare() {
   const apiRows = new Map(), ids = state.index.sites.map(x => x.id).filter(id => live.online && live.apiId(id) && live.covers(id, state.t, state.compareH));
   for (let i = 0; i < ids.length; i += 3) {
     const r = await live.compare(ids.slice(i, i + 3), isoZ(state.t), state.compareH);
-    if (r.ok) r.data.results.forEach(x => { const lab = ids.find(id => live.apiId(id) === x.site.id), row = compareRow(x); if (lab && row) apiRows.set(lab, row); });
+    if (r.ok) r.data.results.forEach(x => { const lab = ids.find(id => live.apiId(id) === x.site.id), row = compareRow(x, r.data.scientifically_validated === true); if (lab && row) apiRows.set(lab, row); });
   }
   const win = (r) => apiRows.has(r.site.id) ? { status: "COMPUTED", ...apiRows.get(r.site.id) } : r.w;
   rows.forEach(r => { r.src = apiRows.has(r.site.id) ? "API" : "static"; r.w = win(r); });
