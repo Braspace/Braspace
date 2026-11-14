@@ -157,7 +157,11 @@ JSON `{"error": "...", "code": "..."}`.
 ## Series data contract (for the science pipeline)
 
 One JSON file per site under `api/sitedata/series/`, referenced by `series_file` in
-`catalog.json`. The loader rejects the whole data set at startup if any file is invalid.
+`catalog.json` together with `series_sha256`, the SHA-256 of the file's exact bytes
+(`shasum -a 256 api/sitedata/series/<file>`). The loader rejects the whole data set at
+startup if any file is invalid or does not match its hash, so an edited angle, a removed
+sample (which would shift every later epoch) or a truncated file never reaches the API.
+The server then exits with a one-line `site data rejected, not starting: …` message.
 
 ```json
 {
