@@ -129,6 +129,12 @@ svg text { font: 11px var(--sans); fill: var(--muted); }
 .hidden { display: none !important; }
 a { color: var(--blue-hi); text-decoration-color: var(--faint); }
 a:hover { color: var(--sky); }
+.site-legend { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.site-chip { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; text-align: left; padding: 10px 12px; }
+.site-chip strong { font-weight: 600; }
+.site-chip .dim { grid-column: 2; font-size: 12px; }
+.site-chip .dot { grid-row: 1 / span 2; width: 10px; height: 10px; border-radius: 50%; }
+.site-chip[aria-pressed="true"] { border-color: var(--sky); background: var(--info-bg); }
 .empty { border: 1px dashed var(--line); border-radius: 10px; padding: 16px; color: var(--muted); font-size: 13px; display: grid; gap: 6px; }
 .empty strong { color: var(--ink); font-weight: 600; }
 .axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; font-family: var(--mono); }

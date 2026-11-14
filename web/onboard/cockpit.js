@@ -564,31 +564,67 @@
     return s.name + " · lat " + s.lat.toFixed(2) + "° · lon " + s.lon.toFixed(2) + "° · " + (s.lat + 90).toFixed(2) + "° do polo";
   }
 
-  VIEWS.visual = () => {
-    const W = 320, cx = 160, cy = 160, R0 = 150;
-    const box = svg("svg", { viewBox: "0 0 320 320", width: "100%", style: "max-width:440px;display:block;margin:0 auto", role: "img", "aria-label": "Mapa polar ampliado com os sítios sintéticos" });
-    // rings: 1 degree of colatitude = 60 px; labels sit just above each ring
-    [[60, "1°"], [120, "2°"], [R0, "2,5°"]].forEach(([r, lab]) => {
-      box.append(svg("circle", { cx, cy, r, fill: "none", stroke: "#263241", "stroke-dasharray": r === R0 ? "" : "3 3" }));
-      box.append(svg("text", { x: cx + 6, y: cy - r + 12 }, lab + " do polo"));
+  // Polar map of the south pole. Centre = pole; rings = distance from the pole (1° = 70 px);
+  // radial lines = longitude every 45°. Shared by the overview card and the Visual tab.
+  function polarMap(maxWidth) {
+    const C = 180, K = 70, EDGE = 178;
+    const box = svg("svg", { viewBox: "0 0 360 360", width: "100%", style: "max-width:" + maxWidth + "px;display:block;margin:0 auto", role: "img",
+      "aria-label": "Mapa polar: sítios sintéticos ao redor do polo sul" });
+    const defs = svg("defs", {});
+    const grad = svg("radialGradient", { id: "polarBg" });
+    grad.append(svg("stop", { offset: "0%", "stop-color": "#1b2d40" }), svg("stop", { offset: "100%", "stop-color": "#0c141d" }));
+    defs.append(grad);
+    box.append(defs);
+    box.append(svg("circle", { cx: C, cy: C, r: EDGE, fill: "url(#polarBg)", stroke: "#2b3b4d" }));
+    [0, 45, 90, 135, 180, 225, 270, 315].forEach(a => {
+      const rad = a * Math.PI / 180;
+      box.append(svg("line", { x1: C, y1: C, x2: C + EDGE * Math.cos(rad), y2: C + EDGE * Math.sin(rad), stroke: "#243447" }));
     });
-    box.append(svg("circle", { cx, cy, r: 3, fill: "#6f8b7c" }));
-    box.append(svg("text", { x: cx + 6, y: cy - 6 }, "polo sul"));
+    [[1, "1°"], [2, "2°"], [2.5, "2,5°"]].forEach(([deg, lab]) => {
+      const r = deg * K;
+      box.append(svg("circle", { cx: C, cy: C, r, fill: "none", stroke: "#3a526b", "stroke-width": 1.2, "stroke-dasharray": deg === 2.5 ? "" : "4 4" }));
+      box.append(svg("rect", { x: C + 4, y: C - r - 8, width: 34, height: 16, rx: 4, fill: "#0c141d", "fill-opacity": ".9" }));
+      box.append(svg("text", { x: C + 8, y: C - r + 4, style: "fill:#c9d6e2" }, lab));
+    });
+    box.append(svg("circle", { cx: C, cy: C, r: 4, fill: "#e6edf5" }));
+    box.append(svg("text", { x: C - 10, y: C - 10, "text-anchor": "end", style: "fill:#e6edf5;font-weight:600" }, "polo sul"));
     Object.entries(M.SITES).forEach(([id, s]) => {
-      const r = (s.lat + 90) * 60, rad = s.lon * Math.PI / 180;
-      const x = cx + r * Math.cos(rad), y = cy + r * Math.sin(rad);
-      const on = id === S.site;
-      const dot = svg("circle", { cx: x, cy: y, r: on ? 7 : 5, fill: on ? "#5fd8ff" : "#ffb020", tabindex: "0", role: "img", "aria-label": siteTip(s) });
+      const r = (s.lat + 90) * K, rad = s.lon * Math.PI / 180;
+      const x = C + r * Math.cos(rad), y = C + r * Math.sin(rad), on = id === S.site;
+      if (on) box.append(svg("circle", { cx: x, cy: y, r: 14, fill: "none", stroke: "#5fd8ff", "stroke-opacity": ".5" }));
+      const dot = svg("circle", { cx: x, cy: y, r: on ? 7 : 5, fill: on ? "#5fd8ff" : "#ffb020", stroke: "#0c141d", "stroke-width": 2, tabindex: "0", role: "img", "aria-label": siteTip(s) });
       dot.append(svg("title", {}, siteTip(s)));
       box.append(dot);
-      box.append(svg("text", { x: x + 9, y: y + 4, fill: on ? "#5fd8ff" : undefined }, s.name));
+      const w = s.name.length * 6.4 + 12;
+      box.append(svg("rect", { x: x + 10, y: y - 9, width: w, height: 18, rx: 4, fill: "#0c141d", "fill-opacity": ".85" }));
+      box.append(svg("text", { x: x + 16, y: y + 4, style: on ? "fill:#5fd8ff;font-weight:600" : "fill:#e6edf5" }, s.name));
     });
+    return box;
+  }
+  // Clickable list of the sites: selecting one updates every panel.
+  function siteLegend() {
+    return h("div", { class: "site-legend" }, Object.entries(M.SITES).map(([id, s]) => {
+      const on = id === S.site;
+      return h("button", { type: "button", class: "site-chip", "aria-pressed": on ? "true" : "false",
+        onclick: () => { S.site = id; S.api = null; renderAlarm(); renderTab(); } },
+        h("span", { class: "dot", style: "background:" + (on ? "#5fd8ff" : "#ffb020") }),
+        h("strong", { text: s.name }),
+        h("span", { class: "dim num", text: "lat " + s.lat.toFixed(2) + "° · lon " + s.lon.toFixed(2) + "° · " + (s.lat + 90).toFixed(2) + "° do polo" }));
+    }));
+  }
+
+  VIEWS.visual = () => {
+    const box = polarMap(440);
     return [
       h("section", { class: "panel" },
-        h("h2", { text: "08 · Mapa polar do sítio" }),
+        h("h2", { text: "08 · Mapa polar do sítio", }, h("em", { text: "sintético" })),
         box,
-        h("p", { class: "note", text: "Projeção ampliada: raio = colatitude × 60 px/°. Sem escala real. Posições dos sítios são sintéticas." }),
+        h("div", { class: "edu", style: "margin-top:12px" }, "Como ler: o centro é o polo sul. Cada anel é 1° de distância do polo. As linhas radiais são longitudes, de 45 em 45°. Quanto mais longe do centro, mais perto do equador lunar."),
+        h("p", { class: "note", text: "Projeção ampliada, sem escala real. Coordenadas sintéticas, não são locais de pouso." }),
         h("div", { style: "margin-top:8px" }, tag("SIM"), " ", tag("BLOQ"), " ", h("span", { class: "dim", text: "mapa 2D com LOLA (8.5) e 3D (8.6) bloqueados" }))),
+      h("section", { class: "panel" },
+        h("h2", { text: "Sítios" }, h("em", { text: "clique para selecionar" })),
+        siteLegend()),
       h("section", { class: "panel" },
         h("h2", { text: "Pendências visuais" }),
         h("ul", { class: "note" },
@@ -775,24 +811,10 @@
   }
 
   function polarCard() {
-    const box = svg("svg", { viewBox: "0 0 320 320", width: "100%", style: "max-width:300px;display:block;margin:0 auto", role: "img", "aria-label": "Mapa polar com os sítios sintéticos" });
-    [[60, "1°"], [120, "2°"], [150, "2,5°"]].forEach(([r, lab]) => {
-      box.append(svg("circle", { cx: 160, cy: 160, r, fill: "none", stroke: "#263241", "stroke-width": 1.5 }));
-      box.append(svg("text", { x: 166, y: 160 - r + 12 }, lab + " do polo"));
-    });
-    box.append(svg("circle", { cx: 160, cy: 160, r: 3, fill: "#8fa0b3" }));
-    Object.entries(M.SITES).forEach(([id, s]) => {
-      const r = (s.lat + 90) * 60, rad = s.lon * Math.PI / 180;
-      const x = 160 + r * Math.cos(rad), y = 160 + r * Math.sin(rad), on = id === S.site;
-      const dot = svg("circle", { cx: x, cy: y, r: on ? 8 : 5, fill: on ? "#5fb3d8" : "#e8a317", tabindex: "0", role: "img", "aria-label": siteTip(s) });
-      dot.append(svg("title", {}, siteTip(s)));
-      box.append(dot);
-      box.append(svg("text", { x: x + 10, y: y + 4, style: on ? "fill:#2c5f8a;font-weight:600" : "" }, s.name));
-    });
     return h("section", { class: "panel" },
       h("h2", {}, "Sítios no polo sul", h("em", {}, "sintéticos")),
-      box,
-      h("p", { class: "note", text: "Projeção ampliada, sem escala real. Posições sintéticas." }));
+      polarMap(320),
+      h("p", { class: "note", text: "Centro = polo sul. Anéis = distância do polo. Sem escala real." }));
   }
 
   function verdictCard() {
