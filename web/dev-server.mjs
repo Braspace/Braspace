@@ -28,6 +28,16 @@ export function labFile(pathname){
  if(!name.startsWith("lab"+path.sep)&&!name.startsWith("data"+path.sep))return null;
  return {name,type:labTypes[ext]};
 }
+// Joao Victor's onboard screens remain an independent, explicitly allowlisted
+// educational frontend. No generic directory serving or client-controlled path.
+export function onboardFile(pathname){
+ if(!/^\/onboard\/[A-Za-z0-9_-]+\.(html|js|css)$/.test(pathname))return null;
+ const filename=pathname.slice("/onboard/".length);
+ const allowed=new Set(["index.html","cockpit.html","sim.js","request.js","model.js","features.js","api.js","cockpit.js","app.js"]);
+ if(!allowed.has(filename))return null;
+ const type=filename.endsWith(".html")?"text/html; charset=utf-8":filename.endsWith(".css")?"text/css; charset=utf-8":"text/javascript; charset=utf-8";
+ return {name:"onboard/"+filename,type};
+}
 const csp=[
   "default-src 'none'",
   "script-src 'self' https://cdn.jsdelivr.net",
@@ -81,7 +91,13 @@ export function createServer(){
    proxyAPI(req,res);
    return;
   }
-  const file=staticFiles.get(pathname)||labFile(pathname);
+  const onboard=onboardFile(pathname);
+  // Existing onboard HTML embeds CSS; only these two fixed HTML pages get
+  // inline STYLE permission. Scripts remain external and constrained to self.
+  if(onboard&&pathname.endsWith(".html")){
+   res.setHeader("Content-Security-Policy",csp.replace("style-src 'self'","style-src 'self' 'unsafe-inline'"));
+  }
+  const file=staticFiles.get(pathname)||labFile(pathname)||onboard;
   if(!file){res.writeHead(404);res.end("Not found");return;}
   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
   try{
