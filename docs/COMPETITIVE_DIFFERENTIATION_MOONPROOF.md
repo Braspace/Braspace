@@ -110,3 +110,17 @@ Consolidated in [TEAM_MEETING_HELOISA_2026-11-14.md](TEAM_MEETING_HELOISA_2026-1
 **New issue assignments:** [BS-044 / #46](https://github.com/Braspace/Braspace/issues/46) replan; [BS-045 / #47](https://github.com/Braspace/Braspace/issues/47) five-area UX; [BS-046 / #48](https://github.com/Braspace/Braspace/issues/48) stakeholder/Pareto; [BS-047 / #49](https://github.com/Braspace/Braspace/issues/49) sensitivity; [BS-048 / #50](https://github.com/Braspace/Braspace/issues/50) requirements QA; [BS-049 / #51](https://github.com/Braspace/Braspace/issues/51) competitor evidence; [BS-050 / #52](https://github.com/Braspace/Braspace/issues/52) sourced dates/site catalog.
 
 **MVP cut line unchanged:** NASA data actually integrated + one scientific horizon and Sun/Earth geometry validated + two reproducible configurations + one contingency explanation + public English 7-slide demo and final project link. Record every additional capability as planned/partial until tested. The GitHub organization repo remains private; no merges or claim of NASA endorsement.
+
+## Super Moon 3D, report, sources and team code-first update — 2026-11-14
+
+At the user's direction, expand the MoonProof experience with:
+- A legally sourced, **original** 3D lunar globe and optional localized topographic mesh (NASA SVS Moon Kit graphics versus actual scientific NASA LOLA DEM).
+- A deterministic **Mission Report HTML/print-PDF** export with a category-based risk register, provenance, failed mission constraints and a transparent replan history.
+- Accessible, **small** educational mission challenges and a five-module navigation hub.
+- Image gallery / site cards from NASA/LROC with asset-specific copyright, credit and source URL verification.
+- **Gustavo code-first**: main technical integrator, 3D renderer and report generator; research, UX and QA explicitly assigned to teammates instead of requiring everyone to code.
+- Protect repo privacy, publish anonymous-access NASA demo and project URLs, and use **Google Moon only as UX reference** (no copied or scraped Maps content).
+
+New actual GitHub tickets: [#54](https://github.com/Braspace/Braspace/issues/54)–[#61](https://github.com/Braspace/Braspace/issues/61); issue ownership redistributed for #7/#10/#37/#43. The full design and source-rights workstreams are linked in [SUPERMOON_DELIVERY_ROADMAP_2026.md](SUPERMOON_DELIVERY_ROADMAP_2026.md).
+
+**Engineering baseline achieved:** merged PR #45 into main, commit 093c0771448b8515db0f13478ef49d4587e67d4a, with Go/Rust/Docker CI green. This engine still does not consume actual LOLA or SPICE; it declares UNVERIFIED_INPUTS. The 3D globe and HTML/PDF report remain planned, not verified implemented. Prioritize true NASA source integration and verified physics ahead of elaborate visualization or gamification.
