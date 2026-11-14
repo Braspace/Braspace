@@ -20,7 +20,7 @@
     audience: "technical",
     lat: "", lon: "",
     power: { battery_capacity_wh: 200, initial_charge_wh: 150, reserve_wh: 50, solar_generation_w: 110, load_w: 80, max_comm_blackout_hours: 1 },
-    tab: "entrada",
+    tab: "visao",
     t: 0,
     playing: null,
     api: null,            // last successful response
@@ -97,10 +97,12 @@
   }
 
   async function calculate() {
-    const btn = $("calc");
+    const btn = $("calc") || $("fab");
     const req = buildApiRequest(REPLAN_DELAYS);
     if (!req.ok) { S.apiError = req.errors; S.api = null; renderTab(); return; }
-    btn.disabled = true; btn.textContent = "CALCULANDO…";
+    const fab = $("fab");
+    if (fab) fab.setAttribute("aria-busy", "true");
+    if ($("calc")) { $("calc").disabled = true; }
     try {
       const res = await fetch(API_PATH, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req.body) });
       const text = await res.text();
@@ -110,14 +112,16 @@
       S.api = null; S.apiError = ["Sem conexão com a API (" + err.message + "). Suba dev-server.py e a API Go."];
       setLamp("bad", "API OFF");
     } finally {
-      btn.disabled = false; btn.textContent = "CALCULAR";
+      if (fab) fab.setAttribute("aria-busy", "false");
+      if ($("calc")) { $("calc").disabled = false; }
       renderAlarm(); renderTab();
     }
   }
   function setLamp(kind, text) {
     const el = $("lamp-api");
-    el.className = kind;
-    el.replaceChildren(h("b", { text }));
+    const map = { ok: "chip ok", warn: "chip warn", bad: "chip bad" };
+    el.className = map[kind] || "chip info";
+    el.textContent = text;
   }
 
   // API option for a delay (or null if not calculated)
@@ -692,6 +696,114 @@
     ];
   };
 
+  // ---------- Overview (dashboard home) ----------
+  // Cards of big numbers, a donut, a daily bar chart, a polar map and a verdict table.
+  // All values come from the synthetic model; the battery card uses the API only after CALCULAR.
+  function donutCard(sum) {
+    const C = 2 * Math.PI * 70;
+    const f = sum.durationH ? sum.sunlitH / sum.durationH : 0;
+    const box = svg("svg", { viewBox: "0 0 200 200", width: "100%", style: "max-width:220px;display:block;margin:0 auto", role: "img", "aria-label": "Proporção de horas com luz" });
+    box.append(svg("circle", { cx: 100, cy: 100, r: 70, fill: "none", stroke: "#d9e0e8", "stroke-width": 26 }));
+    box.append(svg("circle", { cx: 100, cy: 100, r: 70, fill: "none", stroke: "#e8a317", "stroke-width": 26, "stroke-dasharray": (f * C).toFixed(2) + " " + C.toFixed(2), transform: "rotate(-90 100 100)" }));
+    box.append(svg("text", { x: 100, y: 96, "text-anchor": "middle", style: "font-size:28px;font-weight:600;fill:#1d2733" }, Math.round(f * 100) + "%"));
+    box.append(svg("text", { x: 100, y: 118, "text-anchor": "middle" }, "com luz"));
+    return h("section", { class: "panel" },
+      h("h2", {}, "Luz ao longo da missão", h("em", {}, "horas")),
+      box,
+      h("div", { class: "legend", style: "justify-content:center" },
+        h("span", {}, h("i", { style: "background:#e8a317" }), "com luz · " + f1(sum.sunlitH, 0) + " h"),
+        h("span", {}, h("i", { style: "background:#d9e0e8" }), "escuro · " + f1(sum.durationH - sum.sunlitH, 0) + " h")));
+  }
+
+  function dailyBarCard(tr, stepMin) {
+    const perDay = Math.round(24 * 60 / stepMin);
+    const days = [];
+    for (let i = 0; i < tr.length; i += perDay) {
+      const slice = tr.slice(i, i + perDay);
+      const lit = slice.filter(s => s.sun_visible).length * stepMin / 60;
+      const seen = slice.filter(s => s.earth_visible).length * stepMin / 60;
+      days.push({ lit, dark: slice.length * stepMin / 60 - lit, seen });
+    }
+    const W = 640, H = 200, pad = 26, bw = (W - pad * 2) / Math.max(1, days.length);
+    const box = svg("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img", "aria-label": "Horas de luz por dia" });
+    for (let g = 0; g <= 24; g += 6) box.append(svg("line", { x1: pad, x2: W - pad, y1: H - pad - (g / 24) * (H - pad * 2), y2: H - pad - (g / 24) * (H - pad * 2), stroke: "#e3e8ee" }));
+    days.forEach((d, i) => {
+      const x = pad + i * bw + bw * 0.18, w = bw * 0.64;
+      const hL = (d.lit / 24) * (H - pad * 2), hD = (d.dark / 24) * (H - pad * 2);
+      box.append(svg("rect", { x, y: H - pad - hL, width: w, height: hL, fill: "#e8a317", rx: 2 }));
+      box.append(svg("rect", { x, y: H - pad - hL - hD, width: w, height: hD, fill: "#d9e0e8", rx: 2 }));
+      if (i % 2 === 0) box.append(svg("text", { x: x + w / 2, y: H - 6, "text-anchor": "middle" }, "d" + (i + 1)));
+    });
+    return h("section", { class: "panel span2" },
+      h("h2", {}, "Horas de luz por dia", h("em", {}, "amarelo: luz · cinza: escuro")),
+      box,
+      h("p", { class: "note", text: "Cada coluna é um dia do cenário (24 h). Modelo sintético." }));
+  }
+
+  function polarCard() {
+    const box = svg("svg", { viewBox: "0 0 320 320", width: "100%", style: "max-width:300px;display:block;margin:0 auto", role: "img", "aria-label": "Mapa polar com os sítios sintéticos" });
+    [60, 120, 150].forEach(r => box.append(svg("circle", { cx: 160, cy: 160, r, fill: "none", stroke: "#e3e8ee", "stroke-width": 1.5 })));
+    box.append(svg("circle", { cx: 160, cy: 160, r: 3, fill: "#6b7785" }));
+    Object.entries(M.SITES).forEach(([id, s]) => {
+      const r = (s.lat + 90) * 60, rad = s.lon * Math.PI / 180;
+      const x = 160 + r * Math.cos(rad), y = 160 + r * Math.sin(rad), on = id === S.site;
+      box.append(svg("circle", { cx: x, cy: y, r: on ? 8 : 5, fill: on ? "#2c5f8a" : "#e8a317" }));
+      box.append(svg("text", { x: x + 10, y: y + 4, style: on ? "fill:#2c5f8a;font-weight:600" : "" }, s.name));
+    });
+    return h("section", { class: "panel" },
+      h("h2", {}, "Sítios no polo sul", h("em", {}, "sintéticos")),
+      box,
+      h("p", { class: "note", text: "Projeção ampliada, sem escala real. Posições sintéticas." }));
+  }
+
+  function verdictCard() {
+    const life = M.lifeSupport(S.durationH);
+    const rows = REPLAN_DELAYS.map(d => {
+      const sum = M.summary(track(d), S.stepMin);
+      const v = M.verdict(M.violations(sum, life), life.fuelMarginKg);
+      return h("tr", {}, h("td", { text: d ? "+" + d + " h" : "sem atraso" }), h("td", {}, verdictTag(v)), h("td", { class: "n", text: f1(sum.darkH, 0) + " h" }), h("td", { class: "n", text: f1(sum.blockH, 0) + " h" }));
+    });
+    return h("section", { class: "panel" },
+      h("h2", {}, "Viabilidade por atraso", h("em", {}, "modelo")),
+      h("div", { class: "scroll" }, h("table", { class: "table" },
+        h("thead", {}, h("tr", {}, h("th", { text: "atraso" }), h("th", { text: "resultado" }), h("th", { class: "n", text: "escuro" }), h("th", { class: "n", text: "Terra bloqueada" }))),
+        h("tbody", {}, rows))),
+      h("p", { class: "note", text: "Limites ilustrativos. Detalhe e carga da bateria na aba Replanejar, após CALCULAR." }));
+  }
+
+  VIEWS.visao = () => {
+    const { tr, sum, life } = scenario();
+    const opt = apiOption(0);
+    const kpi = (label, value, unit, delta, cls) => h("section", { class: "panel kpi" },
+      h("div", { class: "label", text: label }),
+      h("div", { class: "value" }, value, h("small", { text: unit })),
+      h("div", { class: "delta " + (cls || "flat"), text: delta }));
+    const fuelOk = life.fuelMarginKg >= 0;
+    return [
+      h("div", { class: "title span2" },
+        h("div", {}, h("h1", { text: "Visão geral da missão" }),
+          h("p", { text: M.SITES[S.site].name + " · início " + fmt(startMs()) + " · " + S.durationH + " h · dados sintéticos" }))),
+      h("div", { class: "grid four span2" },
+        kpi("Horas com luz", f1(sum.sunlitH, 0), " h", f1(sum.sunlitH / Math.max(1, sum.durationH) * 100, 0) + "% do período", "flat"),
+        kpi("Maior escuridão", f1(sum.darkH, 0), " h", sum.darkH > M.LIMITS.darkH ? "acima do limite de " + M.LIMITS.darkH + " h" : "dentro do limite", sum.darkH > M.LIMITS.darkH ? "down" : "up"),
+        kpi("Terra visível", f1(sum.earthH, 0), " h", "maior bloqueio " + f1(sum.blockH, 0) + " h", sum.blockH > M.LIMITS.blockH ? "down" : "flat"),
+        kpi("Carga mínima", opt ? f1(opt.metrics.minimum_charge_wh, 0) : "—", opt ? " Wh" : "", opt ? opt.simulation_status : "clique em + para calcular", opt && opt.simulation_status === "CONSTRAINTS_MET" ? "up" : opt ? "down" : "flat")),
+      h("div", { class: "grid two span2" },
+        donutCard(sum),
+        h("section", { class: "panel" },
+          h("h2", {}, "Combustível (ilustrativo)", h("em", {}, "sem fonte")),
+          h("dl", { class: "readout" },
+            h("dt", {}, "restante"), h("dd", { text: life.fuelRemainingKg > 0 ? f1(life.fuelRemainingKg, 0) + " kg" : "esgotado" }),
+            h("dt", {}, "margem sobre a reserva"), h("dd", { class: fuelOk ? "" : "fuelout", text: f1(life.fuelMarginKg, 0) + " kg" }),
+            h("dt", {}, "estoque de alimentos"), h("dd", { text: f1(life.foodLeftKg, 0) + " kg" }),
+            h("dt", {}, "O2 em estoque"), h("dd", { text: f1(life.o2StockKg, 0) + " kg" })),
+          h("div", { class: "bar " + (fuelOk ? "" : "bad") }, h("span", { style: "width:" + Math.max(0, Math.min(100, life.fuelRemainingKg / 450 * 100)) + "%" })),
+          h("p", { class: "note", text: "Valores ilustrativos. Não usar para decisão de segurança." }))),
+      dailyBarCard(tr, S.stepMin),
+      h("div", { class: "grid two span2" }, polarCard(), verdictCard())
+    ];
+  };
+
   // ---------- API panels (linked to the Go API in main) ----------
   // Each panel calls one endpoint on demand and keeps the last response in S.apiResults.
   // Nothing here replaces the synthetic panels: they are shown above them, labelled as API data.
@@ -835,6 +947,8 @@
   // ---------- rendering ----------
   function renderTab() {
     const box = $("views");
+    const top = $("top-site");
+    if (top && top.value !== S.site) top.value = S.site;
     const nodes = VIEWS[S.tab]();
     box.replaceChildren(...nodes.filter(Boolean));
     document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.tab === S.tab ? "true" : "false"));
@@ -845,7 +959,7 @@
     renderTab();
   }
 
-  const TAB_NAMES = ["entrada", "geometria", "horizonte", "janelas", "energia", "vida", "replan", "visual", "sens", "historico", "lanc", "status"];
+  const TAB_NAMES = ["visao", "entrada","geometria", "horizonte", "janelas", "energia", "vida", "replan", "visual", "sens", "historico", "lanc", "status"];
   function tabFromHash() {
     const name = (location.hash || "").replace("#", "");
     return TAB_NAMES.includes(name) ? name : null;
@@ -861,6 +975,13 @@
     tickClock(); setInterval(tickClock, 1000);
     loadHealth();
     loadSites();
+    const fab = document.getElementById("fab");
+    if (fab) fab.addEventListener("click", calculate);
+    const top = document.getElementById("top-site");
+    if (top) {
+      top.replaceChildren(...Object.entries(M.SITES).map(([id, s]) => h("option", { value: id, text: id + " · " + s.name })));
+      top.addEventListener("change", e => { S.site = e.target.value; S.api = null; renderAlarm(); renderTab(); });
+    }
     renderAlarm();
     renderTab();
   }
