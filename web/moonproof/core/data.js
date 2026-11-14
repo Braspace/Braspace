@@ -1,0 +1,100 @@
+// MoonProof data layer: every value travels with its origin and state.
+// Static NASA-derived products come from web/data/ (loaded with web/lab/ modules, not copied);
+// the API (window.BRASPACE_API_BASE || "") is optional and its absence is shown, never hidden.
+import { SiteSeries, HOUR_MS } from "../../lab/data.js";
+import { TerrainGrid } from "../../lab/terrain.js";
+
+export const DATA_BASE = new URL("../../data/", import.meta.url).href;
+export const SEALS = ["VAL", "PRE", "EST", "SIM", "N/D", "FALHA"];
+
+/**
+ * Map an origin state to a seal. VAL is returned ONLY for the exact state "VALIDATED".
+ * PRELIMINARY_* → PRE, SYNTHETIC → SIM, UNVERIFIED_INPUTS → EST, NO_SERIES_DATA/missing → N/D, ERROR → FALHA.
+ */
+export function sealFor(status) {
+  const s = String(status || "").toUpperCase();
+  if (s === "VALIDATED") return "VAL";
+  if (s.startsWith("PRELIMINARY")) return "PRE";
+  if (s === "SYNTHETIC" || s.includes("SYNTHETIC") || s === "SIMULATION") return "SIM";
+  if (s === "UNVERIFIED_INPUTS" || s === "ESTIMATE") return "EST";
+  if (s === "ERROR" || s === "FAILED") return "FALHA";
+  return "N/D";
+}
+
+/**
+ * A value with provenance. Missing/non-finite value → seal N/D (never 0).
+ * { value, unit, status, seal, source, detail }  — detail is free text for the Proof layer.
+ */
+export function sourced(value, { unit = "", status, source = "", detail = {} } = {}) {
+  const missing = value == null || (typeof value === "number" && !Number.isFinite(value));
+  return Object.freeze({ value: missing ? null : value, unit, status: missing ? (status === "ERROR" ? "ERROR" : "NO_DATA") : status,
+    seal: missing ? (status === "ERROR" ? "FALHA" : "N/D") : sealFor(status), source, detail });
+}
+
+let sitesP = null;
+/** The five real sites of web/data/sites.json, numbered 1..n in file order. */
+export function loadSites() {
+  return sitesP ||= fetch(DATA_BASE + "sites.json").then(r => { if (!r.ok) throw new Error("sites.json " + r.status); return r.json(); })
+    .then(doc => ({ status: doc.science_status, note: doc.note, window: doc.series_window, generated: doc.generated_utc,
+      features: Array.isArray(doc.features) ? doc.features : [],
+      sites: doc.sites.map((s, i) => ({ ...s, n: i + 1 })) }));
+}
+
+/** Long-term metric of a site as a sourced value (from sites.json metrics). */
+export function siteMetric(doc, site, key, unit) {
+  return sourced(site?.metrics?.[key], { unit, status: doc.status,
+    source: "web/data/sites.json · metrics." + key, detail: { window: doc.window, generated: doc.generated } });
+}
+
+const seriesCache = new Map();
+export function loadSeries(site) {
+  if (!seriesCache.has(site.id)) seriesCache.set(site.id, SiteSeries.load(DATA_BASE + site.series));
+  return seriesCache.get(site.id);
+}
+
+/** Window metrics for [startIso, +hours) from the stored hourly series, each value sourced. */
+export async function windowMetrics(doc, site, startIso, hours) {
+  const series = await loadSeries(site);
+  const t0 = startIso ? Date.parse(startIso) : series.start;
+  const w = series.window(t0, hours);
+  const st = w.status === "COMPUTED" ? doc.status : "NO_SERIES_DATA";
+  const base = { status: st, source: "web/data/" + site.series + ".bin", detail: { sha256: series.meta.series.sha256, start: new Date(t0).toISOString(), hours, step: "1 h" } };
+  return { raw: w, series, t0,
+    sunPct: sourced(w.sunPct, { ...base, unit: "%" }), earthPct: sourced(w.earthPct, { ...base, unit: "%" }),
+    longestDarkH: sourced(w.longestDarkH, { ...base, unit: "h" }), longestBlackoutH: sourced(w.longestBlackoutH, { ...base, unit: "h" }),
+    maxSunElDeg: sourced(w.maxSunElDeg, { ...base, unit: "°" }) };
+}
+
+/** Per-day sunlit fraction (0..1) over the window, for the "Why" bar. */
+export function dailySun(series, t0, hours) {
+  const out = []; const i0 = Math.ceil((t0 - series.start) / HOUR_MS);
+  for (let d = 0; d * 24 < hours; d++) {
+    let on = 0, n = 0;
+    for (let h = d * 24; h < Math.min(hours, d * 24 + 24); h++) { const i = i0 + h; if (i < 0 || i >= series.count) continue; n++; if (series.sunMargin[i] >= 0) on++; }
+    out.push(n ? on / n : null);
+  }
+  return out;
+}
+
+let gridP = null;
+export function loadRegion() { return gridP ||= TerrainGrid.load(DATA_BASE + "region/south_pole_400m"); }
+
+/** API base; "" = same origin. */
+export function apiBase() { return (globalThis.window && window.BRASPACE_API_BASE) || ""; }
+/**
+ * Call the API. Resolves {ok:true, data, status} or {ok:false, offline:true, error}. Never throws.
+ * status is the payload's own science state when present (science_status / status / state).
+ */
+export async function api(path, { method = "GET", body, timeoutMs = 8000 } = {}) {
+  const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const r = await fetch(apiBase() + path, { method, signal: ctl.signal,
+      headers: body ? { "content-type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined });
+    if (!r.ok) return { ok: false, offline: r.status >= 500, error: "HTTP " + r.status };
+    const data = await r.json();
+    return { ok: true, data, status: data?.science_status || data?.status || data?.state || null };
+  } catch (e) { return { ok: false, offline: true, error: String(e?.message || e) }; }
+  finally { clearTimeout(tm); }
+}
+/** true when /readyz answers. Screens show "offline · precomputed" otherwise. */
+export async function apiOnline() { return (await api("/readyz", { timeoutMs: 3000 })).ok; }

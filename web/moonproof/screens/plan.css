@@ -1,0 +1,163 @@
+.mp-plan-layout {
+  position: fixed;
+  inset: 112px 28px 24px 28px;
+  display: grid;
+  grid-template-columns: 320px 1fr 340px;
+  grid-template-rows: auto 1fr;
+  gap: 14px;
+  pointer-events: none;
+  z-index: 15;
+}
+.mp-plan-rules {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  padding: 18px;
+  pointer-events: auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mp-plan-export {
+  grid-column: 3;
+  grid-row: 1;
+  padding: 18px;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mp-plan-table {
+  grid-column: 2 / span 2;
+  grid-row: 2;
+  padding: 18px;
+  pointer-events: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-self: end;
+  max-height: 100%;
+}
+.mp-plan-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.mp-plan-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+.mp-plan-tag {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--jade);
+}
+.mp-rule-row {
+  display: grid;
+  grid-template-columns: 1fr 78px 28px;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.mp-rule-row input, .mp-rule-row select {
+  background: var(--card-black);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  min-height: 44px;
+}
+.mp-rule-select {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.mp-rule-select select {
+  background: var(--card-black);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  min-height: 44px;
+}
+.mp-btn-jade {
+  background: var(--jade);
+  color: var(--jade-ink);
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 12px 16px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.mp-btn-white {
+  background: var(--pill-white);
+  color: var(--pill-ink);
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.mp-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mp-url-box {
+  background: var(--card-black);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  word-break: break-all;
+}
+.mp-table-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+}
+.mp-metrics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.mp-metrics-table th, .mp-metrics-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+.mp-metrics-table th {
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 12px;
+}
+.mp-val-bad { color: var(--fail); font-weight: 700; }
+.mp-val-best { color: var(--jade); font-weight: 700; }
+.mp-note { font-size: 12px; color: var(--text-dim); margin: 0; }
+
+@media (max-width: 900px) {
+  .mp-plan-layout {
+    position: static;
+    margin: 76px 12px 84px 12px;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+  .mp-plan-rules, .mp-plan-export, .mp-plan-table {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}

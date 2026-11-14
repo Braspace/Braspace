@@ -1,0 +1,19 @@
+# 03 — Compare Sites
+
+**Origem:** requisitos relatados da Heloísa e código existente em web/lab/, não transcrição do artefato Claude.
+
+## Objetivo e componentes
+Selecionar até três locais, comparar frações Sol/Terra, maior sombra e interrupção de visibilidade geométrica.
+
+## API, ação e estados
+POST /api/compare; apenas data_status AVAILABLE autoriza números.
+Comportamento offline: mostrar indisponibilidade; nunca números inventados nem badge VALIDATED.
+A navegação por teclado, identidade visual consistente, foco visível e layout mobile são obrigatórios.
+
+## Experiências
+- Público/estudante: explicação simples e progressiva.
+- Pesquisador: fonte, unidades, estado, séries e limitações.
+- Educador: exercícios de exploração e justificativas replicáveis.
+
+## Aceitação
+Fluxos e dados verificáveis, estados vazios claros, contato direto com Polaris Lab/Onboard quando aplicável, nenhum risco oculto e revisão humana por @lisanogueira.

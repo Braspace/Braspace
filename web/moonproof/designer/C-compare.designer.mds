@@ -1,0 +1,75 @@
+# C-compare · Comparar (3 cenários, veredito e diferenças)
+
+## Pergunta que a tela responde
+**pt-BR:** Qual cenário (local + data) é melhor e por quê?  
+**en:** Which scenario (site + date) is best and why?
+
+## Quem usa e em que camada abre
+- **Público geral:** abre em **1 · Resposta** (cartão de veredito em 1 frase).
+- **Educadores:** alterna para **2 · Por quê** (gráfico `Sol e Terra por dia` espelhado).
+- **Planejadores:** alterna para **3 · Prova** (tabela completa com regras editáveis e exportação).
+
+## Layout
+- **Desktop (1440×900):**
+  - Fundo *full-bleed*: terreno lunar com marcadores `A`, `B`, `C` ligados por linha pontilhada.
+  - **Topo:** Barra de navegação (`Comparar` ativo em Jade) + barra de contexto (`3 cenários · 2 locais · 2 datas • 14 dias cada • mesmo hardware H1`, selo `PRE`/`SIM`, `Alterar`, CTA `Testar atraso em B`).
+  - **Coluna esquerda:** Cartão de veredito (`Qual cenário é melhor?` + botões `E se B atrasar?` e `Pousar`), lista de 3 cartões de cenário (`A`, `B`, `C`), gráfico `Sol e Terra por dia · <cenário>`.
+  - **Coluna direita:** Painel `Diferenças` com botão `Tabela completa`, grupos `Energia` e `Contato` para colunas `A`, `B`, `C`, e rodapé `N/D` (`Pedras menores que 20 m não aparecem nos dados.`).
+  - **Rodapé central:** `<`, `>`, `Cenário B ⌄`, `+`.
+- **Celular (390×844):**
+  - Cabeçalho em pílula, cartão de recomendação, 3 pílulas `A` / `B ✓` / `C`, tabela `Diferenças` compacta, CTA `E se B atrasar?`, barra de navegação inferior fixa.
+
+## Componentes
+- **Cartão de veredito:** Título, frase resumo, 2 CTAs (`E se B atrasar?` e `Pousar`). Chips `1 Resposta · 2 Por quê · 3 Prova`.
+- **Cartões de cenário (`A`, `B`, `C`):** Letra, local, data, selo de status (`Atende a tudo` em Jade ou `Falha: ...` em coral).
+- **Gráfico `Sol e Terra por dia`:** Barras espelhadas (Sol acima em amarelo, Terra abaixo em azul) para `D0`..`D13`.
+- **Tabela `Diferenças`:** Colunas `A`, `B`, `C`; grupo `Energia` (regra noite ≤ 60 h) e `Contato` (regra perda ≤ 72 h); destaque Jade para melhor valor e coral para violação.
+- **Rodapé `N/D`:** Aviso explícito de limitação dos dados.
+
+## Textos
+| Elemento | pt-BR | en |
+|---|---|---|
+| Barra de contexto | 3 cenários · 2 locais · 2 datas · 14 dias cada | 3 scenarios · 2 sites · 2 dates · 14 days each |
+| Veredito | Qual cenário é melhor? | Which scenario is best? |
+| CTAs veredito | E se B atrasar? · Pousar | What if B is delayed? · Land |
+| Status cenário | Atende a tudo · Falha: noite longa · Falha: sem Terra | Meets all rules · Fail: long night · Fail: no Earth |
+| Gráfico | Sol e Terra por dia | Sun and Earth per day |
+| Tabela | Diferenças · Tabela completa · Energia · Contato | Differences · Full table · Power · Contact |
+| Limitação | Pedras menores que 20 m não aparecem nos dados. | Rocks smaller than 20 m are not in the data. |
+
+## Dados
+| Elemento | Fonte exata (arquivo ou rota + campo) | Selo | Sem dado |
+|---|---|---|---|
+| Comparação de cenários | `POST /api/compare` (ou cálculo sobre `web/data/sites.json` + `sites/<id>.json`) | `PRE` / `SIM` | `—` (`N/D`) |
+| Energia e folga da bateria (H1) | `POST /api/onboard/evaluate` ou `POST /api/onboard/site-evaluate` | `SIM` | `—` (`N/D`) |
+| Série diária Sol e Terra | `web/data/sites/<id>.json` (agregado por dia) ou `GET /api/sites/{id}/sky` | `PRE` / `SIM` | `—` (`N/D`) |
+| Pedras < 20 m | sem fonte: N/D | `N/D` | `N/D` explícito |
+
+## Interações
+- **Clique:** Selecionar `A`, `B` ou `C` atualiza o gráfico diário e destaca o marcador no mapa; `E se B atrasar?` abre `recover.html`; `Pousar` abre `landing.html`; `Tabela completa` abre camada `3 · Prova`.
+- **Teclado:** `Tab` e setas navegam entre cenários.
+
+## Ligações
+- `recover.html` (D · Replanejar), `landing.html` (F · Landing Lab), `explore.html` (B), `cockpit.html` (E), `evidence.html` (H).
+
+## Diferenças entre o desenho e a tela real
+1. **Sem números fixos:** `48%`, `71%`, `79%`, `68 h`, `46 h`, `160 h` são ilustrativos; vêm de `/api/compare` e `sites.json`.
+2. **Selo `VAL` proibido:** Nunca exibir `VAL`.
+3. **Locais reais:** Sítios reais de `web/data/sites.json` em vez de `SR-01`/`SR-02`.
+4. **Bateria H1:** Marcada como `SIM`.
+5. **Regras (≤ 60 h, ≤ 72 h):** Rotuladas como `assumed limit` / `limite assumido`.
+6. **Sem domínio inventado:** Compartilhamento via URL atual com query string.
+7. **Dado real e resolução:** Proveniência LOLA 80 m/px.
+8. **Landing Lab:** Link direto para `landing.html`.
+
+## Correções feitas pela implementação (BR78)
+- Bateria H1 (folga em horas) não vem de `/api/compare` nem de `/api/scenarios/delay`: mostra "—" + N/D. A "folga" calculada é a distância até a regra mais apertada (noite ou perda da Terra), rotulada assim.
+- Os cenários e o atraso ficam no hash da URL (`#sc=local~início~horas,…&d=48&x=wait`); regras na query (`night`, `blackout`).
+- As saídas (esperar / trocar de local / encurtar) são calculadas da série; só aparecem as que cumprem as regras, ordenadas pela folga.
+- Rótulos de data e local vêm dos dados; o selo é o do estado da origem (PRE, SIM, EST).
+
+## Critérios de aceite
+- [ ] Comparação funciona com os 5 sítios reais e `/api/compare` (com fallback estático se API offline).
+- [ ] Violações de regra usam cor coral + texto/ícone (nunca só cor).
+- [ ] Aviso `N/D` para pedras < 20 m visível.
+- [ ] Responsivo em 1440×900 e 390×844 sem rolagem lateral.
