@@ -569,9 +569,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Image bytes",
+            "description": "Image bytes (image/jpeg) or a 3D model (model/gltf-binary, streamed from a verified disk cache; supports Range and If-None-Match)",
             "content": {
-              "image/jpeg": {}
+              "image/jpeg": {},
+              "model/gltf-binary": {}
             }
           },
           "404": {
@@ -934,7 +935,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK. Engine result including evidence_passport and science_status; never VALIDATED.",
             "content": {
               "application/json": {
                 "schema": {
@@ -974,10 +975,25 @@
             }
           },
           "422": {
-            "description": "Invalid inputs"
+            "description": "Invalid inputs (null or incomplete look angles are rejected, never read as zero)"
           },
           "502": {
-            "description": "Engine failed"
+            "description": "Engine failed, timed out or returned an invalid contract. Body: {\"error\": string} (no code field).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1071,6 +1087,222 @@
           }
         }
       }
+    },
+    "/api/vector/status": {
+      "get": {
+        "summary": "Optional metadata-only vector capability and model configuration; default disabled",
+        "operationId": "getVectorStatus",
+        "responses": {
+          "200": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "available": {
+                      "type": "boolean"
+                    },
+                    "dimension": {
+                      "type": "integer",
+                      "enum": [
+                        384
+                      ]
+                    },
+                    "model_id": {
+                      "type": "string"
+                    },
+                    "purpose": {
+                      "type": "string"
+                    },
+                    "scientifically_validated": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "available",
+                    "dimension",
+                    "model_id",
+                    "purpose",
+                    "scientifically_validated"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vector/search": {
+      "post": {
+        "summary": "Optional cosine-nearest source metadata (NOT lunar physics); 384D client-supplied vector from a pinned model",
+        "operationId": "searchSourceMetadata",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "model_id": {
+                    "type": "string"
+                  },
+                  "vector": {
+                    "type": "array",
+                    "minItems": 384,
+                    "maxItems": 384,
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10
+                  }
+                },
+                "required": [
+                  "model_id",
+                  "vector"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "model_id": {
+                      "type": "string"
+                    },
+                    "dimension": {
+                      "type": "integer",
+                      "enum": [
+                        384
+                      ]
+                    },
+                    "scientifically_validated": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "limitations": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "source_ref": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "source_url": {
+                            "type": "string"
+                          },
+                          "sha256": {
+                            "type": "string"
+                          },
+                          "similarity": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "source_ref",
+                          "title",
+                          "source_url",
+                          "sha256",
+                          "similarity"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "model_id",
+                    "dimension",
+                    "results",
+                    "scientifically_validated",
+                    "limitations"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1110,6 +1342,7 @@
               "INVALID_CANDIDATES",
               "GRID_UNSUPPORTED",
               "GRID_MISMATCH",
+              "GRID_NOT_ALIGNED",
               "WINDOW_TOO_LONG",
               "INVALID_SCENARIO",
               "GRID_NOT_ALIGNED",
@@ -1117,7 +1350,12 @@
               "LAYER_NOT_PROXIED",
               "LAYER_UNAVAILABLE",
               "NO_SERIES_DATA",
-              "INVALID_STEP"
+              "INVALID_STEP",
+              "VECTOR_UNAVAILABLE",
+              "INVALID_MODEL",
+              "MODEL_MISMATCH",
+              "INVALID_LIMIT",
+              "INVALID_VECTOR"
             ]
           }
         },
@@ -1593,7 +1831,8 @@
         "enum": [
           "AVAILABLE",
           "NO_SERIES_DATA",
-          "OUTSIDE_COVERAGE"
+          "OUTSIDE_COVERAGE",
+          "GRID_NOT_ALIGNED"
         ]
       },
       "SiteResult": {
@@ -1643,12 +1882,13 @@
           "start_utc": {
             "type": "string",
             "format": "date-time",
-            "description": "RFC3339 UTC"
+            "description": "RFC3339 with offset (normalized to UTC). Must fall on a series grid epoch; otherwise GRID_NOT_ALIGNED."
           },
           "duration_hours": {
             "type": "number",
             "exclusiveMinimum": 0,
-            "maximum": 720
+            "maximum": 720,
+            "description": "Must be a whole multiple of the series step (and the window must start on a grid epoch); otherwise the site is reported as GRID_NOT_ALIGNED, never rounded."
           },
           "include_series": {
             "type": "boolean"
@@ -1786,12 +2026,13 @@
           "start_utc": {
             "type": "string",
             "format": "date-time",
-            "description": "RFC3339 UTC"
+            "description": "RFC3339 with offset (normalized to UTC). Must fall on a series grid epoch; otherwise GRID_NOT_ALIGNED."
           },
           "duration_hours": {
             "type": "number",
             "exclusiveMinimum": 0,
-            "maximum": 720
+            "maximum": 720,
+            "description": "Must be a whole multiple of the series step (and the window must start on a grid epoch); otherwise the site is reported as GRID_NOT_ALIGNED, never rounded."
           },
           "delays_hours": {
             "type": [
@@ -2327,12 +2568,13 @@
           "start_utc": {
             "type": "string",
             "format": "date-time",
-            "description": "RFC3339 UTC"
+            "description": "RFC3339 with offset (normalized to UTC). Must fall on a series grid epoch; otherwise GRID_NOT_ALIGNED."
           },
           "duration_hours": {
             "type": "number",
             "exclusiveMinimum": 0,
-            "maximum": 720
+            "maximum": 720,
+            "description": "Must be a whole multiple of the series step (and the window must start on a grid epoch); otherwise the site is reported as GRID_NOT_ALIGNED, never rounded."
           },
           "candidates": {
             "type": "array",
@@ -2508,7 +2750,8 @@
             "enum": [
               "global_albedo_visualization",
               "science_elevation",
-              "global_dem_render"
+              "global_dem_render",
+              "visual_model_3d"
             ]
           },
           "registry_ref": {

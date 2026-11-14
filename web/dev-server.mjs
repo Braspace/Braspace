@@ -7,7 +7,7 @@ import {fileURLToPath,pathToFileURL} from "node:url";
 import path from "node:path";
 
 const directory=path.dirname(fileURLToPath(import.meta.url));
-const upstreamHost="127.0.0.1",upstreamPort=8080;
+const upstreamHost="127.0.0.1",upstreamPort=Number.parseInt(process.env.BRASPACE_API_PORT||"8080",10);
 const staticFiles=new Map([
   ["/",{name:"index.html",type:"text/html; charset=utf-8"}],
   ["/index.html",{name:"index.html",type:"text/html; charset=utf-8"}],
@@ -33,7 +33,7 @@ const csp=[
   "script-src 'self' https://cdn.jsdelivr.net",
   "style-src 'self'",
   "img-src 'self' https://svs.gsfc.nasa.gov data: blob:",
-  "connect-src 'self'",
+  "connect-src 'self' blob:",
   "font-src 'self'",
   "object-src 'none'",
   "base-uri 'none'",

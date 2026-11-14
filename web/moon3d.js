@@ -1,15 +1,60 @@
 // Original BRASPACE visualization; no NASA terrain/ephemeris calculations.
 // NASA SVS imagery is for aesthetics. Scientific horizon MUST use NASA LOLA DEM.
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.181.0/build/three.module.js";
+// three is imported inside createMoon() (not at the top) so the pure helpers
+// below can be unit-tested in Node. The "+esm" entry is used for both THREE and
+// GLTFLoader so they share ONE copy of three (build/three.module.js and the
+// loader's own import would otherwise be two copies). Same version, same CDN
+// host as before, which the CSP already allows.
+const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.181.0/+esm";
+const GLTF_LOADER_URL = "https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/loaders/GLTFLoader.js/+esm";
 
-// NASA SVS LROC color texture served same-origin by the Go API (GET /api/layers),
-// fetched from svs.gsfc.nasa.gov and checked against the team asset registry's
-// SHA-256. Loading it cross-origin from SVS is blocked by CORS in browsers.
-const textureURL = "/api/layers/lroc-color-2k/asset";
+// Optional API origin. Same-origin deployments leave it empty; the static
+// GitHub Pages build sets window.BRASPACE_API_BASE in config.js instead of
+// rewriting this file at publish time.
+export function apiURL(path, scope = globalThis) {
+  const base = String(scope?.BRASPACE_API_BASE || "").replace(/\/+$/, "");
+  return base + path;
+}
+// NASA SVS LROC color texture and the NASA SVS 14959 Moon GLB, both served
+// by the Go API (GET /api/layers/<id>/asset), fetched from svs.gsfc.nasa.gov
+// and checked against the team asset registry's SHA-256. Loading them
+// cross-origin from SVS is blocked by CORS in browsers.
+export const TEXTURE_PATH = "/api/layers/lroc-color-2k/asset";
+export const MODEL_PATH = "/api/layers/svs-14959-moon-small-glb/asset";
 const radians = d => d * Math.PI / 180;
 const clamp = (v,min,max) => Math.min(max,Math.max(min,v));
 
-function proceduralFallback() {
+// ---- Coordinate convention -------------------------------------------------
+// Sphere (three SphereGeometry + equirectangular texture): lon 0 at +X, north
+// +Y, east -Z. The SVS 14959 GLB (moon_small.glb, measured in BR41) has lon 0
+// at -Z, north +Y, east -X. Rotating the model by -90 degrees about Y maps
+// the sphere frame onto the model frame, so one lonLat() serves both.
+export const SURFACE_RADIUS = 1.65, MARKER_RADIUS = 1.68;
+export const MODEL_YAW = -Math.PI / 2;
+export function lonLatToVector(lat, lon, r = MARKER_RADIUS) {
+  // Approximate visual pin placement on a rendered sphere (NOT precision
+  // geodesy): coordinate frames and pole orientation await science review.
+  const theta = radians(90 - lat), phi = radians(lon + 180);
+  return {x: -r * Math.sin(theta) * Math.cos(phi), y: r * Math.cos(theta), z: r * Math.sin(theta) * Math.sin(phi)};
+}
+// Where a model-local point lands once the model is placed in the globe.
+export function modelLocalToGlobe(p, yaw = MODEL_YAW, scale = 1) {
+  const c = Math.cos(yaw), s = Math.sin(yaw);
+  return {x: scale * (p.x * c + p.z * s), y: scale * p.y, z: scale * (-p.x * s + p.z * c)};
+}
+// The GLB frame: unit direction of (lat, lon) in model-local axes.
+export function modelDirection(lat, lon) {
+  const la = radians(lat), lo = radians(lon), c = Math.cos(la);
+  return {x: -c * Math.sin(lo), y: Math.sin(la), z: -c * Math.cos(lo)};
+}
+export const STATUS_TEXT = {
+  sphere: "Sphere + NASA SVS LROC texture · visual model · not terrain science",
+  glb: "NASA SVS 14959 Moon GLB · visual model · not terrain science",
+  fallback: "Illustrative texture fallback · NASA image unavailable · visual model · not terrain science",
+  glbFailed: "Sphere + NASA SVS LROC texture · NASA 3D model unavailable · visual model · not terrain science",
+};
+
+function proceduralFallback(THREE) {
   // Deterministic training-only gray texture. Never present as lunar terrain data.
   const canvas=document.createElement("canvas");
   canvas.width=1024;canvas.height=512;
@@ -32,7 +77,8 @@ function proceduralFallback() {
   return t;
 }
 
-export async function createMoon(stage,status) {
+export async function createMoon(stage,status,options={}) {
+  const THREE=await import(THREE_URL);
   if(!THREE.WebGLRenderer)throw new Error("WebGL unavailable");
   const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:"low-power"});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
@@ -46,9 +92,12 @@ export async function createMoon(stage,status) {
   const globe=new THREE.Group();scene.add(globe);
   const surface=new THREE.Mesh(
     new THREE.SphereGeometry(1.65,96,64),
-    new THREE.MeshStandardMaterial({color:0xffffff,roughness:1,metalness:0,map:proceduralFallback()})
+    new THREE.MeshStandardMaterial({color:0xffffff,roughness:1,metalness:0,map:proceduralFallback(THREE)})
   );
   globe.add(surface);
+  stage.dataset.globeModel="sphere";
+  let modelRoot=null,modelState="idle",textureState="pending";
+  const setStatus=()=>{status.textContent=modelRoot?STATUS_TEXT.glb:textureState==="failed"?STATUS_TEXT.fallback:modelState==="failed"?STATUS_TEXT.glbFailed:STATUS_TEXT.sphere;};
   const ambient=new THREE.HemisphereLight(0xcee7ff,0x101c2b,1.75);scene.add(ambient);
   const light=new THREE.DirectionalLight(0xffffff,2.1);light.position.set(-3.5,2.5,5);scene.add(light);
   const rim=new THREE.PointLight(0x2b9ab6,40,22);rim.position.set(3,-2,-3);scene.add(rim);
@@ -57,24 +106,50 @@ export async function createMoon(stage,status) {
   function showTexture(){
     const loader=new THREE.TextureLoader();
     loader.setCrossOrigin("anonymous");
-    loader.load(textureURL,texture=>{
+    loader.load(apiURL(TEXTURE_PATH),texture=>{
       texture.colorSpace=THREE.SRGBColorSpace;
       texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
       const prev=surface.material.map;surface.material.map=texture;surface.material.needsUpdate=true;
       if(prev&&prev!==texture)prev.dispose();
-      status.textContent="NASA SVS LROC visual texture · not terrain science";
+      textureState="ok";setStatus();
       render();
     },undefined,()=>{
-      status.textContent="Illustrative texture fallback · NASA image unavailable";
+      textureState="failed";setStatus();
     });
   }
-  const lonLat=(lat,lon)=>{
-    // Approximate visual pin placement on a rendered sphere (NOT precision
-    // geodesy): coordinate frames and pole orientation await science review.
-    const theta=radians(90-lat),phi=radians(lon+180);
-    return new THREE.Vector3(-1.68*Math.sin(theta)*Math.cos(phi),
-      1.68*Math.cos(theta),1.68*Math.sin(theta)*Math.sin(phi));
-  };
+  const lonLat=(lat,lon)=>{const v=lonLatToVector(lat,lon,MARKER_RADIUS);return new THREE.Vector3(v.x,v.y,v.z);};
+  // NASA SVS 14959 GLB: loaded on demand; the sphere stays until it is ready
+  // and remains if loading fails.
+  const modelButton=document.createElement("button");
+  modelButton.type="button";modelButton.className="ghost";modelButton.id="load-nasa-model";
+  modelButton.textContent="Load NASA 3D model (13.8 MB)";
+  async function loadModel(){
+    if(modelRoot||modelState==="loading")return;
+    modelState="loading";stage.dataset.globeModel="loading";modelButton.disabled=true;modelButton.textContent="Loading NASA 3D model…";
+    const t0=performance.now();
+    try{
+      const {GLTFLoader}=await import(GLTF_LOADER_URL);
+      const gltf=await new GLTFLoader().loadAsync(apiURL(MODEL_PATH));
+      // The GLB is a sphere: its radius is half the box edge (NOT the box's
+      // bounding-sphere radius, which is sqrt(3) times larger).
+      const box=new THREE.Box3().setFromObject(gltf.scene),size=box.getSize(new THREE.Vector3());
+      const scale=SURFACE_RADIUS/((size.x+size.y+size.z)/6);
+      const center=box.getCenter(new THREE.Vector3());
+      const pivot=new THREE.Group();pivot.rotation.y=MODEL_YAW;pivot.scale.setScalar(scale);
+      gltf.scene.position.sub(center);pivot.add(gltf.scene);
+      globe.add(pivot);globe.remove(surface);
+      surface.geometry.dispose();surface.material.map?.dispose();surface.material.dispose();
+      modelRoot=pivot;modelState="ready";stage.dataset.globeModel="glb";
+      stage.dataset.modelMs=String(Math.round(performance.now()-t0));
+      modelButton.hidden=true;setStatus();render();
+    }catch(err){
+      modelState="failed";stage.dataset.globeModel="sphere";
+      modelButton.disabled=false;modelButton.textContent="Retry NASA 3D model";setStatus();
+    }
+  }
+  modelButton.addEventListener("click",loadModel);
+  (stage.querySelector(".stage-bottom")||stage).appendChild(modelButton);
+  if(options.autoloadModel||new URLSearchParams(globalThis.location?.search||"").get("model")==="1")loadModel();
   function setSites(sites){
     while(markers.children.length){
       const o=markers.children[0];markers.remove(o);o.geometry?.dispose();o.material?.dispose();
@@ -140,7 +215,9 @@ export async function createMoon(stage,status) {
     stage.removeEventListener("pointermove",pointerMove);stage.removeEventListener("pointerup",pointerUp);
     stage.removeEventListener("pointercancel",pointerUp);stage.removeEventListener("wheel",wheel);
     stage.removeEventListener("keydown",keyDown);
-    surface.geometry.dispose();surface.material.map?.dispose();surface.material.dispose();
+    modelButton.remove();
+    if(modelRoot)modelRoot.traverse(o=>{o.geometry?.dispose();const m=o.material;if(m){m.map?.dispose();m.dispose();}});
+    else{surface.geometry.dispose();surface.material.map?.dispose();surface.material.dispose();}
     renderer.dispose();renderer.domElement.remove();
   }};
 }

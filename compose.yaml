@@ -6,6 +6,10 @@ services:
     ports:
       - "127.0.0.1:${BRASPACE_PORT:-8080}:8080"
     read_only: true
+    # Verified NASA 3D model is cached on disk (streamed, not held in memory).
+    # tmpfs counts toward mem_limit: 32m is the cap, the model is 13.8 MB.
+    tmpfs:
+      - /var/cache/braspace:size=32m,mode=1777
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     pids_limit: 128
