@@ -43,3 +43,15 @@ export function presentationStatus(series){
  if(!series||series.science_status!=="VALIDATED"||series.scientifically_validated!==true)return "PRELIMINARY / UNVERIFIED";
  return "SOURCE-VALIDATED (review numerical methodology)";
 }
+
+export async function backendVectorAvailability(fetcher=fetch){
+ // Missing or disabled endpoint is a normal condition; never infer semantic
+ // quality or NASA geometry validity from a vector index.
+ try{
+  const result=await json("/api/vector/status",{},fetcher);
+  if(typeof result.enabled!=="boolean"||typeof result.available!=="boolean"||result.dimension!==384){
+   return {enabled:false,available:false,reason:"INVALID_VECTOR_CONTRACT"};
+  }
+  return {enabled:result.enabled,available:result.available,modelID:result.model_id||"",purpose:"source metadata only"};
+ }catch(e){return {enabled:false,available:false,reason:e.code||"NOT_CONFIGURED"};}
+}
