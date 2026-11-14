@@ -15,6 +15,19 @@ const staticFiles=new Map([
   ["/app.js",{name:"app.js",type:"text/javascript; charset=utf-8"}],
   ["/moon3d.js",{name:"moon3d.js",type:"text/javascript; charset=utf-8"}],
 ]);
+// Polar Lab / Landing Lab: static page, modules and precomputed NASA-derived data.
+// Only fixed prefixes, a strict character set and known extensions are served.
+const labTypes={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",
+ ".json":"application/json; charset=utf-8",".bin":"application/octet-stream",".jpg":"image/jpeg"};
+export function labFile(pathname){
+ if(pathname==="/lab.html")return {name:"lab.html",type:labTypes[".html"]};
+ if(!/^\/(lab|data)\/[A-Za-z0-9_\-\/]+\.(js|css|json|bin|jpg)$/.test(pathname)||pathname.includes(".."))return null;
+ const ext=pathname.slice(pathname.lastIndexOf("."));
+ if(pathname.startsWith("/lab/")&&![".js",".css"].includes(ext))return null;
+ const name=path.normalize(pathname.slice(1));
+ if(!name.startsWith("lab"+path.sep)&&!name.startsWith("data"+path.sep))return null;
+ return {name,type:labTypes[ext]};
+}
 const csp=[
   "default-src 'none'",
   "script-src 'self' https://cdn.jsdelivr.net",
@@ -68,7 +81,7 @@ export function createServer(){
    proxyAPI(req,res);
    return;
   }
-  const file=staticFiles.get(pathname);
+  const file=staticFiles.get(pathname)||labFile(pathname);
   if(!file){res.writeHead(404);res.end("Not found");return;}
   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
   try{
