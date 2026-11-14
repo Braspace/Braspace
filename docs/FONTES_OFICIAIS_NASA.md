@@ -104,6 +104,26 @@ O nome e a função foram confirmados por notícia de terceiros. O endereço `qu
 
 Apareceu em busca como nó de dados LOLA com DEMs de 5 m/pixel. A página não foi aberta nesta consulta, então o produto e o identificador não foram confirmados.
 
+## 8. Fontes candidatas adicionais (lista recebida em 2026-11-14)
+
+Lista de fontes recebida de terceiros. **Nenhuma destas foi verificada nesta consulta.** Os endereços e produtos precisam ser conferidos antes de uso. A coluna de licença fica em aberto: o uso para treino de modelos exige conferir os termos de cada produto.
+
+| Fonte | Função sugerida no projeto | Resolução citada | Estado | Licença |
+|---|---|---|---|---|
+| PGDA (NASA Goddard), DEMs do polo sul | Horizonte de alta resolução nos sítios Artemis | até 5 m/px | Verificada (seção 1) | a conferir |
+| PDS Geosciences Node, LOLA LDEM | DEM polar de referência | vários níveis | Dataset escolhido pela equipe: `LDEM_80S_80M` (80 m/px), PR #71 | a conferir |
+| USGS Astropedia, SLDEM2015 (LOLA + Kaguya) | Comparação de altura | não citada | Candidata | a conferir |
+| LROC NAC (ASU) e mapas de PSR | Iluminação real e regiões permanentemente sombreadas | ~0,5 m/px (NAC) | Candidata | a conferir |
+| LROC WAC e mosaicos polares | Contexto visual | não citada | Candidata | a conferir |
+| ShadowCam (Danuri/KPLO) | Imagens do interior de crateras sombreadas | não citada | Candidata | a conferir |
+| LROC QuickMap | Visualização e exportação de recortes | não se aplica | Candidata; endereço não verificado | a conferir |
+| NASA Moon Trek | Visualização e camadas para download | não se aplica | Candidata; página abriu sem texto (seção 4) | a conferir |
+| NASA SVS | Origem da imagem do Moon 3D (mídia) | não se aplica | Candidata | a conferir |
+| Chandrayaan-2 OHRC (ISRO, PRADAN) | Imagens de alta resolução do polo sul | ~0,25 m/px | Candidata; acesso não testado | a conferir |
+| Kaguya/SELENE, Terrain Camera (JAXA) | DEM de referência | não citada | Candidata | a conferir |
+
+**Observação sobre a frase "use para o treino":** antes de treinar qualquer modelo com esses dados, conferir a licença de cada um. Nenhum modelo de aprendizado está previsto no escopo atual.
+
 ## Pendências antes de usar qualquer dado
 
 1. Abrir a página do desafio no navegador e salvar o texto oficial.

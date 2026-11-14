@@ -271,7 +271,7 @@
 
   // Readable instant: day of the scenario, time of day and the UTC stamp.
   function instantLabel(cur) {
-    const ms = cur.ms;
+    const ms = Number.isFinite(cur.ms) ? cur.ms : startMs() + cur.i * S.stepMin * 60e3;
     const dayIdx = Math.floor((ms - startMs()) / 86400e3) + 1;
     const days = Math.ceil(S.durationH / 24);
     const hhmm = new Date(ms).toISOString().slice(11, 16);
@@ -339,7 +339,7 @@
   // The filled area is the synthetic horizon. Faint dots show the Sun and Earth over the
   // whole window; the solid markers show the current time, with a drop line to the horizon.
   VIEWS.horizonte = () => {
-    const { tr } = scenario();
+    const tr = timeline();
     if (S.t >= tr.length) S.t = 0;
     const cur = tr[S.t] || tr[0];
     const site = M.SITES[S.site];
