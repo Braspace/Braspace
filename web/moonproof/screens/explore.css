@@ -102,3 +102,6 @@
 @media (max-width:700px){.ex-readout{display:none}}
 /* UX audit: the grip strip painted an opaque dark band across the top of the glass sheet. */
 @media (max-width:700px){.ex-sheet .mc-handle{background:transparent}}
+/* UX audit: the right column stopped at bottom:118 to clear the dock, but at >=1301 px the dock
+   (centre, about 380-1060 px) never reaches it, and that cut the 1-2-3 layer chips of "What you see". */
+@media (min-width:1301px){.ex-right{bottom:28px}}

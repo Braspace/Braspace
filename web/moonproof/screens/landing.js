@@ -7,7 +7,7 @@ import { createSim, advance, telemetry, thrustDirection, DEFAULT_VEHICLE, MOON_R
 import { mountShell } from "../core/shell.js";
 import { loadSites, loadSeries, sealFor, apiOnline, DATA_BASE } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
-import { register, t, fmtNum, lang } from "../core/i18n.js";
+import { register, t, fmtNum, lang, setLang } from "../core/i18n.js";
 import { getState, setState, hrefTo } from "../core/state.js";
 import { TEXTS } from "./landing-texts.js";
 import { ASSUMED, GUIDE, localGravity, brakeHeight, guidedStep, alertFor, recommendedThrottle, fuelSeconds, fuelFrac, buildAttempt, saveAttempt, loadAttempts } from "./landing-model.js";
@@ -55,6 +55,9 @@ function seg(items, cur, onPick, label, icon) {
   for (const [v, k] of items) { const b = el("button", "", t(k)); if (icon && v === cur) b.insertAdjacentHTML("afterbegin", ico(icon, 14)); b.type = "button"; b.setAttribute("aria-pressed", String(v === cur)); b.onclick = () => onPick(v); w.append(b); }
   return w;
 }
+// The global top bar is hidden in the lab, so the language switch lives in the lab bar (same state key as the shell).
+function langBtn() { const b = el("button", "lab-round lab-lang", t("nav.lang.short")); b.type = "button"; b.setAttribute("aria-label", t("nav.lang"));
+  b.onclick = () => { const l = lang() === "en" ? "pt-BR" : "en"; setState({ lang: l }); setLang(l); build(); update(true); }; return b; }
 function round(svg, label, fn) { const b = el("button", "lab-round"); b.innerHTML = svg; b.type = "button"; b.setAttribute("aria-label", label); b.onclick = fn; return b; }
 function build() {
   document.documentElement.lang = lang();
@@ -70,7 +73,7 @@ function build() {
   $("bar").replaceChildren(back, el("i", "div"), ttl, ...(chip ? [chip] : []), meta, ...(chip ? [] : [sealSim]),
     seg([["guided", "lab.mode.guided"], ["free", "lab.mode.free"]], L.mode, v => { L.mode = v; build(); update(true); }, t("lab.mode")),
     seg(CAMS, L.cam, v => setCam(v), t("lab.cam"), ICO.cam),
-    ui.pause, round(ico(ICO.restart), t("lab.restart") + " (R)", start), round(ico(ICO.help), t("lab.help"), openHelp));
+    ui.pause, round(ico(ICO.restart), t("lab.restart") + " (R)", start), round(ico(ICO.help), t("lab.help"), openHelp), langBtn());
   // strip: phase + alert
   ui.phase = el("div", "lab-chip"); ui.clock = el("span", "mp-coord");
   ui.alert = el("div", "lab-chip lab-alert"); ui.alert.hidden = true; ui.alert.setAttribute("role", "alert");

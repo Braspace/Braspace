@@ -35,9 +35,7 @@ let tab = "overview", energyOut = null, cur = null;
 // Keep the chosen site in the free part of the map (between the side panels), not under them.
 function frame() {
   const s = site(); terrain.select(s.id);
-  const W = innerWidth, Hh = innerHeight, mpp = terrain.view.span / Math.min(W, Hh);
-  if (W > 700) { const L = $("left").getBoundingClientRect().right, R = $("right").getBoundingClientRect().left; terrain.view.cx = s.stereo_x_m - ((L + R) / 2 - W / 2) * mpp; }
-  else { const top = 190, bot = $("panels").getBoundingClientRect().top; terrain.view.cy = s.stereo_y_m + ((top + bot) / 2 - Hh / 2) * mpp; }
+  // core/terrain.js already centres the site in the free area between the panels (an extra offset here moved it twice).
   terrain.redraw(); rays();
 }
 
@@ -47,7 +45,7 @@ function rays() {
   const s = site(), W = innerWidth, Hh = innerHeight, [px, py] = terrain.toPx(s.stereo_x_m, s.stereo_y_m);
   svg.setAttribute("viewBox", `0 0 ${W} ${Hh}`);
   const g = cur.geo; if (!g) return;
-  const len = Math.min(W, Hh) * (W > 700 ? .26 : .18);
+  const len = Math.min(W, Hh) * (W > 700 ? .26 : .3);
   for (const [body, az, margin, color] of [["sun", g.sunAz, g.sunMargin, "#FFD166"], ["earth", g.earthAz, g.earthMargin, "#4C9BFF"]]) {
     const [dx, dy] = mapDir(s.lon, az);
     // keep the Sun/Earth icon inside the free map area (below the context bar, above the dock)
@@ -62,7 +60,8 @@ function rays() {
     svg.append(ln, dot);
     const lab = $("ray-" + body); lab.hidden = false;
     lab.textContent = t((body === "sun" ? "mc.sun" : "mc.earth") + (margin >= 0 ? "Above" : "Below"), { n: deg(Math.abs(margin)) });
-    lab.style.left = (x2 - dy * 0 + (dx >= 0 ? 0 : 0)) + "px"; lab.style.top = (y2 + (dy > 0 ? 34 : -34)) + "px";
+    lab.style.left = (x2 - dy * 0 + (dx >= 0 ? 0 : 0)) + "px"; { const ctxB = Math.max(...[".mp-top", ".mp-context", ].map(q => document.querySelector(q)?.getBoundingClientRect().bottom || 0)); // never under the context bar
+      let ly = y2 + (dy > 0 ? 34 : -34); if (ly - 12 < ctxB + 8) ly = Math.max(y2 + 34, ctxB + 20); lab.style.top = ly + "px"; }
   }
 }
 

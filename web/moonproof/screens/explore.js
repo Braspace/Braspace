@@ -85,9 +85,7 @@ async function paint() {
 function frame() {
   const s = site(), tx = point ? point.x : s.stereo_x_m, ty = point ? point.y : s.stereo_y_m;
   if (!point) terrain.select(s.id);
-  const W = innerWidth, Hh = innerHeight, mpp = terrain.view.span / Math.min(W, Hh);
-  if (W > 700) { const L = $("left").getBoundingClientRect().right, R = $("right").getBoundingClientRect().left; terrain.view.cx = tx - ((L + R) / 2 - W / 2) * mpp; terrain.view.cy = ty; }
-  else { terrain.view.cx = tx; terrain.view.cy = ty; } // phone: core/terrain.js already centres the point in the free area above the sheet
+  terrain.view.cx = tx; terrain.view.cy = ty; // core/terrain.js centres it in the free area between the panels
   terrain.redraw(); paint();
 }
 const site = () => doc.sites.find(s => s.id === getState().site);
