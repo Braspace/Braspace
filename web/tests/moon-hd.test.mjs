@@ -8,7 +8,7 @@ import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {createServer,moonHdFile} from "../dev-server.mjs";
 import {decodeEphemeris,indexAt,timeAt,pointsAt,bodyDirection,toGlobeScene,toPolarScene,signedLon,elevationAtSouthPole} from "../moon-hd/ephemeris.js";
-import {R_REF,stereoToLocal,localToStereo,localToScene,latLonToStereo,makeGrid,sunClearance} from "../moon-hd/polar-math.js";
+import {R_REF,CAP_LAT,stereoToLocal,localToStereo,localToScene,latLonToStereo,makeGrid,bilinearHeight,sunClearance} from "../moon-hd/polar-math.js";
 import {latLonToBodyFixed,southStereoForward} from "../lab/coords.js";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
@@ -18,7 +18,7 @@ const close=(a,b,tol,msg)=>assert.ok(Math.abs(a-b)<=tol,`${msg||""} ${a} vs ${b}
 
 test("every published Moon HD file matches the manifest SHA-256 and size",async()=>{
  const names=Object.keys(manifest.files);
- assert.deepEqual(names.sort(),["color_4k.jpg","color_8k.jpg","ephemeris.bin","height_2k.jpg","normal_4k.jpg","south_pole_80m.bin","stars_4k.jpg"]);
+ assert.deepEqual(names.sort(),["color_4k.jpg","color_8k.jpg","ephemeris.bin","features.json","height_2k.jpg","normal_4k.jpg","south_pole_320m.bin","south_pole_80m.bin","stars_4k.jpg"]);
  for(const name of names){
   const bytes=await data(name);
   assert.equal(bytes.length,manifest.files[name].bytes,name);
@@ -31,7 +31,7 @@ test("manifest keeps the honesty labels and the team's pinned NASA source hashes
  assert.equal(manifest.nasa_certified,false);
  assert.equal(manifest.sources.ldem_80s_80m.sha256,"e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc");
  assert.equal(manifest.sources["de440s.bsp"].sha256,"c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2");
- for(const source of Object.values(manifest.sources))assert.match(source.url,/^https:\/\/(svs\.gsfc\.nasa\.gov|pds-geosciences\.wustl\.edu|naif\.jpl\.nasa\.gov)\//);
+ for(const source of Object.values(manifest.sources))assert.match(source.url,/^https:\/\/(svs\.gsfc\.nasa\.gov|pds-geosciences\.wustl\.edu|naif\.jpl\.nasa\.gov|asc-planetarynames-data\.s3\.us-west-2\.amazonaws\.com)\//);
 });
 
 test("local polar frame agrees with the body-fixed frame of web/lab/coords.js",()=>{
@@ -110,6 +110,7 @@ test("80 m south-pole grid: centred, native spacing, Shackleton is a deep crater
 test("shadow march agrees with the team's site series on whether the Sun centre is above the terrain",async()=>{
  const view=b=>b.buffer.slice(b.byteOffset,b.byteOffset+b.length);
  const grid=makeGrid(manifest.south_pole,new Int16Array(view(await data("south_pole_80m.bin"))));
+ const wide=makeGrid(manifest.south_pole_wide,new Int16Array(view(await data("south_pole_320m.bin"))));
  const eph=decodeEphemeris(view(await data("ephemeris.bin")),manifest.ephemeris);
  for(const [id,floor] of [["connecting-ridge",0.95],["peak-near-shackleton",0.97]]){
   const meta=JSON.parse(await readFile(path.join(root,"data/sites",id+".json"),"utf8"));
@@ -117,12 +118,16 @@ test("shadow march agrees with the team's site series on whether the Sun centre 
   const bin=new DataView(view(await readFile(path.join(root,"data/sites",id+".bin")))),n=eph.count,hz=meta.terrain_horizon;
   const horizon=az=>{const i=Math.floor(az)%360,f=az-Math.floor(az);return hz[i].el*(1-f)+hz[(i+1)%360].el*f;};
   const [x,y]=latLonToStereo(meta.site.latitude_deg,meta.site.longitude_deg);
+  // Like for like: the series horizon stops at max_distance_m (100 km). The viewer itself marches 260 km, and at
+  // Peak Near Shackleton that longer reach finds more shadow (docs/MOON_HD.md); that difference is not tested here.
+  const reach=meta.provenance.ray_parameters.max_distance_m;
+  assert.equal(reach,100000);
   let agree=0,compared=0,worst=0;
   for(let i=0;i<n;i+=37){
    const team=bin.getInt16(n*2+i*2,true)/100-horizon(bin.getUint16(i*2,true)/100);
    if(Math.abs(team)<0.3)continue; // within the solar disc radius of the horizon: the two samplings may differ
    const {sun}=pointsAt(eph,i);
-   const mine=sunClearance(grid,x,y,meta.site.observer_height_m,toPolarScene(bodyDirection(sun.lat,sun.lon)))*180/Math.PI;
+   const mine=sunClearance(grid,x,y,meta.site.observer_height_m,toPolarScene(bodyDirection(sun.lat,sun.lon)),wide,144,reach)*180/Math.PI;
    compared++;if((team>0)===(mine>0))agree++;else worst=Math.max(worst,Math.abs(team));
   }
   assert.ok(compared>700,id+" compared "+compared);
@@ -130,11 +135,34 @@ test("shadow march agrees with the team's site series on whether the Sun centre 
  }
 });
 
+test("wide 320 m grid: reaches the cap edge, agrees with the native grid, and the gazetteer names sit on it",async()=>{
+ const view=b=>b.buffer.slice(b.byteOffset,b.byteOffset+b.length);
+ const grid=makeGrid(manifest.south_pole,new Int16Array(view(await data("south_pole_80m.bin"))));
+ const wide=makeGrid(manifest.south_pole_wide,new Int16Array(view(await data("south_pole_320m.bin"))));
+ assert.equal(wide.spacing,320);assert.equal(wide.half,304000);
+ const capRho=2*R_REF*Math.tan((CAP_LAT+90)*Math.PI/360);
+ assert.ok(capRho+400<wide.half-wide.spacing,"cap mesh stays inside the raster");
+ // A 4x4 block mean and the native pixels describe the same ground: compare on a coarse lattice inside the native grid.
+ let worst=0,sum=0,n=0;
+ for(let x=-70000;x<=70000;x+=3520)for(let y=-70000;y<=70000;y+=3520){
+  let mean=0;for(let i=-1.5;i<=1.5;i++)for(let j=-1.5;j<=1.5;j++)mean+=grid.heightAt(x+i*80,y+j*80)/16;
+  const d=Math.abs(bilinearHeight(wide,x,y)-mean);worst=Math.max(worst,d);sum+=d;n++;
+ }
+ assert.ok(sum/n<25&&worst<400,`mean ${sum/n} m, worst ${worst} m`);
+ const doc=JSON.parse(await data("features.json")),names=doc.features.map(f=>f.name);
+ for(const name of ["Shackleton","de Gerlache","Haworth","Shoemaker","Faustini","Nobile","Amundsen","Cabeus","Malapert","Mons Mouton","Mare Imbrium","Oceanus Procellarum"])assert.ok(names.includes(name),name);
+ for(const f of doc.features){assert.ok(f.lon>=-180&&f.lon<=180&&f.lat>=-90&&f.lat<=90,f.name);assert.match(f.url,/^https:\/\/planetarynames\.wr\.usgs\.gov\/Feature\/\d+$/);}
+ // Shackleton is a crater: its gazetteer centre must be far below its surroundings on the LOLA grid.
+ const s=doc.features.find(f=>f.name==="Shackleton"),[sx,sy]=latLonToStereo(s.lat,s.lon);
+ assert.ok(grid.heightAt(sx,sy)<-2000,"Shackleton floor "+grid.heightAt(sx,sy));
+});
+
 test("viewer source parses and declares its limits in both languages",async()=>{
  for(const name of ["app.js","ephemeris.js","polar-math.js"])execFileSync(process.execPath,["--check",path.join(root,"moon-hd",name)]);
  const app=await readFile(path.join(root,"moon-hd/app.js"),"utf8"),html=await readFile(path.join(root,"moon-hd.html"),"utf8");
- for(const phrase of ["NOT VALIDATED","NÃO VALIDADO","not endorsed by NASA","Shadows are cast only by terrain inside this 164 km grid"])assert.ok(app.includes(phrase),phrase);
+ for(const phrase of ["NOT VALIDATED","NÃO VALIDADO","not endorsed by NASA","Shadows are cast only by terrain inside that cap","This is not how the Moon is lit at this time","shapes and shadows are not at true scale"])assert.ok(app.includes(phrase),phrase);
  assert.ok(html.includes("Not a NASA product; not endorsed by NASA."));
+ for(const id of ["color","light","relief","markers","exposure","time"])assert.ok(html.includes(`id="${id}"`),id);
  assert.ok(!/style=/.test(html),"CSP style-src 'self': no inline style attributes");
  assert.ok(!/<script(?![^>]*src=)/.test(html),"no inline scripts");
 });

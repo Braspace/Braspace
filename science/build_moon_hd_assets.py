@@ -6,6 +6,7 @@ Inputs are downloaded by hand (never by this script) and checked by SHA-256 befo
   data/raw/moonhd/ldem_16.tif               NASA SVS 4720 CGI Moon Kit, LOLA elevation, 16 px/deg, float km
   data/raw/moonhd/starmap_2020_4k.exr       NASA SVS 4851 Deep Star Maps 2020 (celestial coordinates)
   data/raw/lola/ldem_80s_80m.img            PDS LRO-L-LOLA-4-GDR-V1.0 LDEM_80S_80M.IMG V2.0
+  data/raw/usgs/MOON_nomenclature_center_pts.zip   IAU/USGS Gazetteer of Planetary Nomenclature, centre points
   data/raw/naif/{naif0012.tls,de440s.bsp,moon_pa_de440_200625.bpc,moon_de440_250416.tf}
 
 Outputs (web/data/moonhd/): colour, normal and height maps of the globe, the star background, the native
@@ -40,6 +41,9 @@ INPUTS = {
                 "1ea42bf44f7e9d694f79c3afa7145f97fbf06cc67372067d9fe73dce43bad796"),
     "starmap": ("moonhd/starmap_2020_4k.exr", "https://svs.gsfc.nasa.gov/vis/a000000/a004800/a004851/starmap_2020_4k.exr",
                 "69b841cd048c2ef35543eb1c5819b322530e78aa4b0cab97ec1de3ef56a4ddcd"),
+    "nomenclature": ("usgs/MOON_nomenclature_center_pts.zip",
+                     "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip",
+                     "bcb1a37a195babb159ee1f720a6c64d03842de87d10a7ba7d754f8873477606b"),
     "ldem_80s_80m": ("lola/ldem_80s_80m.img", f"{PDS_POLAR}/ldem_80s_80m.img",
                      "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc"),
     "naif0012.tls": ("naif/naif0012.tls", f"{NAIF}/lsk/naif0012.tls",
@@ -58,6 +62,8 @@ FRAME = "MOON_ME_DE440_ME421"
 # LINE/SAMPLE_PROJECTION_OFFSET 3799.5 (zero-indexed pixel centres, same convention as web/lab/coords.js).
 POLAR_N, POLAR_SCALE_M, POLAR_DN_M, POLAR_OFFSET = 7600, 80.0, 0.5, 3799.5
 POLAR_CROP = 2048  # centre crop, native pixels: 163.84 km across, reaches about 87.3 S on the axes
+WIDE_BLOCK = 4
+FEATURE_MAX_LAT, FEATURE_MIN_CRATER_KM = -80.5, 20.0
 EPH_START, EPH_STEP_S, EPH_COUNT = "2025-01-01T00:00:00Z", 3600, 35064  # same window as web/data/sites/*.json
 NORMAL_EXAGGERATION = 6.0
 
@@ -167,6 +173,59 @@ def build_polar(src: pathlib.Path, out: pathlib.Path) -> dict:
             "frame": "MEAN EARTH/POLAR AXIS OF DE421"}
 
 
+def build_polar_wide(src: pathlib.Path, out: pathlib.Path) -> dict:
+    """Whole LDEM_80S_80M (80 S to the pole) as 4 x 4 block means: 320 m spacing, 608 km across."""
+    import numpy as np
+    dn = np.fromfile(src, dtype="<i2").reshape(POLAR_N, POLAR_N).astype(np.float64)
+    n = POLAR_N // WIDE_BLOCK
+    mean = dn.reshape(n, WIDE_BLOCK, n, WIDE_BLOCK).mean(axis=(1, 3))
+    grid = np.ascontiguousarray(np.rint(mean[::-1])).astype("<i2")
+    (out / "south_pole_320m.bin").write_bytes(grid.tobytes())
+    spacing = POLAR_SCALE_M * WIDE_BLOCK
+    origin = ((WIDE_BLOCK - 1) / 2 - POLAR_OFFSET) * POLAR_SCALE_M
+    return {"schema": "braspace.terrain-grid.v1", "file": "south_pole_320m.bin", "nx": n, "ny": n, "spacing_m": spacing,
+            "origin_x_m": origin, "origin_y_m": origin, "scale_m": POLAR_DN_M, "offset_m": 0.0,
+            "coordinates": "south polar stereographic x/y (m), true scale at pole, R=1737400 m; row 0 = min y; values at block centres",
+            "height_reference": "metres above the 1,737,400 m reference sphere",
+            "method": f"{WIDE_BLOCK}x{WIDE_BLOCK} block mean of LDEM_80S_80M pixels (native 80 m), rounded to the 0.5 m DN",
+            "min_m": float(grid.min()) * POLAR_DN_M, "max_m": float(grid.max()) * POLAR_DN_M,
+            "frame": "MEAN EARTH/POLAR AXIS OF DE421"}
+
+
+def build_features(src: pathlib.Path, out: pathlib.Path) -> dict:
+    """Named features from the IAU/USGS gazetteer: south polar craters and mountains, plus the maria for the globe."""
+    import io
+    import struct
+    import zipfile
+    with zipfile.ZipFile(src) as z:
+        dbf = z.read("MOON_nomenclature_center_pts.dbf")
+    count, header_len, record_len = struct.unpack("<IHH", dbf[4:12])
+    fields, o = [], 32
+    while dbf[o] != 0x0D:
+        fields.append((dbf[o:o + 11].split(b"\0")[0].decode(), dbf[o + 16]))
+        o += 32
+    features = []
+    for i in range(count):
+        rec, p, row = dbf[header_len + i * record_len: header_len + (i + 1) * record_len], 1, {}
+        for name, length in fields:
+            row[name] = rec[p:p + length].decode("utf-8", "replace").strip()
+            p += length
+        if row["approval"] != "Adopted by IAU":
+            continue
+        lat, lon, diameter, kind = float(row["center_lat"]), float(row["center_lon"]), float(row["diameter"]), row["type"].split(",")[0]
+        polar = lat <= FEATURE_MAX_LAT and ((kind == "Crater" and diameter >= FEATURE_MIN_CRATER_KM) or kind == "Mons")
+        if not (polar or kind in ("Mare", "Oceanus")):
+            continue
+        features.append({"name": row["name"], "type": kind, "lat": round(lat, 4), "lon": round((lon + 180) % 360 - 180, 4),
+                         "diameter_km": round(diameter, 2), "url": row["link"].replace("http://", "https://")})
+    features.sort(key=lambda f: (f["type"], f["name"]))
+    doc = {"source": "Gazetteer of Planetary Nomenclature, IAU/USGS, MOON_nomenclature_center_pts (public domain)",
+           "filter": f"Adopted by IAU; Crater >= {FEATURE_MIN_CRATER_KM} km or Mons at latitude <= {FEATURE_MAX_LAT}; every Mare and Oceanus",
+           "note": "feature centres, used as labels only", "features": features}
+    (out / "features.json").write_text(json.dumps(doc, indent=1, ensure_ascii=False) + "\n")
+    return {"file": "features.json", "count": len(features), "source": doc["source"], "filter": doc["filter"]}
+
+
 def build_ephemeris(inputs: dict, out: pathlib.Path) -> dict:
     """Hourly sub-solar and sub-Earth points in the Moon mean-Earth frame.
 
@@ -220,10 +279,13 @@ def main() -> None:
         "relief": build_relief(inputs["ldem_16"]["path"], args.out),
         "stars": build_stars(inputs["starmap"]["path"], args.out),
         "south_pole": build_polar(inputs["ldem_80s_80m"]["path"], args.out),
+        "south_pole_wide": build_polar_wide(inputs["ldem_80s_80m"]["path"], args.out),
+        "features": build_features(inputs["nomenclature"]["path"], args.out),
         "ephemeris": build_ephemeris(inputs, args.out),
         "sources": {name: {"url": v["url"], "sha256": v["sha256"], "bytes": v["bytes"]} for name, v in inputs.items()},
         "credits": ["NASA's Scientific Visualization Studio (CGI Moon Kit, SVS 4720; Deep Star Maps 2020, SVS 4851)",
-                    "NASA LRO/LOLA Science Team (LDEM_80S_80M, PDS Geosciences Node)", "NASA/JPL NAIF (SPICE kernels, DE440)"],
+                    "NASA LRO/LOLA Science Team (LDEM_80S_80M, PDS Geosciences Node)", "NASA/JPL NAIF (SPICE kernels, DE440)",
+                    "IAU/USGS Gazetteer of Planetary Nomenclature (feature names)"],
     }
     manifest["files"] = {p.name: {"sha256": sha256(p), "bytes": p.stat().st_size}
                          for p in sorted(args.out.iterdir()) if p.name != "manifest.json"}

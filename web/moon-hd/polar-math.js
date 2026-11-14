@@ -7,6 +7,10 @@
 // Written so that no term subtracts two numbers of the size of the lunar radius.
 
 export const R_REF = 1737400;
+/** South of this latitude the viewer draws the LOLA cap instead of the global mosaic relief. */
+export const CAP_LAT = -80.35;
+/** Heights (m above the sphere) at the two ends of the altitude colour ramp. */
+export const ALTITUDE_RANGE = [-7000, 8000];
 
 /** Stereographic (x, y) metres and height h (m above the sphere) -> local [a, b, c] metres. */
 export function stereoToLocal(x, y, h, R = R_REF) {
@@ -54,19 +58,27 @@ export function bilinearHeight(grid, x, y) {
 }
 
 /**
- * CPU reference of the fragment shader's shadow march (POLAR_FRAGMENT in app.js): smallest angle (rad) between
+ * CPU reference of the fragment shader's shadow march (CAP_FRAGMENT in app.js, relief x1): smallest angle (rad) between
  * the ray toward the Sun and the terrain, from a point `mast` metres above the ground. Negative = Sun centre hidden.
+ * With `wide` (the 320 m grid out to 80 S) it samples the same two-grid terrain as the shader.
  * `sun` is the unit Sun direction in the polar scene frame (x toward 0E, y up, z toward 90E).
  */
-export function sunClearance(grid, x, y, mast, sun, steps = 144, R = R_REF) {
-  const [a0, b0, c0] = stereoToLocal(x, y, bilinearHeight(grid, x, y) + mast, R);
+export function sunClearance(grid, x, y, mast, sun, wide = null, steps = 144, range = 260000, R = R_REF) {
+  const smooth = v => { const u = Math.min(1, Math.max(0, v)); return u * u * (3 - 2 * u); };
+  // Same blend as H() in the shader: native grid near the pole, the wide grid beyond it.
+  const height = (px, py) => {
+    if (!wide) return bilinearHeight(grid, px, py);
+    const w = smooth((Math.max(Math.abs(px), Math.abs(py)) - (grid.half - 3000)) / 2400);
+    return w >= 1 ? bilinearHeight(wide, px, py) : bilinearHeight(grid, px, py) * (1 - w) + bilinearHeight(wide, px, py) * w;
+  };
+  const limit = (wide || grid).half, reach = wide ? range : 2 * grid.half;
+  const [a0, b0, c0] = stereoToLocal(x, y, height(x, y) + mast, R);
   let min = 1;
   for (let i = 1; i <= steps; i++) {
-    const f = i / steps, t = 60 + 2 * grid.half * f * f;
-    const a = a0 + sun[2] * t, b = b0 + sun[0] * t, c = c0 + sun[1] * t;
-    const q = localToStereo([a, b, c], R);
-    if (Math.abs(q.x) > grid.half || Math.abs(q.y) > grid.half) break;
-    min = Math.min(min, (q.altitude - bilinearHeight(grid, q.x, q.y)) / t);
+    const f = i / steps, t = 60 + reach * f * f;
+    const q = localToStereo([a0 + sun[2] * t, b0 + sun[0] * t, c0 + sun[1] * t], R);
+    if (Math.abs(q.x) > limit || Math.abs(q.y) > limit) break;
+    min = Math.min(min, (q.altitude - height(q.x, q.y)) / t);
   }
   return min;
 }
