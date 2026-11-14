@@ -74,7 +74,6 @@ jobs:
           --health-cmd "pg_isready -U braspace" --health-interval 5s --health-timeout 5s --health-retries 20
     env:
       TEST_DATABASE_URL: postgres://braspace:ci-only-throwaway@localhost:5432/braspace?sslmode=disable
-      DATABASE_URL: postgres://braspace:ci-only-throwaway@localhost:5432/braspace?sslmode=disable
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -90,6 +89,7 @@ jobs:
         working-directory: api
         env:
           RUST_ENGINE_BIN: ../engine/target/debug/braspace-lunar-engine
+          DATABASE_URL: postgres://braspace:ci-only-throwaway@localhost:5432/braspace?sslmode=disable
         run: |
           go build -o /tmp/braspace-api .
           /tmp/braspace-api ingest

@@ -21,6 +21,9 @@ var testEngineBin string
 // TestMain builds internal/testengine, a stand-in for the Rust CLI with the
 // same contract that can also be told to fail, time out or emit garbage.
 func TestMain(m *testing.M) {
+	// Unit tests always use the embedded data; the PostgreSQL suite opts in via TEST_DATABASE_URL.
+	os.Unsetenv("DATABASE_URL")
+	os.Unsetenv("SITE_DATA_DIR")
 	dir, err := os.MkdirTemp("", "braspace-testengine")
 	if err != nil {
 		panic(err)
