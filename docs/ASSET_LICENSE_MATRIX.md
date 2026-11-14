@@ -28,6 +28,13 @@ in `data/LOLA_80S_80M_VERIFICATION.md`.
 | LROC website Featured Image | Page 1276 | `external_link_only` | Do not copy/rehost the website image; link to the page and credit NASA/GSFC/ASU |
 | QuickMap/Lunaserv | Interactive service | `service_link_only` | Use for discovery or validation; do not treat service responses as repository assets |
 | Google Map/Moon tiles | Google Maps Tile API content | `rejected` | No bulk fetching, scraping, offline storage or rehosting |
+| PGDA 78 5 m site LDEMs | `Site01_final_adj_5mpp_surf.tif` | `review_required` | Candidate high-res terrain; page states no data license, only NASA Reproduction Guidelines link; cite Barker et al. 2021. Not rehosted |
+| PGDA 81 south pole 87S mosaic | `ldem_87s_5mpp.tif` (3.3 GB) | `review_required` | Page asks citation of Barker et al. 2021; no data license stated. Not rehosted |
+| PGDA 69 polar illumination | `AVGVISIB_85S_060M_201608.TIF` | `review_required` | Page asks citation of Mazarico et al. 2011; no data license stated. Candidate benchmark, not ingested |
+| NASA SVS 5127 | `lola_sp_still_print.jpg` | `approved_candidate` | Credit "NASA's Scientific Visualization Studio" (page). Visual target only |
+| LROC curated downloads | `NAC_POLE_P900S0000.zip`, `LROC_Polar_Illumination_Map.tif` | `external_link_only` | Website-curated products are copyrighted per LROC terms; link and credit NASA/GSFC/Arizona State University |
+| LROC Featured Image 237 | WAC south polar mosaic page | `external_link_only` | Already in `LUNAR_GALLERY.json`; do not rehost |
+| SLDEM2015 (USGS/PGDA 54) | `Lunar_LRO_LOLAKaguya_DEMmerge_60N060S_512ppd.tif` | `review_required` | Covers only +/-60 deg latitude: not usable at the pole |
 
 ## NASA SVS CGI Moon Kit
 
