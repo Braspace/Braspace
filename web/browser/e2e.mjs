@@ -74,7 +74,10 @@ try{
  assert(await desktop.locator("#screens button[data-screen]").count()===7,"seven Studio screens missing");
  assert((await desktop.locator("#science-seal").innerText()).includes("NOT SCIENTIFICALLY CERTIFIED"),"studio scientific disclaimer absent");
  await desktop.locator("#role").selectOption("researcher");
- assert(await desktop.locator('[data-view="evidence"]').isVisible(),"researcher experience did not open evidence");
+ assert(await desktop.locator('[data-view="compare"]').isVisible(),"researcher experience did not open comparison");
+ assert((await desktop.locator("#compare-layers [data-layer='proof']").getAttribute("aria-pressed"))==="true","researcher should start in Proof layer");
+ await desktop.locator("#compare-layers [data-layer='why']").click();
+ assert((await desktop.locator("#compare-layers [data-layer='why']").getAttribute("aria-pressed"))==="true","manual per-card disclosure did not respond");
  await desktop.locator('#screens button[data-screen="explore"]').click();
  assert(await desktop.locator('[data-view="explore"]').isVisible(),"explore screen unreachable");
  if(process.env.BRASPACE_REQUIRE_BACKEND==="1"){
@@ -108,6 +111,10 @@ try{
  assert(studioMobile?.status()===200,"Studio mobile HTTP");
  await mobile.locator("#role").selectOption("educator");
  assert(await mobile.locator('[data-view="learn"]').isVisible(),"educator screen not visible");
+ await mobile.locator("#reveal-answer").click();
+ assert(await mobile.locator("#lesson-answer").isVisible(),"classroom answer not revealed");
+ await mobile.locator("#next-question").click();
+ assert(await mobile.locator("#lesson-answer").isHidden(),"next classroom question must conceal previous answer");
  await mobile.screenshot({path:path.join(out,"mission-studio-mobile.png"),fullPage:true});
  const studioOverflow=await mobile.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
  assert(studioOverflow.width<=studioOverflow.viewport+4,"Mission Studio mobile overflow: "+JSON.stringify(studioOverflow));
