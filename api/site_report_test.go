@@ -36,7 +36,7 @@ func TestSiteReportIncludesConsumablesAndCombinedDecision(t *testing.T) {
 
 func TestSiteReportErrorsAreJSON(t *testing.T) {
 	h, _ := testAPI(t, "ok")
-	body := strings.Replace(readExample(t, "onboard-site-evaluate.request.json"), `"site_id": "synthetic-demo-b"`, `"site_id": "malapert-massif"`, 1)
+	body := strings.Replace(readExample(t, "onboard-site-evaluate.request.json"), `"site_id": "synthetic-demo-b"`, `"site_id": "haworth"`, 1)
 	rec := do(h, "POST", "/api/onboard/site-report", body)
 	if rec.Code != 422 || decode(t, rec)["code"] != "DATA_NOT_AVAILABLE" {
 		t.Fatalf("%d %s", rec.Code, rec.Body.String())

@@ -56,10 +56,16 @@ try{
  assert(onboardResponse?.status()===200,"onboard cockpit HTTP");
  const tabs=desktop.locator("nav.tabs button[data-tab]");
  assert(await tabs.count()===13,"onboard cockpit missing required tabs");
- assert((await desktop.locator("body").innerText()).includes("Não validado"),"onboard synthetic disclaimer missing");
+ await desktop.waitForFunction(()=>{
+  const text=document.querySelector("#badges")?.textContent||"";
+  return text.includes("UNVERIFIED_INPUTS")&&text.includes("No flight recommendation");
+ },null,{timeout:15000});
+ const scienceBadges=await desktop.locator("#badges").innerText();
+ assert(!scienceBadges.includes("validated: true"),"onboard falsely claims scientific validation: "+scienceBadges);
  await desktop.locator("nav.tabs button[data-tab='energia']").click();
  await desktop.locator("nav.tabs button[data-tab='replan']").click();
- assert((await desktop.locator("#views").innerText()).length>80,"onboard replan panel empty");
+ const replanText=await desktop.locator("#views").innerText();
+ assert(replanText.length>80,"onboard replan panel empty: "+JSON.stringify(replanText.slice(0,500))+"; page errors: "+errors.join(" | "));
  await desktop.screenshot({path:path.join(out,"onboard-cockpit-desktop.png"),fullPage:true});
  const trainingResponse=await desktop.goto(base+"/onboard/index.html",{waitUntil:"domcontentloaded",timeout:30000});
  assert(trainingResponse?.status()===200,"onboard training form HTTP");
@@ -67,6 +73,36 @@ try{
  await desktop.locator("#results-card").waitFor({state:"visible",timeout:30000});
  assert((await desktop.locator("body").innerText()).includes("UNVERIFIED_INPUTS"),"onboard training lost disclaimer");
  await desktop.screenshot({path:path.join(out,"onboard-training-desktop.png"),fullPage:true});
+
+ // Role-based Mission Studio must open and preserve fail-closed science states.
+ const studioResponse=await desktop.goto(base+"/studio/",{waitUntil:"domcontentloaded",timeout:30000});
+ assert(studioResponse?.status()===200,"Mission Studio desktop HTTP status");
+ assert(await desktop.locator("#screens button[data-screen]").count()===7,"seven Studio screens missing");
+ assert((await desktop.locator("#science-seal").innerText()).includes("NOT SCIENTIFICALLY CERTIFIED"),"studio scientific disclaimer absent");
+ await desktop.locator("#role").selectOption("researcher");
+ assert(await desktop.locator('[data-view="compare"]').isVisible(),"researcher experience did not open comparison");
+ assert((await desktop.locator("#compare-layers [data-layer='proof']").getAttribute("aria-pressed"))==="true","researcher should start in Proof layer");
+ await desktop.locator("#compare-layers [data-layer='why']").click();
+ assert((await desktop.locator("#compare-layers [data-layer='why']").getAttribute("aria-pressed"))==="true","manual per-card disclosure did not respond");
+ await desktop.locator('#screens button[data-screen="explore"]').click();
+ assert(await desktop.locator('[data-view="explore"]').isVisible(),"explore screen unreachable");
+ if(process.env.BRASPACE_REQUIRE_BACKEND==="1"){
+  await desktop.waitForFunction(()=>document.querySelector("#connection")?.textContent?.includes("connected"),null,{timeout:30000});
+  await desktop.locator("#load-sky").click();
+  await desktop.waitForFunction(()=>{
+   const text=document.querySelector("#feedback")?.textContent||"";
+   return text.includes("stored samples")||text.startsWith("No result:");
+  },null,{timeout:30000});
+  assert((await desktop.locator("#feedback").innerText()).includes("stored samples"),"live sky read failed: "+await desktop.locator("#feedback").innerText());
+  await desktop.locator('#screens button[data-screen="compare"]').click();
+  await desktop.locator("#run-compare").click();
+  await desktop.waitForFunction(()=>{
+   const text=document.querySelector("#feedback")?.textContent||"";
+   return text.includes("compared")||text.startsWith("No result:");
+  },null,{timeout:30000});
+  assert((await desktop.locator("#feedback").innerText()).includes("compared"),"live compare API failed: "+await desktop.locator("#feedback").innerText());
+ }
+ await desktop.screenshot({path:path.join(out,"mission-studio-desktop.png"),fullPage:true});
 
  const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  mobile.on("pageerror",error=>errors.push("mobile: "+error.message));
@@ -77,6 +113,24 @@ try{
  await mobile.screenshot({path:path.join(out,"polar-lab-mobile.png"),fullPage:true});
  const overflow=await mobile.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
  assert(overflow.width<=overflow.viewport+4,"mobile horizontal overflow: "+JSON.stringify(overflow));
+ const studioMobile=await mobile.goto(base+"/studio/",{waitUntil:"domcontentloaded",timeout:30000});
+ assert(studioMobile?.status()===200,"Studio mobile HTTP");
+ await mobile.locator("#role").selectOption("educator");
+ assert(await mobile.locator('[data-view="learn"]').isVisible(),"educator screen not visible");
+ await mobile.locator("#reveal-answer").scrollIntoViewIfNeeded();
+ await mobile.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ const geometry=await mobile.locator("#reveal-answer").evaluate(button=>{
+  const r=button.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+  return {x,y,rect:{top:r.top,left:r.left,width:r.width,height:r.height},scrollY:scrollY,viewport:{innerWidth,innerHeight},atPoint:document.elementsFromPoint(x,y).slice(0,5).map(node=>({tag:node.tagName,id:node.id,className:String(node.className).slice(0,70)}))};
+ });
+ console.log("STUDIO MOBILE REVEAL GEOMETRY",JSON.stringify(geometry));
+ await mobile.locator("#reveal-answer").click();
+ assert(await mobile.locator("#lesson-answer").isVisible(),"classroom answer not revealed");
+ await mobile.locator("#next-question").click();
+ assert(await mobile.locator("#lesson-answer").isHidden(),"next classroom question must conceal previous answer");
+ await mobile.screenshot({path:path.join(out,"mission-studio-mobile.png"),fullPage:true});
+ const studioOverflow=await mobile.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
+ assert(studioOverflow.width<=studioOverflow.viewport+4,"Mission Studio mobile overflow: "+JSON.stringify(studioOverflow));
  const mobileCockpit=await mobile.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});
  assert(mobileCockpit?.status()===200,"mobile cockpit HTTP status");
  await mobile.locator("nav.tabs button[data-tab='status']").click();

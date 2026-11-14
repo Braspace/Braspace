@@ -1,13 +1,8 @@
 name: BRASPACE Anonymous Public Demo and API P0
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/public-demo-smoke.yml"
-      - "scripts/smoke-publico.sh"
-  push:
-    branches:
-      - "test/public-demo-external-smoke-20261114"
   workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
 
 permissions:
   contents: read

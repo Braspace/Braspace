@@ -122,7 +122,8 @@
     btn.disabled = true;
     btn.textContent = "Simulando…";
     try {
-      const res = await fetch(API_PATH, {
+      const apiBase = String((typeof window !== "undefined" && window.BRASPACE_API_BASE) || "").replace(/\/+$/, "");
+      const res = await fetch(apiBase + API_PATH, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(req.body)

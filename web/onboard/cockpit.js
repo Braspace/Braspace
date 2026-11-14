@@ -5,7 +5,7 @@
 (function () {
   "use strict";
 
-  const M = OnboardModel, R = OnboardRequest, F = OnboardFeatures;
+  const M = OnboardModel, R = OnboardRequest, F = OnboardFeatures, L = OnboardLive;
   const $ = id => document.getElementById(id);
   const NS = "http://www.w3.org/2000/svg";
   const API_PATH = "/api/onboard/evaluate";
@@ -65,12 +65,31 @@
   function track(delayH) {
     return M.track({ siteId: S.site, startMs: startMs(), stepMin: S.stepMin, count: count(), delayH: delayH || 0 });
   }
+  // Where the numbers come from: the API series (POST /api/compare, include_series) when it answered,
+  // otherwise the browser model, which is then sealed "SYNTHETIC · browser model" on each value.
   function scenario() {
-    const tr = track(0);
-    const sum = M.summary(tr, S.stepMin);
+    ensureLive();
     const life = M.lifeSupport(S.durationH);
-    return { tr, sum, life, viol: M.violations(sum, life) };
+    const live = liveNow();
+    if (live) {
+      const stepMin = Math.round((live.stepH || 1) * 60);
+      const t0 = Date.parse(live.points[0].epoch_utc);
+      const tr = live.points.map((p, i) => ({ i, ms: Date.parse(p.epoch_utc), tH: Date.parse(p.epoch_utc) / 3600e3, src: "api",
+        sun_visible: p.sun_visible, earth_visible: p.earth_visible, sun_margin: p.sun_margin_deg, earth_margin: p.earth_margin_deg }));
+      tr.stepMin = stepMin; tr.t0 = t0;
+      return { tr, sum: L.summaryFromMetrics(live.metrics), life, viol: M.violations(L.summaryFromMetrics(live.metrics), null), src: "api", live };
+    }
+    const tr = L.stamp(track(0), startMs(), S.stepMin);
+    const sum = M.summary(tr, S.stepMin);
+    return { tr, sum, life, viol: M.violations(sum, null), src: "local", live: null };
   }
+  function liveNow() {
+    const k = seriesKey();
+    return S.series && S.series.key === k && S.series.points ? { points: S.series.points, metrics: S.series.metrics, science_status: S.series.science_status, engine_science_status: S.series.engine_science_status, stepH: S.series.stepH } : null;
+  }
+  // A small seal glued to the value it describes.
+  function seal(src, info) { return h("span", { class: "tag " + (src === "api" ? "SIM" : src === "nosource" ? "PARC" : "SINT"), text: L.seal(src, info) }); }
+  function sealOf(sc) { return sc.src === "api" ? seal("api", sc.live) : seal("local"); }
 
   // ---------- API ----------
   function buildApiRequest(delays) {
@@ -104,12 +123,12 @@
     if (fab) fab.setAttribute("aria-busy", "true");
     if ($("calc")) { $("calc").disabled = true; }
     try {
-      const res = await fetch(API_PATH, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req.body) });
-      const text = await res.text();
-      if (!res.ok) { S.apiError = ["API respondeu " + res.status + ": " + text.slice(0, 240)]; S.api = null; setLamp("bad", "API ERRO"); }
-      else { S.api = JSON.parse(text); S.apiError = null; setLamp("ok", "API OK"); }
+      const res = await OnboardApi.evaluate(req.body);
+      if (res.status === 0) throw new Error(res.error);
+      if (!res.ok) { S.apiError = ["API respondeu " + res.status + ": " + res.error]; S.api = null; setLamp("bad", "API ERRO"); }
+      else { S.api = res.data; S.apiError = null; setLamp("ok", "API OK"); }
     } catch (err) {
-      S.api = null; S.apiError = ["Sem conexão com a API (" + err.message + "). Suba dev-server.py e a API Go."];
+      S.api = null; S.apiError = ["Sem conexão com a API (" + err.message + "). Confira BRASPACE_API_BASE (config.js) ou suba dev-server.py e a API Go."];
       setLamp("bad", "API OFF");
     } finally {
       if (fab) fab.setAttribute("aria-busy", "false");
@@ -153,7 +172,7 @@
     const sum = $("alarm-sum");
     const box = $("alarm");
     const items = [
-      ...viol.map(v => ({ sev: "HIGH", text: v.text, src: "modelo" })),
+      ...viol.map(v => ({ sev: "HIGH", text: v.text, src: scenario().src === "api" ? "API · " + (scenario().live.science_status || "?") : L.SEAL_LOCAL })),
       ...risks.map(r => ({ sev: r.severity, text: r.category + " · " + r.explanation, src: "cálculo · " + r.ids.join(", ") }))
     ];
     list.replaceChildren(...items.map(i => h("li", { class: "sev-" + i.sev }, "[" + i.sev + "] " + i.text + "  ·  " + i.src)));
@@ -243,13 +262,13 @@
           h("span", { class: "dim", text: "passo " + stepM + " min" })),
         h("div", { class: "grid two", style: "margin-top:12px" },
           h("dl", { class: "readout" },
-            h("dt", { text: "SOL azimute" }), h("dd", { text: f1(cur.sunAz) + "°" }),
-            h("dt", { text: "SOL elevação" }), h("dd", { text: f1(cur.sunEl, 2) + "°" }),
-            h("dt", { text: "SOL acima do horizonte" }), h("dd", { text: cur.sun_visible ? "SIM" : "NÃO" })),
+            h("dt", { text: "SOL azimute" }), h("dd", { text: f1(cur.sunAz) + "°" }, " ", angSeal(cur)),
+            h("dt", { text: "SOL elevação" }), h("dd", { text: f1(cur.sunEl, 2) + "°" }, " ", angSeal(cur)),
+            h("dt", { text: "SOL acima do horizonte" }), h("dd", { text: cur.sun_visible ? "SIM" : "NÃO" }, " ", visSeal(cur))),
           h("dl", { class: "readout" },
-            h("dt", { text: "TERRA azimute" }), h("dd", { text: f1(cur.earthAz) + "°" }),
-            h("dt", { text: "TERRA elevação" }), h("dd", { text: f1(cur.earthEl, 2) + "°" }),
-            h("dt", { text: "TERRA visível" }), h("dd", { text: cur.earth_visible ? "SIM" : "NÃO" }))),
+            h("dt", { text: "TERRA azimute" }), h("dd", { text: f1(cur.earthAz) + "°" }, " ", angSeal(cur)),
+            h("dt", { text: "TERRA elevação" }), h("dd", { text: f1(cur.earthEl, 2) + "°" }, " ", angSeal(cur)),
+            h("dt", { text: "TERRA visível" }), h("dd", { text: cur.earth_visible ? "SIM" : "NÃO" }, " ", visSeal(cur)))),
         h("p", { class: "note", text: "Sem refração atmosférica. Ângulos de modelo sintético, não efeméride." })),
       h("section", { class: "panel" },
         h("h2", { text: "Linha do tempo" }),
@@ -264,6 +283,9 @@
         edu("Cada barra mostra uma hora (ou o passo escolhido). Luz e Terra visível são coisas diferentes."))
     ];
   };
+  function horSeal() { const k = skyNow(); return k && k.horizon ? seal("api", { science_status: k.science_status }) : seal("local"); }
+  function angSeal(cur) { return cur.angles === "api" ? seal("api", { science_status: S.sky && S.sky.data && S.sky.data.science_status }) : seal("local"); }
+  function visSeal(cur) { return cur.src === "api" ? seal("api", liveNow()) : seal("local"); }
   // Share of the track already passed, used to fill the slider track up to the thumb.
   function progressPct(i, n) {
     return n <= 1 ? 0 : Math.round((i / (n - 1)) * 1000) / 10;
@@ -279,46 +301,74 @@
     return h("div", { class: "instant" },
       h("span", { class: "big", text: "Dia " + dayIdx + " de " + days + " · " + hhmm }),
       h("span", { class: "small", text: fmt(ms) }),
-      h("span", { class: "tag " + (fromApi ? "SIM" : "SINT"), text: fromApi ? "SÉRIE DA API" : "MODELO LOCAL" }));
+      seal(fromApi ? "api" : "local", liveNow()),
+      fromApi && cur.angles === "local" ? h("span", { class: "tag SINT", text: "az/el: " + L.SEAL_LOCAL }) : null);
   }
 
   // ---------- timeline: API series when available, local model otherwise ----------
   // The API series (GET via POST /api/compare with include_series) gives the visibility flags and
   // margins that the server computed. Azimuth and elevation still come from the local model at the
   // same epoch, and the panel says so.
-  S.series = null;      // { key, points } from the API
-  S.loadingKey = null;
+  S.series = null;      // { key, points, metrics, science_status } from /api/compare
+  S.loadingKey = null; S.delay = null; S.sky = null; S.skyAvail = null;
   function seriesKey() { return S.site + "|" + S.startLocal + "|" + S.durationH; }
   function timeline() {
-    const key = seriesKey();
-    if (!(S.series && S.series.key === key) && S.loadingKey !== key) {
-      S.loadingKey = key;
-      loadSeries(key);
-    }
-    if (S.series && S.series.key === key && S.series.points && S.series.points.length) {
-      const site = M.SITES[S.site];
-      return S.series.points.map((p, i) => {
-        const ms = Date.parse(p.epoch_utc), tH = ms / 3600e3, b = M.bodiesAt(tH);
-        // Elevation is rebuilt from the server margin, so the angle and the visibility flag agree.
-        const sunEl = M.horizonAt(b.sunAz, site) + p.sun_margin_deg, earthEl = M.horizonAt(b.earthAz, site) + p.earth_margin_deg;
-        return { i, ms, tH, src: "api", sunAz: b.sunAz, sunEl, earthAz: b.earthAz, earthEl,
-          sun_visible: p.sun_visible, earth_visible: p.earth_visible, sun_margin: p.sun_margin_deg, earth_margin: p.earth_margin_deg, site };
+    ensureLive();
+    const live = liveNow(), sky = skyNow();
+    if (live) {
+      const skyBy = sky ? new Map(sky.samples.map(x => [x.epoch_utc, x])) : null;
+      const site = M.SITES[S.site] || { rough: 0 };
+      return live.points.map((p, i) => {
+        const ms = Date.parse(p.epoch_utc), b = M.bodiesAt(ms / 3600e3), sk = skyBy && skyBy.get(p.epoch_utc);
+        if (sk) return { i, ms, src: "api", angles: "api", sunAz: sk.sun.azimuth_deg, sunEl: sk.sun.elevation_deg, earthAz: sk.earth.azimuth_deg, earthEl: sk.earth.elevation_deg,
+          sun_visible: p.sun_visible, earth_visible: p.earth_visible, sun_margin: p.sun_margin_deg, earth_margin: p.earth_margin_deg };
+        // flags and margins from the API; azimuth/elevation have no API source yet => browser model, sealed as such
+        return { i, ms, src: "api", angles: "local", sunAz: b.sunAz, sunEl: M.horizonAt(b.sunAz, site) + p.sun_margin_deg, earthAz: b.earthAz, earthEl: M.horizonAt(b.earthAz, site) + p.earth_margin_deg,
+          sun_visible: p.sun_visible, earth_visible: p.earth_visible, sun_margin: p.sun_margin_deg, earth_margin: p.earth_margin_deg };
       });
     }
-    return track(0).map((s, i) => ({ ...s, i, ms: startMs() + i * S.stepMin * 60e3, src: "local" }));
+    return track(0).map((s, i) => ({ ...s, i, ms: startMs() + i * S.stepMin * 60e3, src: "local", angles: "local" }));
   }
   function stepOf(tr) {
-    return tr.length > 1 ? Math.round((tr[1].ms - tr[0].ms) / 60000) : S.stepMin;
+    return L.stepOf(tr, S.stepMin);
   }
   async function loadSeries(key) {
     const r = await OnboardApi.compare({ site_ids: [S.site], start_utc: iso(startMs()), duration_hours: S.durationH, include_series: true });
     if (key !== seriesKey()) { S.loadingKey = null; return; }   // the user changed the scenario meanwhile
     const res = r.ok && r.data && r.data.results ? r.data.results[0] : null;
     const pts = res && res.data_status === "AVAILABLE" && res.evaluation && res.evaluation.series ? res.evaluation.series : null;
-    S.series = { key, points: pts, status: res ? res.data_status : "ERRO" };
+    const lv = L.liveFromCompare(r.ok ? r.data : null);
+    S.series = { key, points: pts, status: res ? res.data_status : "ERRO", metrics: lv ? lv.metrics : null,
+      science_status: res ? res.science_status : null, engine_science_status: res ? res.engine_science_status : null, stepH: lv ? lv.stepH : null,
+      reachable: r.status !== 0, httpStatus: r.status };
+    if (!lv) S.series.points = null;
     S.loadingKey = null;
-    renderTab();
+    renderBadges(); renderAlarm(); renderTab();
   }
+  function ensureLive() {
+    const key = seriesKey();
+    if (!(S.series && S.series.key === key) && S.loadingKey !== key) { S.loadingKey = key; loadSeries(key); }
+    if (!(S.delay && S.delay.key === key) && S.loadingDelay !== key) { S.loadingDelay = key; loadDelay(key); }
+    if (S.skyAvail !== false && !(S.sky && S.sky.key === key) && S.loadingSky !== key) { S.loadingSky = key; loadSky(key); }
+  }
+  async function loadDelay(key) {
+    const r = await OnboardApi.scenarioDelay({ site_id: S.site, start_utc: iso(startMs()), duration_hours: S.durationH, delays_hours: REPLAN_DELAYS.filter(d => d > 0),
+      constraints: { max_continuous_dark_hours: M.LIMITS.darkH, min_earth_fraction: 0.5 }, include_nearby: false });
+    if (key !== seriesKey()) { S.loadingDelay = null; return; }
+    S.delay = { key, ok: r.ok, rows: r.ok && r.data && r.data.options ? r.data.options.filter(o => o.data_status === "AVAILABLE").map(L.delayRow) : null, status: r.status, outcome: r.ok ? r.data.outcome : null };
+    S.loadingDelay = null; renderTab();
+  }
+  // GET /api/sites/{id}/sky (PR 97). 404 on the route => not deployed: stop asking and use the local model.
+  async function loadSky(key) {
+    const hrs = Math.min(S.durationH, 1000);
+    const r = await OnboardApi.sky(S.site, "start=" + encodeURIComponent(iso(startMs())) + "&hours=" + hrs);
+    if (r.status === 404 && /404 page not found/.test(r.error || "")) S.skyAvail = false;   // route absent (not a per-site 404)
+    if (key !== seriesKey()) { S.loadingSky = null; return; }
+    S.sky = { key, data: L.skyFromResponse(r), status: r.status };
+    S.loadingSky = null; renderTab();
+  }
+  function skyNow() { return S.sky && S.sky.key === seriesKey() && S.sky.data ? S.sky.data : null; }
+  function hz(az) { const k = skyNow(); return k && k.horizon ? k.horizon(az) : M.horizonAt(az, M.SITES[S.site]); }
 
   function togglePlay() {
     if (S.playing) { clearInterval(S.playing); S.playing = null; renderTab(); return; }
@@ -346,7 +396,7 @@
     const W = 640, H = 260, L = 46, R = 16, T = 14, B = 34;
     // vertical scale fits the values in the window (display only), so no curve is cut off
     const vals = [];
-    tr.forEach((s, i) => { if (i % Math.max(1, Math.ceil(tr.length / 240)) === 0) vals.push(s.sunEl, s.earthEl, M.horizonAt(s.sunAz, site), M.horizonAt(s.earthAz, site)); });
+    tr.forEach((s, i) => { if (i % Math.max(1, Math.ceil(tr.length / 240)) === 0) vals.push(s.sunEl, s.earthEl, hz(s.sunAz), hz(s.earthAz)); });
     const lo = Math.min(...vals), hi = Math.max(...vals);
     const span = Math.max(4, hi - lo);
     const tickStep = span > 12 ? 4 : 2;
@@ -375,7 +425,7 @@
 
     // horizon area
     let d = "";
-    for (let a = 0; a <= 360; a += 2) d += (a === 0 ? "M" : "L") + x(a).toFixed(1) + "," + y(M.horizonAt(a, site)).toFixed(1) + " ";
+    for (let a = 0; a <= 360; a += 2) d += (a === 0 ? "M" : "L") + x(a).toFixed(1) + "," + y(hz(a)).toFixed(1) + " ";
     box.append(svg("path", { d: d + "L" + x(360) + "," + y(EMIN) + " L" + x(0) + "," + y(EMIN) + " Z", fill: "#263241", "fill-opacity": ".9", stroke: "#6f8b7c", "stroke-width": "1.5" }));
 
     // whole-window paths as dots (no lines: azimuth wraps at 0/360)
@@ -387,7 +437,7 @@
     });
 
     // current instant: drop lines and markers
-    const hs = M.horizonAt(cur.sunAz, site), he = M.horizonAt(cur.earthAz, site);
+    const hs = hz(cur.sunAz), he = hz(cur.earthAz);
     box.append(svg("line", { x1: x(cur.sunAz), x2: x(cur.sunAz), y1: y(cur.sunEl), y2: y(hs), stroke: "#ffb020", "stroke-dasharray": "2 2" }));
     box.append(svg("line", { x1: x(cur.earthAz), x2: x(cur.earthAz), y1: y(cur.earthEl), y2: y(he), stroke: "#5fd8ff", "stroke-dasharray": "2 2" }));
     box.append(svg("circle", { cx: x(cur.sunAz), cy: y(cur.sunEl), r: 6, fill: "#ffb020", stroke: "#0f1720", "stroke-width": 2 }));
@@ -412,29 +462,31 @@
         h("div", { class: "legend" },
           h("span", {}, h("i", { style: "background:#ffb020" }), "Sol"),
           h("span", {}, h("i", { style: "background:#5fd8ff" }), "Terra"),
-          h("span", {}, h("i", { style: "background:#1c3240" }), "horizonte sintético"),
+          h("span", {}, h("i", { style: "background:#1c3240" }), skyNow() ? "horizonte da API (/api/sites/{id}/sky)" : "horizonte sintético (modelo do navegador)"),
           h("span", {}, "pontos claros: trajetória no intervalo")),
         edu("Acima da área cinza, o Sol ou a Terra estão visíveis. Abaixo, o relevo esconde o astro. A linha tracejada mostra a altura do horizonte naquele azimute.")),
       h("section", { class: "panel" },
         h("h2", { text: "Neste instante" }),
         h("dl", { class: "readout" },
-          h("dt", { text: "Sol · elevação" }), h("dd", { text: f1(cur.sunEl, 2) + "°" }),
-          h("dt", { text: "Sol · horizonte neste azimute" }), h("dd", { text: f1(hs, 2) + "°" }),
+          h("dt", { text: "Sol · elevação" }), h("dd", { text: f1(cur.sunEl, 2) + "°" }, " ", angSeal(cur)),
+          h("dt", { text: "Sol · horizonte neste azimute" }), h("dd", { text: f1(hs, 2) + "°" }, " ", horSeal()),
           h("dt", { text: "Sol · margem" }), h("dd", { class: sunMargin > 0 ? "" : "fuelout", text: (sunMargin >= 0 ? "+" : "") + f1(sunMargin, 2) + "°" }),
-          h("dt", { text: "Terra · elevação" }), h("dd", { text: f1(cur.earthEl, 2) + "°" }),
-          h("dt", { text: "Terra · horizonte neste azimute" }), h("dd", { text: f1(he, 2) + "°" }),
+          h("dt", { text: "Terra · elevação" }), h("dd", { text: f1(cur.earthEl, 2) + "°" }, " ", angSeal(cur)),
+          h("dt", { text: "Terra · horizonte neste azimute" }), h("dd", { text: f1(he, 2) + "°" }, " ", horSeal()),
           h("dt", { text: "Terra · margem" }), h("dd", { class: earthMargin > 0 ? "" : "fuelout", text: (earthMargin >= 0 ? "+" : "") + f1(earthMargin, 2) + "°" }))),
       h("section", { class: "panel" },
         h("h2", { text: "Pendências do horizonte" }),
         h("ul", { class: "note" },
           ...[["3.2", "BLOQ", "leitura do DEM LOLA"], ["3.3", "PEND", "horizonte por raio"], ["3.4", "PEND", "distância máxima documentada"], ["3.5", "PEND", "pixels interpolados"], ["3.6", "PEND", "declive e crateras"]]
             .map(([id, st, t]) => h("li", {}, id + " ", tag(st), " " + t))),
-        h("p", { class: "note", text: "Horizonte sintético: uma senoide com rugosidade do lugar. Não é relevo lunar. A escala vertical se ajusta aos valores da janela." }))
+        h("p", { class: "note", text: skyNow() ? "Horizonte guardado no servidor para este lugar; confira science_status no selo." : "Sem /api/sites/{id}/sky para este lugar: horizonte sintético (senoide com rugosidade). Não é relevo lunar. A escala vertical se ajusta aos valores da janela." }))
     ];
   };
 
   VIEWS.janelas = () => {
-    const { tr, sum } = scenario();
+    const sc = scenario();
+    const { tr, sum } = sc;
+    
     const windows = [];
     let start = null;
     tr.forEach((s, i) => {
@@ -442,38 +494,50 @@
       if (!s.earth_visible && start !== null) { windows.push([start, i - 1]); start = null; }
     });
     if (start !== null) windows.push([start, tr.length - 1]);
-    const at = i => fmt(startMs() + i * S.stepMin * 60e3);
+    const at = i => fmt(tr[i].ms);
+    const stp = stepOf(tr);
     return [
       h("section", { class: "panel" },
         h("h2", { text: "04 · Janelas de luz e de Terra" }),
         h("dl", { class: "readout" },
-          h("dt", { text: "horas com luz" }), h("dd", { text: f1(sum.sunlitH) + " h" }),
-          h("dt", { text: "maior escuridão" }), h("dd", { text: f1(sum.darkH) + " h" }),
-          h("dt", { text: "horas com Terra visível" }), h("dd", { text: f1(sum.earthH) + " h" }),
-          h("dt", { text: "maior bloqueio da Terra" }), h("dd", { text: f1(sum.blockH) + " h" }))),
+          h("dt", { text: "horas com luz" }), h("dd", { text: f1(sum.sunlitH) + " h" }, " ", sealOf(sc)),
+          h("dt", { text: "maior escuridão" }), h("dd", { text: f1(sum.darkH) + " h" }, " ", sealOf(sc)),
+          h("dt", { text: "horas com Terra visível" }), h("dd", { text: f1(sum.earthH) + " h" }, " ", sealOf(sc)),
+          h("dt", { text: "maior bloqueio da Terra" }), h("dd", { text: f1(sum.blockH) + " h" }, " ", sealOf(sc)))),
       h("section", { class: "panel" },
         h("h2", { text: "Janelas de Terra visível (4.7)" }),
         windows.length === 0
           ? h("p", { class: "note", text: "Nenhuma janela de Terra visível no intervalo." })
           : h("div", { class: "scroll" }, h("table", { class: "table" },
               h("thead", {}, h("tr", {}, h("th", { text: "início" }), h("th", { text: "fim" }), h("th", { class: "n", text: "horas" }))),
-              h("tbody", {}, windows.map(([a, b]) => h("tr", {}, h("td", { text: at(a) }), h("td", { text: at(b) }), h("td", { class: "n", text: f1((b - a + 1) * S.stepMin / 60) })))))),
+              h("tbody", {}, windows.map(([a, b]) => h("tr", {}, h("td", { text: at(a) }), h("td", { text: at(b) }), h("td", { class: "n", text: f1((b - a + 1) * stp / 60) })))))),
         h("p", { class: "note", text: "Visibilidade geométrica. Não garante enlace de rádio. Orçamento de RF não modelado." })),
+      nextTransitionsPanel(),
       h("section", { class: "panel span2" },
         h("h2", { text: "Transições (4.5) · instante por amostra" }),
         h("p", { class: "note", text: "O instante é o da primeira amostra que mudou. Bisseção (4.6) ainda pendente." }),
         transitionsTable(tr))
     ];
   };
+  // next_transitions from GET /api/sites/{id}/sky: time to the next Sun and Earth change, with its resolution.
+  function nextTransitionsPanel() {
+    const sky = skyNow();
+    const rows = sky ? L.transitionRows(sky.next_transitions) : null;
+    return h("section", { class: "panel span2", id: "next-transitions" },
+      h("h2", { text: "Próxima transição (API)" }),
+      rows
+        ? h("dl", { class: "readout" }, rows.flatMap(r => [h("dt", { text: r.label }), h("dd", { text: r.text }, " ", seal("api", { science_status: sky.science_status }))]))
+        : h("p", { class: "note", text: "Sem next_transitions: a API não respondeu /api/sites/{id}/sky para este lugar e período (ou a rota não existe nesta API). Não há valor do navegador no lugar dele." }));
+  }
   function transitionsTable(tr) {
     const rows = [];
-    M.transitions(tr, "sun_visible", S.stepMin).forEach(x => rows.push(["Luz", x.to ? "escuro → luz" : "luz → escuro", x.index]));
-    M.transitions(tr, "earth_visible", S.stepMin).forEach(x => rows.push(["Terra", x.to ? "bloqueada → visível" : "visível → bloqueada", x.index]));
+    M.transitions(tr, "sun_visible", stepOf(tr)).forEach(x => rows.push(["Luz", x.to ? "escuro → luz" : "luz → escuro", x.index]));
+    M.transitions(tr, "earth_visible", stepOf(tr)).forEach(x => rows.push(["Terra", x.to ? "bloqueada → visível" : "visível → bloqueada", x.index]));
     rows.sort((a, b) => a[2] - b[2]);
     if (!rows.length) return h("p", { class: "dim", text: "Sem transições no intervalo." });
     return h("div", { class: "scroll" }, h("table", { class: "table" },
       h("thead", {}, h("tr", {}, h("th", { text: "tipo" }), h("th", { text: "mudança" }), h("th", { text: "instante (UTC)" }))),
-      h("tbody", {}, rows.slice(0, 200).map(r => h("tr", {}, h("td", { text: r[0] }), h("td", { text: r[1] }), h("td", { text: fmt(startMs() + r[2] * S.stepMin * 60e3) })))),
+      h("tbody", {}, rows.slice(0, 200).map(r => h("tr", {}, h("td", { text: r[0] }), h("td", { text: r[1] }), h("td", { text: fmt(tr[r[2]].ms) })))),
     ));
   }
 
@@ -528,27 +592,27 @@
     const fuelPct = Math.max(0, Math.min(100, life.fuelRemainingKg / 450 * 100));
     return [
       h("section", { class: "panel" },
-        h("h2", { text: "06 · Combustível (protótipo · valor fixo de exemplo)" }),
+        h("h2", { text: "06 · Propelente (exemplo, sem fonte)" }),
         h("dl", { class: "readout" },
-          h("dt", { text: "restante (kg)" }), h("dd", { text: life.fuelRemainingKg > 0 ? f1(life.fuelRemainingKg) : "ESGOTADO", class: life.fuelRemainingKg > 0 ? "" : "fuelout" }),
+          h("dt", { text: "restante (kg)" }), h("dd", { text: life.fuelRemainingKg > 0 ? f1(life.fuelRemainingKg) : "—" }),
           h("dt", { text: "reserva mínima (kg)" }), h("dd", { text: "150.0" }),
-          h("dt", { text: "margem (kg)" }), h("dd", { text: f1(life.fuelMarginKg), class: life.fuelMarginKg < 0 ? "fuelout" : "" })),
-        h("div", { class: "bar " + (life.fuelMarginKg < 0 ? "bad" : ""), style: "margin-top:8px" }, h("span", { style: "width:" + fuelPct + "%" })),
-        h("div", { style: "margin-top:8px" }, tag("SINT"), " ", tag("ESQ"), " ", h("span", { class: "dim", text: "consumo 1,2 kg/h · escopo não decidido (#7)" }))),
+          h("dt", { text: "margem (kg)" }), h("dd", { text: "—" })),
+        h("div", { class: "bar", style: "margin-top:8px" }, h("span", { style: "width:" + fuelPct + "%" })),
+        h("div", { style: "margin-top:8px" }, seal("nosource"), " ", tag("ESQ"), " ", h("span", { class: "dim", text: "a API não tem combustível · escopo não decidido (#7)" }))),
       h("section", { class: "panel" },
         h("h2", { text: "Alimentação (protótipo · valor fixo de exemplo)" }),
         h("dl", { class: "readout" },
           h("dt", { text: "tripulação" }), h("dd", { text: life.people + " pessoas" }),
-          h("dt", { text: "estoque restante (kg)" }), h("dd", { text: f1(life.foodLeftKg) }),
+          h("dt", { text: "estoque restante (kg)" }), h("dd", { text: life.foodLeftKg > 0 ? f1(life.foodLeftKg) : "—" }),
           h("dt", { text: "racionamento" }), h("dd", { text: life.foodLeftKg > 100 ? "NORMAL" : "REDUZIDO" })),
-        h("div", { style: "margin-top:8px" }, tag("SINT"), " ", h("span", { class: "dim", text: "0,62 kg/pessoa/dia · sem fonte" }))),
+        h("div", { style: "margin-top:8px" }, seal("nosource"), " ", h("span", { class: "dim", text: "0,62 kg/pessoa/dia · sem fonte (a API só calcula com taxas e rate_source informados)" }))),
       h("section", { class: "panel" },
         h("h2", { text: "Pressurização e O2 (protótipo · valor fixo de exemplo)" }),
         h("dl", { class: "readout" },
           h("dt", { text: "pressão da cabine (kPa)" }), h("dd", { text: f1(life.cabinKpa) + " · faixa 95–105" }),
           h("dt", { text: "pressão parcial O2 (kPa)" }), h("dd", { text: f1(life.o2PartialKpa) + " · mín. 19" }),
-          h("dt", { text: "estoque O2 (kg)" }), h("dd", { text: life.o2StockKg > 0 ? f1(life.o2StockKg) + " kg" : "ESGOTADO", class: life.o2StockKg > 0 ? "" : "fuelout" })),
-        h("div", { style: "margin-top:8px" }, tag("SINT"), " ", h("span", { class: "dim", text: "valores fixos · não usar para segurança" }))),
+          h("dt", { text: "estoque O2 (kg)" }), h("dd", { text: life.o2StockKg > 0 ? f1(life.o2StockKg) + " kg" : "—" })),
+        h("div", { style: "margin-top:8px" }, seal("nosource"), " ", h("span", { class: "dim", text: "valores fixos · não usar para segurança" }))),
       h("section", { class: "panel span2" },
         h("div", { class: "caution", text: "Esta área não tem base de dados nem validação. Os valores são constantes para exemplo e não devem ser lidos como condição de vida." }),
         edu("Suporte de vida não está na lista de requisitos do desafio. A inclusão depende da decisão do time (#7)."))
@@ -562,13 +626,13 @@
       const tr = track(d);
       const sum = M.summary(tr, S.stepMin);
       const life = M.lifeSupport(S.durationH);
-      const v = M.violations(sum, life);
+      const v = M.violations(sum, null);
       const o = opt(d);
       if (o) {
         if (o.metrics.minimum_charge_wh < S.power.reserve_wh) v.push({ code: "BATT", text: "bateria abaixo da reserva" });
         if (o.risks.some(r => r.category === "ENERGY_LOSS")) v.push({ code: "ENERGY_LOSS", text: "perda de energia" });
       }
-      return { d, sum, v, o, verdict: M.verdict(v, life.fuelMarginKg) };
+      return { d, sum, v, o, verdict: M.verdict(v, undefined) };
     });
 
     const dateRows = DATE_OFFSETS_DAYS.map(off => {
@@ -576,7 +640,7 @@
       const ms = startMs() + off * 86400e3;
       const tr = M.track({ siteId: S.site, startMs: ms, stepMin: S.stepMin, count: count(), delayH: 0 });
       const sum = M.summary(tr, S.stepMin);
-      return { off, ms, sum, verdict: M.verdict(M.violations(sum, M.lifeSupport(S.durationH)), undefined) };
+      return { off, ms, sum, verdict: M.verdict(M.violations(sum, null), undefined) };
     });
 
     const siteRows = sites.map(id => {
@@ -721,6 +785,7 @@
         h("div", { class: "scroll" }, h("table", { class: "table" },
           h("thead", {}, h("tr", {}, h("th", { text: "variação" }), h("th", { class: "n", text: "luz" }), h("th", { class: "n", text: "escuridão" }), h("th", { class: "n", text: "Terra visível" }))),
           h("tbody", {}, rows.map(r => h("tr", {}, h("td", { text: r.v.label }), h("td", { class: "n", text: d(r.sum.sunlitH, base.sunlitH) }), h("td", { class: "n", text: d(r.sum.darkH, base.darkH) }), h("td", { class: "n", text: d(r.sum.earthH, base.earthH) })))))),
+        h("div", {}, seal("local")),
         h("p", { class: "note", text: "Variações dentro do modelo sintético. Não é incerteza calibrada nem probabilidade." }),
         h("div", { style: "margin-top:8px" }, tag("SIM"), " ", tag("PEND"), " ", h("span", { class: "dim", text: "método com DEM real (9.4) e Pareto (9.6) pendentes" }))),
       h("section", { class: "panel span2" },
@@ -737,13 +802,14 @@
   };
 
   VIEWS.historico = () => {
-    const { sum } = scenario();
+    const sc1 = scenario();
+    const { sum } = sc1;
     const opt = apiOption(0);
     const record = {
       site: M.SITES[S.site].name, start_utc: iso(startMs()), duration_h: S.durationH, step_min: S.stepMin,
       sunlit_h: sum.sunlitH, dark_h: sum.darkH, earth_visible_h: sum.earthH, earth_blocked_h: sum.blockH,
       battery_min_wh: opt ? opt.metrics.minimum_charge_wh : null, api_status: opt ? opt.simulation_status : "NAO_CALCULADO",
-      synthetic: true
+      synthetic: sc1.src !== "api", source: sc1.src === "api" ? "api:" + (sc1.live.science_status || "?") : "browser-model SYNTHETIC"
     };
     const exportObj = { version: "0.1.0", status: "unverified", synthetic: true, scenarios: S.saved, provenance: { terrain: "SINTÉTICO", ephemeris: "SINTÉTICO", frame: "MOON_ME (rótulo)", generated_by: "cockpit-js" } };
     return [
@@ -841,7 +907,7 @@
   // ---------- Overview (dashboard home) ----------
   // Cards of big numbers, a donut, a daily bar chart, a polar map and a verdict table.
   // All values come from the synthetic model; the battery card uses the API only after CALCULAR.
-  function donutCard(sum) {
+  function donutCard(sum, sealNode) {
     const C = 2 * Math.PI * 70;
     const f = sum.durationH ? sum.sunlitH / sum.durationH : 0;
     const box = svg("svg", { viewBox: "0 0 200 200", width: "100%", style: "max-width:220px;display:block;margin:0 auto", role: "img", "aria-label": "Proporção de horas com luz" });
@@ -854,10 +920,11 @@
       box,
       h("div", { class: "legend", style: "justify-content:center" },
         h("span", {}, h("i", { style: "background:#e8a317" }), "com luz · " + f1(sum.sunlitH, 0) + " h"),
-        h("span", {}, h("i", { style: "background:#d9e0e8" }), "escuro · " + f1(sum.durationH - sum.sunlitH, 0) + " h")));
+        h("span", {}, h("i", { style: "background:#d9e0e8" }), "escuro · " + f1(sum.durationH - sum.sunlitH, 0) + " h")),
+      sealNode ? h("div", { style: "text-align:center;margin-top:6px" }, sealNode) : null);
   }
 
-  function dailyBarCard(tr, stepMin) {
+  function dailyBarCard(tr, stepMin, sealNode) {
     const perDay = Math.round(24 * 60 / stepMin);
     const days = [];
     for (let i = 0; i < tr.length; i += perDay) {
@@ -879,60 +946,71 @@
     return h("section", { class: "panel span2" },
       h("h2", {}, "Horas de luz por dia", h("em", {}, "amarelo: luz · cinza: escuro")),
       box,
-      h("p", { class: "note", text: "Cada coluna é um dia do cenário (24 h). Modelo sintético." }));
+      h("p", { class: "note", text: "Cada coluna é um dia do cenário (24 h)." }), sealNode ? h("div", {}, sealNode) : null);
   }
 
   function polarCard() {
     return h("section", { class: "panel" },
       h("h2", {}, "Lugares no polo sul", h("em", {}, "sintéticos")),
       polarMap(320),
+      h("div", {}, seal("local")),
       h("p", { class: "note", text: "Centro = polo sul. Anéis = distância do polo. Sem escala real." }));
   }
 
-  function verdictCard() {
-    const life = M.lifeSupport(S.durationH);
-    const rows = REPLAN_DELAYS.map(d => {
+  // Delay table: rows from POST /api/scenarios/delay when it answered; browser model (sealed) otherwise.
+  function delayRows() {
+    const key = seriesKey();
+    if (S.delay && S.delay.key === key && S.delay.rows && S.delay.rows.length) {
+      return { src: "api", status: S.delay.rows[0].science_status, rows: S.delay.rows.map(r => ({ d: r.delay_hours, v: r.admissible ? "VIAVEL" : "NAO_VIAVEL", darkH: r.darkH, blockH: r.blockH, why: r.breached, cons: r.consumables })) };
+    }
+    return { src: "local", rows: REPLAN_DELAYS.map(d => {
       const sum = M.summary(track(d), S.stepMin);
-      const v = M.verdict(M.violations(sum, life), life.fuelMarginKg);
-      return h("tr", {}, h("td", { text: d ? "+" + d + " h" : "sem atraso" }), h("td", {}, verdictTag(v)), h("td", { class: "n", text: f1(sum.darkH, 0) + " h" }), h("td", { class: "n", text: f1(sum.blockH, 0) + " h" }));
-    });
+      return { d, v: M.verdict(M.violations(sum, null), undefined), darkH: sum.darkH, blockH: sum.blockH, why: M.violations(sum, null).map(x => x.text) };
+    }) };
+  }
+  function verdictCard() {
+    const dr = delayRows();
+    const rows = dr.rows.map(r => h("tr", {}, h("td", { text: r.d ? "+" + r.d + " h" : "sem atraso" }), h("td", {}, verdictTag(r.v)), h("td", { class: "n", text: f1(r.darkH, 0) + " h" }), h("td", { class: "n", text: f1(r.blockH, 0) + " h" })));
     return h("section", { class: "panel" },
-      h("h2", {}, "Viabilidade por atraso", h("em", {}, "modelo")),
+      h("h2", {}, "Viabilidade por atraso", h("em", {}, dr.src === "api" ? "/api/scenarios/delay" : "modelo")),
       h("div", { class: "scroll" }, h("table", { class: "table" },
         h("thead", {}, h("tr", {}, h("th", { text: "atraso" }), h("th", { text: "resultado" }), h("th", { class: "n", text: "escuro" }), h("th", { class: "n", text: "Terra bloqueada" }))),
         h("tbody", {}, rows))),
-      h("p", { class: "note", text: "Limites ilustrativos. Detalhe e carga da bateria na aba Replanejar, após CALCULAR." }));
+      h("div", {}, dr.src === "api" ? seal("api", { science_status: dr.status }) : seal("local")),
+      h("p", { class: "note", text: "Limites declarados no pedido (escuridão ≤ " + M.LIMITS.darkH + " h, Terra ≥ 50%), não requisitos de missão." }));
   }
 
   VIEWS.visao = () => {
-    const { tr, sum, life } = scenario();
+    const sc = scenario();
+    const { tr, sum, life } = sc;
+    const SL = () => sealOf(sc);
     const opt = apiOption(0);
-    const kpi = (label, value, unit, delta, cls) => h("section", { class: "panel kpi" },
+    const kpi = (label, value, unit, delta, cls, sealNode) => h("section", { class: "panel kpi" },
       h("div", { class: "label", text: label }),
       h("div", { class: "value" }, value, h("small", { text: unit })),
-      h("div", { class: "delta " + (cls || "flat"), text: delta }));
-    const fuelOk = life.fuelMarginKg >= 0;
+      h("div", { class: "delta " + (cls || "flat"), text: delta }),
+      sealNode ? h("div", { class: "seal-row" }, sealNode) : null);
+    const apiOpt = opt ? seal("api", { science_status: S.api.science_status }) : null;
     return [
       h("div", { class: "title span2" },
         h("div", {}, h("h1", { text: "Visão geral da missão" }),
-          h("p", { text: M.SITES[S.site].name + " · início " + fmt(startMs()) + " · " + S.durationH + " h · dados sintéticos" }))),
+          h("p", { text: M.SITES[S.site].name + " · início " + fmt(startMs()) + " · " + S.durationH + " h" }), h("p", { class: "dim" }, sealOf(sc), " ", sc.src === "api" ? h("span", { class: "dim", text: "engine: " + (sc.live.engine_science_status || "—") }) : null))),
       h("div", { class: "grid four span2" },
-        kpi("Horas com luz", f1(sum.sunlitH, 0), " h", f1(sum.sunlitH / Math.max(1, sum.durationH) * 100, 0) + "% do período", "flat"),
-        kpi("Maior escuridão", f1(sum.darkH, 0), " h", sum.darkH > M.LIMITS.darkH ? "acima do limite de " + M.LIMITS.darkH + " h" : "dentro do limite", sum.darkH > M.LIMITS.darkH ? "down" : "up"),
-        kpi("Terra visível", f1(sum.earthH, 0), " h", "maior bloqueio " + f1(sum.blockH, 0) + " h", sum.blockH > M.LIMITS.blockH ? "down" : "flat"),
-        kpi("Carga mínima", opt ? f1(opt.metrics.minimum_charge_wh, 0) : "—", opt ? " Wh" : "", opt ? opt.simulation_status : "clique em + para calcular", opt && opt.simulation_status === "CONSTRAINTS_MET" ? "up" : opt ? "down" : "flat")),
+        kpi("Horas com luz", f1(sum.sunlitH, 0), " h", f1(sum.sunlitH / Math.max(1, sum.durationH) * 100, 0) + "% do período", "flat", SL()),
+        kpi("Maior escuridão", f1(sum.darkH, 0), " h", sum.darkH > M.LIMITS.darkH ? "acima do limite de " + M.LIMITS.darkH + " h" : "dentro do limite", sum.darkH > M.LIMITS.darkH ? "down" : "up", SL()),
+        kpi("Terra visível", f1(sum.earthH, 0), " h", "maior bloqueio " + f1(sum.blockH, 0) + " h", sum.blockH > M.LIMITS.blockH ? "down" : "flat", SL()),
+        kpi("Carga mínima", opt ? f1(opt.metrics.minimum_charge_wh, 0) : "—", opt ? " Wh" : "", opt ? opt.simulation_status : "clique em + para calcular", opt && opt.simulation_status === "CONSTRAINTS_MET" ? "up" : opt ? "down" : "flat", apiOpt)),
       h("div", { class: "grid two span2" },
-        donutCard(sum),
+        donutCard(sum, sealOf(sc)),
         h("section", { class: "panel" },
-          h("h2", {}, "Combustível (protótipo · valor fixo de exemplo)", h("em", {}, "sem fonte")),
+          h("h2", {}, "Energia de propelente (exemplo)", h("em", {}, "sem fonte")),
           h("dl", { class: "readout" },
-            h("dt", {}, "restante"), h("dd", { text: life.fuelRemainingKg > 0 ? f1(life.fuelRemainingKg, 0) + " kg" : "esgotado" }),
-            h("dt", {}, "margem sobre a reserva"), h("dd", { class: fuelOk ? "" : "fuelout", text: f1(life.fuelMarginKg, 0) + " kg" }),
-            h("dt", {}, "estoque de alimentos"), h("dd", { text: f1(life.foodLeftKg, 0) + " kg" }),
-            h("dt", {}, "O2 em estoque"), h("dd", { text: f1(life.o2StockKg, 0) + " kg" })),
-          h("div", { class: "bar " + (fuelOk ? "" : "bad") }, h("span", { style: "width:" + Math.max(0, Math.min(100, life.fuelRemainingKg / 450 * 100)) + "%" })),
-          h("p", { class: "note", text: "Valores ilustrativos. Não usar para decisão de segurança." }))),
-      dailyBarCard(tr, S.stepMin),
+            h("dt", {}, "propelente restante"), h("dd", { text: life.fuelRemainingKg > 0 ? f1(life.fuelRemainingKg, 0) + " kg" : "—" }),
+            h("dt", {}, "alimentos"), h("dd", { text: life.foodLeftKg > 0 ? f1(life.foodLeftKg, 0) + " kg" : "—" }),
+            h("dt", {}, "O2 em estoque"), h("dd", { text: life.o2StockKg > 0 ? f1(life.o2StockKg, 0) + " kg" : "—" })),
+          h("div", { style: "margin-top:8px" }, seal("nosource")),
+          h("p", { class: "note", text: "A API não tem combustível. Constantes do protótipo; não geram alarme nem veredito. Não usar para decisão de segurança." }))),
+      dailyBarCard(tr, stepOf(tr), sealOf(sc)),
       h("div", { class: "grid two span2" }, polarCard(), verdictCard())
     ];
   };
@@ -973,7 +1051,8 @@
   }
 
   VIEWS.energia = () => {
-    const { sum } = scenario();
+    const sc0 = scenario();
+    const { sum } = sc0;
     const opt = apiOption(0);
     const sunlitWh = S.power.solar_generation_w * sum.sunlitH;
     const loadWh = S.power.load_w * sum.durationH;
@@ -981,10 +1060,10 @@
     const cards = h("div", { class: "grid four span2" },
       h("section", { class: "panel kpi" }, h("div", { class: "label", text: "Horas com luz" }),
         h("div", { class: "value" }, f1(sum.sunlitH, 0), h("small", { text: " h" })),
-        h("div", { class: "delta flat", text: "de " + f1(sum.durationH, 0) + " h do cenário" })),
+        h("div", { class: "delta flat", text: "de " + f1(sum.durationH, 0) + " h do cenário" }), h("div", {}, sealOf(sc0))),
       h("section", { class: "panel kpi" }, h("div", { class: "label", text: "Carga mínima da bateria" }),
         h("div", { class: "value" }, opt ? f1(opt.metrics.minimum_charge_wh, 0) : "—", h("small", { text: opt ? " Wh" : "" })),
-        h("div", { class: "delta flat", text: opt ? "reserva: " + S.power.reserve_wh + " Wh" : "calcule com +" })),
+        h("div", { class: "delta flat", text: opt ? "reserva: " + S.power.reserve_wh + " Wh" : "calcule com +" }), opt ? h("div", {}, seal("api", { science_status: S.api.science_status })) : null),
       h("section", { class: "panel kpi" }, h("div", { class: "label", text: "Energia não atendida" }),
         h("div", { class: "value" }, opt ? f1(opt.metrics.total_unserved_energy_wh, 0) : "—", h("small", { text: opt ? " Wh" : "" })),
         h("div", { class: "delta " + (opt && opt.metrics.total_unserved_energy_wh > 0 ? "down" : "flat"), text: opt ? (opt.metrics.total_unserved_energy_wh > 0 ? "a carga ficou sem energia" : "a carga foi atendida") : "" })),
@@ -1043,7 +1122,7 @@
 
   // Gauge with a coloured zone, used for life-support values.
   function gaugeCard(title, valueText, unit, pct, status, detail, illustrative) {
-    const map = { ok: ["ok", "OK"], warn: ["warn", "ATENÇÃO"], bad: ["bad", "ESGOTADO"] };
+    const map = { ok: ["ok", "OK"], warn: ["warn", "ATENÇÃO"], bad: ["bad", "ESGOTADO"], none: ["info", "—"] };
     const [k, label] = map[status] || ["info", "—"];
     return h("section", { class: "panel" },
       h("div", { class: "row" }, h("h2", { style: "margin:0", text: title }), h("span", { class: "chip " + k, text: label })),
@@ -1051,17 +1130,16 @@
       h("div", { class: "bar " + (status === "bad" ? "bad" : status === "warn" ? "warn" : ""), style: "margin-top:12px" },
         h("span", { style: "width:" + Math.max(0, Math.min(100, pct)) + "%" })),
       h("p", { class: "note", text: detail }),
-      illustrative ? h("div", { style: "margin-top:8px" }, tag("SINT"), " ", h("span", { class: "dim", text: "PROTÓTIPO · valor fixo de exemplo, sem fonte" })) : null);
+      illustrative ? h("div", { style: "margin-top:8px" }, seal("nosource")) : null);
   }
 
   VIEWS.vida = () => {
     const { life } = scenario();
-    const fuelStatus = life.fuelRemainingKg <= 0 ? "bad" : life.fuelMarginKg < 0 ? "bad" : life.fuelMarginKg < 50 ? "warn" : "ok";
-    const fuelDetail = life.fuelMarginKg < 0
-      ? "Abaixo da reserva mínima de " + M.LIMITS.fuelReserveKg + " kg em " + f1(-life.fuelMarginKg, 0) + " kg."
-      : "Margem de " + f1(life.fuelMarginKg, 0) + " kg sobre a reserva de " + M.LIMITS.fuelReserveKg + " kg.";
-    const foodStatus = life.foodLeftKg <= 0 ? "bad" : life.foodLeftKg < 100 ? "warn" : "ok";
-    const o2Status = life.o2StockKg <= 0 ? "bad" : life.o2StockKg < 20 ? "warn" : "ok";
+    // No source for fuel: no status colour and no alarm, just the sealed example value.
+    const fuelStatus = "none";
+    const fuelDetail = "A API não tem combustível. Constante de exemplo do protótipo.";
+    const foodStatus = life.foodLeftKg <= 0 ? "none" : life.foodLeftKg < 100 ? "warn" : "ok";
+    const o2Status = life.o2StockKg <= 0 ? "none" : life.o2StockKg < 20 ? "warn" : "ok";
     const pOk = life.cabinKpa >= 95 && life.cabinKpa <= 105;
     const pPct = ((life.cabinKpa - 90) / 20) * 100;
     const pressure = h("section", { class: "panel" },
@@ -1076,17 +1154,17 @@
       h("div", { class: "row" }, h("h2", { style: "margin:0", text: "Oxigênio" }), h("span", { class: "chip " + (life.o2PartialKpa >= 19 ? "ok" : "bad"), text: life.o2PartialKpa >= 19 ? "PRESSÃO OK" : "BAIXA" })),
       h("dl", { class: "readout", style: "margin-top:10px" },
         h("dt", {}, "pressão parcial"), h("dd", { text: f1(life.o2PartialKpa) + " kPa (mín. 19)" }),
-        h("dt", {}, "estoque restante"), h("dd", { text: life.o2StockKg > 0 ? f1(life.o2StockKg) + " kg" : "ESGOTADO" })),
+        h("dt", {}, "estoque restante"), h("dd", { text: life.o2StockKg > 0 ? f1(life.o2StockKg) + " kg" : "—" })),
       h("p", { class: "note", text: "Estoque de O2 consumido por " + life.people + " pessoas ao longo do período." }),
-      h("div", { style: "margin-top:8px" }, tag("SINT"), " ", h("span", { class: "chip " + o2Status, text: o2Status === "bad" ? "ESGOTADO" : o2Status === "warn" ? "ATENÇÃO" : "OK" })));
+      h("div", { style: "margin-top:8px" }, seal("local"), " ", h("span", { class: "chip " + (o2Status === "none" ? "info" : o2Status), text: o2Status === "none" ? "—" : o2Status === "warn" ? "ATENÇÃO" : "OK" })));
 
     return [
       h("div", { class: "span2 caution", role: "note" }, "Estes valores são ilustrativos, sem fonte nem validação. Não devem ser lidos como condição de vida. Suporte de vida ainda não está na lista de requisitos do desafio (#7)."),
       h("div", { class: "grid three span2" },
-        gaugeCard("Combustível", life.fuelRemainingKg > 0 ? f1(life.fuelRemainingKg, 0) : "0", "kg", life.fuelRemainingKg / 450 * 100, fuelStatus, fuelDetail, true),
-        gaugeCard("Alimentação", f1(life.foodLeftKg, 0), "kg", life.foodLeftKg / 500 * 100, foodStatus,
+        gaugeCard("Propelente (exemplo)", life.fuelRemainingKg > 0 ? f1(life.fuelRemainingKg, 0) : "—", "kg", life.fuelRemainingKg / 450 * 100, fuelStatus, fuelDetail, true),
+        gaugeCard("Alimentação", life.foodLeftKg > 0 ? f1(life.foodLeftKg, 0) : "—", "kg", life.foodLeftKg / 500 * 100, foodStatus,
           life.people + " pessoas · 0,62 kg por pessoa e dia · racionamento " + (life.foodLeftKg > 100 ? "normal" : "reduzido") + ".", true),
-        gaugeCard("Estoque de O2", f1(life.o2StockKg, 0), "kg", life.o2StockKg / 64 * 100, o2Status,
+        gaugeCard("Estoque de O2", life.o2StockKg > 0 ? f1(life.o2StockKg, 0) : "—", "kg", life.o2StockKg / 64 * 100, o2Status,
           "0,84 kg por pessoa e dia. Abaixo de 20 kg, o estoque entra em atenção.", true)),
       h("div", { class: "grid two span2" }, pressure, o2Pressure)
     ];
@@ -1136,7 +1214,7 @@
     const legend = h("div", { class: "legend" },
       h("span", {}, h("i", { style: "background:var(--green)" }), "mudança favorável"),
       h("span", {}, h("i", { style: "background:var(--red)" }), "mudança desfavorável"),
-      h("span", {}, "a linha do centro é a base"));
+      h("span", {}, "a linha do centro é a base"), seal("local"));
 
     const trade = h("section", { class: "panel span2" },
       h("h2", {}, "Compromissos ciência × engenharia", h("em", { text: "9.5" })),
@@ -1176,23 +1254,26 @@
 
   VIEWS.replan = () => {
     const life = M.lifeSupport(S.durationH);
+    scenario();   // triggers the live loads
+    const dr = delayRows();
     const options = REPLAN_DELAYS.map(d => {
-      const tr = track(d);
-      const sum = M.summary(tr, S.stepMin);
-      const v = M.violations(sum, life);
+      const apiRow = dr.src === "api" ? dr.rows.find(r => r.d === d) : null;
+      const tr = apiRow ? [] : track(d);
+      const sum = apiRow ? { darkH: apiRow.darkH, blockH: apiRow.blockH } : M.summary(tr, S.stepMin);
+      const v = apiRow ? apiRow.why.map(t => ({ text: t })) : M.violations(sum, null);
       const o = apiOption(d);
       if (o) {
         if (o.metrics.minimum_charge_wh < S.power.reserve_wh) v.push({ code: "BATT", text: "bateria abaixo da reserva" });
         if (o.risks.some(r => r.category === "ENERGY_LOSS")) v.push({ code: "ENERGY_LOSS", text: "perda de energia" });
       }
-      return { d, sum, v, o, verdict: M.verdict(v, life.fuelMarginKg) };
+      return { d, sum, v, o, apiRow, verdict: apiRow ? (apiRow.v) : M.verdict(v, undefined) };
     });
     const viable = options.filter(x => x.verdict !== "NAO_VIAVEL");
     const best = options.find(x => x.verdict === "VIAVEL") || options.find(x => x.verdict === "MARGEM_REDUZIDA");
 
     // Summary: one sentence the reader can act on.
     const headline = best
-      ? (best.d ? "Atrasar para " + delayName(best.d) + " ainda é viável neste cenário." : "O plano atual é viável neste cenário.")
+      ? (best.d ? "Atrasar para " + delayName(best.d) + " passa nos limites declarados." : "O plano atual é viável neste cenário.")
       : "Nenhum atraso testado é viável. Veja o motivo em cada cartão.";
     const summary = h("section", { class: "panel span2" },
       h("div", { class: "row" },
@@ -1203,8 +1284,10 @@
     const cards = h("div", { class: "grid four span2" }, options.map(x => h("section", { class: "panel kpi" },
       h("div", { class: "row" }, h("span", { class: "label", text: delayName(x.d) }), verdictChip(x.verdict)),
       h("div", { class: "value", style: "margin-top:10px" }, f1(x.sum.darkH, 0), h("small", { text: " h escuro" })),
+      h("div", {}, x.apiRow ? seal("api", { science_status: dr.status }) : seal("local")),
       h("div", { class: "delta " + (x.sum.darkH > M.LIMITS.darkH ? "down" : "flat"), text: "limite " + M.LIMITS.darkH + " h · Terra bloqueada " + f1(x.sum.blockH, 0) + " h" }),
-      h("div", { class: "dim", style: "margin-top:8px" }, x.o ? "carga mínima " + f1(x.o.metrics.minimum_charge_wh, 0) + " Wh" : "carga: calcule com +"),
+      h("div", { class: "dim", style: "margin-top:8px" }, x.o ? "carga mínima " + f1(x.o.metrics.minimum_charge_wh, 0) + " Wh" : "carga mínima: — (calcule com +)"),
+      x.o ? h("div", {}, seal("api", { science_status: S.api.science_status })) : null,
       x.v.length
         ? h("ul", { class: "plain", style: "margin-top:10px;font-size:12px" }, x.v.map(r => h("li", { text: r.text })))
         : h("p", { class: "dim", style: "margin-top:10px", text: "Nenhuma restrição violada." }))));
@@ -1214,7 +1297,7 @@
       const ms = startMs() + off * 86400e3;
       const tr = M.track({ siteId: S.site, startMs: ms, stepMin: S.stepMin, count: count(), delayH: 0 });
       const sum = M.summary(tr, S.stepMin);
-      return { off, ms, sum, verdict: M.verdict(M.violations(sum, life), undefined) };
+      return { off, ms, sum, verdict: M.verdict(M.violations(sum, null), undefined) };
     });
     const cellColor = { VIAVEL: "#3fbf80", MARGEM_REDUZIDA: "#e8a317", NAO_VIAVEL: "#e0606e" };
     const dateStrip = h("section", { class: "panel span2" },
@@ -1228,6 +1311,7 @@
         h("span", {}, h("i", { style: "background:#3fbf80" }), "viável"),
         h("span", {}, h("i", { style: "background:#e8a317" }), "margem reduzida"),
         h("span", {}, h("i", { style: "background:#e0606e" }), "não viável")),
+      h("div", {}, seal("local")),
       h("p", { class: "note", text: "Grade fixa, sem otimização. Não é uma busca completa de datas." }));
 
     // Places: same metrics, one card each.
@@ -1245,12 +1329,13 @@
             h("dt", {}, "maior escuridão"), h("dd", { text: f1(sum.darkH, 0) + " h" }),
             h("dt", {}, "Terra visível"), h("dd", { text: f1(sum.earthH, 0) + " h" })));
       })),
+      h("div", {}, seal("local")),
       h("p", { class: "note", text: "Sem fonte real por lugar: os três são sintéticos. Bateria só para o lugar atual." }));
 
     const explain = h("section", { class: "panel span2" },
       h("h2", {}, "Como o veredito é calculado"),
       h("div", { class: "edu" }, "Um atraso é inviável se a escuridão passa do limite, se a Terra fica bloqueada por tempo demais, se a bateria cai abaixo da reserva ou se o combustível fica abaixo da reserva. Os limites são premissas ilustrativas."),
-      h("p", { class: "note", text: "Cálculo do modelo sintético. Os números da API aparecem no painel de API acima, quando consultados." }));
+      h("p", { class: "note", text: (dr.src === "api" ? "Escuridão e bloqueio vêm de /api/scenarios/delay (selo em cada cartão). Datas e lugares abaixo ainda são do modelo do navegador, com selo." : "API de atraso não respondeu: números do modelo do navegador, com selo.") }));
 
     return [summary, cards, dateStrip, places, explain];
   };
@@ -1264,8 +1349,10 @@
 
   function kvRow(label, value) { return h("tr", {}, h("td", { text: label }), h("td", { class: "n", text: value })); }
   function apiError(res) {
-    return h("div", { class: "caution", role: "alert" }, "API indisponível: " + (res.error || ("HTTP " + res.status)) +
-      ". Suba a API Go (e o Rust engine, se o endpoint pedir) e o dev-server.py.");
+    // status 0 = no connection. Any other status means the API answered and refused: show its code and message.
+    return h("div", { class: "caution", role: "alert" }, res.status === 0
+      ? "API indisponível: " + (res.error || "sem conexão") + ". Suba a API Go (e o Rust engine, se o endpoint pedir) e o dev-server.py."
+      : L.refusalText(res));
   }
   function apiPanelFrame(title, note, button, body) {
     return h("section", { class: "panel span2" },
@@ -1308,11 +1395,28 @@
 
   function comparePanel() {
     const r = S.apiResults.compare;
+    const cap = S.compareMax || 3; // /api/compare: "site_ids must contain 1 to 3 sites" (api/mission.go); refined from the refusal text
+    const sel = L.pickSites(S.compareSel, S.site, cap);
     const button = callButton("COMPARAR LUGARES (API)", async () => {
-      const ids = (S.sitesApi || []).map(s => s.id);
-      const pick = ids.length ? ids : ["synthetic-demo-a", "synthetic-demo-b", "malapert-massif"];
+      const pick = L.pickSites(S.compareSel, S.site, cap);
       S.apiResults.compare = await OnboardApi.compare({ site_ids: pick, start_utc: iso(startMs()), duration_hours: S.durationH, include_series: false });
+      const e = L.parseApiError(S.apiResults.compare);
+      if (!S.apiResults.compare.ok && e.code === "INVALID_SITES") S.compareMax = L.limitFromMessage(e.message, "sites") || S.compareMax;
     });
+    const catalog = (S.sitesApi || []).map(s => s.id);
+    const picker = h("fieldset", { class: "compare-pick" }, h("legend", { text: "Lugares a comparar (a API aceita de 1 a " + cap + ")" }),
+      catalog.map(id => {
+        const cb = h("input", { type: "checkbox", value: id });
+        cb.checked = sel.includes(id);
+        cb.disabled = !cb.checked && sel.length >= cap;
+        cb.addEventListener("change", () => {
+          const cur = L.pickSites(S.compareSel, S.site, cap).filter(x => x !== id);
+          S.compareSel = cb.checked ? cur.concat(id).slice(0, cap) : cur;
+          renderTab();
+        });
+        return h("label", { style: "margin-right:12px;white-space:nowrap" }, cb, " " + id);
+      }),
+      h("p", { class: "note", id: "compare-note", text: "Enviando " + sel.length + " de " + catalog.length + " lugares: " + sel.join(", ") + ". Máximo " + cap + " por consulta; os demais ficam de fora." }));
     let body = h("p", { class: "dim", text: "Ainda não consultado. Compara lugares do catálogo, com dados de série quando existirem." });
     if (r && !r.ok) body = apiError(r);
     if (r && r.ok) {
@@ -1329,14 +1433,16 @@
             h("td", { text: s.science_status || "—" }));
         }))));
     }
-    return apiPanelFrame("API · Comparação de lugares (/api/compare)", "Lugares sem série aparecem como NO_SERIES_DATA, sem números.", button, body);
+    return apiPanelFrame("API · Comparação de lugares (/api/compare)", "Lugares sem série aparecem como NO_SERIES_DATA, sem números.", button, h("div", {}, picker, body));
   }
 
+  // combined_decision is an object { candidate_id, status }; never print it as [object Object].
+  function decisionText(d) { return d && typeof d === "object" ? (d.status || "—") + (d.candidate_id ? " (" + d.candidate_id + ")" : "") : (d || "—"); }
   function siteEvalPanel() {
     const r = S.apiResults.siteEval;
     const button = callButton("AVALIAR COM SÉRIE (API)", async () => {
       const body = {
-        mission_id: "cockpit-" + S.site, start_utc: iso(startMs()), duration_hours: S.durationH,
+        mission_id: "cockpit-" + S.site, start_utc: iso(startMs()), duration_hours: Math.min(S.durationH, S.onboardMax || S.durationH), // limit learned from the API refusal text
         candidates: [{ id: "planejado", site_id: S.site, delay_hours: 0 }, { id: "atraso-48h", site_id: S.site, delay_hours: 48 }],
         power: {
           battery_capacity_wh: S.power.battery_capacity_wh, initial_charge_wh: S.power.initial_charge_wh,
@@ -1344,17 +1450,28 @@
         },
         max_comm_blackout_hours: S.power.max_comm_blackout_hours
       };
-      S.apiResults.siteEval = await OnboardApi.siteEvaluate(body);
+      let res = await OnboardApi.siteEvaluate(body);
+      const e = L.parseApiError(res);
+      const lim = !res.ok && e.code === "WINDOW_TOO_LONG" ? L.limitFromMessage(e.message, "samples") : null;
+      if (lim && lim < body.duration_hours) {  // the API states its limit: retry once inside it and say so
+        S.onboardMax = lim;
+        body.duration_hours = lim;
+        res = await OnboardApi.siteEvaluate(body);
+        res.windowNote = "O pedido de " + S.durationH + " h passou do limite da API (" + lim + " amostras, WINDOW_TOO_LONG); a avaliação cobre só as primeiras " + lim + " h.";
+      } else if (S.onboardMax && S.onboardMax < S.durationH && res.ok) {
+        res.windowNote = "Limite da API: " + S.onboardMax + " h; a avaliação cobre só as primeiras " + S.onboardMax + " h de " + S.durationH + " h.";
+      }
+      S.apiResults.siteEval = res;
     });
     let body = h("p", { class: "dim", text: "Ainda não consultado. Só lugares com série ingerida (synthetic-demo-a e -b) são aceitos." });
     if (r && !r.ok) body = apiError(r);
     if (r && r.ok) {
       const c0 = (r.data.candidates || [])[0] || {};
-      body = h("dl", { class: "readout" },
-        h("dt", { text: "decisão combinada" }), h("dd", { text: r.data.combined_decision || "—" }),
-        h("dt", { text: "simulador de energia (estado)" }), h("dd", { text: r.data.onboard ? r.data.onboard.simulation_status : "—" }),
+      body = h("div", {}, r.windowNote ? h("p", { class: "caution", role: "status", id: "window-note", text: r.windowNote }) : null, h("dl", { class: "readout" },
+        h("dt", { text: "decisão combinada" }), h("dd", { text: decisionText(r.data.combined_decision) }),
+        h("dt", { text: "simulador de energia (estado)" }), h("dd", { text: r.data.onboard ? (r.data.onboard.decision || r.data.onboard.simulation_status || "—") : "—" }),
         h("dt", { text: "ciência do primeiro candidato" }), h("dd", { text: c0.science_status || "—" }),
-        h("dt", { text: "riscos quebrados (primeiro candidato)" }), h("dd", { text: (c0.breached_risks || []).length ? String(c0.breached_risks.length) : "nenhum" }));
+        h("dt", { text: "riscos quebrados (primeiro candidato)" }), h("dd", { text: (c0.breached_risks || []).length ? String(c0.breached_risks.length) : "nenhum" })));
     }
     return apiPanelFrame("API · Energia com série de visibilidade (/api/onboard/site-evaluate)", "Sol e Terra vêm da série do servidor, não do navegador.", button, body);
   }
@@ -1383,12 +1500,24 @@
     VIEWS[k] = () => [API_EXTRA[k](), ...base()];
   }
 
+  // Header badges come from the API (/readyz, /v1/capabilities, /api/health, series science_status), not fixed text.
+  S.badge = { apiUp: false, readyz: null, capabilities: null, seriesStatus: null };
+  function renderBadges() {
+    const box = $("badges");
+    if (!box) return;
+    S.badge.seriesStatus = S.series && S.series.science_status ? S.series.science_status : null;
+    box.replaceChildren(...L.badges(S.badge).map(b => h("span", { class: "chip " + b.kind, text: b.text })));
+  }
   async function loadHealth() {
-    const r = await OnboardApi.health();
+    const [r, rz, cap] = await Promise.all([OnboardApi.health(), OnboardApi.readyz(), OnboardApi.capabilities()]);
+    S.badge.apiUp = !!(r.ok || rz.ok || cap.ok || r.status === 503);
+    S.badge.readyz = rz.ok ? rz.data : (rz.status === 503 ? { status: "not ready", science_status: rz.data && rz.data.science_status } : null);
+    S.badge.capabilities = cap.ok ? cap.data : null;
+    renderBadges();
     if (r.status === 503) { setLamp("warn", "API OK · ENGINE INDISPONÍVEL"); return; }
     if (!r.ok) { setLamp("bad", "API OFF"); return; }
     const eng = r.data && r.data.engine ? String(r.data.engine) : "desconhecido";
-    setLamp(eng === "available" ? "ok" : "warn", "API OK · ENGINE " + eng.toUpperCase());
+    setLamp(eng === "available" || eng === "ready" ? "ok" : "warn", "API OK · ENGINE " + eng.toUpperCase());
   }
   async function loadSites() {
     const r = await OnboardApi.sites();
@@ -1431,6 +1560,7 @@
     const initial = tabFromHash();
     if (initial) S.tab = initial;
     tickClock(); setInterval(tickClock, 1000);
+    renderBadges();
     loadHealth();
     loadSites();
     const fab = document.getElementById("fab");
