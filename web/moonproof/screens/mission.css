@@ -11,9 +11,6 @@
 .mc-circles .mp-stat-core .mp-seal{display:none}
 .mc-circles .mp-sat{width:52px;height:52px;margin:-26px 0 0 -26px}
 .mc-circles .mp-sat b{font-size:13px}.mc-circles .mp-sat span{font-size:9.5px}
-/* satellites on the diagonals, as in the A capture (core puts them in a cross) */
-.mc-circles .mp-sat[data-pos="0"]{left:14.6%;top:14.6%}.mc-circles .mp-sat[data-pos="1"]{left:85.4%;top:14.6%}
-.mc-circles .mp-sat[data-pos="2"]{left:85.4%;top:85.4%}.mc-circles .mp-sat[data-pos="3"]{left:14.6%;top:85.4%}
 .mc-earth .mp-stat-core{background:#3B4652;color:#fff}
 .mc-left .mp-layer,.mc-right .mp-card{width:100%}
 .mc-left .mp-layer-answer{font-size:17px}
