@@ -1,0 +1,61 @@
+// Pure comparison logic for #/comparar and #/comparar/tecnico (no DOM; unit-tested in node).
+// Rules are user-editable ASSUMPTIONS of the prototype, not mission requirements. Geometry only:
+// battery/energy is not evaluated for real sites and is reported as N/D.
+
+export const RULE_DEFAULTS = { minSunPct: 50, maxNightH: 120, maxEarthLossH: 120 };
+const KEYS = { minSunPct: "rs", maxNightH: "rn", maxEarthLossH: "re" };
+
+/** Rules from the URL query (rs, rn, re); invalid values fall back to the defaults. */
+export function rulesFromQuery(query = {}) {
+  const out = {};
+  for (const [k, q] of Object.entries(KEYS)) {
+    const v = Number(query[q]);
+    out[k] = query[q] !== undefined && query[q] !== "" && Number.isFinite(v) && v >= 0 ? v : RULE_DEFAULTS[k];
+  }
+  return out;
+}
+export function rulesToQuery(r) { return Object.fromEntries(Object.entries(KEYS).map(([k, q]) => [q, String(r[k])])); }
+
+/** Metric definitions: key in the window metrics, unit, rule key and direction. */
+export const METRICS = [
+  { key: "longestDarkH", label: "Maior noite", unit: "h", rule: "maxNightH", dir: "max", text: r => "≤ " + r.maxNightH + " h" },
+  { key: "longestBlackoutH", label: "Maior perda da Terra", unit: "h", rule: "maxEarthLossH", dir: "max", text: r => "≤ " + r.maxEarthLossH + " h" },
+  { key: "sunPct", label: "Sol visível", unit: "%", rule: "minSunPct", dir: "min", text: r => "≥ " + r.minSunPct + "%" },
+  { key: "earthPct", label: "Terra visível", unit: "%", rule: null, dir: "max-better" },
+  { key: "bothPct", label: "Sol e Terra juntos", unit: "%", rule: null, dir: "max-better" },
+];
+
+/**
+ * Evaluate sites. entries: [{ id, name, w }] where w is a window-metrics object
+ * ({status:"COMPUTED", ...} or not computed). Returns rows with per-rule pass/fail and margins,
+ * plus { best, closest } — best is null when no site meets every rule.
+ */
+export function evaluate(entries, rules) {
+  const rows = entries.map(e => {
+    const ok = e.w && e.w.status === "COMPUTED";
+    const checks = METRICS.filter(m => m.rule).map(m => {
+      const v = ok ? e.w[m.key] : NaN, lim = rules[m.rule];
+      if (!Number.isFinite(v)) return { key: m.key, pass: null, margin: NaN };
+      const margin = m.dir === "max" ? lim - v : v - lim;
+      return { key: m.key, pass: margin >= 0, margin };
+    });
+    const fails = checks.filter(c => c.pass === false).length, unknown = checks.some(c => c.pass === null);
+    return { ...e, computed: ok, checks, fails, unknown, passAll: ok && !unknown && fails === 0 };
+  });
+  const score = r => (r.computed ? r.w.bothPct : -Infinity);
+  const passing = rows.filter(r => r.passAll).sort((a, b) => score(b) - score(a));
+  const closest = rows.filter(r => r.computed).sort((a, b) => a.fails - b.fails || score(b) - score(a))[0] || null;
+  return { rows, best: passing[0] || null, closest };
+}
+
+/** Index of the best value per metric (for highlighting), or -1 when no value is finite. */
+export function bestIndex(rows, metric) {
+  let bi = -1, bv = NaN;
+  rows.forEach((r, i) => {
+    const v = r.computed ? r.w[metric.key] : NaN;
+    if (!Number.isFinite(v)) return;
+    const better = metric.dir === "max" ? v < bv : v > bv;
+    if (bi < 0 || better) { bi = i; bv = v; }
+  });
+  return bi;
+}
