@@ -1,6 +1,6 @@
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, windowMetrics, api, sealFor } from "../core/data.js";
+import { loadSites, windowMetrics, api, apiOnline, sealFor } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
 import { register, t, fmtNum } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo, DEFAULT_RULES } from "../core/state.js";
@@ -30,7 +30,7 @@ register({
     "plan.colMetric": "Metric",
     "plan.colUnit": "Unit",
     "plan.colRule": "Rule",
-    "plan.colMargin": "Margin B",
+    "plan.colMargin": "Scenario 2 margin",
     "plan.colUnc": "Uncertainty",
     "plan.colOrigin": "Origin",
     "plan.mNight": "Longest night",
@@ -67,7 +67,7 @@ register({
     "plan.colMetric": "Métrica",
     "plan.colUnit": "Unid.",
     "plan.colRule": "Regra",
-    "plan.colMargin": "Margem B",
+    "plan.colMargin": "Margem do cenário 2",
     "plan.colUnc": "Incerteza",
     "plan.colOrigin": "Origem",
     "plan.mNight": "Maior noite",
@@ -113,19 +113,39 @@ function downloadFile(filename, content, mime) {
 async function computeRows() {
   const st = getState();
   const hours = st.hours || 336;
-  const live = await api("/api/compare", {
-    method: "POST",
-    body: { sites: scenarios.map((s) => s.id), start: st.start, hours }
-  });
-  const metrics = await Promise.all(scenarios.map((s) => windowMetrics(doc, s, st.start, hours)));
-  const evals = await Promise.all(
-    scenarios.map((s) =>
-      api("/api/onboard/site-evaluate", {
-        method: "POST",
-        body: { site_id: s.id, max_night_h: rulesDraft.night, max_blackout_h: rulesDraft.blackout, battery_floor_pct: rulesDraft.battery }
-      })
-    )
+  const startUtc = st.start || "2027-03-14T06:00:00Z";
+  const [online, live, evalRes] = await Promise.all([
+    apiOnline(),
+    api("/api/compare", {
+      method: "POST",
+      body: { site_ids: scenarios.map((s) => s.id), start_utc: startUtc, duration_hours: hours }
+    }),
+    api("/api/onboard/site-evaluate", {
+      method: "POST",
+      body: {
+        mission_id: "moonproof-plan",
+        start_utc: startUtc,
+        duration_hours: hours,
+        candidates: scenarios.map((s) => ({ id: s.id, site_id: s.id, delay_hours: 0 })),
+        power: {
+          battery_capacity_wh: 20000,
+          initial_charge_wh: Math.round(20000 * ((rulesDraft.battery || 30) / 100)),
+          reserve_wh: 4000,
+          solar_generation_w: 1500,
+          load_w: 600
+        },
+        max_comm_blackout_hours: rulesDraft.blackout || 72
+      }
+    })
+  ]);
+  const metrics = await Promise.all(scenarios.map((s) => windowMetrics(doc, s, startUtc, hours)));
+  const evalBySite = new Map(
+    (evalRes.ok && Array.isArray(evalRes.data?.candidates) ? evalRes.data.candidates : []).map((c) => [c.site_id || c.id, c])
   );
+  const evals = scenarios.map((s) => {
+    const c = evalBySite.get(s.id);
+    return { ok: evalRes.ok && !!c, data: c || null };
+  });
 
   const rows = [
     {
@@ -135,7 +155,7 @@ async function computeRows() {
       check: (v) => v <= rulesDraft.night,
       best: "min",
       margin: metrics[1]?.longestDarkH.value != null ? rulesDraft.night - metrics[1].longestDarkH.value : null,
-      unc: "±1", status: doc.status
+      unc: t("nd"), status: doc.status
     },
     {
       label: t("plan.mBlackout"), unit: "h",
@@ -144,19 +164,19 @@ async function computeRows() {
       check: (v) => v <= rulesDraft.blackout,
       best: "min",
       margin: metrics[1]?.longestBlackoutH.value != null ? rulesDraft.blackout - metrics[1].longestBlackoutH.value : null,
-      unc: "±1", status: doc.status
+      unc: t("nd"), status: doc.status
     },
     {
       label: t("plan.mSun"), unit: "%",
       vals: metrics.map((m) => m.sunPct.value),
       rule: t("nd"), check: null, best: "max", margin: null,
-      unc: "±0.3", status: doc.status
+      unc: t("nd"), status: doc.status
     },
     {
       label: t("plan.mEarth"), unit: "%",
       vals: metrics.map((m) => m.earthPct.value),
       rule: t("nd"), check: null, best: "max", margin: null,
-      unc: "±0.3", status: doc.status
+      unc: t("nd"), status: doc.status
     },
     {
       label: t("plan.mBattery"), unit: "h",
@@ -183,18 +203,18 @@ async function computeRows() {
       unc: t("plan.noSource"), status: "NOT_COMPUTED"
     }
   ];
-  return { live, metrics, rows };
+  return { online, live, evalRes, metrics, rows };
 }
 
 async function draw() {
   const st = getState();
-  const { live, metrics, rows } = await computeRows();
+  const { online, live, evalRes, metrics, rows } = await computeRows();
   shell.setContext({
     site: `${scenarios.length} cenários`,
     date: (st.start || "2027-03-14T06:00:00Z").slice(0, 10),
     days: fmtNum((st.hours || 336) / 24),
     seal: sealFor(doc.status),
-    online: live.ok,
+    online: online && !live.offline,
     action: { label: t("plan.pdf"), href: hrefTo("evidence.html") }
   });
 
@@ -263,9 +283,17 @@ async function draw() {
     window.open(hrefTo("evidence.html") + "&print=1", "_blank", "noopener");
   });
 
+  const apiErrors = [
+    !live.ok && !live.offline ? `/api/compare: ${live.error}` : null,
+    !evalRes.ok && !evalRes.offline ? `/api/onboard/site-evaluate: ${evalRes.error}` : null
+  ].filter(Boolean);
+  const errBanner = apiErrors.length
+    ? `<p class="mp-note" style="color:var(--crimson,#c62828)" role="alert">${apiErrors.join(" · ")}</p>`
+    : "";
   const tableEl = document.getElementById("plan-table");
   tableEl.innerHTML = `
     <div class="mp-plan-head"><h2>${t("plan.tableTitle")}</h2><span class="mp-note">${t("plan.legend")}</span></div>
+    ${errBanner}
     <div class="mp-table-wrap">
       <table class="mp-metrics-table">
         <thead>

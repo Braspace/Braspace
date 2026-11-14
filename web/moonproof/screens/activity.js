@@ -1,6 +1,6 @@
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, sealFor } from "../core/data.js";
+import { loadSites, apiOnline, sealFor } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
 import { register, t } from "../core/i18n.js";
 import { getState, setState, hrefTo } from "../core/state.js";
@@ -105,13 +105,14 @@ function shareUrl() {
   return u.toString();
 }
 
-function draw() {
+async function draw() {
+  const online = await apiOnline();
   shell.setContext({
     site: `${scenarios.length} cenários`,
     date: (getState().start || "2027-03-14T06:00:00Z").slice(0, 10),
     days: "14",
     seal: sealFor(doc.status),
-    online: true
+    online
   });
 
   const stepsEl = document.getElementById("act-steps");
