@@ -44,14 +44,14 @@ export function mountShell({ screen, context = null, onLang } = {}) {
     for (const s of SCREENS) nav.append(pill(t(s.key), { href: hrefTo(s.page), current: s.id === screen, cls: s.sim ? "is-sim" : "" }));
     const right = document.createElement("div"); right.className = "mp-nav-right";
     right.append(
-      pill(t("nav.class"), { href: hrefTo("learn.html", { ...st, task: "class", layer: "why" }), cls: "mp-kit", pressed: screen === "learn" }),
+      pill(t("nav.class"), { href: hrefTo("present.html", { ...st, task: "class", layer: "why" }), cls: "mp-kit", pressed: screen === "learn" }),
       pill(t("nav.plan"), { href: hrefTo("plan.html", { ...st, task: "plan", layer: "proof" }), cls: "mp-kit", pressed: screen === "plan" }),
       pill(t("nav.lang"), { onClick: () => { const l = lang() === "en" ? "pt-BR" : "en"; setState({ lang: l }); setLang(l); render(); apply(); onLang && onLang(l); } }),
     );
     top.replaceChildren(brand, nav, right);
     bottom.setAttribute("aria-label", t("nav.main"));
     bottom.replaceChildren(...SCREENS.filter(s => !s.sim).map(s => pill(t(s.short || s.key), { href: hrefTo(s.page), current: s.id === screen })));
-    bottom.append(pill(t("nav.class"), { href: hrefTo("learn.html", { ...st, task: "class", layer: "why" }), current: screen === "learn" }));
+    bottom.append(pill(t("nav.class"), { href: hrefTo("present.html", { ...st, task: "class", layer: "why" }), current: screen === "learn" }));
     bottom.append(pill(t("nav.plan"), { href: hrefTo("plan.html", { ...st, task: "plan", layer: "proof" }), current: screen === "plan" }));
     renderCtx();
   }
