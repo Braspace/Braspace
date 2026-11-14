@@ -31,6 +31,8 @@ export function labFile(pathname){
 // MoonProof v3 front (web/moonproof/): pages, core and screen modules/styles only.
 export function moonproofFile(pathname){
  if(pathname==="/moonproof/")return {name:"moonproof/index.html",type:labTypes[".html"]};
+ // Self-hosted OFL fonts (CSP font-src 'self'): woff2 only, flat folder.
+ if(/^\/moonproof\/fonts\/[a-z0-9\-]+\.woff2$/.test(pathname))return {name:path.normalize(pathname.slice(1)),type:"font/woff2"};
  if(!/^\/moonproof\/(?:(?:core|screens)\/)?[A-Za-z0-9_\-]+\.(html|js|css)$/.test(pathname))return null;
  const ext=pathname.slice(pathname.lastIndexOf("."));
  const sub=pathname.slice("/moonproof/".length);
