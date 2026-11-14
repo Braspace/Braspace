@@ -2,10 +2,11 @@
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
 import { loadSites, windowMetrics, api, sealFor, apiOnline } from "../core/data.js";
-import { createLayerCard, statCircle } from "../core/layers.js";
+import { createLayerCard, statCircle, sealEl } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { TEXTS } from "./cockpit-texts.js";
+import { CREW_DEFAULT, POWER_FIELDS, CREW_FIELDS, crewRequest, readCrewAnswer, validateInputs } from "./cockpit-crew.js";
 import { siteEvaluateBody, FAULTS, H1_PROFILE, SPEEDS, HOUR_MS, applyFault, runScenario, nextChange, dailyFractions, autonomyHours, fmtDuration,
   clockLabel, hourIndex, evaluateRules, rulesMet, longestRun, countRises } from "./cockpit-model.js";
 
@@ -181,7 +182,7 @@ async function draw() {
     b.onclick = () => { S.fault = S.fault === f.id ? null : f.id; draw(); }; fb.append(b); }
   const note = el("p", "mp-ck-note", run?.ok ? "" : t(run?.offline ? "cockpit.offline" : "cockpit.route.none"));
   fb.append(note); faultCard.replaceChildren(fh, fb);
-  right.replaceChildren(rulesCard, alertCard, faultCard);
+  right.replaceChildren(rulesCard, alertCard, faultCard, crewCard());
 
   // map tags
   const tagSun = sunNext?.inHours != null ? t(sunNext.visible ? "cockpit.sun_sets_in" : "cockpit.sun_rises_in", { t: fmtDuration(sunNext.inHours) }) : t("nd");
@@ -228,3 +229,37 @@ document.getElementById("report")?.addEventListener("click", async e => {
   if (!r.ok) { b.title = t("cockpit.report.fail", { e: r.error }); b.textContent = t("cockpit.report.failShort"); return; }
   window.open(URL.createObjectURL(new Blob([r.data], { type: "text/html" })), "_blank", "noopener");
 });
+
+// Crew, consumables and power (legacy onboard "Entrada" + "Vida", now on the real API). Built once so typed values survive redraws.
+var crewEl; // var, no initialiser: draw() can run during the top-level await, before this line
+function crewCard() {
+  if (crewEl) { crewEl.querySelector(".ck-crew-title").textContent = t("crew.title"); return crewEl; }
+  const c = document.createElement("details"); c.className = "mp-card ck-crew"; crewEl = c;
+  const sum = document.createElement("summary"); sum.className = "ck-crew-title"; sum.textContent = t("crew.title"); c.append(sum);
+  const form = document.createElement("form"); form.className = "ck-crew-form"; form.noValidate = true;
+  const field = (k, v, step) => { const l = document.createElement("label"); l.textContent = t("crew.f." + k);
+    const i = document.createElement("input"); i.type = "number"; i.min = "0"; i.step = step; i.value = String(v); i.name = k; i.inputMode = "decimal"; l.append(i); form.append(l); };
+  for (const k of POWER_FIELDS) field(k, ({ ...H1_PROFILE, reserve_wh: 4000 })[k], "1");
+  for (const k of CREW_FIELDS) field(k, CREW_DEFAULT[k], k === "size" ? "1" : "0.01");
+  const go = document.createElement("button"); go.type = "submit"; go.className = "mp-pill is-primary"; go.textContent = t("crew.run"); form.append(go);
+  const out = document.createElement("div"); out.className = "ck-crew-out"; out.setAttribute("aria-live", "polite");
+  const src = document.createElement("p"); src.className = "mp-label"; src.textContent = t("crew.src", { s: CREW_DEFAULT.rate_source });
+  c.append(form, out, src);
+  form.onsubmit = async e => {
+    e.preventDefault(); const v = k => Number(form.elements[k].value);
+    const power = Object.fromEntries(POWER_FIELDS.map(k => [k, v(k)])), crew = { ...CREW_DEFAULT, ...Object.fromEntries(CREW_FIELDS.map(k => [k, v(k)])) };
+    const chk = validateInputs(power, crew); for (const el of form.querySelectorAll("input")) el.setAttribute("aria-invalid", String(chk.errors.includes(el.name)));
+    if (!chk.ok) { out.textContent = t("crew.invalid"); return; }
+    if (!S.reportReq) { out.textContent = t("cockpit.report.offline"); return; }
+    const q = S.reportReq; go.disabled = true; out.textContent = t("crew.wait");
+    const r = await api("/api/onboard/site-evaluate", { method: "POST", body: crewRequest({ siteId: q.candidates[0].site_id, startIso: q.start_utc, hours: q.duration_hours, maxBlackoutH: q.max_comm_blackout_hours, delayH: q.candidates[0].delay_hours, power, crew }), timeoutMs: 15000 });
+    go.disabled = false;
+    if (!r.ok) { out.textContent = t("cockpit.report.fail", { e: r.error }); return; }
+    const a = readCrewAnswer(r.data), tb = document.createElement("table"); tb.className = "ck-crew-table";
+    const hr = tb.createTHead().insertRow(); for (const h of ["crew.h.res", "crew.h.aut", "crew.h.mar", "crew.h.st"]) { const th = document.createElement("th"); th.textContent = t(h); hr.append(th); }
+    for (const row of a.rows) { const tr = tb.insertRow(); for (const x of [t("crew.res." + row.resource), row.autonomyH == null ? t("nd") : fmtNum(row.autonomyH, 0) + " h", row.marginH == null ? t("nd") : fmtNum(row.marginH, 0) + " h", row.status || t("nd")]) tr.insertCell().textContent = x; }
+    const d = document.createElement("p"); d.className = "mp-label"; d.textContent = t("crew.decision", { d: a.decision || t("nd") });
+    const seal = sealEl("SIM"); out.replaceChildren(seal, tb, d);
+  };
+  return c;
+}
