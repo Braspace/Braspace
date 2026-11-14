@@ -45,7 +45,7 @@ radius.
 The source file supplied for this work is outside the Git repository:
 
 ```text
-/home/gabrielmaccachero/Downloads/ldem_80s_80m.img
+ldem_80s_80m.img
 size: 115520000 bytes
 SHA-256: e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc
 ```
