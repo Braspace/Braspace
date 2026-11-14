@@ -100,11 +100,11 @@ register({
 });
 
 // The board has no context bar on this screen: context null hides it (core/shell.js).
-mountShell({ screen: "compare", context: null, onLang: draw });
+mountShell({ screen: "compare", kit: "class", context: null, onLang: draw });
 const doc = await loadSites();
 const scenarios = doc.sites.slice(0, 3);
 const grid = await loadRegion();
-await mountTerrain(document.getElementById("terrain"), { sites: doc.sites, selected: getState().site });
+await mountTerrain(document.getElementById("terrain"), { sites: doc.sites.map((s) => { const i = scenarios.indexOf(s); return i >= 0 ? { ...s, n: String.fromCharCode(65 + i) } : s; }), selected: getState().site, labels: false });
 
 const cfg = {
   step: 2,
@@ -166,7 +166,7 @@ function paintPreviewTerrain(frame) {
   const cv = document.createElement("canvas"); cv.width = w; cv.height = h; cv.setAttribute("aria-hidden", "true");
   cv.getContext("2d").drawImage(reliefCache.canvas, 0, 0);
   host.replaceChildren(cv, ...scenarios.map((s) => {
-    const mk = document.createElement("span"); mk.className = "mp-pv-marker"; mk.textContent = s.n; mk.setAttribute("aria-hidden", "true");
+    const mk = document.createElement("span"); mk.className = "mp-pv-marker"; mk.textContent = String.fromCharCode(65 + scenarios.indexOf(s)); mk.setAttribute("aria-hidden", "true");
     mk.style.left = W / 2 + (s.stereo_x_m - cx) / mpp + "px"; mk.style.top = py - (s.stereo_y_m - cy) / mpp + "px";
     return mk;
   }));
@@ -190,7 +190,7 @@ function draw() {
         <span class="mp-step-txt"><strong>${title}</strong><span>${sub}</span></span>
       </button>
     `).join("")}
-    <p class="mp-act-tip">${t("act.tip")}</p>
+    <p class="mp-act-tip">${t("act.tip").replace(/^([^:]+:)/, "<b>$1</b>")}</p>
   `;
   stepsEl.querySelectorAll("[data-step]").forEach((el) => {
     el.onclick = () => { cfg.step = Number(el.dataset.step); draw(); };
@@ -254,7 +254,7 @@ function draw() {
       </label>
     `).join("")}
     <div class="mp-teacher-notes">
-      <strong>${t("act.notesTitle")}</strong>
+      <strong>${t("act.notesTitle").split(" · ")[0]}<span class="mp-muted"> · ${t("act.notesTitle").split(" · ")[1] ?? ""}</span></strong>
       <p>${t("act.notesBody")}</p>
       <p>${t("act.notesBody2")}</p>
     </div>

@@ -303,3 +303,13 @@
 /* Touch target: the tabs keep the design's 28 px look; an invisible 44 px hit area sits around them (project contract: 44 px). */
 .mp-layer-tab { position: relative; }
 .mp-layer-tab::after { content: ""; position: absolute; inset: -8px -2px; }
+
+/* BR94 (V3-5/V3-6): dim terrain behind the panels, one-line link in the share bar, bold lead-ins. */
+.mp-share-url { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; max-width: 460px; }
+.mp-share-main { min-width: 0; }
+.mp-pv-map::after { content: ""; position: absolute; inset: 0; background: rgba(5,6,8,.35); pointer-events: none; }
+.mp-pv-marker { z-index: 2; }
+.mp-act-layout .mp-marker-label, .mp-preview-frame .mp-marker-label { display: none; }
+/* BR94 round 4: lead-ins as in the drawing (bold head, muted tail), no stray handle, lighter edge vignette */
+.mp-teacher-notes strong .mp-muted { font-weight: 500; color: var(--text-3, #8E99A6); }
+.mp-act-tip b { font-weight: 800; color: var(--text); }

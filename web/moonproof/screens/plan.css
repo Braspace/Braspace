@@ -214,3 +214,40 @@
   .mp-rule-select { min-height: 44px; }
   .mp-rule-select select { height: 44px; }
 }
+
+/* BR94 (V3-4 at 1440x900): compact panels at the edges, map free in the middle. Rules 381x500, export 367x257, metrics 1023x413 anchored bottom-right. */
+@media (min-width: 901px) {
+  .mp-plan-layout { inset: 151px 29px 29px 28px; grid-template-columns: 381px 1fr 367px; grid-template-rows: 257px 1fr; gap: 12px 0; }
+  .mp-plan-rules { max-height: 500px; padding: 16px 20px; }
+  .mp-plan-rules .mp-rule-row { min-height: 42px; }
+  .mp-plan-export { max-height: 257px; padding: 16px 18px; gap: 8px; }
+  .mp-plan-export .mp-plan-head h2 { white-space: nowrap; }
+  .mp-plan-table { grid-column: 2 / span 2; width: 1023px; justify-self: end; min-height: 0; max-height: 413px; align-self: end; }
+  .mp-metrics-table th, .mp-metrics-table td { padding: 8px 12px; }
+  .mp-metrics-table td, .mp-metrics-table th { text-align: left; }
+  .mp-url-box { font-size: 11px; line-height: 16px; max-height: 66px; overflow: hidden; }
+  .mp-version b { font-size: 11px; }
+}
+@media (min-width: 901px) { .mp-plan-export .mp-plan-head { flex-wrap: nowrap; } .mp-plan-export .mp-version span:first-child { display: none; } }
+/* BR94 round 2: marker name tags are not in the drawing; rows 28 px, table lifted to the board's y, comma-free tight header. */
+.mp-plan-layout .mp-marker-label { display: none; }
+@media (min-width: 901px) {
+  .mp-metrics-table th, .mp-metrics-table td { padding: 9px 12px; }
+  .mp-metrics-table { line-height: 10px; }
+  .mp-plan-layout { inset: 151px 29px 29px 28px; }
+  .mp-plan-table { max-height: 413px; margin-bottom: 0; }
+}
+.mp-top .mp-nav { margin-right: auto; }
+/* BR94 round 3: taller rows (28 px pitch), right-aligned Incerteza/Origem, rules rows at the board's 36 px pitch. */
+@media (min-width: 901px) {
+  .mp-metrics-table th, .mp-metrics-table td { padding: 10px 12px; }
+  .mp-metrics-table td:nth-child(n+8), .mp-metrics-table th:nth-child(n+8) { text-align: right; }
+  .mp-plan-rules .mp-rule-row { min-height: 46px; }
+  .mp-plan-rules { max-height: 500px; }
+}
+/* BR94 round 3: taller rows (28 px pitch), right-aligned Incerteza/Origem, rules rows at the board's 36 px pitch. */
+@media (min-width: 901px) {
+  .mp-metrics-table th, .mp-metrics-table td { padding: 10px 12px; }
+  .mp-metrics-table td:nth-child(n+8), .mp-metrics-table th:nth-child(n+8) { text-align: right; }
+  .mp-plan-rules .mp-rule-row { min-height: 46px; }
+}

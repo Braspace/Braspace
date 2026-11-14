@@ -48,7 +48,7 @@ function pill(text, { href, current, cls = "", onClick, pressed, ico, label } = 
  * Re-renders on language switch; calls onLang() so the screen redraws its own texts.
  * Returns { setContext(ctx) }.
  */
-export function mountShell({ screen, context = null, onLang } = {}) {
+export function mountShell({ screen, context = null, onLang, kit = null } = {}) {
   setLang(pickLang(getState().lang));
   const top = document.createElement("header"); top.className = "mp-top";
   const ctx = document.createElement("div"); ctx.className = "mp-context"; ctx.setAttribute("role", "status");
@@ -77,8 +77,8 @@ export function mountShell({ screen, context = null, onLang } = {}) {
     for (const s of SCREENS) nav.append(pill(t(s.key), { href: hrefTo(s.page), current: s.id === active, cls: s.sim ? "is-sim" : "", ico: s.id }));
     const right = document.createElement("div"); right.className = "mp-nav-right";
     right.append(
-      pill(t("nav.class"), { cls: "mp-kit", pressed: st.task === "class", onClick: () => { setState({ task: st.task === "class" ? null : "class" }); render(); } }),
-      pill(t("nav.plan"), { cls: "mp-kit", pressed: st.task === "plan", onClick: () => { setState({ task: st.task === "plan" ? null : "plan" }); render(); } }),
+      pill(t("nav.class"), { cls: "mp-kit" + (kit === "class" ? " is-kit-on" : ""), pressed: st.task === "class", onClick: () => { setState({ task: st.task === "class" ? null : "class" }); render(); } }),
+      pill(t("nav.plan"), { cls: "mp-kit" + (kit === "plan" ? " is-kit-on" : ""), pressed: st.task === "plan", onClick: () => { setState({ task: st.task === "plan" ? null : "plan" }); render(); } }),
       helpPill(),
       pill(t("nav.lang.short"), { cls: "is-round mp-lang", label: t("nav.lang"), onClick: () => { const l = lang() === "en" ? "pt-BR" : "en"; setState({ lang: l }); setLang(l); render(); apply(); onLang && onLang(l); } }),
     );
@@ -102,7 +102,7 @@ export function mountShell({ screen, context = null, onLang } = {}) {
     sel.onchange = () => { setState({ layer: sel.value }); };
     lab.append(sel);
     ctx.replaceChildren(...parts, seal, net, lab);
-    if (cur.action) ctx.append(pill(cur.action.label, { href: cur.action.href, cls: "is-primary" }));
+    if (cur.action) ctx.append(pill(cur.action.label, { href: cur.action.href, cls: cur.action.cls || "is-primary" }));
   }
   render(); apply();
   wireSheet();

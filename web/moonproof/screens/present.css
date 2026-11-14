@@ -281,3 +281,9 @@ body.mp-present { font-variant-numeric: tabular-nums; }
   .mp-present-top, .mp-present-q { padding: 10px 14px; border-radius: 22px; background: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
   .mp-present #terrain::after { display: none; }
 }
+/* BR94 round 4: scenario cards taller (design 203 px, 70 px under the last row), less opaque glass, thicker marker rings. */
+@media (min-width: 901px) {
+  .mp-sc-card { min-height: 203px; padding-bottom: 34px; background: rgba(12,15,18,.5); }
+  .mp-present .mp-marker { width: 46px; height: 46px; margin: -23px 0 0 -23px; border-width: 3px; font-size: 14px; }
+  .mp-present .mp-marker[aria-pressed="true"] { box-shadow: none; border-color: #F2F4F5; }
+}

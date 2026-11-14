@@ -11,7 +11,7 @@ register({
   en: {
     "plan.h1": "Planning Kit",
     "plan.title": "Mission rules",
-    "plan.editable": "editable · assumed limit",
+    "plan.editable": "editable",
     "plan.night": "Max night",
     "plan.blackout": "Max Earth blackout",
     "plan.battery": "Battery floor",
@@ -27,6 +27,7 @@ register({
     "plan.csv": "CSV · hourly",
     "plan.json": "JSON",
     "plan.pdf": "PDF Passport",
+    "plan.kitCta": "Planning Kit",
     "plan.version": "Plan version",
     "plan.urlNote": "The link reopens this exact calculation with the same rules and version.",
     "plan.tableTitle": "All metrics · Proof layer",
@@ -50,7 +51,7 @@ register({
   "pt-BR": {
     "plan.h1": "Kit Planejamento",
     "plan.title": "Regras da missão",
-    "plan.editable": "editáveis · limite assumido",
+    "plan.editable": "editáveis",
     "plan.night": "Noite máxima",
     "plan.blackout": "Perda máxima da Terra",
     "plan.battery": "Piso da bateria",
@@ -66,6 +67,7 @@ register({
     "plan.csv": "CSV · hora a hora",
     "plan.json": "JSON",
     "plan.pdf": "Passaporte PDF",
+    "plan.kitCta": "Kit Planejamento",
     "plan.version": "Versão do plano",
     "plan.urlNote": "O link reabre exatamente este cálculo, com as mesmas regras e a mesma versão.",
     "plan.tableTitle": "Todas as métricas · camada Prova",
@@ -88,13 +90,14 @@ register({
   }
 });
 
-const shell = mountShell({ screen: "compare", onLang: draw });
+const shell = mountShell({ screen: "compare", kit: "plan", onLang: draw });
 const doc = await loadSites();
 const scenarios = doc.sites.slice(0, 3);
 const terrain = await mountTerrain(document.getElementById("terrain"), {
-  sites: doc.sites,
+  sites: scenarios.map((s, i) => ({ ...s, n: String.fromCharCode(65 + i) })),
   selected: getState().site || scenarios[1]?.id,
-  onSelect: (id) => setState({ site: id })
+  onSelect: (id) => setState({ site: id }),
+  labels: false
 });
 
 // Rules (editable defaults live in plan-model.js on top of DEFAULT_RULES): `rules=` in the link wins over the single params; the three limits that core/state.js owns are reconciled once.
@@ -167,6 +170,12 @@ async function computeRows() {
       unc: "±0.3", status: doc.status
     },
     {
+      label: t("plan.mBoth"), unit: "%",
+      vals: metrics.map((m) => (m.raw?.status === "COMPUTED" && m.raw.bothPct != null ? m.raw.bothPct : null)),
+      rule: t("nd"), check: null, best: "max", margin: null,
+      unc: "±0.3", status: doc.status
+    },
+    {
       label: t("plan.mBattery"), unit: "h",
       vals: evals.map((e) => (e.ok && e.data?.battery_margin_h != null ? e.data.battery_margin_h : null)),
       rule: `≥ 0`,
@@ -205,7 +214,7 @@ async function draw() {
     days: fmtNum((st.hours || 336) / 24),
     seal: sealFor(doc.status),
     online: live.ok,
-    action: { label: t("plan.pdf"), href: hrefTo("evidence.html") }
+    action: { label: t("plan.kitCta"), href: hrefTo("plan.html"), cls: "is-white-cta" }
   });
 
   const rulesEl = document.getElementById("plan-rules");
@@ -286,7 +295,7 @@ async function draw() {
         <thead>
           <tr>
             <th>${t("plan.colMetric")}</th><th>${t("plan.colUnit")}</th>
-            ${scenarios.map((s, i) => `<th scope="col" title="${s.n} · ${s.name}"><span class="mp-col-letter">${String.fromCharCode(65 + i)}</span><small class="mp-col-site">${s.n} · ${s.name}</small></th>`).join("")}
+            ${scenarios.map((s, i) => `<th scope="col" title="${s.n} · ${s.name}"><span class="mp-col-letter">${String.fromCharCode(65 + i)}</span></th>`).join("")}
             <th>${t("plan.colRule")}</th><th>${t("plan.colMargin")}</th>
             <th>${t("plan.colUnc")}</th><th>${t("plan.colOrigin")}</th>
           </tr>

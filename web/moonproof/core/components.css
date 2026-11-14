@@ -139,3 +139,8 @@ button,input,select,textarea{font:inherit;color:inherit}
    left secondary text at 2.3:1. Glass is now .72 (4.7:1 worst case); failure text uses a lighter red;
    the FALHA seal's fill passes 4.5:1 with white text. */
 .mp-seal[data-seal="FALHA"]{background:var(--fail-fill);border-color:var(--fail-fill)}
+
+/* BR94: the kit pill of the current kit screen is the white CTA of the drawing (Aula on V3-5/V3-6, Planejar on V3-4). */
+.mp-pill.mp-kit.is-kit-on{background:var(--pill);color:var(--pill-text);border-color:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
+.mp-pill.mp-kit.is-kit-on[aria-pressed="true"]{background:var(--pill);color:var(--pill-text)}
+.mp-context .mp-pill.is-white-cta{background:var(--pill);color:var(--pill-text);border-color:transparent}
