@@ -1,0 +1,355 @@
+{
+  "api_version": "braspace.mission.v1",
+  "limitations": [
+    "Visibility is geometric line of sight to the Sun and Earth centers against the stored terrain horizon; Sun disc width, refraction, eclipses, RF link budget and DSN scheduling are not modelled.",
+    "Durations have a resolution of one series step; windows start and end on grid epochs.",
+    "Results are only as accurate as the stored horizon and ephemeris series; check science_status and provenance per site.",
+    "Constraint thresholds are caller-declared assumptions, not mission requirements."
+  ],
+  "model": {
+    "api_version": "braspace.mission.v1",
+    "analysis_version": "braspace.analysis.v1",
+    "engine_contract": "braspace.visibility.v1"
+  },
+  "nearby_considered": [
+    {
+      "id": "synthetic-demo-b",
+      "name": "Synthetic demo site B",
+      "has_series": true
+    }
+  ],
+  "options": [
+    {
+      "kind": "baseline",
+      "site_id": "synthetic-demo-a",
+      "delay_hours": 0,
+      "start_utc": "2026-12-01T00:00:00Z",
+      "data_status": "AVAILABLE",
+      "science_status": "SYNTHETIC",
+      "engine_science_status": "UNVERIFIED_INPUTS",
+      "admissible": false,
+      "checks": [
+        {
+          "criterion": "longest_continuous_dark_hours",
+          "unit": "h",
+          "comparator": "\u003c=",
+          "limit": 20,
+          "value": 47,
+          "margin": -27,
+          "passed": false
+        },
+        {
+          "criterion": "earth_visible_fraction",
+          "unit": "fraction",
+          "comparator": "\u003e=",
+          "limit": 0.5,
+          "value": 1,
+          "margin": 0.5,
+          "passed": true
+        }
+      ],
+      "breached": [
+        {
+          "criterion": "longest_continuous_dark_hours",
+          "unit": "h",
+          "comparator": "\u003c=",
+          "limit": 20,
+          "value": 47,
+          "margin": -27,
+          "passed": false
+        }
+      ],
+      "metrics": {
+        "sample_count": 72,
+        "step_hours": 1,
+        "sun_visible_fraction": 0.347222,
+        "earth_visible_fraction": 1,
+        "simultaneous_fraction": 0.347222,
+        "longest_continuous_dark_hours": 47,
+        "longest_continuous_comm_gap_hours": 0,
+        "min_sun_margin_deg": -0.36994,
+        "min_earth_margin_deg": 3.367571,
+        "sun_window_count": 1
+      }
+    },
+    {
+      "kind": "delay",
+      "site_id": "synthetic-demo-a",
+      "delay_hours": 24,
+      "start_utc": "2026-12-02T00:00:00Z",
+      "data_status": "AVAILABLE",
+      "science_status": "SYNTHETIC",
+      "engine_science_status": "UNVERIFIED_INPUTS",
+      "admissible": false,
+      "checks": [
+        {
+          "criterion": "longest_continuous_dark_hours",
+          "unit": "h",
+          "comparator": "\u003c=",
+          "limit": 20,
+          "value": 23,
+          "baseline_value": 47,
+          "margin": -3,
+          "passed": false
+        },
+        {
+          "criterion": "earth_visible_fraction",
+          "unit": "fraction",
+          "comparator": "\u003e=",
+          "limit": 0.5,
+          "value": 1,
+          "baseline_value": 1,
+          "margin": 0.5,
+          "passed": true
+        }
+      ],
+      "breached": [
+        {
+          "criterion": "longest_continuous_dark_hours",
+          "unit": "h",
+          "comparator": "\u003c=",
+          "limit": 20,
+          "value": 23,
+          "baseline_value": 47,
+          "margin": -3,
+          "passed": false
+        }
+      ],
+      "metrics": {
+        "sample_count": 72,
+        "step_hours": 1,
+        "sun_visible_fraction": 0.680556,
+        "earth_visible_fraction": 1,
+        "simultaneous_fraction": 0.680556,
+        "longest_continuous_dark_hours": 23,
+        "longest_continuous_comm_gap_hours": 0,
+        "min_sun_margin_deg": -0.269724,
+        "min_earth_margin_deg": 2.423392,
+        "sun_window_count": 1
+      }
+    },
+    {
+      "kind": "delay",
+      "site_id": "synthetic-demo-a",
+      "delay_hours": 48,
+      "start_utc": "2026-12-03T00:00:00Z",
+      "data_status": "AVAILABLE",
+      "science_status": "SYNTHETIC",
+      "engine_science_status": "UNVERIFIED_INPUTS",
+      "admissible": true,
+      "checks": [
+        {
+          "criterion": "longest_continuous_dark_hours",
+          "unit": "h",
+          "comparator": "\u003c=",
+          "limit": 20,
+          "value": 0,
+          "baseline_value": 47,
+          "margin": 20,
+          "passed": true
+        },
+        {
+          "criterion": "earth_visible_fraction",
+          "unit": "fraction",
+          "comparator": "\u003e=",
+          "limit": 0.5,
+          "value": 1,
+          "baseline_value": 1,
+          "margin": 0.5,
+          "passed": true
+        }
+      ],
+      "breached": [],
+      "metrics": {
+        "sample_count": 72,
+        "step_hours": 1,
+        "sun_visible_fraction": 1,
+        "earth_visible_fraction": 1,
+        "simultaneous_fraction": 1,
+        "longest_continuous_dark_hours": 0,
+        "longest_continuous_comm_gap_hours": 0,
+        "min_sun_margin_deg": 0.021717,
+        "min_earth_margin_deg": 1.317799,
+        "sun_window_count": 1
+      }
+    },
+    {
+      "kind": "delay",
+      "site_id": "synthetic-demo-a",
+      "delay_hours": 72,
+      "start_utc": "2026-12-04T00:00:00Z",
+      "data_status": "AVAILABLE",
+      "science_status": "SYNTHETIC",
+      "engine_science_status": "UNVERIFIED_INPUTS",
+      "admissible": true,
+      "checks": [
+        {
+          "criterion": "longest_continuous_dark_hours",
+          "unit": "h",
+          "comparator": "\u003c=",
+          "limit": 20,
+          "value": 0,
+          "baseline_value": 47,
+          "margin": 20,
+          "passed": true
+        },
+        {
+          "criterion": "earth_visible_fraction",
+          "unit": "fraction",
+          "comparator": "\u003e=",
+          "limit": 0.5,
+          "value": 1,
+          "baseline_value": 1,
+          "margin": 0.5,
+          "passed": true
+        }
+      ],
+      "breached": [],
+      "metrics": {
+        "sample_count": 72,
+        "step_hours": 1,
+        "sun_visible_fraction": 1,
+        "earth_visible_fraction": 1,
+        "simultaneous_fraction": 1,
+        "longest_continuous_dark_hours": 0,
+        "longest_continuous_comm_gap_hours": 0,
+        "min_sun_margin_deg": 0.319138,
+        "min_earth_margin_deg": 0.109199,
+        "sun_window_count": 1
+      }
+    },
+    {
+      "kind": "nearby_site",
+      "site_id": "synthetic-demo-b",
+      "delay_hours": 0,
+      "start_utc": "2026-12-01T00:00:00Z",
+      "data_status": "AVAILABLE",
+      "science_status": "SYNTHETIC",
+      "engine_science_status": "UNVERIFIED_INPUTS",
+      "admissible": true,
+      "checks": [
+        {
+          "criterion": "longest_continuous_dark_hours",
+          "unit": "h",
+          "comparator": "\u003c=",
+          "limit": 20,
+          "value": 0,
+          "baseline_value": 47,
+          "margin": 20,
+          "passed": true
+        },
+        {
+          "criterion": "earth_visible_fraction",
+          "unit": "fraction",
+          "comparator": "\u003e=",
+          "limit": 0.5,
+          "value": 1,
+          "baseline_value": 1,
+          "margin": 0.5,
+          "passed": true
+        }
+      ],
+      "breached": [],
+      "metrics": {
+        "sample_count": 72,
+        "step_hours": 1,
+        "sun_visible_fraction": 1,
+        "earth_visible_fraction": 1,
+        "simultaneous_fraction": 1,
+        "longest_continuous_dark_hours": 0,
+        "longest_continuous_comm_gap_hours": 0,
+        "min_sun_margin_deg": 0.641538,
+        "min_earth_margin_deg": 0.167825,
+        "sun_window_count": 1
+      }
+    }
+  ],
+  "outcome": {
+    "status": "ALTERNATIVE_FOUND",
+    "message": "The baseline breaches a declared constraint; the first evaluated option that satisfies all of them is listed.",
+    "first_admissible": {
+      "kind": "delay",
+      "site_id": "synthetic-demo-a",
+      "delay_hours": 48,
+      "start_utc": "2026-12-03T00:00:00Z",
+      "data_status": "AVAILABLE",
+      "science_status": "SYNTHETIC",
+      "engine_science_status": "UNVERIFIED_INPUTS",
+      "admissible": true,
+      "checks": [
+        {
+          "criterion": "longest_continuous_dark_hours",
+          "unit": "h",
+          "comparator": "\u003c=",
+          "limit": 20,
+          "value": 0,
+          "baseline_value": 47,
+          "margin": 20,
+          "passed": true
+        },
+        {
+          "criterion": "earth_visible_fraction",
+          "unit": "fraction",
+          "comparator": "\u003e=",
+          "limit": 0.5,
+          "value": 1,
+          "baseline_value": 1,
+          "margin": 0.5,
+          "passed": true
+        }
+      ],
+      "breached": [],
+      "metrics": {
+        "sample_count": 72,
+        "step_hours": 1,
+        "sun_visible_fraction": 1,
+        "earth_visible_fraction": 1,
+        "simultaneous_fraction": 1,
+        "longest_continuous_dark_hours": 0,
+        "longest_continuous_comm_gap_hours": 0,
+        "min_sun_margin_deg": 0.021717,
+        "min_earth_margin_deg": 1.317799,
+        "sun_window_count": 1
+      }
+    }
+  },
+  "provenance": {
+    "terrain_dataset_id": "SYNTHETIC-HORIZON-NOT-NASA",
+    "ephemeris_id": "SYNTHETIC-EPHEMERIS-NOT-NASA",
+    "frame": "MOON_ME",
+    "generator": "api/cmd/synthseries v1",
+    "note": "Synthetic test fixture. Not NASA data."
+  },
+  "request": {
+    "site_id": "synthetic-demo-a",
+    "start_utc": "2026-12-01T00:00:00Z",
+    "duration_hours": 72,
+    "delays_hours": [
+      24,
+      48,
+      72
+    ],
+    "constraints": {
+      "max_continuous_dark_hours": 20,
+      "min_earth_fraction": 0.5
+    },
+    "include_nearby": true,
+    "max_nearby": 2
+  },
+  "scenario_sha256": "c56eaaf637c8aba03cd2ec2a688bc147d884d98b5d1b48ca425f9e75fae5876a",
+  "scientifically_validated": false,
+  "site": {
+    "id": "synthetic-demo-a",
+    "name": "Synthetic demo site A",
+    "kind": "synthetic_test_fixture",
+    "series_file": "series/synthetic-demo-a.json",
+    "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location.",
+    "series": {
+      "start_utc": "2026-11-01T00:00:00Z",
+      "end_utc": "2027-01-01T00:00:00Z",
+      "step_seconds": 3600,
+      "science_status": "SYNTHETIC",
+      "observer_height_m": 2
+    }
+  }
+}

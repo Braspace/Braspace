@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +15,9 @@ import (
 	"strings"
 	"time"
 )
+
+//go:embed openapi.json
+var openAPISpec []byte
 
 const (
 	missionAPIVersion = "braspace.mission.v1"
@@ -76,6 +80,10 @@ func (m *missionAPI) register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/sites/{id}", m.getSite)
 	mux.HandleFunc("POST /api/compare", m.compare)
 	mux.HandleFunc("POST /api/scenarios/delay", m.delayScenario)
+	mux.HandleFunc("GET /api/openapi.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_, _ = w.Write(openAPISpec)
+	})
 }
 
 func (m *missionAPI) health(w http.ResponseWriter, r *http.Request) {

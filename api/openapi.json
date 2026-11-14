@@ -1,0 +1,1446 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BRASPACE API",
+    "version": "braspace.mission.v1",
+    "description": "Lunar landing site comparison and launch-delay replanning (NASA Space Apps 2026). Visibility is geometric line of sight computed by the Rust engine from stored horizon and Sun/Earth series. Check `science_status`, `provenance` and `scientifically_validated` on every response; synthetic fixtures are not NASA data."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Service and engine status",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Engine unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sites": {
+      "get": {
+        "summary": "Site catalog",
+        "operationId": "listSites",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sites/{id}": {
+      "get": {
+        "summary": "One site and its nearest catalog neighbours",
+        "operationId": "getSite",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown site (SITE_NOT_FOUND)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/compare": {
+      "post": {
+        "summary": "Compare 1-3 sites over a time window",
+        "operationId": "compareSites",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompareRequest"
+              },
+              "examples": {
+                "synthetic": {
+                  "summary": "Two synthetic fixtures and one real site without data",
+                  "externalValue": "../examples/mission/compare.request.json"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON, unknown field or trailing data (INVALID_JSON)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown site (SITE_NOT_FOUND)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body above 128 KiB (REQUEST_TOO_LARGE)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type must be application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or data availability error; see `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (INTERNAL)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Engine failed or returned an invalid contract (ENGINE_ERROR)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Engine binary unavailable (ENGINE_UNAVAILABLE)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Engine call exceeded 2 s or request exceeded 20 s (ENGINE_TIMEOUT)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios/delay": {
+      "post": {
+        "summary": "Recalculate a mission window after launch delays and at nearby sites",
+        "operationId": "delayScenario",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DelayScenarioRequest"
+              },
+              "examples": {
+                "synthetic": {
+                  "summary": "Delay replan on a synthetic fixture",
+                  "externalValue": "../examples/mission/scenario-delay.request.json"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelayScenarioResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON, unknown field or trailing data (INVALID_JSON)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown site (SITE_NOT_FOUND)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body above 128 KiB (REQUEST_TOO_LARGE)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type must be application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or data availability error; see `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (INTERNAL)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Engine failed or returned an invalid contract (ENGINE_ERROR)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Engine binary unavailable (ENGINE_UNAVAILABLE)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Engine call exceeded 2 s or request exceeded 20 s (ENGINE_TIMEOUT)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/openapi.json": {
+      "get": {
+        "summary": "This document",
+        "operationId": "getOpenAPI",
+        "responses": {
+          "200": {
+            "description": "OpenAPI 3.1 document",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "summary": "Liveness",
+        "operationId": "healthz",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "summary": "Readiness (engine binary present)",
+        "operationId": "readyz",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Engine unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/capabilities": {
+      "get": {
+        "summary": "Implemented vs. missing physics",
+        "operationId": "capabilities",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/visibility": {
+      "post": {
+        "summary": "Single-epoch visibility from caller-supplied angles (bootstrap contract)",
+        "operationId": "visibility",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisibilityRequest"
+              },
+              "examples": {
+                "synthetic": {
+                  "externalValue": "../examples/visibility.synthetic.json"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON, unknown field or trailing data (INVALID_JSON)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body above 128 KiB (REQUEST_TOO_LARGE)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type must be application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid inputs"
+          },
+          "502": {
+            "description": "Engine failed"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "INVALID_JSON",
+              "SITE_NOT_FOUND",
+              "REQUEST_TOO_LARGE",
+              "UNSUPPORTED_MEDIA_TYPE",
+              "INVALID_TIME",
+              "INVALID_DURATION",
+              "INVALID_SITES",
+              "INVALID_DELAYS",
+              "INVALID_CONSTRAINT",
+              "INVALID_OBSERVER_HEIGHT",
+              "INVALID_NEARBY",
+              "CONSTRAINTS_REQUIRED",
+              "DATA_NOT_AVAILABLE",
+              "OUTSIDE_COVERAGE",
+              "OBSERVER_HEIGHT_UNAVAILABLE",
+              "INTERNAL",
+              "ENGINE_ERROR",
+              "ENGINE_UNAVAILABLE",
+              "ENGINE_TIMEOUT",
+              "CORS_FORBIDDEN"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "error",
+          "code"
+        ]
+      },
+      "Direction": {
+        "type": "object",
+        "properties": {
+          "azimuth_deg": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMaximum": 360
+          },
+          "elevation_deg": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "azimuth_deg",
+          "elevation_deg"
+        ],
+        "description": "Degrees in the local MOON_ME topocentric convention used by the engine."
+      },
+      "Model": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "type": "string"
+          },
+          "analysis_version": {
+            "type": "string"
+          },
+          "engine_contract": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "api_version",
+          "analysis_version",
+          "engine_contract"
+        ]
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "string"
+          },
+          "api_version": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ]
+          },
+          "engine": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "unavailable"
+            ]
+          },
+          "sites": {
+            "type": "integer"
+          },
+          "sites_with_series": {
+            "type": "integer"
+          },
+          "series_science_statuses": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "engine"
+        ]
+      },
+      "Coordinate": {
+        "type": "object",
+        "properties": {
+          "latitude_deg": {
+            "type": "number"
+          },
+          "longitude_deg": {
+            "type": "number"
+          },
+          "role": {
+            "type": "string",
+            "description": "e.g. feature_center; never a touchdown point"
+          },
+          "frame": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "inventory": {
+            "type": "string"
+          },
+          "source_accuracy_m": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "latitude_deg",
+          "longitude_deg",
+          "role",
+          "frame",
+          "source"
+        ]
+      },
+      "SeriesCoverage": {
+        "type": "object",
+        "properties": {
+          "start_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 UTC"
+          },
+          "end_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 UTC"
+          },
+          "step_seconds": {
+            "type": "integer"
+          },
+          "science_status": {
+            "$ref": "#/components/schemas/ScienceStatus"
+          },
+          "observer_height_m": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "start_utc",
+          "end_utc",
+          "step_seconds",
+          "science_status",
+          "observer_height_m"
+        ]
+      },
+      "ScienceStatus": {
+        "type": "string",
+        "enum": [
+          "SYNTHETIC",
+          "UNVERIFIED",
+          "VALIDATED"
+        ],
+        "description": "Status of the stored horizon/ephemeris series."
+      },
+      "SiteSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "artemis_iii_candidate_region",
+              "synthetic_test_fixture"
+            ]
+          },
+          "coordinate": {
+            "$ref": "#/components/schemas/Coordinate"
+          },
+          "series_file": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "series": {
+            "$ref": "#/components/schemas/SeriesCoverage"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "kind"
+        ],
+        "description": "`series` is present only when visibility data exists for the site."
+      },
+      "SiteList": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "sites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SiteSummary"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "sites"
+        ]
+      },
+      "NearbySite": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "distance_km": {
+            "type": "number",
+            "description": "Great-circle distance between feature centers on a 1737.4 km sphere"
+          },
+          "has_series": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "has_series"
+        ]
+      },
+      "SiteDetail": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "type": "string"
+          },
+          "site": {
+            "$ref": "#/components/schemas/SiteSummary"
+          },
+          "nearby": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/NearbySite"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "site"
+        ]
+      },
+      "SeriesProvenance": {
+        "type": "object",
+        "properties": {
+          "terrain_dataset_id": {
+            "type": "string"
+          },
+          "terrain_sha256": {
+            "type": "string"
+          },
+          "ephemeris_id": {
+            "type": "string"
+          },
+          "frame": {
+            "type": "string",
+            "enum": [
+              "MOON_ME"
+            ]
+          },
+          "generator": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "terrain_dataset_id",
+          "ephemeris_id",
+          "frame",
+          "generator"
+        ]
+      },
+      "Window": {
+        "type": "object",
+        "properties": {
+          "start_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 UTC"
+          },
+          "end_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 UTC"
+          },
+          "duration_hours": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "start_utc",
+          "end_utc",
+          "duration_hours"
+        ]
+      },
+      "SeriesPoint": {
+        "type": "object",
+        "properties": {
+          "epoch_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 UTC"
+          },
+          "sun_visible": {
+            "type": "boolean"
+          },
+          "earth_visible": {
+            "type": "boolean"
+          },
+          "sun_margin_deg": {
+            "type": "number"
+          },
+          "earth_margin_deg": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "epoch_utc",
+          "sun_visible",
+          "earth_visible",
+          "sun_margin_deg",
+          "earth_margin_deg"
+        ]
+      },
+      "Metrics": {
+        "type": "object",
+        "properties": {
+          "sample_count": {
+            "type": "integer"
+          },
+          "step_hours": {
+            "type": "number"
+          },
+          "sun_visible_fraction": {
+            "type": "number"
+          },
+          "earth_visible_fraction": {
+            "type": "number"
+          },
+          "simultaneous_fraction": {
+            "type": "number"
+          },
+          "longest_continuous_dark_hours": {
+            "type": "number"
+          },
+          "longest_continuous_comm_gap_hours": {
+            "type": "number"
+          },
+          "min_sun_margin_deg": {
+            "type": "number"
+          },
+          "min_earth_margin_deg": {
+            "type": "number"
+          },
+          "sun_window_count": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "sample_count",
+          "step_hours",
+          "sun_visible_fraction",
+          "earth_visible_fraction",
+          "simultaneous_fraction",
+          "longest_continuous_dark_hours",
+          "longest_continuous_comm_gap_hours",
+          "min_sun_margin_deg",
+          "min_earth_margin_deg",
+          "sun_window_count"
+        ],
+        "description": "Fractions are 0..1 of samples; hours have one-step resolution; margins in degrees above the terrain horizon."
+      },
+      "Evaluation": {
+        "type": "object",
+        "properties": {
+          "start_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 UTC"
+          },
+          "end_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 UTC"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/Metrics"
+          },
+          "sun_windows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Window"
+            }
+          },
+          "earth_windows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Window"
+            }
+          },
+          "simultaneous_windows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Window"
+            }
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SeriesPoint"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "start_utc",
+          "end_utc",
+          "metrics",
+          "sun_windows",
+          "earth_windows",
+          "simultaneous_windows"
+        ]
+      },
+      "DataStatus": {
+        "type": "string",
+        "enum": [
+          "AVAILABLE",
+          "NO_SERIES_DATA",
+          "OUTSIDE_COVERAGE"
+        ]
+      },
+      "SiteResult": {
+        "type": "object",
+        "properties": {
+          "site": {
+            "$ref": "#/components/schemas/SiteSummary"
+          },
+          "data_status": {
+            "$ref": "#/components/schemas/DataStatus"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "science_status": {
+            "$ref": "#/components/schemas/ScienceStatus"
+          },
+          "engine_science_status": {
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/SeriesProvenance"
+          },
+          "evaluation": {
+            "$ref": "#/components/schemas/Evaluation"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "site",
+          "data_status"
+        ],
+        "description": "No numbers are returned unless data_status is AVAILABLE."
+      },
+      "CompareRequest": {
+        "type": "object",
+        "properties": {
+          "site_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 3,
+            "uniqueItems": true
+          },
+          "start_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 UTC"
+          },
+          "duration_hours": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 720
+          },
+          "include_series": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "site_ids",
+          "start_utc",
+          "duration_hours"
+        ]
+      },
+      "CompareResponse": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "type": "string"
+          },
+          "request_sha256": {
+            "type": "string"
+          },
+          "model": {
+            "$ref": "#/components/schemas/Model"
+          },
+          "request": {
+            "$ref": "#/components/schemas/CompareRequest"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SiteResult"
+            }
+          },
+          "scientifically_validated": {
+            "type": "boolean"
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "request_sha256",
+          "model",
+          "results",
+          "scientifically_validated",
+          "limitations"
+        ]
+      },
+      "Constraints": {
+        "type": "object",
+        "properties": {
+          "max_continuous_dark_hours": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 720
+          },
+          "max_continuous_comm_gap_hours": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 720
+          },
+          "min_sun_fraction": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "min_earth_fraction": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "additionalProperties": false,
+        "description": "Caller-declared assumptions; at least one is required. No defaults are applied."
+      },
+      "ConstraintCheck": {
+        "type": "object",
+        "properties": {
+          "criterion": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "h",
+              "fraction"
+            ]
+          },
+          "comparator": {
+            "type": "string",
+            "enum": [
+              "<=",
+              ">="
+            ]
+          },
+          "limit": {
+            "type": "number"
+          },
+          "value": {
+            "type": "number"
+          },
+          "baseline_value": {
+            "type": "number"
+          },
+          "margin": {
+            "type": "number",
+            "description": "Positive = slack, negative = breached by this amount"
+          },
+          "passed": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "criterion",
+          "unit",
+          "comparator",
+          "limit",
+          "value",
+          "margin",
+          "passed"
+        ]
+      },
+      "DelayScenarioRequest": {
+        "type": "object",
+        "properties": {
+          "site_id": {
+            "type": "string"
+          },
+          "start_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 UTC"
+          },
+          "duration_hours": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 720
+          },
+          "delays_hours": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 720
+            },
+            "maxItems": 6,
+            "description": "Default [24, 48, 72]"
+          },
+          "observer_height_m": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Must equal the height the stored horizon was computed for"
+          },
+          "constraints": {
+            "$ref": "#/components/schemas/Constraints"
+          },
+          "include_nearby": {
+            "type": "boolean",
+            "description": "Default true"
+          },
+          "max_nearby": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "description": "0 means default (2)"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "site_id",
+          "start_utc",
+          "duration_hours",
+          "constraints"
+        ]
+      },
+      "ScenarioOption": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "baseline",
+              "delay",
+              "nearby_site"
+            ]
+          },
+          "site_id": {
+            "type": "string"
+          },
+          "delay_hours": {
+            "type": "number"
+          },
+          "distance_km": {
+            "type": "number"
+          },
+          "start_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 UTC"
+          },
+          "data_status": {
+            "$ref": "#/components/schemas/DataStatus"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "science_status": {
+            "$ref": "#/components/schemas/ScienceStatus"
+          },
+          "engine_science_status": {
+            "type": "string"
+          },
+          "admissible": {
+            "type": "boolean"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConstraintCheck"
+            }
+          },
+          "breached": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConstraintCheck"
+            }
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/Metrics"
+          },
+          "evaluation": {
+            "$ref": "#/components/schemas/Evaluation"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "site_id",
+          "delay_hours",
+          "start_utc",
+          "data_status",
+          "admissible",
+          "checks",
+          "breached"
+        ]
+      },
+      "ScenarioOutcome": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "BASELINE_ADMISSIBLE",
+              "ALTERNATIVE_FOUND",
+              "NO_ADMISSIBLE_ALTERNATIVE"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "first_admissible": {
+            "$ref": "#/components/schemas/ScenarioOption"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "message"
+        ]
+      },
+      "DelayScenarioResponse": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "type": "string"
+          },
+          "scenario_sha256": {
+            "type": "string"
+          },
+          "model": {
+            "$ref": "#/components/schemas/Model"
+          },
+          "request": {
+            "$ref": "#/components/schemas/DelayScenarioRequest"
+          },
+          "site": {
+            "$ref": "#/components/schemas/SiteSummary"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/SeriesProvenance"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScenarioOption"
+            }
+          },
+          "nearby_considered": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NearbySite"
+            }
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/ScenarioOutcome"
+          },
+          "scientifically_validated": {
+            "type": "boolean"
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "scenario_sha256",
+          "model",
+          "options",
+          "outcome",
+          "scientifically_validated",
+          "limitations"
+        ]
+      },
+      "VisibilityRequest": {
+        "type": "object",
+        "properties": {
+          "site_id": {
+            "type": "string"
+          },
+          "epoch_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 UTC"
+          },
+          "sun": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "earth": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "terrain_horizon": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Direction"
+            },
+            "minItems": 2,
+            "maxItems": 1440
+          },
+          "provenance": {
+            "type": "object",
+            "properties": {
+              "terrain_dataset_id": {
+                "type": "string"
+              },
+              "ephemeris_id": {
+                "type": "string"
+              },
+              "frame": {
+                "type": "string",
+                "enum": [
+                  "MOON_ME"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "terrain_dataset_id",
+              "ephemeris_id",
+              "frame"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "site_id",
+          "epoch_utc",
+          "sun",
+          "earth",
+          "terrain_horizon",
+          "provenance"
+        ],
+        "description": "Caller-supplied inputs; identifiers are not verified."
+      }
+    }
+  }
+}

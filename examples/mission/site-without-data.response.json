@@ -1,0 +1,4 @@
+{
+  "code": "DATA_NOT_AVAILABLE",
+  "error": "no horizon/ephemeris series has been ingested for site \"malapert-massif\"; nothing can be recalculated"
+}

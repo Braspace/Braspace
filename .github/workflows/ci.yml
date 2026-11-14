@@ -38,10 +38,8 @@ jobs:
           curl --fail-with-body -sS -H 'Content-Type: application/json' --data-binary @../examples/visibility.synthetic.json http://127.0.0.1:8080/v1/visibility > /tmp/result.json
           python3 -c 'import json; r=json.load(open("/tmp/result.json")); assert r["science_status"]=="UNVERIFIED_INPUTS"; assert r["sun_visible"] is True; assert r["earth_visible"] is False'
           curl -fsS http://127.0.0.1:8080/api/health
-          curl --fail-with-body -sS -H 'Content-Type: application/json' -d '{"site_ids":["synthetic-demo-a","malapert-massif"],"start_utc":"2026-12-01T00:00:00Z","duration_hours":72}' http://127.0.0.1:8080/api/compare > /tmp/compare.json
-          python3 -c 'import json; r=json.load(open("/tmp/compare.json")); assert r["scientifically_validated"] is False; assert r["results"][0]["data_status"]=="AVAILABLE"; assert r["results"][1]["data_status"]=="NO_SERIES_DATA"'
-          curl --fail-with-body -sS -H 'Content-Type: application/json' -d '{"site_id":"synthetic-demo-a","start_utc":"2026-12-01T00:00:00Z","duration_hours":72,"constraints":{"max_continuous_dark_hours":20}}' http://127.0.0.1:8080/api/scenarios/delay > /tmp/scenario.json
-          python3 -c 'import json; r=json.load(open("/tmp/scenario.json")); assert r["outcome"]["status"] in ("BASELINE_ADMISSIBLE","ALTERNATIVE_FOUND","NO_ADMISSIBLE_ALTERNATIVE")'
+          curl -fsS http://127.0.0.1:8080/api/openapi.json > /dev/null
+          ../examples/mission/replay.sh http://127.0.0.1:8080
       - name: Docker Compose end-to-end smoke
         run: |
           docker compose config

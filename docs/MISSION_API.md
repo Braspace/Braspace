@@ -1,4 +1,4 @@
-# Mission API (BS-019 / BS-044 / BS-039)
+# Mission API (BS-019 / BS-044 / BS-039 / BS-023)
 
 Go endpoints for the site catalog, multi-site comparison and launch-delay replanning.
 All geometry still runs in the Rust engine (`POST /v1/visibility` contract); the Go
@@ -17,6 +17,11 @@ cd api && RUST_ENGINE_BIN=../engine/target/debug/braspace-lunar-engine go run .
 | `LISTEN_ADDR` | `:8080` | HTTP address |
 | `SITE_DATA_DIR` | embedded `api/sitedata` | Directory with `catalog.json` and series files |
 | `CORS_ALLOWED_ORIGINS` | empty (no cross-origin) | Comma-separated exact origins, e.g. `http://localhost:5173`. `*` is ignored. |
+
+The OpenAPI 3.1 document is `api/openapi.json`, also served at `GET /api/openapi.json`.
+Example requests and their exact expected responses live in `examples/mission/`;
+`./examples/mission/replay.sh http://127.0.0.1:8080` replays them against a running
+server (CI does this against the real Rust engine).
 
 ## Endpoints
 
@@ -129,6 +134,11 @@ NASA data or lunar locations.
 ```sh
 cd api && go test -race ./...
 ```
+
+`openapi_test.go` checks that every documented route is served, that GET responses
+and all example requests/responses validate against the schemas, and that the examples
+still produce byte-identical responses (`go test -run TestExamples -update` to refresh
+after an intended change).
 
 Covers 200/400/404/405/413/415/422/500/502/503/504, engine timeout, deterministic
 replay, delayed recalculation, no-alternative outcome, missing data, CORS and data

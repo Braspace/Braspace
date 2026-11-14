@@ -1,0 +1,5 @@
+{
+  "site_ids": ["synthetic-demo-a", "synthetic-demo-b", "malapert-massif"],
+  "start_utc": "2026-12-01T00:00:00Z",
+  "duration_hours": 72
+}
