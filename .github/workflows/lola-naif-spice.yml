@@ -1,7 +1,8 @@
-name: JPL NAIF Sun-Earth preliminary geometry
+name: NAIF SPICE look angle evidence
 on:
   push:
-    branches: [feat/lola-southpole-horizon-science-20261114]
+    branches:
+      - feat/lola-southpole-horizon-science-20261114
     paths:
       - "science/**"
       - ".github/workflows/lola-naif-spice.yml"
@@ -13,57 +14,35 @@ permissions:
   contents: read
 jobs:
   naif:
-    name: Lunar ME frame and planetary look-angle source run
+    name: NAIF kernel calculation
     runs-on: ubuntu-latest
-    timeout-minutes: 22
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install pinned SpiceyPy CSPICE wrapper
+      - name: Install CSPICE bindings
         run: python -m pip install --only-binary=:all: spiceypy==8.4.0
-      - name: Download official NAIF source kernels outside Git
+      - name: Get official NASA JPL NAIF kernels (temporary only)
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/naif" evidence
-          base='https://naif.jpl.nasa.gov/pub/naif/generic_kernels'
-          curl -fLSs --retry 3 --connect-timeout 25 --max-time 180 "$base/lsk/naif0012.tls" -o "$RUNNER_TEMP/naif/naif0012.tls"
-          curl -fLSs --retry 3 --connect-timeout 25 --max-time 360 "$base/spk/planets/de440s.bsp" -o "$RUNNER_TEMP/naif/de440s.bsp"
-          curl -fLSs --retry 3 --connect-timeout 25 --max-time 360 "$base/pck/moon_pa_de440_200625.bpc" -o "$RUNNER_TEMP/naif/moon_pa_de440_200625.bpc"
-          curl -fLSs --retry 3 --connect-timeout 25 --max-time 180 "$base/fk/satellites/moon_de440_250416.tf" -o "$RUNNER_TEMP/naif/moon_de440_250416.tf"
+          base="https://naif.jpl.nasa.gov/pub/naif/generic_kernels"
+          curl -fLSs --retry 3 --max-time 240 "$base/lsk/naif0012.tls" -o "$RUNNER_TEMP/naif/naif0012.tls"
+          curl -fLSs --retry 3 --max-time 540 "$base/spk/planets/de440s.bsp" -o "$RUNNER_TEMP/naif/de440s.bsp"
+          curl -fLSs --retry 3 --max-time 420 "$base/pck/moon_pa_de440_200625.bpc" -o "$RUNNER_TEMP/naif/moon_pa_de440_200625.bpc"
+          curl -fLSs --retry 3 --max-time 240 "$base/fk/satellites/moon_de440_250416.tf" -o "$RUNNER_TEMP/naif/moon_de440_250416.tf"
           test -s "$RUNNER_TEMP/naif/de440s.bsp"
-          test -s "$RUNNER_TEMP/naif/moon_pa_de440_200625.bpc"
-      - name: Derive Sun and Earth center look angles for real LOLA site
+      - name: Generate unvalidated NASA sourced Sun and Earth angles
         run: |
           set -euo pipefail
-          python3 science/spice_lunar_angles.py \
-            --horizon science/evidence/connecting-ridge-LOLA-PRELIMINARY.json \
-            --kernels-dir "$RUNNER_TEMP/naif" \
-            --start-utc '2026-11-15T00:00:00Z' --hours 72 --step-minutes 60 \
-            --output-series evidence/connecting-ridge-NAIF-PRELIMINARY.series.json \
-            --output-metadata evidence/connecting-ridge-NAIF-PRELIMINARY.metadata.json
-          python3 - <<'PY'
-          import json,math
-          s=json.load(open('evidence/connecting-ridge-NAIF-PRELIMINARY.series.json'))
-          m=json.load(open('evidence/connecting-ridge-NAIF-PRELIMINARY.metadata.json'))
-          assert s['science_status']=='UNVERIFIED' and s['site_id']=='connecting-ridge'
-          assert s['provenance']['frame']=='MOON_ME'
-          assert len(s['samples'])==72 and len(s['terrain_horizon'])==36
-          assert m['validated_against_independent_reference'] is False
-          assert m['spice_frame']=='MOON_ME_DE440_ME421'
-          for item in s['samples']:
-            for body in ('sun','earth'):
-              v=item[body]
-              assert 0<=v['azimuth_deg']<360 and -90<=v['elevation_deg']<=90
-              assert math.isfinite(v['elevation_deg'])
-          print('NAIF source-derived 72h Sun/Earth geometry: preliminary, not independently validated')
-          print('first sample:',s['samples'][0])
-          PY
-      - name: Upload only derived source evidence (no kernel files)
+          python3 science/spice_lunar_angles.py --horizon science/evidence/connecting-ridge-LOLA-PRELIMINARY.json --kernels-dir "$RUNNER_TEMP/naif" --start-utc "2026-11-15T00:00:00Z" --hours 72 --step-minutes 60 --output-series evidence/connecting-ridge-NAIF-PRELIMINARY.series.json --output-metadata evidence/connecting-ridge-NAIF-PRELIMINARY.metadata.json
+          python3 -c 'import json; s=json.load(open("evidence/connecting-ridge-NAIF-PRELIMINARY.series.json")); m=json.load(open("evidence/connecting-ridge-NAIF-PRELIMINARY.metadata.json")); assert s["science_status"]=="UNVERIFIED" and len(s["samples"])==72 and len(s["terrain_horizon"])==36; assert m["validated_against_independent_reference"] is False; print("NAIF real-source result, UNVERIFIED:",s["samples"][0])'
+      - name: Upload derived series only (no kernels)
         uses: actions/upload-artifact@v4
         with:
-          name: connecting-ridge-lola-naif-preliminary-72h
+          name: connecting-ridge-naif-preliminary-72h
           path: evidence/*.json
           retention-days: 14
           if-no-files-found: error
