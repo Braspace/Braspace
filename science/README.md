@@ -2,8 +2,8 @@
 
 **Owner of scientific review:** @joeljato, issues [#14](https://github.com/Braspace/Braspace/issues/14), [#17](https://github.com/Braspace/Braspace/issues/17), [#65](https://github.com/Braspace/Braspace/issues/65).
 **Data-owner handoff:** @maccachera [PR #71](https://github.com/Braspace/Braspace/pull/71).
-**Code status:** first-pass runnable Python 3.12 standard-library tool with synthetic terrain unit tests; **not yet benchmarked against the actual NASA 115 MB PDS bytes or an independent horizon reference in this PR**.
-**Frame:** `MEAN EARTH/POLAR AXIS OF DE421`; NASA PDS LRO/LOLA source; **NO NASA Sun/Earth ephemerides integrated**.
+**Code status (2026-11-14):** The GitHub Actions workflow [LOLA PDS source-backed horizon evidence](https://github.com/Braspace/Braspace/actions/runs/43616076751) downloaded the original 115,520,000-byte PDS raster, checked the pinned SHA-256 and reproduced the committed Connecting Ridge 36-azimuth terrain horizon. A separate [NAIF workflow](https://github.com/Braspace/Braspace/actions/runs/43616076788) downloaded JPL kernels, generated a 72-hour Sun/Earth-center angle series and compared the calculated output with the committed preliminary series. **Both are reproducibility/source-integrity checks, not independent scientific validation or flight-grade accuracy benchmarks.**
+**Frames:** LOLA raster label `MEAN EARTH/POLAR AXIS OF DE421`; NAIF computation `MOON_ME_DE440_ME421`, using `NONE` geometric aberration correction. The separate `science/spice_lunar_angles.py` now computes source-backed Sun/Earth-center ephemeris directions, but frame interoperability, geodesy and numerical accuracy **remain independently unvalidated**.
 
 ## Scientific purpose
 
@@ -11,7 +11,7 @@ Make real NASA terrain usable for a Moon south-pole candidate site's **geometric
 
 1. **Source authenticity:** independent NASA PDS binary SHA-256 matches the 115,520,000-byte product selected and authenticated by @maccachera in PR #71.
 2. **Pixel/geodesy and ray calculation:** map planetocentric lat/lon to the PDS3 polar stereographic raster with the label's `MAP_SCALE=80m/pixel`, `LINE_PROJECTION_OFFSET=3799.5`, `SAMPLE_PROJECTION_OFFSET=3799.5`, frame DE421 ME; sample heights as `DN*0.5` m, add reference radius 1,737,400m, account for lunar curvature and observer mast height. **This algorithm must be independently cross-checked** by Joel at known sites and control points.
-3. **Sun/Earth windows:** require genuine JPL/NAIF SPICE vectors in frame consistent with the raster and a verified epoch/time convention; **not performed by this script**.
+3. **Sun/Earth windows:** `science/spice_lunar_angles.py` now uses downloaded JPL/NAIF kernels to compute 72 hourly geometric Sun/Earth-center look angles for Connecting Ridge and combines them with the unvalidated LOLA skyline. This is not an independent validation of frames, horizon interpolation, time scales, solar-disc effects, eclipse geometry or actual RF/power windows. Output stays `UNVERIFIED`.
 
 Primary PDS file listing: https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img/  
 PDS label: https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img/ldem_80s_80m.lbl  
@@ -55,13 +55,16 @@ This uses the label's PDS3 one-indexed pixel-registration offset and half-pixel 
 
 ## Follow-ups and ownership
 
-- [ ] @maccachera: run the CLI against the same verified original NASA raster (or supply an approved output, exact command and checksum); confirm pixel-offset interpretation from PDS label; link in [#38](https://github.com/Braspace/Braspace/issues/38) and PR #71.
+- [x] Automated source acquisition and checksum/reproducibility check against original NASA LOLA PDS bytes in [CI](https://github.com/Braspace/Braspace/actions/runs/43616076751) (not an independent benchmark).
+- [x] Automated source-backed NAIF 72-hour sample regeneration and committed-series comparison in [CI](https://github.com/Braspace/Braspace/actions/runs/43616076788) (not an independent benchmark).
+- [ ] @maccachera: confirm the PDS pixel-offset and coordinate interpretation independently and attach the evidence to [#38](https://github.com/Braspace/Braspace/issues/38).
 - [ ] @joeljato: review south pole geodesy, the ENU/geometric maximum, interpolated DEM values and numerical error, and reproduce reference horizon azimuths; attach actual test log to [#14](https://github.com/Braspace/Braspace/issues/14).
-- [ ] @gfreiresjrp: connect future approved horizon JSON to existing typed `api/sitedata/series` loader **only after SPICE-derived Sun/Earth samples are verified**; do not label data `VALIDATED` without independent criteria.
-- [ ] @gustavofullstack: expose measured horizon in 3D renderer with a clear PRELIMINARY label and provenance drawer; do not claim illumination/communication windows until SPICE.
+- [x] A source-derived Connecting Ridge NAIF series is wired into `api/sitedata/series` with `science_status=UNVERIFIED`; [Go/Rust CI](https://github.com/Braspace/Braspace/actions/runs/43616076740) confirms preliminary series consumption.
+- [ ] @gfreiresjrp and @joeljato: independently verify the numerical results and coordinate/time contracts before any scientifically `VALIDATED` status can be permitted.
+- [ ] @gustavofullstack: present the source-derived horizon and SPICE-centered visibility *as preliminary*, with a provenance drawer and `UNVERIFIED` status; do not imply measured solar power, RF link availability or flight recommendation.
 - [ ] @Ninzinhu: review reproducibility, privacy, NASA form citations and science limitation wording. No claim of NASA certification or endorsement.
 - [ ] Keep the 115 MB binary outside Git. Do not merge this PR until Joel's real-dataset acceptance and CI are reviewed.
 
 ## Integration discipline
 
-The science branch is based on latest `main` and adds **only** `science/`, `.github/workflows/lola-science.yml`. It does not overwrite Gabriel's PR #71 or Freire's PR #74, and does not change `main` or the runtime's `science_status` until approved.
+This PR includes the terrain calculator, NAIF look-angle calculator, source-backed evidence, a preliminary Connecting Ridge API series and related CI workflows. The `api/sitedata` series explicitly declares `science_status=UNVERIFIED`. It does not merge PR #74 or #76 and does not change `main`. Independent scientific review, numerical control points, tolerances and uncertainty budget remain required before using `VALIDATED`.
