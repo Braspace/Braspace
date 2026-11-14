@@ -3,7 +3,7 @@ name: CI
 # so any machine with Docker runs the same thing:  bash scripts/ci-local.sh [--browser]
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "team/**"]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
