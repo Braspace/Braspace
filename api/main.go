@@ -146,6 +146,7 @@ func routes(binary string) http.Handler {
  store,err:=loadDefaultStore()
  if err!=nil { panic(fmt.Errorf("site data: %w",err)) }
  (&missionAPI{store:store,engine:newEngineClient(binary)}).register(mux)
+ registerLayers(mux,store)
  return mux
 }
 func main() {

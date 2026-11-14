@@ -467,6 +467,199 @@
         }
       }
     },
+    "/api/layers": {
+      "get": {
+        "summary": "Optional lunar map layers with source, rights, attribution, coverage, resolution, frame and checksum",
+        "operationId": "listLayers",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "api_version": {
+                      "type": "string"
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "layers": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Layer"
+                      }
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "layers"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/layers/{id}": {
+      "get": {
+        "summary": "One layer",
+        "operationId": "getLayer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "api_version": {
+                      "type": "string"
+                    },
+                    "layer": {
+                      "$ref": "#/components/schemas/Layer"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "layer"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown layer (LAYER_NOT_FOUND)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/layers/{id}/asset": {
+      "get": {
+        "summary": "Same-origin copy of a proxy layer, fetched only from its registered source_url and served only if size and SHA-256 match",
+        "operationId": "getLayerAsset",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image bytes",
+            "content": {
+              "image/jpeg": {}
+            }
+          },
+          "404": {
+            "description": "Unknown or non-proxied layer (LAYER_NOT_FOUND, LAYER_NOT_PROXIED)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Source unreachable or checksum mismatch (LAYER_UNAVAILABLE); render the fallback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sites/{id}/media": {
+      "get": {
+        "summary": "Gallery links related to a site",
+        "operationId": "getSiteMedia",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "api_version": {
+                      "type": "string"
+                    },
+                    "site_id": {
+                      "type": "string"
+                    },
+                    "terms_url": {
+                      "type": "string"
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "media": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/MediaCard"
+                      }
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "site_id",
+                    "media"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown site (SITE_NOT_FOUND)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/onboard/site-report": {
       "post": {
         "summary": "Printable mission report (#72) for the site-evaluate input, with crew consumables and the combined decision",
@@ -828,7 +1021,11 @@
               "GRID_UNSUPPORTED",
               "GRID_MISMATCH",
               "WINDOW_TOO_LONG",
-              "INVALID_SCENARIO"
+              "INVALID_SCENARIO",
+              "GRID_NOT_ALIGNED",
+              "LAYER_NOT_FOUND",
+              "LAYER_NOT_PROXIED",
+              "LAYER_UNAVAILABLE"
             ]
           }
         },
@@ -2204,6 +2401,179 @@
           "scientifically_validated",
           "limitations"
         ]
+      },
+      "Layer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "global_albedo_visualization",
+              "science_elevation",
+              "global_dem_render"
+            ]
+          },
+          "registry_ref": {
+            "type": "string",
+            "description": "Entry in the team asset registry or NASA manifest this layer is copied from"
+          },
+          "source_page": {
+            "type": "string"
+          },
+          "source_url": {
+            "type": "string",
+            "description": "Original https URL; the only URL the asset proxy will fetch"
+          },
+          "format": {
+            "type": "string"
+          },
+          "bytes": {
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "width_px": {
+            "type": "integer"
+          },
+          "height_px": {
+            "type": "integer"
+          },
+          "projection": {
+            "type": "string"
+          },
+          "frame": {
+            "type": "string",
+            "description": "CRS / body-fixed frame"
+          },
+          "coverage": {
+            "type": "object",
+            "properties": {
+              "latitude_min_deg": {
+                "type": "number"
+              },
+              "latitude_max_deg": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "latitude_min_deg",
+              "latitude_max_deg"
+            ]
+          },
+          "resolution_km_per_px_equator": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "resolution_m_per_px": {
+            "type": "number"
+          },
+          "attribution": {
+            "type": "string"
+          },
+          "rights": {
+            "type": "string"
+          },
+          "redistribution_status": {
+            "type": "string"
+          },
+          "scientific_role": {
+            "type": "string",
+            "enum": [
+              "visualization_only",
+              "science_source"
+            ]
+          },
+          "delivery": {
+            "type": "string",
+            "enum": [
+              "proxy",
+              "external"
+            ],
+            "description": "proxy = same-origin copy at asset_path; external = link to source_url only"
+          },
+          "note": {
+            "type": "string"
+          },
+          "asset_path": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "registry_ref",
+          "source_page",
+          "source_url",
+          "format",
+          "bytes",
+          "sha256",
+          "projection",
+          "frame",
+          "coverage",
+          "attribution",
+          "rights",
+          "scientific_role",
+          "delivery"
+        ]
+      },
+      "MediaCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "page_url": {
+            "type": "string"
+          },
+          "image_id": {
+            "type": "string"
+          },
+          "credit": {
+            "type": "string"
+          },
+          "illustrative_only": {
+            "type": "boolean"
+          },
+          "coordinate_note": {
+            "type": "string"
+          },
+          "related_site_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "region",
+          "page_url",
+          "credit",
+          "illustrative_only",
+          "coordinate_note",
+          "related_site_ids"
+        ],
+        "description": "Link to an original LROC page; no image is copied."
       },
       "VisibilityRequest": {
         "type": "object",

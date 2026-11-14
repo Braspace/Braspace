@@ -120,6 +120,23 @@ include `oxygen_margin_hours`, `food_margin_hours`, `min_battery_charge_wh`,
 That is how a delay that fixes the energy budget but runs the oxygen down shows up.
 `examples/mission/scenario-delay-resources.*` has a full case.
 
+### Map layers and site media (#57)
+
+- `GET /api/layers`, `GET /api/layers/{id}`: optional lunar layers with source page
+  and URL, rights, attribution, coverage, resolution, projection/frame, size and SHA-256.
+  Entries are copied from `data/ASSET_REGISTRY.json` and `data/manifest.json`, and a
+  test fails if they drift. `scientific_role` is `visualization_only` or
+  `science_source`; visual layers never feed calculations.
+- `GET /api/layers/{id}/asset`: same-origin copy for `delivery: "proxy"` layers (today
+  only the NASA SVS LROC 2k texture used by the 3D globe, which browsers block
+  cross-origin). The API fetches only the registered `source_url` on an allowlisted
+  host, checks size and SHA-256 before serving, and caches the bytes in memory. It
+  never takes a URL from the request. If the source is down or the checksum differs,
+  you get `502 LAYER_UNAVAILABLE` and the UI keeps its procedural fallback. The LOLA
+  science DEM is `external` and is never served.
+- `GET /api/sites/{id}/media`: LROC gallery links (`data/LUNAR_GALLERY.json`) related to
+  a site. Links only; no image is copied, per the gallery's thumbnail policy.
+
 ## Errors
 
 JSON `{"error": "...", "code": "..."}`.
