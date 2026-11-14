@@ -1,4 +1,12 @@
 /* MoonProof design tokens — single source of base style (design: @lisanogueira, S-design-system). */
+/* Self-hosted OFL families from Heloísa typography fidelity PR #171. */
+@font-face{font-family:"Manrope";font-style:normal;font-weight:400;font-display:swap;src:url("../fonts/manrope-latin-400-normal.woff2") format("woff2")}
+@font-face{font-family:"Manrope";font-style:normal;font-weight:500;font-display:swap;src:url("../fonts/manrope-latin-500-normal.woff2") format("woff2")}
+@font-face{font-family:"Manrope";font-style:normal;font-weight:600;font-display:swap;src:url("../fonts/manrope-latin-600-normal.woff2") format("woff2")}
+@font-face{font-family:"Manrope";font-style:normal;font-weight:700;font-display:swap;src:url("../fonts/manrope-latin-700-normal.woff2") format("woff2")}
+@font-face{font-family:"Manrope";font-style:normal;font-weight:800;font-display:swap;src:url("../fonts/manrope-latin-800-normal.woff2") format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url("../fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:600;font-display:swap;src:url("../fonts/ibm-plex-mono-latin-600-normal.woff2") format("woff2")}
 :root{
   --bg:#07090C; --card:#050607; --glass:rgba(12,15,18,.58); --glass-blur:22px;
   --pill:#F2F4F5; --pill-text:#07090C; --jade:#2EC4A0; --jade-text:#04110D;
