@@ -235,8 +235,8 @@
     return [
       h("section", { class: "panel" },
         h("h2", { text: "02 · Geometria do Sol e da Terra" }),
-        h("div", { class: "row" }, h("span", { class: "mono", text: fmt(startMs() + cur.i * S.stepMin * 60e3) }), tag("SINT")),
-        h("label", { style: "margin:8px 0" }, "Instante do cenário (arraste ou reproduza)", slider),
+        instantLabel(cur),
+        h("label", { style: "margin:12px 0 8px" }, "Arraste para escolher o instante (cada posição = " + S.stepMin + " min)", slider),
         h("div", { class: "row" },
           h("button", { type: "button", "aria-pressed": !!S.playing, onclick: togglePlay }, S.playing ? "PAUSAR" : "REPRODUZIR"),
           h("span", { class: "dim", text: "passo " + S.stepMin + " min" })),
@@ -263,6 +263,18 @@
         edu("Cada barra mostra uma hora (ou o passo escolhido). Luz e Terra visível são coisas diferentes."))
     ];
   };
+  // Readable instant: day of the scenario, time of day and the UTC stamp.
+  function instantLabel(cur) {
+    const ms = startMs() + cur.i * S.stepMin * 60e3;
+    const dayIdx = Math.floor(cur.i * S.stepMin / 1440) + 1;
+    const days = Math.ceil(S.durationH / 24);
+    const hhmm = new Date(ms).toISOString().slice(11, 16);
+    return h("div", { class: "instant" },
+      h("span", { class: "big", text: "Dia " + dayIdx + " de " + days + " · " + hhmm }),
+      h("span", { class: "small", text: fmt(ms) }),
+      tag("SINT"));
+  }
+
   function togglePlay() {
     if (S.playing) { clearInterval(S.playing); S.playing = null; renderTab(); return; }
     S.playing = setInterval(() => {
@@ -341,8 +353,8 @@
       h("section", { class: "panel span2" },
         h("h2", { text: "03 · Horizonte do sítio", },
           h("em", { text: site.name + " · rugosidade " + site.rough })),
-        h("div", { class: "row" }, h("span", { class: "mono", text: fmt(startMs() + cur.i * S.stepMin * 60e3) }), tag("SINT")),
-        h("div", { style: "margin:10px 0" }, slider),
+        instantLabel(cur),
+        h("label", { style: "margin:10px 0" }, "Arraste para escolher o instante", slider),
         box,
         h("div", { class: "legend" },
           h("span", {}, h("i", { style: "background:#ffb020" }), "Sol"),
