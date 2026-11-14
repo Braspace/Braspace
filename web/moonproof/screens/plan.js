@@ -1,6 +1,7 @@
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
 import { loadSites, windowMetrics, api, sealFor } from "../core/data.js";
+import { H1_PROFILE, HOUR_MS, runScenario } from "./cockpit-model.js";
 import { sealEl } from "../core/layers.js";
 import { register, t, fmtNum } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo, DEFAULT_RULES } from "../core/state.js";
@@ -113,18 +114,35 @@ function downloadFile(filename, content, mime) {
 async function computeRows() {
   const st = getState();
   const hours = st.hours || 336;
+  const metrics = await Promise.all(scenarios.map((s) => windowMetrics(doc, s, st.start, hours)));
+  const startIso = new Date(metrics[0].t0).toISOString().replace(".000Z", "Z");
   const live = await api("/api/compare", {
     method: "POST",
-    body: { sites: scenarios.map((s) => s.id), start: st.start, hours }
+    body: { site_ids: scenarios.map((s) => s.id), start_utc: startIso, duration_hours: hours, include_series: false }
   });
-  const metrics = await Promise.all(scenarios.map((s) => windowMetrics(doc, s, st.start, hours)));
+  const floorWh = H1_PROFILE.battery_capacity_wh * (rulesDraft.battery / 100);
+  const power = { ...H1_PROFILE, reserve_wh: floorWh };
   const evals = await Promise.all(
-    scenarios.map((s) =>
-      api("/api/onboard/site-evaluate", {
-        method: "POST",
-        body: { site_id: s.id, max_night_h: rulesDraft.night, max_blackout_h: rulesDraft.blackout, battery_floor_pct: rulesDraft.battery }
-      })
-    )
+    scenarios.map(async (s, idx) => {
+      const m = metrics[idx];
+      const series = m.series;
+      const i0 = Math.max(0, Math.ceil((m.t0 - series.start) / HOUR_MS));
+      const samples = Array.from(
+        { length: Math.max(0, Math.min(hours, series.count - i0)) },
+        (_, h) => ({ sun_visible: series.sunMargin[i0 + h] >= 0, earth_visible: series.earthMargin[i0 + h] >= 0 })
+      );
+      const res = await runScenario(api, {
+        siteId: s.id,
+        startIso: new Date(m.t0).toISOString().replace(".000Z", "Z"),
+        hours,
+        power,
+        maxBlackoutH: Math.min(rulesDraft.blackout, hours),
+        samples
+      });
+      if (!res.ok || !res.trace?.length) return null;
+      const minCharge = Math.min(...res.trace);
+      return Number(((minCharge - floorWh) / H1_PROFILE.load_w).toFixed(1));
+    })
   );
 
   const rows = [
@@ -160,11 +178,11 @@ async function computeRows() {
     },
     {
       label: t("plan.mBattery"), unit: "h",
-      vals: evals.map((e) => (e.ok && e.data?.battery_margin_h != null ? e.data.battery_margin_h : null)),
+      vals: evals,
       rule: `≥ 0`,
       check: (v) => v >= 0,
       best: "max",
-      margin: evals[1]?.ok && evals[1].data?.battery_margin_h != null ? evals[1].data.battery_margin_h : null,
+      margin: evals[1] ?? null,
       unc: "SIM", status: "SYNTHETIC"
     },
     {

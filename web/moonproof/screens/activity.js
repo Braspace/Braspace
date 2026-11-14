@@ -122,14 +122,14 @@ function draw() {
     [4, t("act.s4"), t("act.s4d")]
   ];
   stepsEl.innerHTML = `
-    <div><small style="color:var(--jade);font-weight:700">${t("act.kit")}</small><h2 style="margin:2px 0 0">${t("act.title")}</h2></div>
+    <div><small class="mp-act-kicker">${t("act.kit")}</small><h2 class="mp-act-title">${t("act.title")}</h2></div>
     ${steps.map(([n, title, sub]) => `
       <div class="mp-step-item ${n < cfg.step ? "is-done" : n === cfg.step ? "is-active" : ""}" data-step="${n}">
         <span class="mp-step-num">${n < cfg.step ? "✓" : n}</span>
-        <div><strong style="font-size:13px">${title}</strong><div style="font-size:12px;color:var(--text-dim)">${sub}</div></div>
+        <div><strong class="mp-act-step-title">${title}</strong><div class="mp-act-dim">${sub}</div></div>
       </div>
     `).join("")}
-    <p style="font-size:12px;color:var(--text-dim);margin-top:auto">${t("act.tip")}</p>
+    <p class="mp-act-tip">${t("act.tip")}</p>
   `;
   stepsEl.querySelectorAll("[data-step]").forEach((el) => {
     el.onclick = () => { cfg.step = Number(el.dataset.step); draw(); };
@@ -146,17 +146,17 @@ function draw() {
     </div>
     <div class="mp-preview-frame ${cfg.device === "mobile" ? "is-mobile" : ""}">
       <div class="mp-act-head">
-        <span style="background:var(--pill-white);color:var(--pill-ink);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700">${t("act.badge")}</span>
+        <span class="mp-act-badge">${t("act.badge")}</span>
         <span id="prev-seal"></span>
       </div>
-      <div style="font-size:13px;color:var(--text-dim)">${scenarios.map((s) => `${s.n} · ${s.name}`).join("  |  ")}</div>
+      <div class="mp-act-sites">${scenarios.map((s) => `${s.n} · ${s.name}`).join("  |  ")}</div>
       <div>
-        <strong style="font-size:15px">${t("act.prompt")}</strong>
-        <div style="font-size:12.5px;color:var(--text-dim);margin-top:4px">${t("act.promptSub")}</div>
+        <strong class="mp-act-prompt">${t("act.prompt")}</strong>
+        <div class="mp-act-prompt-sub">${t("act.promptSub")}</div>
       </div>
     </div>
     <div class="mp-act-head">
-      <span style="font-size:12.5px;color:var(--text-dim)">${t("act.openIn")}</span>
+      <span class="mp-act-open-label">${t("act.openIn")}</span>
       <div class="mp-chip-row">
         <button class="mp-chip ${cfg.openLayer === "answer" ? "is-active" : ""}" data-layer="answer" type="button">${t("act.l1")}</button>
         <button class="mp-chip ${cfg.openLayer === "why" ? "is-active" : ""}" data-layer="why" type="button">${t("act.l2")}</button>
@@ -188,7 +188,7 @@ function draw() {
     `).join("")}
     <div class="mp-teacher-notes">
       <strong>${t("act.notesTitle")}</strong>
-      <p style="margin:6px 0 0">${t("act.notesBody")}</p>
+      <p class="mp-act-notes-body">${t("act.notesBody")}</p>
     </div>
   `;
   ctrlEl.querySelectorAll("[data-toggle]").forEach((b) => {
@@ -198,8 +198,8 @@ function draw() {
   const shareEl = document.getElementById("act-share");
   const url = shareUrl();
   shareEl.innerHTML = `
-    <div style="flex:1;min-width:220px">
-      <strong style="font-size:14px">${t("act.shareTitle")}</strong>
+    <div class="mp-act-share-copy">
+      <strong class="mp-act-share-title">${t("act.shareTitle")}</strong>
       <div class="mp-share-url">${url}</div>
     </div>
     <div class="mp-chip-row">

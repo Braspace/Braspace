@@ -14,6 +14,11 @@ const staticFiles=new Map([
   ["/styles.css",{name:"styles.css",type:"text/css; charset=utf-8"}],
   ["/app.js",{name:"app.js",type:"text/javascript; charset=utf-8"}],
   ["/moon3d.js",{name:"moon3d.js",type:"text/javascript; charset=utf-8"}],
+  ["/polar-map-demo.html",{name:"polar-map-demo.html",type:"text/html; charset=utf-8"}],
+  ["/polar-map.css",{name:"polar-map.css",type:"text/css; charset=utf-8"}],
+  ["/polar-map.js",{name:"polar-map.js",type:"text/javascript; charset=utf-8"}],
+  ["/assets/polar-elevation-87s.json",{name:"assets/polar-elevation-87s.json",type:"application/json; charset=utf-8"}],
+  ["/assets/polar-elevation-87s.webp",{name:"assets/polar-elevation-87s.webp",type:"image/webp"}],
 ]);
 // Polar Lab / Landing Lab: static page, modules and precomputed NASA-derived data.
 // Only fixed prefixes, a strict character set and known extensions are served.
@@ -137,6 +142,20 @@ export function createServer(){
    if(pathname==="/api/onboard/report"||pathname==="/api/onboard/site-report")res.setHeader("Content-Security-Policy","default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
    if(!["GET","POST","HEAD","OPTIONS"].includes(req.method)){res.writeHead(405);res.end("Method not allowed");return;}
    proxyAPI(req,res);
+   return;
+  }
+  if(pathname==="/favicon.ico"){
+   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
+   res.writeHead(204,{"cache-control":"no-store"});
+   res.end();
+   return;
+  }
+  if(pathname==="/config.js"){
+   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
+   const body="// local dev-server\n";
+   res.writeHead(200,{"content-type":"text/javascript; charset=utf-8","cache-control":"no-store","content-length":body.length});
+   if(req.method==="HEAD"){res.end();return;}
+   res.end(body);
    return;
   }
   // Cockpit HTML uses scoped inline CSS; do not relax the global CSP.

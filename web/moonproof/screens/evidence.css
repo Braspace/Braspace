@@ -13,6 +13,7 @@
 .mp-assume li{display:flex;gap:13px;counter-increment:a;align-items:flex-start}
 .mp-assume li::before{content:counter(a);flex:none;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.1);display:grid;place-items:center;font-weight:700;font-size:13px}
 .mp-ev-main h2{margin:0;font-size:var(--fs-card-title)}
+.mp-ev-right{display:grid;gap:12px;align-content:start}
 .mp-src{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
 .mp-src:first-of-type{border-top:0}.mp-src b{display:block;font-size:14px}.mp-src small{color:var(--text-2);font-size:12px;display:block;overflow-wrap:anywhere}
 .mp-chipreg{font:700 11px/1 var(--mono);border:1.5px solid var(--unknown);color:var(--text-2);border-radius:6px;padding:5px 8px;white-space:nowrap}
