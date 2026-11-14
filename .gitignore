@@ -1,3 +1,9 @@
 .env
 engine/target/
 .DS_Store
+
+# Science pipeline: large per-site hourly outputs stay local (compact copies live in web/data/sites)
+science/results/*.json
+!science/results/summary.json
+!science/results/validation_*.json
+__pycache__/

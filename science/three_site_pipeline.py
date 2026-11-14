@@ -24,6 +24,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lola_horizon import DEM, Grid, KNOWN_REVIEWED_SHA256, digest, sample_horizon  # noqa: E402
+from lola_horizon import site_basis  # noqa: E402
 from spice_lunar_angles import FRAME, KERNEL_NAMES, KERNEL_SOURCES, checksum, look_angles  # noqa: E402
 
 SUN_RADIUS_DEG = 0.2666  # mean apparent solar radius seen from the Moon
@@ -52,6 +53,22 @@ SITES = [
         "latitude_deg": -85.4381,
         "longitude_deg": 37.36667,
         "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2, row R06",
+        "source_url": "",
+    },
+    {
+        "id": "connecting-ridge",
+        "name": "Connecting Ridge (Shackleton–de Gerlache)",
+        "latitude_deg": -89.4632,
+        "longitude_deg": -137.49,
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2 (catalog feature centre)",
+        "source_url": "",
+    },
+    {
+        "id": "peak-near-shackleton",
+        "name": "Peak Near Shackleton",
+        "latitude_deg": -88.811,
+        "longitude_deg": 123.6901,
+        "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2, row R07",
         "source_url": "",
     },
 ]
@@ -96,11 +113,17 @@ def runs(flags: list[bool], value: bool) -> list[int]:
 def compute_series(spice, site: dict, observer_radius_km: float, start: dt.datetime,
                    hours: int, step_minutes: int) -> list[dict]:
     samples = []
+    up = site_basis(site["latitude_deg"], site["longitude_deg"])[0]
+    obs_km = [observer_radius_km * u for u in up]
     for i in range(hours * 60 // step_minutes):
         epoch = start + dt.timedelta(minutes=i * step_minutes)
         et = spice.str2et(epoch.strftime("%Y %b %d %H:%M:%S UTC"))
-        sun, _ = spice.spkpos("SUN", et, FRAME, "LT+S", "MOON")
-        earth, _ = spice.spkpos("EARTH", et, FRAME, "LT+S", "MOON")
+        # Apparent (LT+S) direction from the surface site itself (same convention as PR #86
+        # and JPL Horizons "airless apparent"); converted back to a Moon-centred vector.
+        sun_rel, _ = spice.spkcpo("SUN", et, FRAME, "OBSERVER", "LT+S", obs_km, "MOON", FRAME)
+        earth_rel, _ = spice.spkcpo("EARTH", et, FRAME, "OBSERVER", "LT+S", obs_km, "MOON", FRAME)
+        sun = [sun_rel[j] + obs_km[j] for j in range(3)]
+        earth = [earth_rel[j] + obs_km[j] for j in range(3)]
         s = look_angles(sun, site["latitude_deg"], site["longitude_deg"], observer_radius_km)
         e = look_angles(earth, site["latitude_deg"], site["longitude_deg"], observer_radius_km)
         samples.append({"t": epoch.strftime("%Y-%m-%dT%H:%MZ"),
@@ -203,7 +226,7 @@ def main() -> None:
                         "kernel_sha256": kernel_sha,
                         "kernel_sources": KERNEL_SOURCES,
                         "spice_frame": FRAME,
-                        "aberration_correction": "LT+S (apparent), observer at Moon centre",
+                        "aberration_correction": "LT+S (apparent) from the surface site via spkcpo",
                         "point_targets": "Sun and Earth centres; solar disc fraction from straight-horizon approximation",
                         "generator": "science/three_site_pipeline.py v0.1",
                         "nasa_certified": False,
