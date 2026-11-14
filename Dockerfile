@@ -1,10 +1,11 @@
-# Bootstrap build. Dependencies are not yet pinned to immutable digests.
+# MoonProof API/Rust release: dependencies locked by engine/Cargo.lock.
+# Builder image tags should be digested and SBOM-attested before externally managed production.
 FROM rust:1.83-alpine AS rustbuilder
 RUN apk add --no-cache musl-dev
 WORKDIR /build/engine
-COPY engine/Cargo.toml ./
+COPY engine/Cargo.toml engine/Cargo.lock ./
 COPY engine/src ./src
-RUN cargo build --release
+RUN cargo build --locked --release
 
 FROM golang:1.26-alpine AS gobuilder
 WORKDIR /build/api
