@@ -1,7 +1,7 @@
 """Preliminary NASA/JPL NAIF SPICE lunar Sun/Earth-center look-angle series.
 
 Requires independently downloaded official kernels and a PDS-verified
-LOLA terrain horizon. Uses geometric, not light-time corrected, directions.
+LOLA terrain horizon. Uses LT+S apparent directions from the surface site (spkcpo).
 Output scientific status stays UNVERIFIED until an independent comparison.
 """
 from __future__ import annotations
@@ -18,6 +18,7 @@ from lola_horizon import KNOWN_REVIEWED_SHA256, dot, site_basis
 FRAME = "MOON_ME_DE440_ME421"
 KERNEL_NAMES = ("naif0012.tls", "de440s.bsp", "moon_pa_de440_200625.bpc", "moon_de440_250416.tf")
 RADIUS_KM = 1737.4
+ABCORR = "LT+S"
 KERNEL_SOURCES = {
     "naif0012.tls":"https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls",
     "de440s.bsp":"https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
@@ -82,6 +83,7 @@ def generate(kernel_dir:pathlib.Path,horizon_json:pathlib.Path,start_utc:str,hou
         raise RuntimeError("pip install spiceypy==8.4.0 to use the NAIF computation") from e
     samples=[]
     observer_radius_km=(RADIUS_KM*1000+site["site_elevation_m"]+site["observer_height_m"])/1000
+    obs_km=[observer_radius_km*u for u in site_basis(site["latitude_deg"],site["longitude_deg"])[0]]
     try:
         spice.kclear()
         for k in kernel_paths: spice.furnsh(str(k))
@@ -91,8 +93,11 @@ def generate(kernel_dir:pathlib.Path,horizon_json:pathlib.Path,start_utc:str,hou
             epoch=t0+dt.timedelta(minutes=i*step_minutes)
             utc=epoch.strftime("%Y-%m-%dT%H:%M:%S")
             et=spice.str2et(epoch.strftime("%Y %b %d %H:%M:%S UTC"))
-            sun,_=spice.spkpos("SUN",et,FRAME,"NONE","MOON")
-            earth,_=spice.spkpos("EARTH",et,FRAME,"NONE","MOON")
+            # Apparent (LT+S) direction from the surface site, not Moon centre.
+            sun_rel,_=spice.spkcpo("SUN",et,FRAME,"OBSERVER",ABCORR,obs_km,"MOON",FRAME)
+            earth_rel,_=spice.spkcpo("EARTH",et,FRAME,"OBSERVER",ABCORR,obs_km,"MOON",FRAME)
+            sun=[sun_rel[j]+obs_km[j] for j in range(3)]
+            earth=[earth_rel[j]+obs_km[j] for j in range(3)]
             samples.append({"sun":look_angles(sun,site["latitude_deg"],site["longitude_deg"],observer_radius_km),
                             "earth":look_angles(earth,site["latitude_deg"],site["longitude_deg"],observer_radius_km)})
     finally:
@@ -123,7 +128,7 @@ def generate(kernel_dir:pathlib.Path,horizon_json:pathlib.Path,start_utc:str,hou
         "jpl_naif_kernels_sha256":ids,
         "kernel_sources":KERNEL_SOURCES,
         "spice_frame":FRAME,
-        "spice_aberration_correction":"NONE (geometric; not light-time-corrected)",
+        "spice_aberration_correction":"LT+S from surface site (spkcpo); Horizons-airless convention",
         "site_position_km":observer_radius_km,
         "site_latitude_deg":site["latitude_deg"],
         "site_longitude_deg":site["longitude_deg"],

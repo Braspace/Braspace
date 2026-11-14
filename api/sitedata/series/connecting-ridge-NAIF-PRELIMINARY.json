@@ -10,151 +10,151 @@
     "generator": "science/spice_lunar_angles.py v0.1",
     "note": "NASA LOLA terrain + JPL/NAIF SPICE Sun/Earth centers; UNVERIFIED independent science; not NASA-approved."
   },
-  "observer_height_m": 2,
+  "observer_height_m": 2.0,
   "terrain_horizon": [
     {
-      "azimuth_deg": 0,
-      "elevation_deg": 0.961902
+      "azimuth_deg": 0.0,
+      "elevation_deg": 1.320404
     },
     {
-      "azimuth_deg": 10,
-      "elevation_deg": 0.867997
+      "azimuth_deg": 10.0,
+      "elevation_deg": 1.753412
     },
     {
-      "azimuth_deg": 20,
-      "elevation_deg": 0.505737
+      "azimuth_deg": 20.0,
+      "elevation_deg": 1.644755
     },
     {
-      "azimuth_deg": 30,
-      "elevation_deg": 0.087613
+      "azimuth_deg": 30.0,
+      "elevation_deg": 1.822792
     },
     {
-      "azimuth_deg": 40,
-      "elevation_deg": -0.266295
+      "azimuth_deg": 40.0,
+      "elevation_deg": 1.879965
     },
     {
-      "azimuth_deg": 50,
-      "elevation_deg": -0.623994
+      "azimuth_deg": 50.0,
+      "elevation_deg": 1.718499
     },
     {
-      "azimuth_deg": 60,
-      "elevation_deg": -0.93656
+      "azimuth_deg": 60.0,
+      "elevation_deg": 1.52752
     },
     {
-      "azimuth_deg": 70,
-      "elevation_deg": -1.127493
+      "azimuth_deg": 70.0,
+      "elevation_deg": 1.326182
     },
     {
-      "azimuth_deg": 80,
-      "elevation_deg": -1.171192
+      "azimuth_deg": 80.0,
+      "elevation_deg": 1.205441
     },
     {
-      "azimuth_deg": 90,
-      "elevation_deg": -1.16141
+      "azimuth_deg": 90.0,
+      "elevation_deg": 1.213172
     },
     {
-      "azimuth_deg": 100,
-      "elevation_deg": -1.230166
+      "azimuth_deg": 100.0,
+      "elevation_deg": 1.260935
     },
     {
-      "azimuth_deg": 110,
-      "elevation_deg": -1.220753
+      "azimuth_deg": 110.0,
+      "elevation_deg": 1.149669
     },
     {
-      "azimuth_deg": 120,
-      "elevation_deg": -1.133456
+      "azimuth_deg": 120.0,
+      "elevation_deg": 0.802329
     },
     {
-      "azimuth_deg": 130,
-      "elevation_deg": -1.284095
+      "azimuth_deg": 130.0,
+      "elevation_deg": 0.513445
     },
     {
-      "azimuth_deg": 140,
-      "elevation_deg": -1.484118
+      "azimuth_deg": 140.0,
+      "elevation_deg": 0.211625
     },
     {
-      "azimuth_deg": 150,
-      "elevation_deg": -1.629652
+      "azimuth_deg": 150.0,
+      "elevation_deg": -0.22073
     },
     {
-      "azimuth_deg": 160,
-      "elevation_deg": -1.883895
+      "azimuth_deg": 160.0,
+      "elevation_deg": -0.35024
     },
     {
-      "azimuth_deg": 170,
-      "elevation_deg": -1.386182
+      "azimuth_deg": 170.0,
+      "elevation_deg": 0.12113
     },
     {
-      "azimuth_deg": 180,
-      "elevation_deg": -0.674814
+      "azimuth_deg": 180.0,
+      "elevation_deg": 0.022426
     },
     {
-      "azimuth_deg": 190,
-      "elevation_deg": -0.774532
+      "azimuth_deg": 190.0,
+      "elevation_deg": -0.275479
     },
     {
-      "azimuth_deg": 200,
-      "elevation_deg": -1.018614
+      "azimuth_deg": 200.0,
+      "elevation_deg": -0.761526
     },
     {
-      "azimuth_deg": 210,
-      "elevation_deg": -1.424857
+      "azimuth_deg": 210.0,
+      "elevation_deg": -1.253655
     },
     {
-      "azimuth_deg": 220,
-      "elevation_deg": -1.928248
+      "azimuth_deg": 220.0,
+      "elevation_deg": -1.800945
     },
     {
-      "azimuth_deg": 230,
-      "elevation_deg": -1.846233
+      "azimuth_deg": 230.0,
+      "elevation_deg": -1.840236
     },
     {
-      "azimuth_deg": 240,
-      "elevation_deg": -2.507949
+      "azimuth_deg": 240.0,
+      "elevation_deg": -2.488894
     },
     {
-      "azimuth_deg": 250,
-      "elevation_deg": -3.97619
+      "azimuth_deg": 250.0,
+      "elevation_deg": -3.822978
     },
     {
-      "azimuth_deg": 260,
-      "elevation_deg": -4.388634
+      "azimuth_deg": 260.0,
+      "elevation_deg": -4.390491
     },
     {
-      "azimuth_deg": 270,
-      "elevation_deg": -4.98501
+      "azimuth_deg": 270.0,
+      "elevation_deg": -4.865203
     },
     {
-      "azimuth_deg": 280,
-      "elevation_deg": -4.635354
+      "azimuth_deg": 280.0,
+      "elevation_deg": -5.091506
     },
     {
-      "azimuth_deg": 290,
-      "elevation_deg": -4.260766
+      "azimuth_deg": 290.0,
+      "elevation_deg": -4.684675
     },
     {
-      "azimuth_deg": 300,
-      "elevation_deg": -3.537984
+      "azimuth_deg": 300.0,
+      "elevation_deg": -3.878156
     },
     {
-      "azimuth_deg": 310,
-      "elevation_deg": -2.592796
+      "azimuth_deg": 310.0,
+      "elevation_deg": -2.982827
     },
     {
-      "azimuth_deg": 320,
-      "elevation_deg": -1.54098
+      "azimuth_deg": 320.0,
+      "elevation_deg": -1.966143
     },
     {
-      "azimuth_deg": 330,
-      "elevation_deg": -0.698778
+      "azimuth_deg": 330.0,
+      "elevation_deg": -0.63317
     },
     {
-      "azimuth_deg": 340,
-      "elevation_deg": 0.023318
+      "azimuth_deg": 340.0,
+      "elevation_deg": 0.196843
     },
     {
-      "azimuth_deg": 350,
-      "elevation_deg": 0.489023
+      "azimuth_deg": 350.0,
+      "elevation_deg": 0.835774
     }
   ],
   "start_utc": "2026-11-15T00:00:00Z",
@@ -162,722 +162,722 @@
   "samples": [
     {
       "sun": {
-        "azimuth_deg": 251.913852,
-        "elevation_deg": 1.389786
+        "azimuth_deg": 251.908179,
+        "elevation_deg": 1.389712
       },
       "earth": {
-        "azimuth_deg": 134.846883,
-        "elevation_deg": -3.931659
+        "azimuth_deg": 134.846699,
+        "elevation_deg": -3.931675
       }
     },
     {
       "sun": {
-        "azimuth_deg": 251.40628,
-        "elevation_deg": 1.38524
+        "azimuth_deg": 251.400605,
+        "elevation_deg": 1.385166
       },
       "earth": {
-        "azimuth_deg": 134.789339,
-        "elevation_deg": -3.882175
+        "azimuth_deg": 134.789154,
+        "elevation_deg": -3.882192
       }
     },
     {
       "sun": {
-        "azimuth_deg": 250.898719,
-        "elevation_deg": 1.380706
+        "azimuth_deg": 250.893042,
+        "elevation_deg": 1.380632
       },
       "earth": {
-        "azimuth_deg": 134.73186,
-        "elevation_deg": -3.83244
+        "azimuth_deg": 134.731676,
+        "elevation_deg": -3.832457
       }
     },
     {
       "sun": {
-        "azimuth_deg": 250.391169,
-        "elevation_deg": 1.376183
+        "azimuth_deg": 250.385491,
+        "elevation_deg": 1.37611
       },
       "earth": {
-        "azimuth_deg": 134.674453,
-        "elevation_deg": -3.782457
+        "azimuth_deg": 134.674269,
+        "elevation_deg": -3.782474
       }
     },
     {
       "sun": {
-        "azimuth_deg": 249.88363,
-        "elevation_deg": 1.371674
+        "azimuth_deg": 249.877951,
+        "elevation_deg": 1.3716
       },
       "earth": {
-        "azimuth_deg": 134.617125,
-        "elevation_deg": -3.732229
+        "azimuth_deg": 134.61694,
+        "elevation_deg": -3.732246
       }
     },
     {
       "sun": {
-        "azimuth_deg": 249.376103,
-        "elevation_deg": 1.367178
+        "azimuth_deg": 249.370422,
+        "elevation_deg": 1.367104
       },
       "earth": {
-        "azimuth_deg": 134.55988,
-        "elevation_deg": -3.681759
+        "azimuth_deg": 134.559696,
+        "elevation_deg": -3.681776
       }
     },
     {
       "sun": {
-        "azimuth_deg": 248.868586,
-        "elevation_deg": 1.362695
+        "azimuth_deg": 248.862904,
+        "elevation_deg": 1.362621
       },
       "earth": {
-        "azimuth_deg": 134.502726,
-        "elevation_deg": -3.63105
+        "azimuth_deg": 134.502541,
+        "elevation_deg": -3.631067
       }
     },
     {
       "sun": {
-        "azimuth_deg": 248.361082,
-        "elevation_deg": 1.358225
+        "azimuth_deg": 248.355398,
+        "elevation_deg": 1.358152
       },
       "earth": {
-        "azimuth_deg": 134.445668,
-        "elevation_deg": -3.580104
+        "azimuth_deg": 134.445483,
+        "elevation_deg": -3.580121
       }
     },
     {
       "sun": {
-        "azimuth_deg": 247.853588,
-        "elevation_deg": 1.35377
+        "azimuth_deg": 247.847903,
+        "elevation_deg": 1.353697
       },
       "earth": {
-        "azimuth_deg": 134.388712,
-        "elevation_deg": -3.528926
+        "azimuth_deg": 134.388527,
+        "elevation_deg": -3.528944
       }
     },
     {
       "sun": {
-        "azimuth_deg": 247.346106,
-        "elevation_deg": 1.34933
+        "azimuth_deg": 247.34042,
+        "elevation_deg": 1.349257
       },
       "earth": {
-        "azimuth_deg": 134.331865,
-        "elevation_deg": -3.477519
+        "azimuth_deg": 134.33168,
+        "elevation_deg": -3.477536
       }
     },
     {
       "sun": {
-        "azimuth_deg": 246.838636,
-        "elevation_deg": 1.344904
+        "azimuth_deg": 246.832948,
+        "elevation_deg": 1.344832
       },
       "earth": {
-        "azimuth_deg": 134.275132,
-        "elevation_deg": -3.425884
+        "azimuth_deg": 134.274948,
+        "elevation_deg": -3.425902
       }
     },
     {
       "sun": {
-        "azimuth_deg": 246.331176,
-        "elevation_deg": 1.340494
+        "azimuth_deg": 246.325487,
+        "elevation_deg": 1.340421
       },
       "earth": {
-        "azimuth_deg": 134.218521,
-        "elevation_deg": -3.374026
+        "azimuth_deg": 134.218336,
+        "elevation_deg": -3.374044
       }
     },
     {
       "sun": {
-        "azimuth_deg": 245.823729,
-        "elevation_deg": 1.336099
+        "azimuth_deg": 245.818038,
+        "elevation_deg": 1.336027
       },
       "earth": {
-        "azimuth_deg": 134.162036,
-        "elevation_deg": -3.321948
+        "azimuth_deg": 134.161852,
+        "elevation_deg": -3.321966
       }
     },
     {
       "sun": {
-        "azimuth_deg": 245.316293,
-        "elevation_deg": 1.33172
+        "azimuth_deg": 245.3106,
+        "elevation_deg": 1.331648
       },
       "earth": {
-        "azimuth_deg": 134.105686,
-        "elevation_deg": -3.269653
+        "azimuth_deg": 134.105501,
+        "elevation_deg": -3.26967
       }
     },
     {
       "sun": {
-        "azimuth_deg": 244.808868,
-        "elevation_deg": 1.327357
+        "azimuth_deg": 244.803174,
+        "elevation_deg": 1.327285
       },
       "earth": {
-        "azimuth_deg": 134.049475,
-        "elevation_deg": -3.217143
+        "azimuth_deg": 134.049291,
+        "elevation_deg": -3.217161
       }
     },
     {
       "sun": {
-        "azimuth_deg": 244.301455,
-        "elevation_deg": 1.323011
+        "azimuth_deg": 244.29576,
+        "elevation_deg": 1.32294
       },
       "earth": {
-        "azimuth_deg": 133.993411,
-        "elevation_deg": -3.164423
+        "azimuth_deg": 133.993226,
+        "elevation_deg": -3.16444
       }
     },
     {
       "sun": {
-        "azimuth_deg": 243.794054,
-        "elevation_deg": 1.318682
+        "azimuth_deg": 243.788357,
+        "elevation_deg": 1.318611
       },
       "earth": {
-        "azimuth_deg": 133.9375,
-        "elevation_deg": -3.111494
+        "azimuth_deg": 133.937315,
+        "elevation_deg": -3.111512
       }
     },
     {
       "sun": {
-        "azimuth_deg": 243.286664,
-        "elevation_deg": 1.31437
+        "azimuth_deg": 243.280966,
+        "elevation_deg": 1.314299
       },
       "earth": {
-        "azimuth_deg": 133.881747,
-        "elevation_deg": -3.058362
+        "azimuth_deg": 133.881563,
+        "elevation_deg": -3.058379
       }
     },
     {
       "sun": {
-        "azimuth_deg": 242.779286,
-        "elevation_deg": 1.310076
+        "azimuth_deg": 242.773586,
+        "elevation_deg": 1.310006
       },
       "earth": {
-        "azimuth_deg": 133.826161,
-        "elevation_deg": -3.005027
+        "azimuth_deg": 133.825976,
+        "elevation_deg": -3.005045
       }
     },
     {
       "sun": {
-        "azimuth_deg": 242.27192,
-        "elevation_deg": 1.3058
+        "azimuth_deg": 242.266218,
+        "elevation_deg": 1.30573
       },
       "earth": {
-        "azimuth_deg": 133.770747,
-        "elevation_deg": -2.951495
+        "azimuth_deg": 133.770562,
+        "elevation_deg": -2.951513
       }
     },
     {
       "sun": {
-        "azimuth_deg": 241.764565,
-        "elevation_deg": 1.301543
+        "azimuth_deg": 241.758862,
+        "elevation_deg": 1.301472
       },
       "earth": {
-        "azimuth_deg": 133.715511,
-        "elevation_deg": -2.897768
+        "azimuth_deg": 133.715327,
+        "elevation_deg": -2.897786
       }
     },
     {
       "sun": {
-        "azimuth_deg": 241.257222,
-        "elevation_deg": 1.297304
+        "azimuth_deg": 241.251518,
+        "elevation_deg": 1.297234
       },
       "earth": {
-        "azimuth_deg": 133.660461,
-        "elevation_deg": -2.843848
+        "azimuth_deg": 133.660277,
+        "elevation_deg": -2.843867
       }
     },
     {
       "sun": {
-        "azimuth_deg": 240.749891,
-        "elevation_deg": 1.293084
+        "azimuth_deg": 240.744185,
+        "elevation_deg": 1.293014
       },
       "earth": {
-        "azimuth_deg": 133.605603,
-        "elevation_deg": -2.789741
+        "azimuth_deg": 133.605419,
+        "elevation_deg": -2.789759
       }
     },
     {
       "sun": {
-        "azimuth_deg": 240.242572,
-        "elevation_deg": 1.288884
+        "azimuth_deg": 240.236864,
+        "elevation_deg": 1.288814
       },
       "earth": {
-        "azimuth_deg": 133.550944,
-        "elevation_deg": -2.735448
+        "azimuth_deg": 133.550759,
+        "elevation_deg": -2.735466
       }
     },
     {
       "sun": {
-        "azimuth_deg": 239.735264,
-        "elevation_deg": 1.284703
+        "azimuth_deg": 239.729555,
+        "elevation_deg": 1.284634
       },
       "earth": {
-        "azimuth_deg": 133.49649,
-        "elevation_deg": -2.680973
+        "azimuth_deg": 133.496305,
+        "elevation_deg": -2.680992
       }
     },
     {
       "sun": {
-        "azimuth_deg": 239.227968,
-        "elevation_deg": 1.280542
+        "azimuth_deg": 239.222257,
+        "elevation_deg": 1.280474
       },
       "earth": {
-        "azimuth_deg": 133.442247,
-        "elevation_deg": -2.62632
+        "azimuth_deg": 133.442063,
+        "elevation_deg": -2.626338
       }
     },
     {
       "sun": {
-        "azimuth_deg": 238.720684,
-        "elevation_deg": 1.276402
+        "azimuth_deg": 238.714972,
+        "elevation_deg": 1.276334
       },
       "earth": {
-        "azimuth_deg": 133.388224,
-        "elevation_deg": -2.571491
+        "azimuth_deg": 133.388039,
+        "elevation_deg": -2.571509
       }
     },
     {
       "sun": {
-        "azimuth_deg": 238.213412,
-        "elevation_deg": 1.272283
+        "azimuth_deg": 238.207698,
+        "elevation_deg": 1.272215
       },
       "earth": {
-        "azimuth_deg": 133.334425,
-        "elevation_deg": -2.51649
+        "azimuth_deg": 133.33424,
+        "elevation_deg": -2.516508
       }
     },
     {
       "sun": {
-        "azimuth_deg": 237.706152,
-        "elevation_deg": 1.268185
+        "azimuth_deg": 237.700437,
+        "elevation_deg": 1.268117
       },
       "earth": {
-        "azimuth_deg": 133.280859,
-        "elevation_deg": -2.46132
+        "azimuth_deg": 133.280674,
+        "elevation_deg": -2.461339
       }
     },
     {
       "sun": {
-        "azimuth_deg": 237.198904,
-        "elevation_deg": 1.264108
+        "azimuth_deg": 237.193187,
+        "elevation_deg": 1.26404
       },
       "earth": {
-        "azimuth_deg": 133.227532,
-        "elevation_deg": -2.405985
+        "azimuth_deg": 133.227347,
+        "elevation_deg": -2.406004
       }
     },
     {
       "sun": {
-        "azimuth_deg": 236.691668,
-        "elevation_deg": 1.260052
+        "azimuth_deg": 236.685949,
+        "elevation_deg": 1.259985
       },
       "earth": {
-        "azimuth_deg": 133.17445,
-        "elevation_deg": -2.350488
+        "azimuth_deg": 133.174265,
+        "elevation_deg": -2.350506
       }
     },
     {
       "sun": {
-        "azimuth_deg": 236.184443,
-        "elevation_deg": 1.256019
+        "azimuth_deg": 236.178723,
+        "elevation_deg": 1.255952
       },
       "earth": {
-        "azimuth_deg": 133.121621,
-        "elevation_deg": -2.294832
+        "azimuth_deg": 133.121436,
+        "elevation_deg": -2.294851
       }
     },
     {
       "sun": {
-        "azimuth_deg": 235.677231,
-        "elevation_deg": 1.252009
+        "azimuth_deg": 235.671509,
+        "elevation_deg": 1.251942
       },
       "earth": {
-        "azimuth_deg": 133.069051,
-        "elevation_deg": -2.239021
+        "azimuth_deg": 133.068866,
+        "elevation_deg": -2.239039
       }
     },
     {
       "sun": {
-        "azimuth_deg": 235.170031,
-        "elevation_deg": 1.248021
+        "azimuth_deg": 235.164307,
+        "elevation_deg": 1.247954
       },
       "earth": {
-        "azimuth_deg": 133.016748,
-        "elevation_deg": -2.183057
+        "azimuth_deg": 133.016563,
+        "elevation_deg": -2.183076
       }
     },
     {
       "sun": {
-        "azimuth_deg": 234.662842,
-        "elevation_deg": 1.244055
+        "azimuth_deg": 234.657117,
+        "elevation_deg": 1.243989
       },
       "earth": {
-        "azimuth_deg": 132.964718,
-        "elevation_deg": -2.126946
+        "azimuth_deg": 132.964533,
+        "elevation_deg": -2.126965
       }
     },
     {
       "sun": {
-        "azimuth_deg": 234.155666,
-        "elevation_deg": 1.240114
+        "azimuth_deg": 234.14994,
+        "elevation_deg": 1.240048
       },
       "earth": {
-        "azimuth_deg": 132.912967,
-        "elevation_deg": -2.070689
+        "azimuth_deg": 132.912782,
+        "elevation_deg": -2.070708
       }
     },
     {
       "sun": {
-        "azimuth_deg": 233.648502,
-        "elevation_deg": 1.236196
+        "azimuth_deg": 233.642774,
+        "elevation_deg": 1.23613
       },
       "earth": {
-        "azimuth_deg": 132.861504,
-        "elevation_deg": -2.01429
+        "azimuth_deg": 132.861319,
+        "elevation_deg": -2.014309
       }
     },
     {
       "sun": {
-        "azimuth_deg": 233.14135,
-        "elevation_deg": 1.232302
+        "azimuth_deg": 233.13562,
+        "elevation_deg": 1.232237
       },
       "earth": {
-        "azimuth_deg": 132.810335,
-        "elevation_deg": -1.957754
+        "azimuth_deg": 132.810149,
+        "elevation_deg": -1.957773
       }
     },
     {
       "sun": {
-        "azimuth_deg": 232.63421,
-        "elevation_deg": 1.228432
+        "azimuth_deg": 232.628478,
+        "elevation_deg": 1.228367
       },
       "earth": {
-        "azimuth_deg": 132.759466,
-        "elevation_deg": -1.901083
+        "azimuth_deg": 132.759281,
+        "elevation_deg": -1.901102
       }
     },
     {
       "sun": {
-        "azimuth_deg": 232.127082,
-        "elevation_deg": 1.224587
+        "azimuth_deg": 232.121349,
+        "elevation_deg": 1.224522
       },
       "earth": {
-        "azimuth_deg": 132.708905,
-        "elevation_deg": -1.84428
+        "azimuth_deg": 132.70872,
+        "elevation_deg": -1.844299
       }
     },
     {
       "sun": {
-        "azimuth_deg": 231.619966,
-        "elevation_deg": 1.220766
+        "azimuth_deg": 231.614231,
+        "elevation_deg": 1.220702
       },
       "earth": {
-        "azimuth_deg": 132.658659,
-        "elevation_deg": -1.78735
+        "azimuth_deg": 132.658474,
+        "elevation_deg": -1.787369
       }
     },
     {
       "sun": {
-        "azimuth_deg": 231.112862,
-        "elevation_deg": 1.216971
+        "azimuth_deg": 231.107126,
+        "elevation_deg": 1.216907
       },
       "earth": {
-        "azimuth_deg": 132.608735,
-        "elevation_deg": -1.730296
+        "azimuth_deg": 132.60855,
+        "elevation_deg": -1.730315
       }
     },
     {
       "sun": {
-        "azimuth_deg": 230.605771,
-        "elevation_deg": 1.213201
+        "azimuth_deg": 230.600033,
+        "elevation_deg": 1.213138
       },
       "earth": {
-        "azimuth_deg": 132.55914,
-        "elevation_deg": -1.673121
+        "azimuth_deg": 132.558955,
+        "elevation_deg": -1.67314
       }
     },
     {
       "sun": {
-        "azimuth_deg": 230.098691,
-        "elevation_deg": 1.209457
+        "azimuth_deg": 230.092952,
+        "elevation_deg": 1.209395
       },
       "earth": {
-        "azimuth_deg": 132.509881,
-        "elevation_deg": -1.615829
+        "azimuth_deg": 132.509696,
+        "elevation_deg": -1.615849
       }
     },
     {
       "sun": {
-        "azimuth_deg": 229.591624,
-        "elevation_deg": 1.205739
+        "azimuth_deg": 229.585883,
+        "elevation_deg": 1.205677
       },
       "earth": {
-        "azimuth_deg": 132.460965,
-        "elevation_deg": -1.558424
+        "azimuth_deg": 132.460779,
+        "elevation_deg": -1.558443
       }
     },
     {
       "sun": {
-        "azimuth_deg": 229.084569,
-        "elevation_deg": 1.202048
+        "azimuth_deg": 229.078826,
+        "elevation_deg": 1.201986
       },
       "earth": {
-        "azimuth_deg": 132.412399,
-        "elevation_deg": -1.500909
+        "azimuth_deg": 132.412213,
+        "elevation_deg": -1.500929
       }
     },
     {
       "sun": {
-        "azimuth_deg": 228.577526,
-        "elevation_deg": 1.198383
+        "azimuth_deg": 228.571782,
+        "elevation_deg": 1.198321
       },
       "earth": {
-        "azimuth_deg": 132.364189,
-        "elevation_deg": -1.443288
+        "azimuth_deg": 132.364004,
+        "elevation_deg": -1.443307
       }
     },
     {
       "sun": {
-        "azimuth_deg": 228.070496,
-        "elevation_deg": 1.194745
+        "azimuth_deg": 228.06475,
+        "elevation_deg": 1.194684
       },
       "earth": {
-        "azimuth_deg": 132.316344,
-        "elevation_deg": -1.385565
+        "azimuth_deg": 132.316159,
+        "elevation_deg": -1.385584
       }
     },
     {
       "sun": {
-        "azimuth_deg": 227.563477,
-        "elevation_deg": 1.191135
+        "azimuth_deg": 227.55773,
+        "elevation_deg": 1.191074
       },
       "earth": {
-        "azimuth_deg": 132.26887,
-        "elevation_deg": -1.327742
+        "azimuth_deg": 132.268685,
+        "elevation_deg": -1.327762
       }
     },
     {
       "sun": {
-        "azimuth_deg": 227.056471,
-        "elevation_deg": 1.187551
+        "azimuth_deg": 227.050722,
+        "elevation_deg": 1.187491
       },
       "earth": {
-        "azimuth_deg": 132.221775,
-        "elevation_deg": -1.269825
+        "azimuth_deg": 132.221589,
+        "elevation_deg": -1.269844
       }
     },
     {
       "sun": {
-        "azimuth_deg": 226.549477,
-        "elevation_deg": 1.183996
+        "azimuth_deg": 226.543727,
+        "elevation_deg": 1.183936
       },
       "earth": {
-        "azimuth_deg": 132.175065,
-        "elevation_deg": -1.211816
+        "azimuth_deg": 132.174879,
+        "elevation_deg": -1.211835
       }
     },
     {
       "sun": {
-        "azimuth_deg": 226.042496,
-        "elevation_deg": 1.180469
+        "azimuth_deg": 226.036743,
+        "elevation_deg": 1.180409
       },
       "earth": {
-        "azimuth_deg": 132.128747,
-        "elevation_deg": -1.153719
+        "azimuth_deg": 132.128561,
+        "elevation_deg": -1.153739
       }
     },
     {
       "sun": {
-        "azimuth_deg": 225.535527,
-        "elevation_deg": 1.17697
+        "azimuth_deg": 225.529772,
+        "elevation_deg": 1.176911
       },
       "earth": {
-        "azimuth_deg": 132.082829,
-        "elevation_deg": -1.095539
+        "azimuth_deg": 132.082643,
+        "elevation_deg": -1.095558
       }
     },
     {
       "sun": {
-        "azimuth_deg": 225.02857,
-        "elevation_deg": 1.1735
+        "azimuth_deg": 225.022814,
+        "elevation_deg": 1.173441
       },
       "earth": {
-        "azimuth_deg": 132.037318,
-        "elevation_deg": -1.037278
+        "azimuth_deg": 132.037132,
+        "elevation_deg": -1.037298
       }
     },
     {
       "sun": {
-        "azimuth_deg": 224.521625,
-        "elevation_deg": 1.170058
+        "azimuth_deg": 224.515867,
+        "elevation_deg": 1.17
       },
       "earth": {
-        "azimuth_deg": 131.992221,
-        "elevation_deg": -0.978941
+        "azimuth_deg": 131.992035,
+        "elevation_deg": -0.978961
       }
     },
     {
       "sun": {
-        "azimuth_deg": 224.014692,
-        "elevation_deg": 1.166646
+        "azimuth_deg": 224.008933,
+        "elevation_deg": 1.166588
       },
       "earth": {
-        "azimuth_deg": 131.947545,
-        "elevation_deg": -0.920532
+        "azimuth_deg": 131.947358,
+        "elevation_deg": -0.920552
       }
     },
     {
       "sun": {
-        "azimuth_deg": 223.507772,
-        "elevation_deg": 1.163263
+        "azimuth_deg": 223.502012,
+        "elevation_deg": 1.163206
       },
       "earth": {
-        "azimuth_deg": 131.903296,
-        "elevation_deg": -0.862054
+        "azimuth_deg": 131.90311,
+        "elevation_deg": -0.862074
       }
     },
     {
       "sun": {
-        "azimuth_deg": 223.000865,
-        "elevation_deg": 1.15991
+        "azimuth_deg": 222.995102,
+        "elevation_deg": 1.159853
       },
       "earth": {
-        "azimuth_deg": 131.859483,
-        "elevation_deg": -0.803512
+        "azimuth_deg": 131.859297,
+        "elevation_deg": -0.803531
       }
     },
     {
       "sun": {
-        "azimuth_deg": 222.493969,
-        "elevation_deg": 1.156587
+        "azimuth_deg": 222.488205,
+        "elevation_deg": 1.156531
       },
       "earth": {
-        "azimuth_deg": 131.816113,
-        "elevation_deg": -0.744908
+        "azimuth_deg": 131.815926,
+        "elevation_deg": -0.744928
       }
     },
     {
       "sun": {
-        "azimuth_deg": 221.987086,
-        "elevation_deg": 1.153294
+        "azimuth_deg": 221.98132,
+        "elevation_deg": 1.153238
       },
       "earth": {
-        "azimuth_deg": 131.773191,
-        "elevation_deg": -0.686248
+        "azimuth_deg": 131.773005,
+        "elevation_deg": -0.686268
       }
     },
     {
       "sun": {
-        "azimuth_deg": 221.480215,
-        "elevation_deg": 1.150032
+        "azimuth_deg": 221.474448,
+        "elevation_deg": 1.149976
       },
       "earth": {
-        "azimuth_deg": 131.730727,
-        "elevation_deg": -0.627535
+        "azimuth_deg": 131.73054,
+        "elevation_deg": -0.627554
       }
     },
     {
       "sun": {
-        "azimuth_deg": 220.973357,
-        "elevation_deg": 1.1468
+        "azimuth_deg": 220.967588,
+        "elevation_deg": 1.146745
       },
       "earth": {
-        "azimuth_deg": 131.688726,
-        "elevation_deg": -0.568773
+        "azimuth_deg": 131.688539,
+        "elevation_deg": -0.568792
       }
     },
     {
       "sun": {
-        "azimuth_deg": 220.466511,
-        "elevation_deg": 1.1436
+        "azimuth_deg": 220.46074,
+        "elevation_deg": 1.143545
       },
       "earth": {
-        "azimuth_deg": 131.647195,
-        "elevation_deg": -0.509966
+        "azimuth_deg": 131.647008,
+        "elevation_deg": -0.509985
       }
     },
     {
       "sun": {
-        "azimuth_deg": 219.959677,
-        "elevation_deg": 1.14043
+        "azimuth_deg": 219.953905,
+        "elevation_deg": 1.140376
       },
       "earth": {
-        "azimuth_deg": 131.606143,
-        "elevation_deg": -0.451118
+        "azimuth_deg": 131.605956,
+        "elevation_deg": -0.451138
       }
     },
     {
       "sun": {
-        "azimuth_deg": 219.452856,
-        "elevation_deg": 1.137292
+        "azimuth_deg": 219.447082,
+        "elevation_deg": 1.137238
       },
       "earth": {
-        "azimuth_deg": 131.565575,
-        "elevation_deg": -0.392233
+        "azimuth_deg": 131.565388,
+        "elevation_deg": -0.392253
       }
     },
     {
       "sun": {
-        "azimuth_deg": 218.946047,
-        "elevation_deg": 1.134186
+        "azimuth_deg": 218.940271,
+        "elevation_deg": 1.134132
       },
       "earth": {
-        "azimuth_deg": 131.5255,
-        "elevation_deg": -0.333316
+        "azimuth_deg": 131.525313,
+        "elevation_deg": -0.333336
       }
     },
     {
       "sun": {
-        "azimuth_deg": 218.43925,
-        "elevation_deg": 1.131111
+        "azimuth_deg": 218.433473,
+        "elevation_deg": 1.131059
       },
       "earth": {
-        "azimuth_deg": 131.485923,
-        "elevation_deg": -0.27437
+        "azimuth_deg": 131.485736,
+        "elevation_deg": -0.27439
       }
     },
     {
       "sun": {
-        "azimuth_deg": 217.932466,
-        "elevation_deg": 1.128069
+        "azimuth_deg": 217.926687,
+        "elevation_deg": 1.128017
       },
       "earth": {
-        "azimuth_deg": 131.446853,
-        "elevation_deg": -0.2154
+        "azimuth_deg": 131.446666,
+        "elevation_deg": -0.215419
       }
     },
     {
       "sun": {
-        "azimuth_deg": 217.425694,
-        "elevation_deg": 1.125059
+        "azimuth_deg": 217.419914,
+        "elevation_deg": 1.125008
       },
       "earth": {
-        "azimuth_deg": 131.408296,
-        "elevation_deg": -0.156409
+        "azimuth_deg": 131.408108,
+        "elevation_deg": -0.156429
       }
     },
     {
       "sun": {
-        "azimuth_deg": 216.918935,
-        "elevation_deg": 1.122082
+        "azimuth_deg": 216.913152,
+        "elevation_deg": 1.122031
       },
       "earth": {
-        "azimuth_deg": 131.370258,
-        "elevation_deg": -0.097402
+        "azimuth_deg": 131.370071,
+        "elevation_deg": -0.097422
       }
     },
     {
       "sun": {
-        "azimuth_deg": 216.412188,
-        "elevation_deg": 1.119138
+        "azimuth_deg": 216.406404,
+        "elevation_deg": 1.119087
       },
       "earth": {
-        "azimuth_deg": 131.332748,
-        "elevation_deg": -0.038384
+        "azimuth_deg": 131.332561,
+        "elevation_deg": -0.038403
       }
     },
     {
       "sun": {
-        "azimuth_deg": 215.905453,
-        "elevation_deg": 1.116227
+        "azimuth_deg": 215.899667,
+        "elevation_deg": 1.116176
       },
       "earth": {
-        "azimuth_deg": 131.295773,
-        "elevation_deg": 0.020642
+        "azimuth_deg": 131.295585,
+        "elevation_deg": 0.020623
       }
     }
   ]

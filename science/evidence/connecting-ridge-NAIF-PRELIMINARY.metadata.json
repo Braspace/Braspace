@@ -16,8 +16,8 @@
     "moon_de440_250416.tf": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/satellites/moon_de440_250416.tf"
   },
   "spice_frame": "MOON_ME_DE440_ME421",
-  "spice_aberration_correction": "NONE (geometric; not light-time-corrected)",
-  "site_position_km": 1739.34973,
+  "spice_aberration_correction": "LT+S from surface site (spkcpo); Horizons-airless convention",
+  "site_position_km": 1739.345265,
   "site_latitude_deg": -89.4632,
   "site_longitude_deg": -137.49,
   "start_utc": "2026-11-15T00:00:00Z",
