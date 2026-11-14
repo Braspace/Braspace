@@ -1,7 +1,7 @@
 import {test,after} from "node:test";
 import assert from "node:assert/strict";
 import {createServer,labFile} from "../dev-server.mjs";
-import {backendStatus,backendSky,backendCompare,backendVectorAvailability,presentationStatus} from "../lab/backend-bridge.js";
+import {backendStatus,backendSky,backendCompare,backendVectorAvailability,backendOnboardTraining,presentationStatus} from "../lab/backend-bridge.js";
 
 const server=createServer();
 await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
@@ -83,4 +83,29 @@ test("pgvector availability is optional and never certifies lunar physics",async
  const absent=await backendVectorAvailability(async ()=>new Response(JSON.stringify({code:"NOT_FOUND"}),{status:404}));
  assert.equal(absent.available,false);
  assert.equal(absent.enabled,false);
+});
+
+test("Go onboard integration runs labelled synthetic risk inputs only",async()=>{
+ let called=false;
+ const mock=async(path,opts)=>{
+  assert.equal(path,"/api/onboard/evaluate");
+  assert.equal(opts.method,"POST");
+  const request=JSON.parse(opts.body);
+  assert.equal(request.candidates.length,1);
+  assert.equal(request.candidates[0].source_claim,"SYNTHETIC-NOT-NASA");
+  called=true;
+  return new Response(JSON.stringify({
+   science_status:"UNVERIFIED_INPUTS",no_flight_recommendation:true,
+   decision:"NO_OPTION_PASSES_ASSUMED_LIMITS",
+   options:[{end_mode:"POWER_LOSS",simulation_status:"CONSTRAINTS_BREACHED",risks:[{category:"ENERGY_LOSS"}]}]
+  }),{status:200});
+ };
+ const result=await backendOnboardTraining(mock);
+ assert.equal(called,true);
+ assert.equal(result.trainingOnly,true);
+ assert.equal(result.risks,1);
+ assert.equal(result.mode,"POWER_LOSS");
+ await assert.rejects(backendOnboardTraining(async()=>new Response(JSON.stringify({
+  science_status:"VALIDATED",no_flight_recommendation:false,options:[{}]
+ }),{status:200})),/INVALID_ONBOARD_CONTRACT/);
 });
