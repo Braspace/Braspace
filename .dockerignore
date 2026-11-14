@@ -1,7 +1,6 @@
 .git
 .github
 docs
-data
 *.md
 !README.md
 **/target

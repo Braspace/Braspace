@@ -1,134 +1,68 @@
-name: Braspace Go Rust Docker integration
+name: CI
+# One workflow. Everything it tests lives in the Dockerfile (`--target test`) and scripts/ci-local.sh,
+# so any machine with Docker runs the same thing:  bash scripts/ci-local.sh [--browser]
 on:
   push:
-    branches:
-      - "main"
-      - "team/**"
+    branches: ["main"]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# One run per ref; a newer push cancels the older run, except on main, where
-# every merge commit must end with its own verdict.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  integration:
+  ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Data manifest and verifier tests
-        run: python3 -m unittest discover -s tests -v
-      - uses: actions/setup-go@v5
+      - uses: docker/setup-buildx-action@v3
         with:
-          go-version-file: api/go.mod
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Rust unit tests
-        run: cargo test --manifest-path engine/Cargo.toml
-      - name: Build actual Rust binary
-        run: cargo build --manifest-path engine/Cargo.toml
-      - name: Go unit tests
-        working-directory: api
-        run: go test -race ./...
-      - name: End-to-end Go to actual Rust binary
-        working-directory: api
-        env:
-          RUST_ENGINE_BIN: ../engine/target/debug/braspace-lunar-engine
-        run: |
-          go build -o /tmp/braspace-api .
-          /tmp/braspace-api >/tmp/braspace-api.log 2>&1 &
-          echo $! >/tmp/braspace-api.pid
-          trap 'kill "$(cat /tmp/braspace-api.pid)" || true' EXIT
-          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/readyz && break; sleep 1; done
-          curl --fail-with-body -sS -H 'Content-Type: application/json' --data-binary @../examples/visibility.synthetic.json http://127.0.0.1:8080/v1/visibility > /tmp/result.json
-          python3 -c 'import json; r=json.load(open("/tmp/result.json")); assert r["science_status"]=="UNVERIFIED_INPUTS"; assert r["sun_visible"] is True; assert r["earth_visible"] is False'
-          curl -fsS http://127.0.0.1:8080/api/health
-          curl -fsS http://127.0.0.1:8080/api/openapi.json > /dev/null
-          ../examples/mission/replay.sh http://127.0.0.1:8080
-      - name: Docker Compose end-to-end smoke
-        run: |
-          docker compose config
-          docker compose up --build -d
-          trap 'docker compose logs && docker compose down --volumes' EXIT
-          for i in $(seq 1 50); do if curl -fsS http://127.0.0.1:8080/readyz; then break; fi; sleep 2; done
-          curl --fail-with-body -sS -H 'Content-Type: application/json' --data-binary @examples/visibility.synthetic.json http://127.0.0.1:8080/v1/visibility > /tmp/docker-result.json
-          python3 -c 'import json; r=json.load(open("/tmp/docker-result.json")); assert r["science_status"]=="UNVERIFIED_INPUTS"'
-      - name: Docker Compose with PostgreSQL
-        run: |
-          export POSTGRES_PASSWORD="$(openssl rand -hex 16)"
-          docker compose down --volumes || true
-          docker compose -f compose.yaml -f compose.db.yaml up --build -d
-          trap 'docker compose -f compose.yaml -f compose.db.yaml logs && docker compose -f compose.yaml -f compose.db.yaml down --volumes' EXIT
-          for i in $(seq 1 60); do if curl -fsS http://127.0.0.1:8080/readyz; then break; fi; sleep 2; done
-          curl -fsS http://127.0.0.1:8080/api/health | python3 -c 'import json,sys; assert json.load(sys.stdin)["data_source"]=="postgres"'
-          ./examples/mission/replay.sh http://127.0.0.1:8080
-
-  postgres:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: braspace
-          POSTGRES_DB: braspace
-          # Throwaway credential for the CI service container only.
-          POSTGRES_PASSWORD: ci-only-throwaway
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U braspace" --health-interval 5s --health-timeout 5s --health-retries 20
-    env:
-      TEST_DATABASE_URL: postgres://braspace:ci-only-throwaway@localhost:5432/braspace?sslmode=disable
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+          driver: docker-container
+      # Layer cache for every Dockerfile stage (Go/Rust/Node/Python builds and tests).
+      - uses: actions/cache@v4
         with:
-          go-version-file: api/go.mod
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Build Rust engine
-        run: cargo build --manifest-path engine/Cargo.toml
-      - name: Go tests including PostgreSQL integration
-        working-directory: api
-        run: go test -race -count=1 ./...
-      - name: Ingest, verify readback, serve from PostgreSQL
-        working-directory: api
-        env:
-          RUST_ENGINE_BIN: ../engine/target/debug/braspace-lunar-engine
-          DATABASE_URL: postgres://braspace:ci-only-throwaway@localhost:5432/braspace?sslmode=disable
-        run: |
-          go build -o /tmp/braspace-api .
-          /tmp/braspace-api ingest
-          /tmp/braspace-api verify
-          /tmp/braspace-api >/tmp/api-db.log 2>&1 &
-          trap 'kill %1 || true; cat /tmp/api-db.log' EXIT
-          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/readyz && break; sleep 1; done
-          curl -fsS http://127.0.0.1:8080/api/health | python3 -c 'import json,sys; assert json.load(sys.stdin)["data_source"]=="postgres"'
-          ../examples/mission/replay.sh http://127.0.0.1:8080
-
-  # Post-merge gate: only on a push to main (not PR, not manual dispatch).
-  # Brings Compose up under its own project name, serves web/ with the
-  # same-origin dev server and runs the public smoke test against the local pair.
-  main-smoke:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [integration, postgres]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
+          path: /tmp/.buildx-cache
+          key: buildx-${{ runner.os }}-${{ github.sha }}
+          restore-keys: buildx-${{ runner.os }}-
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Compose up, serve web/, run scripts/smoke-publico.sh locally
-        run: |
-          docker compose -p main-smoke up --build -d
-          trap 'docker compose -p main-smoke logs; docker compose -p main-smoke down --volumes; kill "$(cat /tmp/web.pid)" || true' EXIT
-          for i in $(seq 1 50); do if curl -fsS http://127.0.0.1:8080/readyz; then break; fi; sleep 2; done
-          node web/dev-server.mjs >/tmp/web.log 2>&1 &
-          echo $! >/tmp/web.pid
-          for i in $(seq 1 20); do if curl -fsS -o /dev/null http://127.0.0.1:5173/; then break; fi; sleep 1; done
-          ./scripts/smoke-publico.sh http://127.0.0.1:5173 http://127.0.0.1:8080
+      - name: Run scripts/ci-local.sh (all tests, Compose + Postgres, endpoints, Chromium)
+        env:
+          BRASPACE_CI_CACHE: /tmp/.buildx-cache
+        run: bash scripts/ci-local.sh --browser
+
+  release:
+    # Only after every test passed, and only for main or a v* tag.
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build target `release` (its build depends on `test`) and publish
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: release
+          push: true
+          tags: |
+            ghcr.io/braspace/braspace:${{ github.sha }}
+            ghcr.io/braspace/braspace:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
