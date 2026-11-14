@@ -1,0 +1,54 @@
+/* M2 · Comparar no celular (390x844). Design: MobileSheet.dc.html (Heloísa); spec: designer/M2-mobile-comparar.designer.mds.
+   Loaded after scenario.css on compare.html only. Colours and measures come from core/tokens.css; no design numbers here.
+   The page becomes ONE scrolling column between the shell's context bar and the bottom nav (the design has no map and no
+   draggable sheet): verdict, A/B/C pills, differences table, then the Sun/Earth chart. Specificity uses ids because
+   core/shell.js turns #right into a [data-mp-sheet] with !important geometry; display:contents takes it out of the layout. */
+@media (max-width:700px){
+  /* dim the terrain like the design's dark scrim; the map stays as a quiet background */
+  body::before{content:"";position:fixed;inset:0;z-index:1;background:rgba(5,6,8,.55);pointer-events:none}
+  #terrain .mp-marker{display:none}
+  /* shell: context bar sits under the top bar (74 px) and its CTA is hidden, the column carries "E se ... atrasar?" */
+  .mp-context{top:74px!important}
+  .mp-context .mp-pill{display:none}
+  .mp-scn-dock,#dock{display:none}
+  .mp-sheet-handle,#right>.mp-sheet-grip{display:none!important}
+  /* the scrolling column */
+  #sheet{display:flex;flex-direction:column;gap:10px;position:fixed;z-index:10;left:12px;right:12px;top:128px;bottom:90px;height:auto;min-height:0;max-height:none;overflow-y:auto;overflow-x:hidden;padding:0;background:none;border:0;border-radius:0;-webkit-backdrop-filter:none;backdrop-filter:none;transition:none;overscroll-behavior:contain}
+  #left,#right{display:contents}
+  #left>*,#right>*{flex:none;min-width:0}
+  #verdict{order:1;width:100%;padding:18px}
+  .mp-scn-list{order:2;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  #right>.mp-glass{order:3;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:18px;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+  #left>.mp-glass{order:4;padding:18px}
+  /* verdict card: answer first, CTA full width and 48 px, "Pousar" in lilac outline below it */
+  #verdict .mp-layer-answer{font-size:19px;font-weight:800;line-height:1.26}
+  #verdict .mp-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+  #verdict .mp-actions .mp-pill{min-height:48px;font-weight:700;font-size:15px}
+  #verdict .mp-chip{min-height:44px;min-width:44px;padding:0 14px}
+  #verdict .mp-chips{margin-top:var(--s2)}
+  /* A / B / C pills: one row, 44 px, selected in Jade, letter + site (the status badge stays for screen readers) */
+  .mp-scn{min-height:44px;padding:0 10px 0 6px;gap:6px;border-radius:var(--r-pill);min-width:0}
+  .mp-scn-letter{width:32px;height:32px;font-size:14px}
+  .mp-scn-name{min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mp-scn-name small{display:none}
+  .mp-scn .mp-badge{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;padding:0;border:0}
+  /* differences table: label column + three narrow value columns */
+  .mp-diff{font-size:13px;table-layout:fixed}
+  .mp-diff th[scope=row]{width:36%;font-size:13px}
+  .mp-diff th,.mp-diff td{padding:6px 2px;overflow-wrap:anywhere}
+  .mp-diff .grp th{font-size:11.5px;white-space:normal}
+  .mp-diff .grp small{display:block;margin:2px 0 0}
+  #right .mp-foot{flex-wrap:wrap;justify-content:space-between}
+  #right .mp-foot .mp-pill{min-height:44px}
+  .mp-foot .mp-label{flex:1 1 140px;min-width:0}
+  /* proof layer (rules and scenario editor): every control 44 px, wrapped inside the card */
+  .mp-edit{grid-template-columns:minmax(0,1fr)}
+  .mp-edit-row{flex-wrap:wrap;min-width:0}
+  .mp-edit select,.mp-edit input,.mp-proof input{min-height:44px;max-width:100%;min-width:0}
+  .mp-edit .mp-pill{min-height:44px}
+  .mp-edit-row select{flex:1 1 100%}
+  .mp-edit-row input{flex:1 1 40%;min-width:0}
+  .mp-proof{table-layout:fixed}
+  .mp-proof td,.mp-proof th{overflow-wrap:anywhere}
+  .mp-legend{flex-wrap:wrap}
+}
