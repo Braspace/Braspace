@@ -81,7 +81,7 @@ function frame() {
   if (!point) terrain.select(s.id);
   const W = innerWidth, Hh = innerHeight, mpp = terrain.view.span / Math.min(W, Hh);
   if (W > 700) { const L = $("left").getBoundingClientRect().right, R = $("right").getBoundingClientRect().left; terrain.view.cx = tx - ((L + R) / 2 - W / 2) * mpp; terrain.view.cy = ty; }
-  else { const top = 180, bot = $("sheet").getBoundingClientRect().top; terrain.view.cx = tx; terrain.view.cy = ty + ((top + bot) / 2 - Hh / 2) * mpp; }
+  else { terrain.view.cx = tx; terrain.view.cy = ty; } // phone: core/terrain.js already centres the point in the free area above the sheet
   terrain.redraw(); paint();
 }
 const site = () => doc.sites.find(s => s.id === getState().site);
