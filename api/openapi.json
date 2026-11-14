@@ -3026,6 +3026,10 @@
           "science_status": {
             "$ref": "#/components/schemas/ScienceStatus"
           },
+          "scientifically_validated": {
+            "type": "boolean",
+            "description": "Explicit false until independently validated by a documented human science gate; do not infer validation from science_status alone."
+          },
           "provenance": {
             "$ref": "#/components/schemas/SeriesProvenance"
           },
@@ -3071,6 +3075,7 @@
           "api_version",
           "site_id",
           "science_status",
+          "scientifically_validated",
           "provenance",
           "observer_height_m",
           "start_utc",
