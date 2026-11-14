@@ -55,3 +55,33 @@ export async function backendVectorAvailability(fetcher=fetch){
   return {enabled:result.enabled,available:result.available,modelID:result.model_id||"",purpose:"source metadata only"};
  }catch(e){return {enabled:false,available:false,reason:e.code||"NOT_CONFIGURED"};}
 }
+
+export async function backendOnboardTraining(fetcher=fetch){
+ // This fixture is intentionally synthetic and isolated from the NASA Lab's
+ // candidate coordinates/ephemerides. It exercises the real Go energy model.
+ const fixture={
+  mission_id:"POLAR-LAB-SYNTHETIC-TRAINING",
+  candidates:[{
+   id:"training-only",site_id:"synthetic-demo-a",
+   start_utc:"2026-12-01T00:00:00Z",
+   source_claim:"SYNTHETIC-NOT-NASA",
+   step_minutes:60,max_comm_blackout_hours:1,
+   power:{battery_capacity_wh:200,initial_charge_wh:150,reserve_wh:50,solar_generation_w:0,load_w:80},
+   samples:[{sun_visible:false,earth_visible:false},{sun_visible:false,earth_visible:false}]
+  }]
+ };
+ const result=await json("/api/onboard/evaluate",{
+  method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(fixture)
+ },fetcher);
+ if(result.science_status!=="UNVERIFIED_INPUTS"||result.no_flight_recommendation!==true||
+   !Array.isArray(result.options)||result.options.length!==1)throw new Error("INVALID_ONBOARD_CONTRACT");
+ const option=result.options[0];
+ return {
+  scienceStatus:result.science_status,
+  decision:result.decision,
+  mode:option.end_mode,
+  simulationStatus:option.simulation_status,
+  risks:Array.isArray(option.risks)?option.risks.length:0,
+  trainingOnly:true
+ };
+}
