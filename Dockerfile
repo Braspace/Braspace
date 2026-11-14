@@ -6,7 +6,7 @@ COPY engine/Cargo.toml ./
 COPY engine/src ./src
 RUN cargo build --release
 
-FROM golang:1.23-alpine AS gobuilder
+FROM golang:1.26-alpine AS gobuilder
 WORKDIR /build/api
 COPY api/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o /out/api .
