@@ -86,6 +86,7 @@
         "source_accuracy_m": "5-10"
       },
       "series_file": "series/connecting-ridge-NAIF-PRELIMINARY.json",
+      "series_sha256": "dcfc750d6237a73af29afb4c4c29a6feae4d8c39a6b1a6092032343bb227906a",
       "note": "NASA LOLA/NAIF source-derived preliminary site series. NOT independently scientifically validated; UNVERIFIED. Feature center, not landing point."
     },
     {
