@@ -55,3 +55,8 @@ table{font-variant-numeric:tabular-nums}
 footer{border-color:#30413e}
 @media(max-width:1000px){.task-grid{grid-template-columns:1fr}.task-card{min-height:0}.task-entry{padding:15px}}
 @media(max-width:700px){.layer-card{padding:16px;border-radius:18px}.layer-switch{width:100%}.layer-switch button{flex:1;padding:10px 8px;min-width:0}.task-entry{border-radius:18px}}
+
+/* Mobile pointer-event QA: keep classroom actions above neighboring
+   surfaces when a long exercise scrolls below the fold. */
+#lesson{position:relative;isolation:isolate;z-index:1;scroll-margin-top:24px}
+#lesson .actions button{position:relative;z-index:2;min-height:44px;touch-action:manipulation}
