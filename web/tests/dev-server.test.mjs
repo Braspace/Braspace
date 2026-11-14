@@ -30,6 +30,21 @@ test("JavaScript and CSS are served as MIME-safe same-origin files",async()=>{
  }
 });
 
+test("onboard cockpit serves live.js and config.js without opening arbitrary files",async()=>{
+ const page=await fetch(base+"/onboard/cockpit.html");
+ assert.equal(page.status,200);
+ const html=await page.text();
+ for(const asset of ["live.js","config.js"]){
+  assert.ok(html.includes('src="'+asset+'"'),"cockpit script missing: "+asset);
+  const response=await fetch(base+"/onboard/"+asset);
+  assert.equal(response.status,200,"missing onboard dependency: "+asset);
+  assert.match(response.headers.get("content-type")||"",/text\\/javascript/);
+  assert.ok((await response.text()).length>50,"empty onboard dependency: "+asset);
+ }
+ const denied=await fetch(base+"/onboard/dev-server.py");
+ assert.equal(denied.status,404,"internal Python source must remain inaccessible");
+});
+
 test("prohibit directory traversal and unexpected methods",async()=>{
  const missing=await fetch(base+"/not-a-file.js");assert.equal(missing.status,404);
  const unsafe=await fetch(base+"/admin/config.json");assert.equal(unsafe.status,404);
