@@ -147,3 +147,22 @@ assets. No NASA endorsement is implied.
   and record any PDS-provided checksum or immutable archive reference.
 - A checksum alone identifies the local bytes; it does not validate the
   scientific interpretation without the matching PDS label.
+
+## Verified source entries added by BR36 (2026-11-14)
+
+Read from the official pages on 2026-11-14; fields the page does not state are
+marked `NÃO VERIFICADO` in `data/ASSET_REGISTRY.json`, where the full entries
+(URL, bytes, SHA-256 where downloaded, credit and use sentences) live. None of
+these is ingested; `LDEM_80S_80M` remains the only selected terrain dataset.
+
+| Product | Page | Representative file | Registry id |
+| --- | --- | --- | --- |
+| PGDA 78 high-resolution LOLA topography, 5 m/pix per site | <https://pgda.gsfc.nasa.gov/products/78> | `Site01_final_adj_5mpp_surf.tif` (40,980,810 bytes) | `pgda-78-site01-5mpp-ldem` |
+| PGDA 81 south pole LOLA DEM mosaic, 87S-90S, 5 m/pix | <https://pgda.gsfc.nasa.gov/products/81> | `ldem_87s_5mpp.tif` (3,465,285,714 bytes) | `pgda-81-south-pole-87s-mosaic-5mpp` |
+| PGDA 69 lunar polar illumination (average Sun, 60 m/px) | <https://pgda.gsfc.nasa.gov/products/69> | `AVGVISIB_85S_060M_201608.TIF` (33,994,464 bytes, SHA-256 `ccf67d4f...b05806`) | `pgda-69-avgvisib-85s-60m` |
+| NASA SVS 5127 | <https://svs.gsfc.nasa.gov/5127> | `lola_sp_still_print.jpg` | `nasa-svs-5127-lola-south-pole-coded-color` |
+| LROC curated NAC south pole mosaic / polar illumination map | <https://lroc.im-ldi.com/images/downloads> | `NAC_POLE_P900S0000.zip`, `LROC_Polar_Illumination_Map.tif` | `lroc-curated-*` |
+| SLDEM2015 (not for the pole: +/-60 deg only) | <https://astrogeology.usgs.gov/search/map/moon_lro_lola_selene_kaguya_tc_dem_merge_60n60s_59m> | none | `usgs-sldem2015-60n60s-not-polar` |
+
+`data/manifest.json` is unchanged: its schema and `tests/test_data_contract.py`
+describe one dataset (`LDEM_80S_80M`).
