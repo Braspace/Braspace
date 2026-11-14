@@ -15,7 +15,7 @@ const DAY = 24;
 const hours = () => getState().hours || 14 * DAY; // window length is a user parameter (?hours=)
 const online = await apiOnline();
 const terrain = await mountTerrain(document.getElementById("terrain"), {
-  sites: doc.sites, selected: getState().site, route: doc.sites.map(s => s.id),
+  sites: doc.sites, features: doc.features, selected: getState().site, route: doc.sites.map(s => s.id),
   onSelect: id => setState({ site: id }),
 });
 terrain.select(getState().site);
