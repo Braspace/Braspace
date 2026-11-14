@@ -1,0 +1,15 @@
+{
+  "site_id": "SYNTHETIC-ONLY",
+  "epoch_utc": "2026-11-14T12:00:00Z",
+  "sun": {"azimuth_deg": 0, "elevation_deg": 2},
+  "earth": {"azimuth_deg": 180, "elevation_deg": -1},
+  "terrain_horizon": [
+    {"azimuth_deg": 0, "elevation_deg": 0},
+    {"azimuth_deg": 180, "elevation_deg": 0}
+  ],
+  "provenance": {
+    "terrain_dataset_id": "SYNTHETIC-NOT-NASA",
+    "ephemeris_id": "SYNTHETIC-NOT-SPICE",
+    "frame": "MOON_ME"
+  }
+}
