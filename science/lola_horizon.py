@@ -63,20 +63,23 @@ class Grid:
         return out
 
     def location_to_pixel(self, lat: float, lon: float) -> tuple[float,float]:
-        """Return zero-indexed pixel coordinates. PDS3 offsets are 1-indexed
-        pixel-registration coordinates, with the +0.5 center convention."""
+        """Return zero-indexed pixel-centre coordinates.
+
+        LOLA DSMAP_POLAR.CAT: X=(I-N/2-0.5)*MAP_SCALE, Y=-(J-N/2-0.5)*MAP_SCALE
+        with 1-indexed I,J. For N=7600 the pole is at zero-indexed 3799.5,
+        which equals the label PROJECTION_OFFSET directly (no extra -0.5)."""
         if not -90 <= lat <= -80 or not -360 <= lon <= 360 or not math.isfinite(lat+lon):
             raise ValueError("outside south polar coverage or invalid coordinate")
         rho = 2 * self.radius_m * math.tan(math.radians(lat + 90) / 2)
         theta = math.radians(lon)
         x, y = rho * math.sin(theta), rho * math.cos(theta)
-        col = self.sample_offset - 0.5 + x/self.pixel_size_m
-        row = self.line_offset - 0.5 - y/self.pixel_size_m
+        col = self.sample_offset + x/self.pixel_size_m
+        row = self.line_offset - y/self.pixel_size_m
         return col,row
 
     def pixel_to_location(self, col:float, row:float) -> tuple[float,float]:
-        x = (col + 0.5 - self.sample_offset)*self.pixel_size_m
-        y = (self.line_offset - row - 0.5)*self.pixel_size_m
+        x = (col - self.sample_offset)*self.pixel_size_m
+        y = (self.line_offset - row)*self.pixel_size_m
         rho = math.hypot(x,y)
         colat = 2 * math.atan(rho/(2*self.radius_m))
         lat = math.degrees(colat) - 90

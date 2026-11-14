@@ -2,8 +2,8 @@
   "site": {
     "latitude_deg": -89.4632,
     "longitude_deg": -137.49,
-    "observer_height_m": 2,
-    "site_elevation_m": 1947.73
+    "observer_height_m": 2.0,
+    "site_elevation_m": 1943.265
   },
   "model": "braspace.lola-polar-horizon.v0.1",
   "ray_parameters": {
@@ -17,218 +17,218 @@
   },
   "terrain_horizon": [
     {
-      "azimuth_deg": 0,
-      "elevation_deg": 0.961902,
+      "azimuth_deg": 0.0,
+      "elevation_deg": 1.320404,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 10,
-      "elevation_deg": 0.867997,
+      "azimuth_deg": 10.0,
+      "elevation_deg": 1.753412,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 20,
-      "elevation_deg": 0.505737,
+      "azimuth_deg": 20.0,
+      "elevation_deg": 1.644755,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 30,
-      "elevation_deg": 0.087613,
+      "azimuth_deg": 30.0,
+      "elevation_deg": 1.822792,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 40,
-      "elevation_deg": -0.266295,
+      "azimuth_deg": 40.0,
+      "elevation_deg": 1.879965,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 50,
-      "elevation_deg": -0.623994,
+      "azimuth_deg": 50.0,
+      "elevation_deg": 1.718499,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 60,
-      "elevation_deg": -0.93656,
+      "azimuth_deg": 60.0,
+      "elevation_deg": 1.52752,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 70,
-      "elevation_deg": -1.127493,
+      "azimuth_deg": 70.0,
+      "elevation_deg": 1.326182,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 80,
-      "elevation_deg": -1.171192,
+      "azimuth_deg": 80.0,
+      "elevation_deg": 1.205441,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 90,
-      "elevation_deg": -1.16141,
+      "azimuth_deg": 90.0,
+      "elevation_deg": 1.213172,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 100,
-      "elevation_deg": -1.230166,
+      "azimuth_deg": 100.0,
+      "elevation_deg": 1.260935,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 110,
-      "elevation_deg": -1.220753,
+      "azimuth_deg": 110.0,
+      "elevation_deg": 1.149669,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 120,
-      "elevation_deg": -1.133456,
+      "azimuth_deg": 120.0,
+      "elevation_deg": 0.802329,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 130,
-      "elevation_deg": -1.284095,
+      "azimuth_deg": 130.0,
+      "elevation_deg": 0.513445,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 140,
-      "elevation_deg": -1.484118,
+      "azimuth_deg": 140.0,
+      "elevation_deg": 0.211625,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 150,
-      "elevation_deg": -1.629652,
+      "azimuth_deg": 150.0,
+      "elevation_deg": -0.22073,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 160,
-      "elevation_deg": -1.883895,
+      "azimuth_deg": 160.0,
+      "elevation_deg": -0.35024,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 170,
-      "elevation_deg": -1.386182,
+      "azimuth_deg": 170.0,
+      "elevation_deg": 0.12113,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 180,
-      "elevation_deg": -0.674814,
+      "azimuth_deg": 180.0,
+      "elevation_deg": 0.022426,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 190,
-      "elevation_deg": -0.774532,
+      "azimuth_deg": 190.0,
+      "elevation_deg": -0.275479,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 200,
-      "elevation_deg": -1.018614,
+      "azimuth_deg": 200.0,
+      "elevation_deg": -0.761526,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 210,
-      "elevation_deg": -1.424857,
+      "azimuth_deg": 210.0,
+      "elevation_deg": -1.253655,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 220,
-      "elevation_deg": -1.928248,
+      "azimuth_deg": 220.0,
+      "elevation_deg": -1.800945,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 230,
-      "elevation_deg": -1.846233,
+      "azimuth_deg": 230.0,
+      "elevation_deg": -1.840236,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 240,
-      "elevation_deg": -2.507949,
+      "azimuth_deg": 240.0,
+      "elevation_deg": -2.488894,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 250,
-      "elevation_deg": -3.97619,
+      "azimuth_deg": 250.0,
+      "elevation_deg": -3.822978,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 260,
-      "elevation_deg": -4.388634,
+      "azimuth_deg": 260.0,
+      "elevation_deg": -4.390491,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 270,
-      "elevation_deg": -4.98501,
+      "azimuth_deg": 270.0,
+      "elevation_deg": -4.865203,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 280,
-      "elevation_deg": -4.635354,
+      "azimuth_deg": 280.0,
+      "elevation_deg": -5.091506,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 290,
-      "elevation_deg": -4.260766,
+      "azimuth_deg": 290.0,
+      "elevation_deg": -4.684675,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 300,
-      "elevation_deg": -3.537984,
+      "azimuth_deg": 300.0,
+      "elevation_deg": -3.878156,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 310,
-      "elevation_deg": -2.592796,
+      "azimuth_deg": 310.0,
+      "elevation_deg": -2.982827,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 320,
-      "elevation_deg": -1.54098,
+      "azimuth_deg": 320.0,
+      "elevation_deg": -1.966143,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 330,
-      "elevation_deg": -0.698778,
+      "azimuth_deg": 330.0,
+      "elevation_deg": -0.63317,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 340,
-      "elevation_deg": 0.023318,
+      "azimuth_deg": 340.0,
+      "elevation_deg": 0.196843,
       "sample_count": 187,
       "partial_coverage": false
     },
     {
-      "azimuth_deg": 350,
-      "elevation_deg": 0.489023,
+      "azimuth_deg": 350.0,
+      "elevation_deg": 0.835774,
       "sample_count": 187,
       "partial_coverage": false
     }

@@ -66,10 +66,10 @@ jobs:
           assert s['engine_science_status']=='UNVERIFIED_INPUTS'
           assert m['sample_count']==72
           assert m['sun_visible_fraction']==1.0
-          assert abs(m['earth_visible_fraction']-0.333333)<1e-6
+          assert m['earth_visible_fraction']==0.0
           assert m['longest_continuous_dark_hours']==0
-          assert m['longest_continuous_comm_gap_hours']==48
-          print('ACTUAL Go/Rust result: 72h geometric Sun visible; 24h geometric Earth visible; longest Earth obstruction 48h; PRELIMINARY UNVERIFIED')
+          assert m['longest_continuous_comm_gap_hours']==72
+          print('ACTUAL Go/Rust result: 72h geometric Sun visible; Earth below LOLA terrain horizon for all 72h (half-pixel registration fixed); PRELIMINARY UNVERIFIED')
           print('No RF or solar-power modelling/validated NASA mission claim')
           PY
       - name: Compute onboard educational energy risk from the same source series
