@@ -101,7 +101,7 @@ JPEG hashes in the manifest; the `.bin` files are deterministic.
 ## Not done
 
 - No link to this page from the hub or the MoonProof screens.
-- The GitHub Pages publish step has to copy `moon-hd.html`, `moon-hd/` and `data/moonhd/` (about 33 MB).
+- The GitHub Pages publish step has to copy `moon-hd.html`, `moon-hd/` and `data/moonhd/` (about 31 MB).
 - The Earth in the sky was checked numerically (sub-Moon point and rotation rate in `moon-hd.test.mjs`), not by eye: the browser pane was not available for a screenshot after it was added.
 - Feature names between 80° S and 80.5° S and craters under 20 km are left out to keep the labels readable.
 - Not tested on a real phone or on Windows; checked in a desktop Chromium pane and in a 375 px emulated viewport.
