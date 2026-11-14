@@ -77,3 +77,8 @@
   .mc-ray-label{font-size:11px;padding:3px 9px}
   .mp-context{text-overflow:ellipsis}
 }
+/* Fidelity audit (items 9, 12, 14). */
+@media (min-width:1301px){.mc-left,.mc-right{top:150px}.mc-right{width:300px}}
+.mc-earth .mp-stat-core{background:rgba(255,255,255,.14)}
+.mc-dock{bottom:28px}
+.mc-sel{height:48px;font:700 15px var(--font)}
