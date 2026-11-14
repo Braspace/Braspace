@@ -48,6 +48,7 @@ jobs:
             if curl -fsS http://127.0.0.1:8080/readyz; then break; fi
             sleep 1
           done
+          ONBOARD_API_URL=http://127.0.0.1:8080 node --test web/onboard/test/*.mjs
           node web/browser/e2e.mjs
       - name: Upload screenshots, even after test failure
         if: always()
