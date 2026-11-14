@@ -76,6 +76,8 @@ COPY web/ ./web/
 COPY api/db/ ./api/db/
 COPY compose.yaml ./
 COPY api/middleware.go ./api/middleware.go
+# science/tests/test_terrain_backgrounds.py checks the products against this matrix.
+COPY docs/ASSET_LICENSE_MATRIX.md ./docs/ASSET_LICENSE_MATRIX.md
 RUN python3 -m compileall -q scripts tests science \
  && python3 -m unittest discover -s tests -v \
  && python3 -m unittest discover -s science/tests -v
