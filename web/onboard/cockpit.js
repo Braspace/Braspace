@@ -201,39 +201,112 @@
   // ---------- views ----------
   const VIEWS = {};
 
+  // Entry tab: four numbered cards (lugar, janela, energia, público), a live summary on top and
+  // one primary action. Problems are listed next to the top of the page and block CALCULAR.
+  const DEFAULT_POWER = { battery_capacity_wh: 200, initial_charge_wh: 150, reserve_wh: 50, solar_generation_w: 110, load_w: 80, max_comm_blackout_hours: 1 };
+  const POWER_FIELDS = [
+    ["battery_capacity_wh", "Capacidade da bateria", "Wh", "Energia máxima que a bateria guarda."],
+    ["initial_charge_wh", "Carga inicial", "Wh", "Energia da bateria no começo do cenário."],
+    ["reserve_wh", "Reserva mínima", "Wh", "Abaixo deste valor a bateria entra em alerta."],
+    ["solar_generation_w", "Painel com Sol", "W", "Premissa: potência do painel enquanto há luz."],
+    ["load_w", "Carga da nave", "W", "Potência que a nave consome o tempo todo."],
+    ["max_comm_blackout_hours", "Bloqueio máximo da Terra", "h", "Tempo sem contato com a Terra que ainda é aceitável."]
+  ];
+
+  // Problems with the current entry, in plain words. Empty list = ready to calculate.
+  function entryProblems() {
+    const out = [];
+    const count = Math.floor((S.durationH * 60) / S.stepMin);
+    if (!(S.durationH >= 1 && S.durationH <= 720)) out.push("A duração deve ficar entre 1 e 720 h.");
+    if (!(S.stepMin >= 1 && S.stepMin <= 360)) out.push("O passo deve ficar entre 1 e 360 min.");
+    if (S.durationH >= 1 && S.stepMin >= 1 && count > 480) out.push("Muitas amostras (" + count + "). Aumente o passo ou reduza a duração: o máximo é 480.");
+    POWER_FIELDS.forEach(([k, label]) => { const v = S.power[k]; if (!(Number.isFinite(v) && v >= 0)) out.push(label + " precisa ser um número igual ou maior que zero."); });
+    if (Number.isFinite(S.power.reserve_wh) && Number.isFinite(S.power.battery_capacity_wh) && S.power.reserve_wh > S.power.battery_capacity_wh) out.push("A reserva não pode ser maior que a capacidade da bateria.");
+    if (Number.isFinite(S.power.initial_charge_wh) && Number.isFinite(S.power.battery_capacity_wh) && S.power.initial_charge_wh > S.power.battery_capacity_wh) out.push("A carga inicial não pode ser maior que a capacidade.");
+    return out;
+  }
+
+  function entryCard(num, title, hint, children) {
+    return h("section", { class: "panel" },
+      h("h2", { text: num + " · " + title }),
+      h("p", { class: "note", text: hint }),
+      h("div", { style: "margin-top:12px" }, children));
+  }
+
   VIEWS.entrada = () => {
-    const sites = Object.entries(M.SITES).map(([id, s]) => h("option", { value: id, selected: id === S.site }, id + " · " + s.name));
-    const latInvalid = S.lat !== "" && !(Number(S.lat) >= -90 && Number(S.lat) <= 90);
-    const lonInvalid = S.lon !== "" && !(Number(S.lon) >= -180 && Number(S.lon) <= 180);
-    const field = (key, label, type, extra) => h("label", {}, label,
-      h("input", Object.assign({ type: type || "number", value: S.power[key], "data-power": key, oninput: onPower, step: "any" }, extra || {})));
-    return [
-      h("section", { class: "panel" },
-        h("h2", { text: "01 · Entrada do cenário" }),
+    const opts = siteOptions();
+    const cur = opts.find(o => o.id === S.site);
+    const sky = skyNow();
+    const skyErr = !sky && S.sky && S.sky.key === seriesKey();
+    const dataStatus = sky ? { k: "ok", t: "série da API" }
+      : (S.loadingSky === seriesKey() ? { k: "info", t: "carregando série…" }
+      : (skyErr ? { k: "bad", t: "API indisponível" } : { k: "warn", t: "modelo local" }));
+    const problems = entryProblems();
+    const count = Math.floor((S.durationH * 60) / S.stepMin);
+    const placeName = cur ? cur.label.replace(" (sem série)", "").split(" · ").slice(1).join(" · ") : S.site;
+    const change = () => { S.api = null; S.t = 0; renderAlarm(); renderTab(); };
+
+    const summary = h("section", { class: "panel span2" },
+      h("div", { class: "grid four" },
+        h("div", {}, h("div", { class: "label", text: "Lugar" }), h("strong", { text: S.site + " · " + placeName })),
+        h("div", {}, h("div", { class: "label", text: "Início (UTC)" }), h("strong", { class: "num", text: fmt(startMs()) })),
+        h("div", {}, h("div", { class: "label", text: "Duração · passo" }), h("strong", { class: "num", text: S.durationH + " h · " + S.stepMin + " min · " + count + " amostras" })),
+        h("div", {}, h("div", { class: "label", text: "Dados" }), h("span", { class: "chip " + dataStatus.k, text: dataStatus.t }))),
+      problems.length
+        ? h("div", { class: "caution", role: "alert", style: "margin-top:12px" }, problems.map(p => h("div", { text: "• " + p })))
+        : h("p", { class: "note", style: "margin-top:12px", text: "Entrada válida. Pronto para calcular." }));
+
+    const placeCard = entryCard("1", "Lugar", "De onde Sol e Terra são vistos. Só aparecem como disponíveis os lugares com série no servidor.",
+      h("label", {}, "Lugar sintético",
+        h("select", { id: "site", onchange: e => { if (!e.target.selectedOptions[0].disabled) { S.site = e.target.value; change(); } } },
+          opts.map(o => h("option", { value: o.id, selected: o.id === S.site, disabled: !o.ok }, o.label)))));
+
+    const coverage = sky && sky.start_utc && sky.end_utc
+      ? h("p", { class: "note", text: "Cobertura da série deste lugar: " + fmt(Date.parse(sky.start_utc)) + " até " + fmt(Date.parse(sky.end_utc)) + "." })
+      : null;
+    const windowCard = entryCard("2", "Janela", "Quando a missão começa e quanto dura. O passo define a resolução.",
+      h("div", {},
         h("div", { class: "fields" },
-          h("label", {}, "Lugar sintético", h("select", { id: "site", onchange: e => { S.site = e.target.value; S.api = null; renderAlarm(); renderTab(); } }, sites)),
-          h("label", {}, "Data e hora de pouso (UTC)", h("input", { type: "datetime-local", value: S.startLocal, onchange: e => { S.startLocal = e.target.value; S.api = null; renderAlarm(); renderTab(); } })),
-          h("label", {}, "Duração (h, até 720)", h("input", { type: "number", min: "1", max: "720", value: S.durationH, onchange: e => { S.durationH = Number(e.target.value); S.api = null; renderAlarm(); renderTab(); } })),
-          h("label", {}, "Passo (min, 1 a 360)", h("input", { type: "number", min: "1", max: "360", value: S.stepMin, onchange: e => { S.stepMin = Number(e.target.value); S.api = null; renderAlarm(); renderTab(); } }))),
+          h("label", {}, "Início (UTC)",
+            h("input", { type: "datetime-local", value: S.startLocal, onchange: e => { S.startLocal = e.target.value; change(); } })),
+          h("label", {}, "Duração (h, 1 a 720)",
+            h("input", { type: "number", min: "1", max: "720", value: S.durationH, "aria-invalid": S.durationH >= 1 && S.durationH <= 720 ? "false" : "true", onchange: e => { S.durationH = Number(e.target.value); change(); } })),
+          h("label", {}, "Passo (min, 1 a 360)",
+            h("input", { type: "number", min: "1", max: "360", value: S.stepMin, "aria-invalid": S.stepMin >= 1 && S.stepMin <= 360 ? "false" : "true", onchange: e => { S.stepMin = Number(e.target.value); change(); } }))),
+        h("div", { class: "seg", role: "group", "aria-label": "Duração rápida", style: "margin-top:12px" },
+          [[24, "1 dia"], [72, "3 dias"], [168, "1 semana"], [720, "30 dias"]].map(([hh, lab]) =>
+            h("button", { type: "button", "aria-pressed": S.durationH === hh ? "true" : "false", onclick: () => { S.durationH = hh; change(); } }, lab))),
+        coverage,
+        sky && sky.start_utc && Date.parse(sky.start_utc) > startMs()
+          ? h("button", { type: "button", style: "margin-top:10px", onclick: () => { S.startLocal = sky.start_utc.slice(0, 16); S.durationH = Math.min(720, Math.floor((Date.parse(sky.end_utc) - Date.parse(sky.start_utc)) / 3600000)); change(); } }, "USAR A COBERTURA DA SÉRIE")
+          : null));
+
+    const energyCard = entryCard("3", "Energia", "Premissas do modelo, não são dados de hardware real.",
+      h("div", {},
+        h("div", { class: "fields" }, POWER_FIELDS.map(([k, label, unit, help]) =>
+          h("label", {}, label + " (" + unit + ")",
+            h("input", { type: "number", step: "any", value: S.power[k], "data-power": k, "aria-invalid": Number.isFinite(S.power[k]) && S.power[k] >= 0 ? "false" : "true",
+              onchange: e => { onPower(e); renderTab(); } }),
+            h("span", { class: "hint", text: help })))),
         h("div", { class: "row", style: "margin-top:12px" },
-          h("div", { class: "row" },
-            h("button", { type: "button", "aria-pressed": S.audience === "technical", onclick: () => { S.audience = "technical"; renderTab(); } }, "TÉCNICO"),
-            h("button", { type: "button", "aria-pressed": S.audience === "educational", onclick: () => { S.audience = "educational"; renderTab(); } }, "EDUCATIVO")),
-          h("button", { type: "button", id: "calc", class: "go", onclick: calculate }, "CALCULAR")),
-        h("p", { class: "note", text: "TÉCNICO mostra valores e premissas. EDUCATIVO acrescenta explicações em cada painel." }),
-        h("p", { class: "note", text: "CALCULAR envia o cenário à API para energia e riscos. Os demais painéis usam o modelo sintético do navegador." }),
-        edu("Modo educativo: o lugar define o horizonte; a data define onde Sol e Terra estão; a energia depende do que o sol entrega e do que a carga consome.")),
-      h("section", { class: "panel" },
-        h("h2", { text: "Energia do cenário (entrada)" }),
-        h("div", { class: "fields" },
-          field("battery_capacity_wh", "Capacidade da bateria (Wh)"),
-          field("initial_charge_wh", "Carga inicial (Wh)"),
-          field("reserve_wh", "Reserva (Wh)"),
-          field("solar_generation_w", "Solar com Sol (W) · premissa"),
-          field("load_w", "Carga (W)"),
-          field("max_comm_blackout_hours", "Bloqueio máximo da Terra (h)"))),
-      S.apiError ? h("div", { class: "caution", role: "alert" }, S.apiError.map(e => h("div", { text: e }))) : null
-    ];
+          h("span", { class: "dim", text: "Exemplo ilustrativo." }),
+          h("button", { type: "button", onclick: () => { S.power = { ...DEFAULT_POWER }; S.api = null; renderAlarm(); renderTab(); } }, "RESTAURAR EXEMPLO"))));
+
+    const audCard = entryCard("4", "Público", "Muda o nível de explicação dos painéis.",
+      h("div", { class: "seg", role: "group", "aria-label": "Público" },
+        h("button", { type: "button", "aria-pressed": S.audience === "technical" ? "true" : "false", onclick: () => { S.audience = "technical"; renderTab(); } }, "Técnico"),
+        h("button", { type: "button", "aria-pressed": S.audience === "educational" ? "true" : "false", onclick: () => { S.audience = "educational"; renderTab(); } }, "Educativo")),
+      h("p", { class: "hint", style: "margin-top:8px", text: S.audience === "educational" ? "Cada painel traz uma explicação em linguagem simples." : "Mostra valores e premissas, sem explicações extras." }));
+
+    const action = h("section", { class: "panel span2" },
+      h("div", { class: "row" },
+        h("div", {},
+          h("strong", { text: "Calcular cenário" }),
+          h("div", { class: "dim", text: "Envia o cenário à API para energia e riscos. Os demais painéis usam o modelo do navegador." })),
+        h("button", { type: "button", id: "calc", class: "go", disabled: problems.length > 0, onclick: calculate }, "CALCULAR")));
+
+    return [summary, placeCard, windowCard, energyCard, audCard, action,
+      S.apiError ? h("div", { class: "caution span2", role: "alert" }, S.apiError.map(e => h("div", { text: e }))) : null];
   };
   function onPower(e) {
     const k = e.target.dataset.power;
@@ -244,6 +317,7 @@
 
   VIEWS.geometria = () => {
     const tr = timeline();
+    if (!tr.length) return [noDataState("02 · Geometria do Sol e da Terra")];
     if (S.t >= tr.length) S.t = 0;
     const cur = tr[S.t] || tr[0];
     const stepM = stepOf(tr);
@@ -312,6 +386,9 @@
   S.series = null;      // { key, points, metrics, science_status } from /api/compare
   S.loadingKey = null; S.delay = null; S.sky = null; S.skyAvail = null;
   function seriesKey() { return S.site + "|" + S.startLocal + "|" + S.durationH; }
+  const norm360 = a => ((a % 360) + 360) % 360;
+  // Timeline for the current place and window: API samples when the place has a sky series,
+  // otherwise the local model (only for the three synthetic places that exist in the browser).
   function timeline() {
     ensureLive();
     const live = liveNow(), sky = skyNow();
@@ -326,8 +403,29 @@
         return { i, ms, src: "api", angles: "local", sunAz: b.sunAz, sunEl: M.horizonAt(b.sunAz, site) + p.sun_margin_deg, earthAz: b.earthAz, earthEl: M.horizonAt(b.earthAz, site) + p.earth_margin_deg,
           sun_visible: p.sun_visible, earth_visible: p.earth_visible, sun_margin: p.sun_margin_deg, earth_margin: p.earth_margin_deg };
       });
+      return rows.map((r, i) => ({ ...r, i }));
     }
-    return track(0).map((s, i) => ({ ...s, i, ms: startMs() + i * S.stepMin * 60e3, src: "local", angles: "local" }));
+    if (M.SITES[S.site]) {
+      return track(0).map((s, i) => ({ ...s, i, ms: startMs() + i * S.stepMin * 60e3, src: "local", angles: "local" }));
+    }
+    return [];   // loading, or no data for this place in the chosen window
+  }
+  // Shown instead of a chart when the window has no data.
+  function noDataState(what) {
+    const ok = skyNow();
+    const failed = S.sky && S.sky.key === seriesKey() && !S.sky.data;
+    const msg = failed ? "A API não respondeu uma série para este lugar e janela." : (S.loadingSky === seriesKey() ? "Carregando a série do lugar…" : "Sem dados desta janela para o lugar escolhido.");
+    const children = [h("strong", { text: msg })];
+    if (ok && ok.start_utc && ok.end_utc) {
+      const hours = Math.round((Date.parse(ok.end_utc) - Date.parse(ok.start_utc)) / 3600e3);
+      children.push(h("span", { text: "Cobertura da série deste lugar: " + fmt(Date.parse(ok.start_utc)) + " até " + fmt(Date.parse(ok.end_utc)) + " (" + hours + " h)." }));
+      children.push(h("button", { type: "button", class: "go", style: "justify-self:start", onclick: () => {
+        S.startLocal = ok.start_utc.slice(0, 16);
+        S.durationH = Math.max(1, Math.min(720, hours));
+        S.t = 0; S.api = null; renderAlarm(); renderTab();
+      } }, "USAR A COBERTURA DA SÉRIE"));
+    }
+    return h("section", { class: "panel span2" }, h("h2", {}, what), h("div", { class: "empty" }, ...children));
   }
   function stepOf(tr) {
     return L.stepOf(tr, S.stepMin);
@@ -390,6 +488,7 @@
   // whole window; the solid markers show the current time, with a drop line to the horizon.
   VIEWS.horizonte = () => {
     const tr = timeline();
+    if (!tr.length) return [noDataState("03 · Horizonte do lugar")];
     if (S.t >= tr.length) S.t = 0;
     const cur = tr[S.t] || tr[0];
     const site = M.SITES[S.site];
@@ -483,41 +582,67 @@
     ];
   };
 
-  VIEWS.janelas = () => {
-    const sc = scenario();
-    const { tr, sum } = sc;
-    
-    const windows = [];
+  // Windows view: a summary, a timeline bar of light and Earth visibility over the whole
+  // scenario, and one table listing each window with its duration. Geometric visibility only.
+  function runsOf(tr, key, want) {
+    const runs = [];
     let start = null;
     tr.forEach((s, i) => {
-      if (s.earth_visible && start === null) start = i;
-      if (!s.earth_visible && start !== null) { windows.push([start, i - 1]); start = null; }
+      const on = !!s[key] === want;
+      if (on && start === null) start = i;
+      if (!on && start !== null) { runs.push([start, i - 1]); start = null; }
     });
-    if (start !== null) windows.push([start, tr.length - 1]);
-    const at = i => fmt(tr[i].ms);
-    const stp = stepOf(tr);
-    return [
-      h("section", { class: "panel" },
-        h("h2", { text: "04 · Janelas de luz e de Terra" }),
-        h("dl", { class: "readout" },
-          h("dt", { text: "horas com luz" }), h("dd", { text: f1(sum.sunlitH) + " h" }, " ", sealOf(sc)),
-          h("dt", { text: "maior escuridão" }), h("dd", { text: f1(sum.darkH) + " h" }, " ", sealOf(sc)),
-          h("dt", { text: "horas com Terra visível" }), h("dd", { text: f1(sum.earthH) + " h" }, " ", sealOf(sc)),
-          h("dt", { text: "maior bloqueio da Terra" }), h("dd", { text: f1(sum.blockH) + " h" }, " ", sealOf(sc)))),
-      h("section", { class: "panel" },
-        h("h2", { text: "Janelas de Terra visível (4.7)" }),
-        windows.length === 0
-          ? h("p", { class: "note", text: "Nenhuma janela de Terra visível no intervalo." })
-          : h("div", { class: "scroll" }, h("table", { class: "table" },
-              h("thead", {}, h("tr", {}, h("th", { text: "início" }), h("th", { text: "fim" }), h("th", { class: "n", text: "horas" }))),
-              h("tbody", {}, windows.map(([a, b]) => h("tr", {}, h("td", { text: at(a) }), h("td", { text: at(b) }), h("td", { class: "n", text: f1((b - a + 1) * stp / 60) })))))),
-        h("p", { class: "note", text: "Visibilidade geométrica. Não garante enlace de rádio. Orçamento de RF não modelado." })),
-      nextTransitionsPanel(),
-      h("section", { class: "panel span2" },
-        h("h2", { text: "Transições (4.5) · instante por amostra" }),
-        h("p", { class: "note", text: "O instante é o da primeira amostra que mudou. Bisseção (4.6) ainda pendente." }),
-        transitionsTable(tr))
-    ];
+    if (start !== null) runs.push([start, tr.length - 1]);
+    return runs;
+  }
+
+  VIEWS.janelas = () => {
+    const { tr, sum } = scenario();
+    if (!tr.length) return [noDataState("04 · Janelas de luz e de Terra")];
+    const step = S.stepMin;
+    const total = Math.max(1, tr.length);
+    const sunRuns = runsOf(tr, "sun_visible", true);
+    const earthRuns = runsOf(tr, "earth_visible", true);
+    const blockRuns = runsOf(tr, "earth_visible", false);
+    const at = i => fmt(startMs() + i * step * 60e3);
+    const hours = (a, b) => f1((b - a + 1) * step / 60);
+    const pct = i => (i / total * 100).toFixed(3) + "%";
+    const width = (a, b) => ((b - a + 1) / total * 100).toFixed(3) + "%";
+
+    const longestBlock = blockRuns.reduce((m, [a, b]) => Math.max(m, (b - a + 1) * step / 60), 0);
+    const summary = h("section", { class: "panel span2" },
+      h("div", { class: "grid four" },
+        h("div", {}, h("div", { class: "label", text: "Janelas de Terra visível" }), h("strong", { class: "num", text: String(earthRuns.length) })),
+        h("div", {}, h("div", { class: "label", text: "Janelas com luz" }), h("strong", { class: "num", text: String(sunRuns.length) })),
+        h("div", {}, h("div", { class: "label", text: "Maior bloqueio da Terra" }), h("strong", { class: "num", text: f1(longestBlock) + " h" })),
+        h("div", {}, h("div", { class: "label", text: "Horas com Terra visível" }), h("strong", { class: "num", text: f1(sum.earthH) + " h de " + f1(sum.durationH) + " h" }))));
+
+    // Timeline: two rows over the whole scenario, placed by sample index.
+    const bar = (runs, color, label) => h("div", { class: "tl-row" },
+      h("span", { class: "tl-label", text: label }),
+      h("div", { class: "tl-track", role: "img", "aria-label": label + ": " + runs.length + " janela(s)" },
+        runs.map(([a, b]) => h("span", { class: "tl-seg", title: at(a) + " até " + at(b), style: "left:" + pct(a) + ";width:" + width(a, b) + ";background:" + color }))));
+    const timeline = h("section", { class: "panel span2" },
+      h("h2", { text: "Linha do tempo da janela" }),
+      h("div", { class: "tl" },
+        bar(sunRuns, "var(--amber)", "Luz"),
+        bar(earthRuns, "var(--green)", "Terra visível")),
+      h("div", { class: "tl-axis dim" }, h("span", { text: at(0) }), h("span", { text: at(tr.length - 1) })),
+      h("p", { class: "note", text: "Cada faixa mostra uma janela. Passe o cursor sobre uma faixa para ver o início e o fim." }),
+      S.audience === "educational" ? edu("Luz e Terra visível são medidas separadamente: a nave pode ter Sol e ainda não ver a Terra, ou o contrário.") : null);
+
+    const rows = [...earthRuns.map(([a, b]) => ["Terra", a, b]), ...sunRuns.map(([a, b]) => ["Luz", a, b])].sort((x, y) => x[1] - y[1]);
+    const table = rows.length === 0
+      ? h("p", { class: "note", text: "Nenhuma janela no intervalo." })
+      : h("div", { class: "scroll" }, h("table", { class: "table" },
+          h("thead", {}, h("tr", {}, h("th", { text: "tipo" }), h("th", { text: "início (UTC)" }), h("th", { text: "fim (UTC)" }), h("th", { class: "n", text: "horas" }))),
+          h("tbody", {}, rows.slice(0, 200).map(([k, a, b]) => h("tr", {}, h("td", { text: k }), h("td", { text: at(a) }), h("td", { text: at(b) }), h("td", { class: "n", text: hours(a, b) }))))));
+    const list = h("section", { class: "panel span2" },
+      h("h2", { text: "Janelas por tipo" }),
+      table,
+      h("p", { class: "note", text: "Visibilidade geométrica. Não garante enlace de rádio: orçamento de RF não modelado." }));
+
+    return [summary, timeline, list];
   };
   // next_transitions from GET /api/sites/{id}/sky: time to the next Sun and Earth change, with its resolution.
   function nextTransitionsPanel() {
@@ -529,6 +654,7 @@
         ? h("dl", { class: "readout" }, rows.flatMap(r => [h("dt", { text: r.label }), h("dd", { text: r.text }, " ", seal("api", { science_status: sky.science_status }))]))
         : h("p", { class: "note", text: "Sem next_transitions: a API não respondeu /api/sites/{id}/sky para este lugar e período (ou a rota não existe nesta API). Não há valor do navegador no lugar dele." }));
   }
+
   function transitionsTable(tr) {
     const rows = [];
     M.transitions(tr, "sun_visible", stepOf(tr)).forEach(x => rows.push(["Luz", x.to ? "escuro → luz" : "luz → escuro", x.index]));
@@ -1494,10 +1620,116 @@
     return apiPanelFrame("API · Relatório (/api/onboard/report)", "Gera HTML a partir das amostras sintéticas. Não é documento de submissão.", button, body);
   }
 
-  const API_EXTRA = { replan: delayPanel, visual: comparePanel, energia: siteEvalPanel, historico: reportPanel };
+  // ---------- More API panels: nearby places, media, layers, site report ----------
+  S.nearby = {}; S.media = {}; S.layers = null; S.layersLoading = false;
+  function loadNearby(id) {
+    if (S.nearby[id]) return;
+    S.nearby[id] = { loading: true };
+    OnboardApi.site(id).then(r => {
+      S.nearby[id] = r.ok ? { ok: true, nearby: (r.data.nearby || []) } : { ok: false, error: r.error || ("HTTP " + r.status) };
+      renderTab();
+    });
+  }
+  function nearbyPanel() {
+    const c = S.nearby[S.site];
+    if (!c) loadNearby(S.site);
+    let body = h("p", { class: "dim", text: "Carregando lugares próximos…" });
+    if (c && c.ok) {
+      body = c.nearby.length
+        ? h("div", { class: "scroll" }, h("table", { class: "table" },
+            h("thead", {}, h("tr", {}, h("th", { text: "lugar" }), h("th", { class: "n", text: "distância (km)" }), h("th", { text: "série" }))),
+            h("tbody", {}, c.nearby.map(n => h("tr", {}, h("td", { text: n.name || n.id }), h("td", { class: "n", text: f1(n.distance_km, 0) }),
+              h("td", {}, tag(n.has_series ? "SIM" : "PEND"), " ", h("span", { class: "dim", text: n.has_series ? "com série" : "sem série" })))))))
+        : h("p", { class: "dim", text: "Nenhum lugar próximo no catálogo." });
+    }
+    if (c && !c.ok) body = apiError(c);
+    return apiPanelFrame("API · Lugares próximos (/api/sites/{id})", "Vizinhos do catálogo por distância. Só lugares com série podem ser avaliados.", h("span"), body);
+  }
+
+  function loadMedia(id) {
+    if (S.media[id]) return;
+    S.media[id] = { loading: true };
+    OnboardApi.media(id).then(r => {
+      S.media[id] = r.ok ? { ok: true, data: r.data } : { ok: false, error: r.error || ("HTTP " + r.status) };
+      renderTab();
+    });
+  }
+  function mediaPanel() {
+    const c = S.media[S.site];
+    if (!c) loadMedia(S.site);
+    let body = h("p", { class: "dim", text: "Carregando galeria do lugar…" });
+    if (c && c.ok) {
+      const items = c.data.media || [];
+      body = items.length
+        ? h("div", { class: "grid three" }, items.map(m => h("div", { class: "panel" },
+            h("strong", { text: m.title }),
+            h("div", { class: "dim", style: "margin-top:4px", text: m.region || "" }),
+            h("p", { class: "note", text: "Crédito: " + (m.credit || "—") }),
+            m.coordinate_note ? h("p", { class: "note", text: m.coordinate_note }) : null,
+            m.illustrative_only ? h("div", { style: "margin-top:8px" }, tag("SINT"), " ", h("span", { class: "dim", text: "ilustrativo, não é dado" })) : null,
+            m.page_url ? h("a", { href: m.page_url, target: "_blank", rel: "noopener", text: "abrir fonte" }) : null)))
+        : h("p", { class: "dim", text: "Sem mídia relacionada a este lugar." });
+      if (c.data.terms_url) body = h("div", {}, body, h("p", { class: "note" }, "Termos: ", h("a", { href: c.data.terms_url, target: "_blank", rel: "noopener", text: c.data.terms_url })));
+    }
+    if (c && !c.ok) body = apiError(c);
+    return apiPanelFrame("API · Galeria do lugar (/api/sites/{id}/media)", "Links e créditos. Imagens não são copiadas para o protótipo.", h("span"), body);
+  }
+
+  function loadLayers() {
+    if (S.layers || S.layersLoading) return;
+    S.layersLoading = true;
+    OnboardApi.layers().then(r => {
+      S.layers = r.ok ? { ok: true, data: r.data } : { ok: false, error: r.error || ("HTTP " + r.status) };
+      S.layersLoading = false;
+      renderTab();
+    });
+  }
+  function layersPanel() {
+    if (!S.layers) loadLayers();
+    let body = h("p", { class: "dim", text: "Carregando camadas…" });
+    if (S.layers && S.layers.ok) {
+      body = h("div", { class: "scroll" }, h("table", { class: "table" },
+        h("thead", {}, h("tr", {}, h("th", { text: "camada" }), h("th", { text: "papel científico" }), h("th", { text: "resolução" }), h("th", { text: "direitos" }), h("th", { text: "entrega" }))),
+        h("tbody", {}, (S.layers.data.layers || []).map(l => h("tr", {},
+          h("td", {}, h("strong", { text: l.title }), h("div", { class: "dim", text: l.attribution || "" })),
+          h("td", { text: l.scientific_role || "—" }),
+          h("td", { text: l.resolution_m_per_px ? l.resolution_m_per_px + " m/px" : (l.resolution_km_per_px_equator ? l.resolution_km_per_px_equator + " km/px" : "—") }),
+          h("td", {}, tag(l.redistribution_status === "ALLOWED" ? "SIM" : "PEND"), " ", h("span", { class: "dim", text: l.redistribution_status || "—" })),
+          h("td", { text: l.delivery || "—" }))))));
+    }
+    if (S.layers && !S.layers.ok) body = apiError(S.layers);
+    return apiPanelFrame("API · Camadas do mapa (/api/layers)", "Fonte, direitos e atribuição de cada camada. Só as liberadas podem ser usadas em produção.", h("span"), body);
+  }
+
+  // Site-level printable report: same input as the site evaluation, one place, one candidate.
+  function siteReportPanel() {
+    const r = S.apiResults.siteReport;
+    const button = callButton("RELATÓRIO DO LUGAR (API)", async () => {
+      const body = {
+        mission_id: "cockpit-report-" + S.site, start_utc: iso(startMs()), duration_hours: S.durationH,
+        candidates: [{ id: "planejado", site_id: S.site, delay_hours: 0 }],
+        power: { battery_capacity_wh: S.power.battery_capacity_wh, initial_charge_wh: S.power.initial_charge_wh, reserve_wh: S.power.reserve_wh, solar_generation_w: S.power.solar_generation_w, load_w: S.power.load_w },
+        max_comm_blackout_hours: S.power.max_comm_blackout_hours
+      };
+      const res = await OnboardApi.siteReport(body);
+      S.apiResults.siteReport = res;
+      if (res.ok) window.open(URL.createObjectURL(new Blob([res.data], { type: "text/html" })), "_blank", "noopener");
+    });
+    let body = h("p", { class: "dim", text: "Relatório imprimível do lugar, com o cálculo combinado e os consumíveis (/api/onboard/site-report). Protótipo, não é documento de submissão." });
+    if (r && !r.ok) body = apiError(r);
+    if (r && r.ok) body = h("p", { class: "note", text: "Relatório do lugar gerado e aberto em nova aba." });
+    return apiPanelFrame("API · Relatório do lugar (/api/onboard/site-report)", "Um lugar, um candidato. Só para lugares com série.", button, body);
+  }
+
+  const API_EXTRA = {
+    replan: () => [delayPanel(), nearbyPanel()],
+    visual: () => [comparePanel(), mediaPanel(), layersPanel()],
+    energia: () => [siteEvalPanel()],
+    historico: () => [reportPanel(), siteReportPanel()]
+  };
   for (const k of Object.keys(API_EXTRA)) {
     const base = VIEWS[k];
-    VIEWS[k] = () => [API_EXTRA[k](), ...base()];
+    VIEWS[k] = () => [].concat(API_EXTRA[k](), base());
   }
 
   // Header badges come from the API (/readyz, /v1/capabilities, /api/health, series science_status), not fixed text.
@@ -1522,6 +1754,25 @@
   async function loadSites() {
     const r = await OnboardApi.sites();
     if (r.ok) S.sitesApi = (r.data.sites || []).map(s => ({ id: s.id, name: s.name, series: !!s.series }));
+    rebuildTop();
+    if (S.tab === "entrada") renderTab();
+  }
+  // Places: a place can be selected when the API has its series AND the browser has its local model.
+  function siteOptions() {
+    const api = S.sitesApi || [];
+    const byId = Object.fromEntries(api.map(s => [s.id, s]));
+    const ids = [...new Set([...Object.keys(M.SITES), ...api.map(s => s.id)])];
+    return ids.map(id => {
+      const a = byId[id], local = M.SITES[id];
+      const name = (local && local.name) || (a && a.name) || id;
+      const ok = !!(a && a.series) && !!local;
+      return { id, ok, label: id + " · " + name + (ok ? "" : " (sem série)") };
+    });
+  }
+  function rebuildTop() {
+    const top = document.getElementById("top-site");
+    if (!top) return;
+    top.replaceChildren(...siteOptions().map(o => h("option", { value: o.id, text: o.label, disabled: !o.ok, selected: o.id === S.site })));
   }
 
   // ---------- rendering ----------
@@ -1567,8 +1818,8 @@
     if (fab) fab.addEventListener("click", calculate);
     const top = document.getElementById("top-site");
     if (top) {
-      top.replaceChildren(...Object.entries(M.SITES).map(([id, s]) => h("option", { value: id, text: id + " · " + s.name })));
-      top.addEventListener("change", e => { S.site = e.target.value; S.api = null; renderAlarm(); renderTab(); });
+      rebuildTop();
+      top.addEventListener("change", e => { if (!e.target.selectedOptions[0].disabled) { S.site = e.target.value; S.api = null; renderAlarm(); renderTab(); } });
     }
     renderAlarm();
     renderTab();
