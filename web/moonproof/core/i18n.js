@@ -5,7 +5,7 @@ export const dict = {
   en: {
     "brand": "moonproof",
     "nav.explore": "Explore", "nav.compare": "Compare", "nav.recover": "Replan", "nav.cockpit": "Cockpit",
-    "nav.evidence": "Evidence", "nav.evidence.short": "Proof", "nav.landing": "Landing Lab", "nav.class": "Class", "nav.plan": "Plan",
+    "nav.evidence": "Evidence", "nav.evidence.short": "Proof", "nav.landing": "Landing Lab", "nav.debrief": "Debrief", "nav.class": "Class", "nav.plan": "Plan",
     "nav.help": "Help", "sheet.grip": "Resize panel (drag or ↑ ↓)", "nav.lang": "Português", "nav.lang.short": "PT", "nav.main": "Main navigation",
     "ctx.days": "{n} days", "ctx.openIn": "Open in", "ctx.offline": "offline · precomputed", "ctx.online": "live API",
     "ctx.site": "Site", "ctx.compare": "Compare",
@@ -38,7 +38,7 @@ export const dict = {
   "pt-BR": {
     "brand": "moonproof",
     "nav.explore": "Explorar", "nav.compare": "Comparar", "nav.recover": "Replanejar", "nav.cockpit": "Cockpit",
-    "nav.evidence": "Evidências", "nav.evidence.short": "Provas", "nav.landing": "Landing Lab", "nav.class": "Aula", "nav.plan": "Planejar",
+    "nav.evidence": "Evidências", "nav.evidence.short": "Provas", "nav.landing": "Landing Lab", "nav.debrief": "Debrief", "nav.class": "Aula", "nav.plan": "Planejar",
     "nav.help": "Ajuda", "sheet.grip": "Redimensionar painel (arraste ou ↑ ↓)", "nav.lang": "English", "nav.lang.short": "EN", "nav.main": "Navegação principal",
     "ctx.days": "{n} dias", "ctx.openIn": "Abrir em", "ctx.offline": "offline · pré-calculado", "ctx.online": "API ao vivo",
     "ctx.site": "Local", "ctx.compare": "Comparar",

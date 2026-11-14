@@ -1,0 +1,13 @@
+// Draggable bottom sheet for the 390 px layout (pointer drag and arrow keys on the handle).
+export function mountSheet(sheet) {
+  const h = document.createElement("button"); h.type = "button"; h.className = "mp-sheet-handle";
+  h.setAttribute("role", "separator"); h.setAttribute("aria-orientation", "horizontal"); h.setAttribute("aria-label", "↕");
+  sheet.prepend(h);
+  const set = px => { const v = Math.max(96, Math.min(innerHeight * 0.7, px)); sheet.style.setProperty("--sheet-h", v + "px"); };
+  let y0 = null, h0 = 0;
+  h.addEventListener("pointerdown", e => { y0 = e.clientY; h0 = sheet.getBoundingClientRect().height; h.setPointerCapture(e.pointerId); sheet.style.transition = "none"; });
+  h.addEventListener("pointermove", e => { if (y0 != null) set(h0 + (y0 - e.clientY)); });
+  const end = () => { y0 = null; sheet.style.transition = ""; };
+  h.addEventListener("pointerup", end); h.addEventListener("pointercancel", end);
+  h.addEventListener("keydown", e => { const d = e.key === "ArrowUp" ? 1 : e.key === "ArrowDown" ? -1 : 0; if (d) { e.preventDefault(); set(sheet.getBoundingClientRect().height + d * 80); } });
+}
