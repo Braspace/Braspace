@@ -1,0 +1,15 @@
+# A · Mission Control
+
+**Origem visual:** Heloísa · BRASPACE MoonProof — Telas · https://claude.ai/artifact/QV5ykVW5q9HvyZsH68SPf1
+
+## Estrutura de tela, componentes e ações
+Contexto: local do polo sul, data UTC, janela de 14 dias, status, camadas de energia e contato, mapa com marcadores numerados, cartões de dados sobrepostos, contagem para pôr do Sol. Referência H1 apenas exemplo educativo. Nunca transcrever porcentagens 71/63 e horas 46/38 do mockup como observações.
+
+## Tradução segura para implementação
+Núcleo Overview no Studio + Cockpit existente. Card Resposta/Por quê/Prova deverá apontar API e distinguir hipótese de energia.
+
+## Estados e validação
+- Placeholder, erro, sem série e offline precisam ser distintos; zero nunca substitui ausente.
+- Fontes científicas com units/UTC/frame/resolução e selo textual; dados do mockup são ILUSTRATIVOS.
+- Accessibility: foco visível, legenda de tabela, alvos de 44px, reduced motion e mobile responsivo.
+- Revisão pela autora de UX antes de declarar equivalência visual ao artefato.
