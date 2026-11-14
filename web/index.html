@@ -62,12 +62,15 @@
         <form id="mission-form">
           <label for="site">Explore candidate region</label>
           <select id="site" name="site"><option value="">Loading public catalog…</option></select>
-          <p class="field-hint">Site selection currently labels the visual globe; it does not change the synthetic training physics.</p>
+          <p class="field-hint">Sites with an ingested horizon/ephemeris series are evaluated from that data by the Go API. Sites without one fall back to the synthetic training pattern, and the result says so.</p>
           <div class="field-row"><div><label for="start">Scenario start (UTC)</label><input id="start" type="datetime-local" value="2026-12-01T00:00" required></div><div><label for="duration">Duration</label><select id="duration"><option value="24">24 hours</option><option value="48" selected>48 hours</option><option value="72">72 hours</option></select></div></div>
           <div class="field-row"><div><label for="delay">Schedule delay</label><select id="delay"><option value="24">+24 hours</option><option value="48" selected>+48 hours</option><option value="72">+72 hours</option></select></div><div><label for="battery">Battery capacity (Wh)</label><input type="number" min="1" max="100000" step="1" value="800" id="battery" required></div></div>
           <div class="field-row"><div><label for="initial">Initial charge (Wh)</label><input type="number" min="0" max="100000" step="1" value="650" id="initial" required></div><div><label for="reserve">Reserve threshold (Wh)</label><input type="number" min="0" max="100000" step="1" value="160" id="reserve" required></div></div>
           <div class="field-row"><div><label for="generation">Assumed solar power (W)</label><input type="number" min="0" max="100000" value="180" id="generation" required></div><div><label for="load">Continuous load (W)</label><input type="number" min="0" max="100000" value="75" id="load" required></div></div>
           <label for="blackout">Maximum Earth-visibility gap (hours)</label><input type="number" min="0" max="72" step="0.5" value="12" id="blackout" required>
+          <div class="field-row"><div><label for="crew">Crew (0 = none)</label><input type="number" min="0" max="12" step="1" value="2" id="crew" required></div><div><label for="o2">Oxygen stock (kg)</label><input type="number" min="0" max="100000" step="0.1" value="6" id="o2" required></div></div>
+          <label for="food">Food stock (kg)</label><input type="number" min="0" max="100000" step="0.1" value="13" id="food" required>
+          <p class="field-hint">Crew consumables apply to computed-series sites. Rates are placeholders (0.84 kg O2, 1.76 kg food per person per day) pending a check against NASA BVAD; the crew is assumed aboard during the delay.</p>
           <p class="field-hint">Power is an assumed constant whenever the synthetic Sun is visible. Communication evaluates Earth geometric visibility only, not an RF link.</p>
           <button class="primary" id="run" type="submit">Evaluate baseline + delay</button>
           <button class="secondary" type="button" id="report" disabled>Open printable mission report</button>
