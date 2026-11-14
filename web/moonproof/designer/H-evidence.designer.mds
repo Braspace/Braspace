@@ -52,6 +52,12 @@ De onde vem cada número, o que é dado real, o que é simulação, o que assumi
 **Ligações**
 - Acessível de qualquer tela pela barra superior (`Evidências`) ou pelo link de lição em `debrief.html`.
 
+**Geometria (medida por DOM em 1440×900 contra a prancha)**
+- Colunas `220 | 524 | livre | 422` com 20 px de espaço, a partir de y=150; cartão central e coluna direita vão até a margem inferior (cartão rola por dentro; o bloco "Passaporte do cenário" fica dentro dele, sem esticar a página).
+- Fontes: linhas de 54 px; Quanto confiar: linhas de 45 px, 4 blocos de lado a lado. Barra de contexto ≥ 927×48, ações de 30 px com área de toque real de 44 px.
+- `Alterar` troca o cenário (seletor nativo sobre a pílula); a camada "Abrir em" do núcleo não se aplica aqui e fica oculta.
+- Fora da prancha, de propósito: ícones das pílulas laterais, selos `VAL` (a tela usa `PRE`), "versão" e hora reais, itens extras da barra global (Debrief, Aula, Planejar).
+
 **Diferenças entre o desenho e a tela real**
 1. **Nenhum número fixo:** `a41c9e2`, `14 nov 2026 · 17:32 UTC` vêm de `web/data/sites.json` (`generated_utc`) ou da API.
 2. **Selo `VAL`:** o desenho mostra `VAL` em LOLA, LROC WAC e JPL DE440; na tela real usa-se `PRE` ("PRELIMINARY not NASA-reviewed"), nunca `VAL`.
