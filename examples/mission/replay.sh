@@ -8,8 +8,11 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 fail=0
 for req in "$DIR"/*.request.json; do
   name="$(basename "$req" .request.json)"
-  path=/api/scenarios/delay
-  [ "$name" = compare ] && path=/api/compare
+  case "$name" in
+    compare) path=/api/compare ;;
+    onboard-*) path=/api/onboard/site-evaluate ;;
+    *) path=/api/scenarios/delay ;;
+  esac
   got="$(curl -sS -H 'Content-Type: application/json' --data-binary @"$req" "$BASE$path")"
   if python3 -c 'import json,sys; sys.exit(json.loads(sys.argv[1]) != json.load(open(sys.argv[2])))' "$got" "$DIR/$name.response.json"; then
     echo "ok    $name  ($path)"

@@ -1,0 +1,2062 @@
+{
+  "api_version": "braspace.mission.v1",
+  "candidates": [
+    {
+      "id": "A-planned",
+      "site_id": "synthetic-demo-a",
+      "delay_hours": 0,
+      "start_utc": "2026-12-01T00:00:00Z",
+      "science_status": "SYNTHETIC",
+      "engine_science_status": "UNVERIFIED_INPUTS",
+      "provenance": {
+        "terrain_dataset_id": "SYNTHETIC-HORIZON-NOT-NASA",
+        "ephemeris_id": "SYNTHETIC-EPHEMERIS-NOT-NASA",
+        "frame": "MOON_ME",
+        "generator": "api/cmd/synthseries v1",
+        "note": "Synthetic test fixture. Not NASA data."
+      },
+      "observer_height_m": 2,
+      "step_seconds": 3600,
+      "consumables": {
+        "status": "OK",
+        "rate_source": "Example planning values (O2 0.84, food 1.76 kg/person/day); verify against NASA BVAD NASA/TP-2015-218570 before use",
+        "items": [
+          {
+            "resource": "oxygen",
+            "unit": "kg",
+            "rate_kg_per_hour": 0.07,
+            "used_during_delay_kg": 0,
+            "stock_at_start_kg": 6,
+            "required_for_window_kg": 5.04,
+            "remaining_at_end_kg": 0.96,
+            "autonomy_hours": 85.714286,
+            "margin_hours": 13.714286,
+            "depletion_utc": null,
+            "status": "OK"
+          },
+          {
+            "resource": "food",
+            "unit": "kg",
+            "rate_kg_per_hour": 0.146667,
+            "used_during_delay_kg": 0,
+            "stock_at_start_kg": 13,
+            "required_for_window_kg": 10.56,
+            "remaining_at_end_kg": 2.44,
+            "autonomy_hours": 88.636364,
+            "margin_hours": 16.636364,
+            "depletion_utc": null,
+            "status": "OK"
+          }
+        ],
+        "risks": []
+      },
+      "admissible": false,
+      "breached_risks": [
+        "ENERGY_LOSS",
+        "ENERGY_RESERVE"
+      ]
+    },
+    {
+      "id": "A-plus-48h",
+      "site_id": "synthetic-demo-a",
+      "delay_hours": 48,
+      "start_utc": "2026-12-03T00:00:00Z",
+      "science_status": "SYNTHETIC",
+      "engine_science_status": "UNVERIFIED_INPUTS",
+      "provenance": {
+        "terrain_dataset_id": "SYNTHETIC-HORIZON-NOT-NASA",
+        "ephemeris_id": "SYNTHETIC-EPHEMERIS-NOT-NASA",
+        "frame": "MOON_ME",
+        "generator": "api/cmd/synthseries v1",
+        "note": "Synthetic test fixture. Not NASA data."
+      },
+      "observer_height_m": 2,
+      "step_seconds": 3600,
+      "consumables": {
+        "status": "CRITICAL",
+        "rate_source": "Example planning values (O2 0.84, food 1.76 kg/person/day); verify against NASA BVAD NASA/TP-2015-218570 before use",
+        "items": [
+          {
+            "resource": "oxygen",
+            "unit": "kg",
+            "rate_kg_per_hour": 0.07,
+            "used_during_delay_kg": 3.36,
+            "stock_at_start_kg": 2.64,
+            "required_for_window_kg": 5.04,
+            "remaining_at_end_kg": 0,
+            "autonomy_hours": 37.714286,
+            "margin_hours": -34.285714,
+            "depletion_utc": "2026-12-04T13:42:51Z",
+            "status": "DEPLETED_BEFORE_END"
+          },
+          {
+            "resource": "food",
+            "unit": "kg",
+            "rate_kg_per_hour": 0.146667,
+            "used_during_delay_kg": 7.04,
+            "stock_at_start_kg": 5.96,
+            "required_for_window_kg": 10.56,
+            "remaining_at_end_kg": 0,
+            "autonomy_hours": 40.636364,
+            "margin_hours": -31.363636,
+            "depletion_utc": "2026-12-04T16:38:10Z",
+            "status": "DEPLETED_BEFORE_END"
+          }
+        ],
+        "risks": [
+          {
+            "category": "OXYGEN_DEPLETION",
+            "severity": "CRITICAL",
+            "measured": 37.714286,
+            "allowed": 72,
+            "unit": "h",
+            "explanation": "oxygen runs out 34.3 h before the end of the window at the declared consumption rate."
+          },
+          {
+            "category": "FOOD_DEPLETION",
+            "severity": "CRITICAL",
+            "measured": 40.636364,
+            "allowed": 72,
+            "unit": "h",
+            "explanation": "food runs out 31.4 h before the end of the window at the declared consumption rate."
+          }
+        ]
+      },
+      "admissible": false,
+      "breached_risks": [
+        "OXYGEN_DEPLETION",
+        "FOOD_DEPLETION"
+      ]
+    },
+    {
+      "id": "B-planned",
+      "site_id": "synthetic-demo-b",
+      "delay_hours": 0,
+      "start_utc": "2026-12-01T00:00:00Z",
+      "science_status": "SYNTHETIC",
+      "engine_science_status": "UNVERIFIED_INPUTS",
+      "provenance": {
+        "terrain_dataset_id": "SYNTHETIC-HORIZON-NOT-NASA",
+        "ephemeris_id": "SYNTHETIC-EPHEMERIS-NOT-NASA",
+        "frame": "MOON_ME",
+        "generator": "api/cmd/synthseries v1",
+        "note": "Synthetic test fixture. Not NASA data."
+      },
+      "observer_height_m": 2,
+      "step_seconds": 3600,
+      "consumables": {
+        "status": "OK",
+        "rate_source": "Example planning values (O2 0.84, food 1.76 kg/person/day); verify against NASA BVAD NASA/TP-2015-218570 before use",
+        "items": [
+          {
+            "resource": "oxygen",
+            "unit": "kg",
+            "rate_kg_per_hour": 0.07,
+            "used_during_delay_kg": 0,
+            "stock_at_start_kg": 6,
+            "required_for_window_kg": 5.04,
+            "remaining_at_end_kg": 0.96,
+            "autonomy_hours": 85.714286,
+            "margin_hours": 13.714286,
+            "depletion_utc": null,
+            "status": "OK"
+          },
+          {
+            "resource": "food",
+            "unit": "kg",
+            "rate_kg_per_hour": 0.146667,
+            "used_during_delay_kg": 0,
+            "stock_at_start_kg": 13,
+            "required_for_window_kg": 10.56,
+            "remaining_at_end_kg": 2.44,
+            "autonomy_hours": 88.636364,
+            "margin_hours": 16.636364,
+            "depletion_utc": null,
+            "status": "OK"
+          }
+        ],
+        "risks": []
+      },
+      "admissible": true,
+      "breached_risks": []
+    }
+  ],
+  "combined_decision": {
+    "candidate_id": "B-planned",
+    "status": "CANDIDATE_MEETS_ALL_ASSUMED_LIMITS"
+  },
+  "limitations": [
+    "Visibility is geometric line of sight to the Sun and Earth centers against the stored terrain horizon; Sun disc width, refraction, eclipses, RF link budget and DSN scheduling are not modelled.",
+    "Durations have a resolution of one series step; windows start and end on grid epochs.",
+    "Results are only as accurate as the stored horizon and ephemeris series; check science_status and provenance per site.",
+    "Constraint thresholds are caller-declared assumptions, not mission requirements.",
+    "Consumables use constant per-person rates from crew.rate_source; no regeneration, leaks or EVA demand are modelled."
+  ],
+  "model": {
+    "api_version": "braspace.mission.v1",
+    "analysis_version": "braspace.analysis.v1",
+    "engine_contract": "braspace.visibility.v1"
+  },
+  "onboard": {
+    "version": "braspace.onboard-simulator.v1",
+    "mission_id": "demo-replan-01",
+    "inputs_sha256": "91daa8d3bd1210151aed594c440c4e2360fbde0663ce954f8f8163db6a7a56e4",
+    "science_status": "UNVERIFIED_INPUTS",
+    "no_flight_recommendation": true,
+    "laboratory_candidate_id": "A-plus-48h",
+    "decision": "EDUCATIONAL_OPTION_MEETS_ASSUMED_LIMITS",
+    "options": [
+      {
+        "id": "A-planned",
+        "site_id": "synthetic-demo-a",
+        "start_utc": "2026-12-01T00:00:00Z",
+        "source_claim_unverified": "SYNTHETIC series; terrain=SYNTHETIC-HORIZON-NOT-NASA; ephemeris=SYNTHETIC-EPHEMERIS-NOT-NASA; frame=MOON_ME",
+        "simulation_status": "CONSTRAINTS_BREACHED",
+        "end_mode": "POWER_LOSS",
+        "risks": [
+          {
+            "category": "ENERGY_LOSS",
+            "severity": "CRITICAL",
+            "measured": 10200,
+            "allowed": 0,
+            "unit": "Wh",
+            "explanation": "Assumed constant load could not be served by the battery/solar budget."
+          },
+          {
+            "category": "ENERGY_RESERVE",
+            "severity": "HIGH",
+            "measured": 0,
+            "allowed": 4000,
+            "unit": "Wh",
+            "explanation": "Assumed battery reserve is reached or breached."
+          }
+        ],
+        "metrics": {
+          "duration_hours": 72,
+          "minimum_charge_wh": 0,
+          "final_charge_wh": 20000,
+          "total_unserved_energy_wh": 10200,
+          "longest_darkness_hours": 47,
+          "longest_earth_obstruction_hours": 0
+        },
+        "timeline": [
+          {
+            "epoch_utc": "2026-12-01T01:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 17400,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T02:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 16800,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T03:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 16200,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T04:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 15600,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T05:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 15000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T06:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 14400,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T07:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 13800,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T08:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 13200,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T09:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 12600,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T10:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 12000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T11:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 11400,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T12:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 10800,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T13:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 10200,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T14:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 9600,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T15:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 9000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T16:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 8400,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T17:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 7800,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T18:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 7200,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T19:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 6600,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T20:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 6000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T21:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 5400,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T22:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 4800,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T23:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 4200,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T00:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 3600,
+            "unserved_energy_wh": 0,
+            "mode": "SAFE_MODE"
+          },
+          {
+            "epoch_utc": "2026-12-02T01:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 3000,
+            "unserved_energy_wh": 0,
+            "mode": "SAFE_MODE"
+          },
+          {
+            "epoch_utc": "2026-12-02T02:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 2400,
+            "unserved_energy_wh": 0,
+            "mode": "SAFE_MODE"
+          },
+          {
+            "epoch_utc": "2026-12-02T03:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 1800,
+            "unserved_energy_wh": 0,
+            "mode": "SAFE_MODE"
+          },
+          {
+            "epoch_utc": "2026-12-02T04:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 1200,
+            "unserved_energy_wh": 0,
+            "mode": "SAFE_MODE"
+          },
+          {
+            "epoch_utc": "2026-12-02T05:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 600,
+            "unserved_energy_wh": 0,
+            "mode": "SAFE_MODE"
+          },
+          {
+            "epoch_utc": "2026-12-02T06:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 0,
+            "mode": "SAFE_MODE"
+          },
+          {
+            "epoch_utc": "2026-12-02T07:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T08:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T09:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T10:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T11:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T12:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T13:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T14:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T15:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T16:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T17:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T18:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T19:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T20:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T21:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T22:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-02T23:00:00Z",
+            "sun_visible": false,
+            "earth_visible": true,
+            "charge_wh": 0,
+            "unserved_energy_wh": 600,
+            "mode": "POWER_LOSS"
+          },
+          {
+            "epoch_utc": "2026-12-03T00:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 900,
+            "unserved_energy_wh": 0,
+            "mode": "SAFE_MODE"
+          },
+          {
+            "epoch_utc": "2026-12-03T01:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 1800,
+            "unserved_energy_wh": 0,
+            "mode": "SAFE_MODE"
+          },
+          {
+            "epoch_utc": "2026-12-03T02:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 2700,
+            "unserved_energy_wh": 0,
+            "mode": "SAFE_MODE"
+          },
+          {
+            "epoch_utc": "2026-12-03T03:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 3600,
+            "unserved_energy_wh": 0,
+            "mode": "SAFE_MODE"
+          },
+          {
+            "epoch_utc": "2026-12-03T04:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 4500,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T05:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 5400,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T06:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 6300,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T07:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 7200,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T08:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 8100,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T09:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 9000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T10:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 9900,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T11:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 10800,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T12:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 11700,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T13:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 12600,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T14:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 13500,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T15:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 14400,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T16:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 15300,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T17:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 16200,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T18:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 17100,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T19:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 18000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T20:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 18900,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T21:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 19800,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T22:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T23:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T00:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          }
+        ]
+      },
+      {
+        "id": "A-plus-48h",
+        "site_id": "synthetic-demo-a",
+        "start_utc": "2026-12-03T00:00:00Z",
+        "source_claim_unverified": "SYNTHETIC series; terrain=SYNTHETIC-HORIZON-NOT-NASA; ephemeris=SYNTHETIC-EPHEMERIS-NOT-NASA; frame=MOON_ME",
+        "simulation_status": "CONSTRAINTS_MET",
+        "end_mode": "NOMINAL",
+        "risks": [],
+        "metrics": {
+          "duration_hours": 72,
+          "minimum_charge_wh": 18000,
+          "final_charge_wh": 20000,
+          "total_unserved_energy_wh": 0,
+          "longest_darkness_hours": 0,
+          "longest_earth_obstruction_hours": 0
+        },
+        "timeline": [
+          {
+            "epoch_utc": "2026-12-03T01:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 18900,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T02:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 19800,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T03:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T04:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T05:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T06:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T07:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T08:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T09:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T10:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T11:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T12:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T13:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T14:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T15:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T16:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T17:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T18:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T19:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T20:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T21:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T22:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T23:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T00:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T01:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T02:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T03:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T04:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T05:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T06:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T07:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T08:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T09:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T10:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T11:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T12:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T13:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T14:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T15:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T16:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T17:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T18:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T19:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T20:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T21:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T22:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T23:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T00:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T01:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T02:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T03:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T04:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T05:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T06:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T07:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T08:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T09:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T10:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T11:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T12:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T13:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T14:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T15:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T16:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T17:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T18:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T19:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T20:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T21:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T22:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-05T23:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-06T00:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          }
+        ]
+      },
+      {
+        "id": "B-planned",
+        "site_id": "synthetic-demo-b",
+        "start_utc": "2026-12-01T00:00:00Z",
+        "source_claim_unverified": "SYNTHETIC series; terrain=SYNTHETIC-HORIZON-NOT-NASA; ephemeris=SYNTHETIC-EPHEMERIS-NOT-NASA; frame=MOON_ME",
+        "simulation_status": "CONSTRAINTS_MET",
+        "end_mode": "NOMINAL",
+        "risks": [],
+        "metrics": {
+          "duration_hours": 72,
+          "minimum_charge_wh": 18000,
+          "final_charge_wh": 20000,
+          "total_unserved_energy_wh": 0,
+          "longest_darkness_hours": 0,
+          "longest_earth_obstruction_hours": 0
+        },
+        "timeline": [
+          {
+            "epoch_utc": "2026-12-01T01:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 18900,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T02:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 19800,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T03:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T04:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T05:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T06:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T07:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T08:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T09:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T10:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T11:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T12:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T13:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T14:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T15:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T16:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T17:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T18:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T19:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T20:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T21:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T22:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-01T23:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T00:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T01:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T02:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T03:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T04:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T05:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T06:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T07:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T08:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T09:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T10:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T11:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T12:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T13:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T14:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T15:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T16:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T17:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T18:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T19:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T20:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T21:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T22:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-02T23:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T00:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T01:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T02:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T03:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T04:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T05:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T06:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T07:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T08:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T09:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T10:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T11:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T12:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T13:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T14:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T15:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T16:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T17:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T18:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T19:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T20:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T21:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T22:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-03T23:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          },
+          {
+            "epoch_utc": "2026-12-04T00:00:00Z",
+            "sun_visible": true,
+            "earth_visible": true,
+            "charge_wh": 20000,
+            "unserved_energy_wh": 0,
+            "mode": "NOMINAL"
+          }
+        ]
+      }
+    ],
+    "limitations": [
+      "Educational ground simulation only: not an onboard flight computer, flight-ready navigation, or a NASA-certified mission tool.",
+      "Visibility time series and source names were supplied by the caller; no NASA LOLA, SPICE, or JPL data were authenticated.",
+      "Sun visibility is treated as fixed assumed electrical generation, ignoring incidence angle, eclipses, thermal conditions, dust and panel degradation.",
+      "Earth visibility is geometric only, not guaranteed radio contact, DSN availability, or an RF link-budget result.",
+      "Candidate selection compares ONLY supplied scenarios and assumed constraints; it cannot discover unprovided sites or flight trajectories."
+    ]
+  },
+  "request": {
+    "mission_id": "demo-replan-01",
+    "start_utc": "2026-12-01T00:00:00Z",
+    "duration_hours": 72,
+    "candidates": [
+      {
+        "id": "A-planned",
+        "site_id": "synthetic-demo-a",
+        "delay_hours": 0
+      },
+      {
+        "id": "A-plus-48h",
+        "site_id": "synthetic-demo-a",
+        "delay_hours": 48
+      },
+      {
+        "id": "B-planned",
+        "site_id": "synthetic-demo-b",
+        "delay_hours": 0
+      }
+    ],
+    "power": {
+      "battery_capacity_wh": 20000,
+      "initial_charge_wh": 18000,
+      "reserve_wh": 4000,
+      "solar_generation_w": 1500,
+      "load_w": 600
+    },
+    "max_comm_blackout_hours": 24,
+    "crew": {
+      "size": 2,
+      "o2_stock_kg": 6,
+      "food_stock_kg": 13,
+      "o2_kg_per_person_day": 0.84,
+      "food_kg_per_person_day": 1.76,
+      "reserve_hours": 12,
+      "aboard_during_delay": true,
+      "rate_source": "Example planning values (O2 0.84, food 1.76 kg/person/day); verify against NASA BVAD NASA/TP-2015-218570 before use"
+    }
+  },
+  "request_sha256": "f3aee043fb2f12faa2267b4f27773435c777d6a01018e4ee7146c612661010f5",
+  "scientifically_validated": false
+}

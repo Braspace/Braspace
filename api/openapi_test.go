@@ -186,7 +186,7 @@ func TestOpenAPIDocumentCoversRoutes(t *testing.T) {
 			}
 		}
 	}
-	for _, want := range []string{"/api/health", "/api/sites", "/api/sites/{id}", "/api/compare", "/api/scenarios/delay", "/api/openapi.json", "/v1/visibility"} {
+	for _, want := range []string{"/api/health", "/api/sites", "/api/sites/{id}", "/api/compare", "/api/scenarios/delay", "/api/openapi.json", "/api/onboard/site-evaluate", "/v1/visibility"} {
 		if _, ok := s.Paths[want]; !ok {
 			t.Errorf("%s missing from openapi.json", want)
 		}
@@ -232,6 +232,8 @@ func TestExamples(t *testing.T) {
 		{"scenario-delay", "/api/scenarios/delay", 200},
 		{"scenario-no-alternative", "/api/scenarios/delay", 200},
 		{"site-without-data", "/api/scenarios/delay", 422},
+		{"scenario-delay-resources", "/api/scenarios/delay", 200},
+		{"onboard-site-evaluate", "/api/onboard/site-evaluate", 200},
 	}
 	dir := filepath.Join("..", "examples", "mission")
 	for _, tc := range cases {

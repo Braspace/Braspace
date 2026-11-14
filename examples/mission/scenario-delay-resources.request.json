@@ -1,0 +1,27 @@
+{
+  "site_id": "synthetic-demo-a",
+  "start_utc": "2026-12-01T00:00:00Z",
+  "duration_hours": 72,
+  "delays_hours": [24, 48],
+  "include_nearby": true,
+  "max_nearby": 1,
+  "constraints": {},
+  "power": {
+    "battery_capacity_wh": 20000,
+    "initial_charge_wh": 18000,
+    "reserve_wh": 4000,
+    "solar_generation_w": 1500,
+    "load_w": 600
+  },
+  "max_comm_blackout_hours": 24,
+  "crew": {
+    "size": 2,
+    "o2_stock_kg": 6,
+    "food_stock_kg": 13,
+    "o2_kg_per_person_day": 0.84,
+    "food_kg_per_person_day": 1.76,
+    "reserve_hours": 12,
+    "aboard_during_delay": true,
+    "rate_source": "Example planning values (O2 0.84, food 1.76 kg/person/day); verify against NASA BVAD NASA/TP-2015-218570 before use"
+  }
+}

@@ -344,6 +344,159 @@
         }
       }
     },
+    "/api/onboard/site-evaluate": {
+      "post": {
+        "summary": "Run the onboard simulator (#70) on visibility computed from stored series, plus crew consumables",
+        "operationId": "siteOnboardEvaluate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteOnboardRequest"
+              },
+              "examples": {
+                "synthetic": {
+                  "externalValue": "../examples/mission/onboard-site-evaluate.request.json"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteOnboardResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON, unknown field or trailing data (INVALID_JSON)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown site (SITE_NOT_FOUND)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body above 128 KiB (REQUEST_TOO_LARGE)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type must be application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or data availability error; see `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (INTERNAL)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Engine failed or returned an invalid contract (ENGINE_ERROR)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Engine binary unavailable (ENGINE_UNAVAILABLE)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Engine call exceeded 2 s or request exceeded 20 s (ENGINE_TIMEOUT)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/onboard/evaluate": {
+      "post": {
+        "summary": "Onboard simulator v1 with caller-supplied visibility booleans (owned by #70)",
+        "operationId": "onboardEvaluate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON"
+          },
+          "413": {
+            "description": "Too large"
+          },
+          "415": {
+            "description": "Content-Type"
+          },
+          "422": {
+            "description": "Invalid scenario"
+          }
+        }
+      }
+    },
     "/api/openapi.json": {
       "get": {
         "summary": "This document",
@@ -522,7 +675,15 @@
               "ENGINE_ERROR",
               "ENGINE_UNAVAILABLE",
               "ENGINE_TIMEOUT",
-              "CORS_FORBIDDEN"
+              "CORS_FORBIDDEN",
+              "INVALID_CREW",
+              "INVALID_POWER",
+              "INVALID_MISSION",
+              "INVALID_CANDIDATES",
+              "GRID_UNSUPPORTED",
+              "GRID_MISMATCH",
+              "WINDOW_TOO_LONG",
+              "INVALID_SCENARIO"
             ]
           }
         },
@@ -1143,7 +1304,8 @@
             "type": "string",
             "enum": [
               "h",
-              "fraction"
+              "fraction",
+              "Wh"
             ]
           },
           "comparator": {
@@ -1228,6 +1390,17 @@
             "minimum": 0,
             "maximum": 3,
             "description": "0 means default (2)"
+          },
+          "crew": {
+            "$ref": "#/components/schemas/Crew"
+          },
+          "power": {
+            "$ref": "#/components/schemas/OnboardPower"
+          },
+          "max_comm_blackout_hours": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Required with power"
           }
         },
         "additionalProperties": false,
@@ -1295,6 +1468,12 @@
           },
           "evaluation": {
             "$ref": "#/components/schemas/Evaluation"
+          },
+          "consumables": {
+            "$ref": "#/components/schemas/Consumables"
+          },
+          "onboard": {
+            "$ref": "#/components/schemas/OnboardSummary"
           }
         },
         "additionalProperties": false,
@@ -1385,6 +1564,498 @@
           "model",
           "options",
           "outcome",
+          "scientifically_validated",
+          "limitations"
+        ]
+      },
+      "Crew": {
+        "type": "object",
+        "properties": {
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "o2_stock_kg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "food_stock_kg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "o2_kg_per_person_day": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100
+          },
+          "food_kg_per_person_day": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100
+          },
+          "reserve_hours": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 720
+          },
+          "aboard_during_delay": {
+            "type": "boolean",
+            "description": "Crew consumes stock while waiting out a delay"
+          },
+          "rate_source": {
+            "type": "string",
+            "description": "Required citation for the consumption rates"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "size",
+          "o2_stock_kg",
+          "food_stock_kg",
+          "o2_kg_per_person_day",
+          "food_kg_per_person_day",
+          "reserve_hours",
+          "aboard_during_delay",
+          "rate_source"
+        ],
+        "description": "Caller-declared crew and consumables; no defaults."
+      },
+      "ConsumableReport": {
+        "type": "object",
+        "properties": {
+          "resource": {
+            "type": "string",
+            "enum": [
+              "oxygen",
+              "food"
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "kg"
+            ]
+          },
+          "rate_kg_per_hour": {
+            "type": "number"
+          },
+          "used_during_delay_kg": {
+            "type": "number"
+          },
+          "stock_at_start_kg": {
+            "type": "number"
+          },
+          "required_for_window_kg": {
+            "type": "number"
+          },
+          "remaining_at_end_kg": {
+            "type": "number"
+          },
+          "autonomy_hours": {
+            "type": "number"
+          },
+          "margin_hours": {
+            "type": "number",
+            "description": "autonomy minus window length; negative = runs out before the end"
+          },
+          "depletion_utc": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "BELOW_RESERVE",
+              "DEPLETED_BEFORE_END"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "resource",
+          "unit",
+          "rate_kg_per_hour",
+          "used_during_delay_kg",
+          "stock_at_start_kg",
+          "required_for_window_kg",
+          "remaining_at_end_kg",
+          "autonomy_hours",
+          "margin_hours",
+          "depletion_utc",
+          "status"
+        ]
+      },
+      "OnboardRisk": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "CRITICAL",
+              "HIGH"
+            ]
+          },
+          "measured": {
+            "type": "number"
+          },
+          "allowed": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "category",
+          "severity",
+          "measured",
+          "allowed",
+          "unit",
+          "explanation"
+        ],
+        "description": "Same shape as the onboard simulator (#70) risks."
+      },
+      "Consumables": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "WARNING",
+              "CRITICAL",
+              "UNKNOWN"
+            ]
+          },
+          "rate_source": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsumableReport"
+            }
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardRisk"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "items",
+          "risks"
+        ],
+        "description": "UNKNOWN when no crew was declared."
+      },
+      "OnboardPower": {
+        "type": "object",
+        "properties": {
+          "battery_capacity_wh": {
+            "type": "number"
+          },
+          "initial_charge_wh": {
+            "type": "number"
+          },
+          "reserve_wh": {
+            "type": "number"
+          },
+          "solar_generation_w": {
+            "type": "number"
+          },
+          "load_w": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "battery_capacity_wh",
+          "initial_charge_wh",
+          "reserve_wh",
+          "solar_generation_w",
+          "load_w"
+        ],
+        "description": "Passed unchanged to the onboard simulator (#70)."
+      },
+      "OnboardMetrics": {
+        "type": "object",
+        "properties": {
+          "duration_hours": {
+            "type": "number"
+          },
+          "minimum_charge_wh": {
+            "type": "number"
+          },
+          "final_charge_wh": {
+            "type": "number"
+          },
+          "total_unserved_energy_wh": {
+            "type": "number"
+          },
+          "longest_darkness_hours": {
+            "type": "number"
+          },
+          "longest_earth_obstruction_hours": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "duration_hours",
+          "minimum_charge_wh",
+          "final_charge_wh",
+          "total_unserved_energy_wh",
+          "longest_darkness_hours",
+          "longest_earth_obstruction_hours"
+        ]
+      },
+      "OnboardSummary": {
+        "type": "object",
+        "properties": {
+          "simulation_status": {
+            "type": "string",
+            "enum": [
+              "CONSTRAINTS_MET",
+              "CONSTRAINTS_BREACHED"
+            ]
+          },
+          "end_mode": {
+            "type": "string",
+            "enum": [
+              "NOMINAL",
+              "SAFE_MODE",
+              "POWER_LOSS"
+            ]
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/OnboardMetrics"
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardRisk"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "simulation_status",
+          "end_mode",
+          "metrics",
+          "risks"
+        ]
+      },
+      "SiteOnboardCandidate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "site_id": {
+            "type": "string"
+          },
+          "delay_hours": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 720
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "site_id",
+          "delay_hours"
+        ]
+      },
+      "SiteOnboardRequest": {
+        "type": "object",
+        "properties": {
+          "mission_id": {
+            "type": "string"
+          },
+          "start_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 UTC"
+          },
+          "duration_hours": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 720
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SiteOnboardCandidate"
+            },
+            "minItems": 1,
+            "maxItems": 8
+          },
+          "power": {
+            "$ref": "#/components/schemas/OnboardPower"
+          },
+          "max_comm_blackout_hours": {
+            "type": "number",
+            "minimum": 0
+          },
+          "crew": {
+            "$ref": "#/components/schemas/Crew"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "mission_id",
+          "start_utc",
+          "duration_hours",
+          "candidates",
+          "power",
+          "max_comm_blackout_hours"
+        ]
+      },
+      "CandidateSource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "site_id": {
+            "type": "string"
+          },
+          "delay_hours": {
+            "type": "number"
+          },
+          "start_utc": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 UTC"
+          },
+          "science_status": {
+            "$ref": "#/components/schemas/ScienceStatus"
+          },
+          "engine_science_status": {
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/SeriesProvenance"
+          },
+          "observer_height_m": {
+            "type": "number"
+          },
+          "step_seconds": {
+            "type": "integer"
+          },
+          "consumables": {
+            "$ref": "#/components/schemas/Consumables"
+          },
+          "admissible": {
+            "type": "boolean"
+          },
+          "breached_risks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "site_id",
+          "delay_hours",
+          "start_utc",
+          "science_status",
+          "engine_science_status",
+          "provenance",
+          "observer_height_m",
+          "step_seconds",
+          "consumables",
+          "admissible",
+          "breached_risks"
+        ]
+      },
+      "SiteOnboardResponse": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "type": "string"
+          },
+          "request_sha256": {
+            "type": "string"
+          },
+          "model": {
+            "$ref": "#/components/schemas/Model"
+          },
+          "request": {
+            "$ref": "#/components/schemas/SiteOnboardRequest"
+          },
+          "combined_decision": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "CANDIDATE_MEETS_ALL_ASSUMED_LIMITS",
+                  "NO_CANDIDATE_MEETS_ALL_ASSUMED_LIMITS"
+                ]
+              },
+              "candidate_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "candidate_id"
+            ],
+            "description": "Energy, comms AND consumables must hold; first passing candidate in request order."
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CandidateSource"
+            }
+          },
+          "onboard": {
+            "type": "object",
+            "description": "Unmodified response of the onboard simulator (#70), braspace.onboard-simulator.v1"
+          },
+          "scientifically_validated": {
+            "type": "boolean"
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "request_sha256",
+          "model",
+          "combined_decision",
+          "candidates",
+          "onboard",
           "scientifically_validated",
           "limitations"
         ]

@@ -80,6 +80,38 @@ the stored horizon was computed for.
 
 Same request ⇒ byte-identical response (`request_sha256` / `scenario_sha256`).
 
+### `POST /api/onboard/site-evaluate` (#64, #69)
+
+Adapter to the onboard simulator from #70. Instead of typed-in booleans, each
+candidate (site + delay) gets its Sun/Earth visibility from the stored series via the
+Rust engine, and the result goes unchanged into `onboard.Evaluate` (battery, energy
+loss, comms blackout risks are Gustavo's model, not reimplemented here). Provenance
+and `science_status` travel with every candidate; `onboard.source_claim_unverified`
+names the terrain/ephemeris IDs.
+
+Rejected instead of filled in: a site without series (`DATA_NOT_AVAILABLE`), a window
+past the data (`OUTSIDE_COVERAGE`), more than 480 steps (`WINDOW_TOO_LONG`), candidates
+on different time steps (`GRID_MISMATCH`).
+
+Optional `crew` adds oxygen and food: autonomy, depletion time and margin at the end
+of the window, with `CRITICAL` / `HIGH` risks in the same shape as the onboard ones.
+`aboard_during_delay: true` means the crew consumes while waiting out a delay. Rates are
+inputs and `rate_source` is mandatory; the examples use 0.84 kg O2 and 1.76 kg food per
+person per day as placeholders to be checked against NASA BVAD (NASA/TP-2015-218570).
+Without `crew`, consumables are reported as `UNKNOWN`.
+
+`combined_decision` picks the first candidate (request order) where energy, comms and
+consumables all hold; the onboard simulator's own decision only weighs energy and comms.
+
+### Resources in `POST /api/scenarios/delay` (#69)
+
+`crew`, and `power` + `max_comm_blackout_hours`, are optional on the delay replan.
+Each option then also reports `consumables` and an `onboard` summary, and its checks
+include `oxygen_margin_hours`, `food_margin_hours`, `min_battery_charge_wh`,
+`unserved_energy_wh` and `longest_earth_obstruction_hours`, each with its baseline value.
+That is how a delay that fixes the energy budget but runs the oxygen down shows up.
+`examples/mission/scenario-delay-resources.*` has a full case.
+
 ## Errors
 
 JSON `{"error": "...", "code": "..."}`.
@@ -91,7 +123,7 @@ JSON `{"error": "...", "code": "..."}`.
 | 405 | wrong method |
 | 413 | `REQUEST_TOO_LARGE` (> 128 KiB) |
 | 415 | `UNSUPPORTED_MEDIA_TYPE` |
-| 422 | `INVALID_TIME`, `INVALID_DURATION`, `INVALID_SITES`, `INVALID_DELAYS`, `INVALID_CONSTRAINT`, `CONSTRAINTS_REQUIRED`, `DATA_NOT_AVAILABLE`, `OUTSIDE_COVERAGE`, `OBSERVER_HEIGHT_UNAVAILABLE` |
+| 422 | `INVALID_TIME`, `INVALID_DURATION`, `INVALID_SITES`, `INVALID_DELAYS`, `INVALID_CONSTRAINT`, `CONSTRAINTS_REQUIRED`, `DATA_NOT_AVAILABLE`, `OUTSIDE_COVERAGE`, `OBSERVER_HEIGHT_UNAVAILABLE`, `INVALID_CREW`, `INVALID_POWER`, `INVALID_MISSION`, `INVALID_CANDIDATES`, `GRID_MISMATCH`, `GRID_UNSUPPORTED`, `WINDOW_TOO_LONG`, `INVALID_SCENARIO` |
 | 500 | `INTERNAL` |
 | 502 | `ENGINE_ERROR` (non-zero exit or invalid output) |
 | 503 | `ENGINE_UNAVAILABLE` |
