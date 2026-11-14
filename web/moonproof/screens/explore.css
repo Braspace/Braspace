@@ -47,3 +47,6 @@
 @media (min-width:701px){ .ex-right{bottom:118px} .ex-left{max-height:calc(100vh - 254px)} }
 @media (min-width:701px) and (max-width:1300px){ .ex-left,.ex-right{top:120px} .ex-right{width:290px} .ex-left{width:250px} .ex-left{max-height:calc(100vh - 238px)} }
 #card-horizon .mp-layer-answer{font-size:15px;font-weight:700}
+/* Fidelity audit (items 9, 15). */
+@media (min-width:1301px){.ex-left,.ex-right{top:150px}.ex-left{width:300px}.ex-right{width:310px}}
+@media (max-width:700px){.ex-sheet{background:var(--glass);border-radius:30px;bottom:92px;padding:10px 16px 16px}}
