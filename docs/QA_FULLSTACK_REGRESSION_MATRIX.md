@@ -12,9 +12,10 @@ This document separates **software behavior proven by tests** from **lunar scien
 | NASA asset verifier | `tests/test_lola_regression.py` | wrong SHA-256, truncated/extended raster, little-endian signed decoding, malformed dimensions | `python3 -m unittest discover -s tests -v` |
 | Web static/proxy | `web/tests/hardening.test.mjs` | CSP/MIME regression, unexpected files, HEAD vs GET, unsafe HTTP methods, report CSP isolation | `npm --prefix web test` |
 | Existing broad suite | `api/*_test.go`, `api/onboard/*_test.go`, `web/tests/*.test.mjs`, `tests/*.py` | catalog, comparison, delays, energy, oxygen/food, reports, PostgreSQL, layers, source claims | Existing `.github/workflows/ci.yml` and web workflow |
+| Real web ↔ Go ↔ Rust HTTP replay | `scripts/fullstack-e2e.mjs` | browser-facing same-origin proxy, API catalog/compare/delay, onboard energy/crew, evidence reports, scientific disclosure | `fullstack-http` in the new workflow |
 | Deployment integration | `examples/mission/replay.sh`, Docker Compose, PostgreSQL | real API-to-Rust plumbing, ingestion/readback and container readiness | Existing `.github/workflows/ci.yml` |
 
-New focused gate: `.github/workflows/fullstack-regression.yml`, with Go race+vet, real Rust CLI tests, offline LOLA checks and Node 20/22 web regressions. **Do not disable the existing heavier Docker/PostgreSQL CI.**
+New focused gate: `.github/workflows/fullstack-regression.yml`, with Go race+vet, real Rust CLI tests, offline LOLA checks, Node 20/22 web regressions and an independent end-to-end real Go/Rust/web process replay. **Do not disable the existing heavier Docker/PostgreSQL CI.**
 
 ## Verification tiers
 
@@ -41,6 +42,8 @@ cargo test --manifest-path engine/Cargo.toml --locked --all-targets
 (cd api && go vet ./... && go test -race -count=1 ./...)
 npm --prefix web run lint
 npm --prefix web test
+# End-to-end requires compiled Go/Rust binaries; CI builds both
+node scripts/fullstack-e2e.mjs
 ```
 
 **Merge policy:** this QA PR is draft until its checks pass and owners review any accidental interactions with concurrent science/frontend branches. Avoid modifying source files in teammate branches. Science-critical failures block scientific claims, even if the training-only interface stays available.
