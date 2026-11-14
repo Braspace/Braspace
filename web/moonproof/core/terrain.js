@@ -138,7 +138,7 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
     for (const f of features) { const [x, y] = toPx(f.stereo_x_m, f.stereo_y_m); if (x > 0 && y > 0 && x < W && y < H) g.fillText(f.name.replace(/ crater$/i, ""), x, y); }
     g.shadowBlur = 0;
     const pts = route.map(id => sites.find(s => s.id === id)).filter(Boolean).map(s => toPx(s.stereo_x_m, s.stereo_y_m));
-    if (pts.length > 1) { g.setLineDash([1.5, 8]); g.lineCap = "round"; g.lineWidth = 2.6; g.strokeStyle = "rgba(255,255,255,.9)"; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); g.setLineDash([]); }
+    if (pts.length > 1) { g.setLineDash([1, 9]); g.lineCap = "round"; g.lineWidth = 2.4; g.strokeStyle = "#F2F4F5"; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); g.setLineDash([]); }
     layer.replaceChildren(...sites.map(s => {
       const [x, y] = toPx(s.stereo_x_m, s.stereo_y_m);
       const b = document.createElement("button"); b.type = "button"; b.className = "mp-marker"; b.dataset.site = s.id;

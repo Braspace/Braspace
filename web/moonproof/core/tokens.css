@@ -8,7 +8,7 @@
 @font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url("../fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2")}
 @font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:600;font-display:swap;src:url("../fonts/ibm-plex-mono-latin-600-normal.woff2") format("woff2")}
 :root{
-  --bg:#07090C; --card:#050607; --glass:rgba(12,15,18,.58); --glass-blur:22px; --glass-filter:blur(22px) saturate(1.2);
+  --bg:#07090C; --card:#050607; --glass:rgba(12,15,18,.58); --glass-blur:22px; --glass-filter:blur(22px) saturate(1.4);
   --pill:#F2F4F5; --pill-text:#07090C; --jade:#2EC4A0; --jade-text:#04110D;
   --text:#FFFFFF; --text-2:#B7C0C9; --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.16);
   --sun:#FFD166; --earth:#4C9BFF; --sim:#B48CF2; --real:#D5DEE7; --unknown:#808C99; --fail:#E5484D;
