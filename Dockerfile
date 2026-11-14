@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1
-# Bootstrap build. Dependencies are not yet pinned to immutable digests.
+# Build and test all Go/Rust/Web/Science in Docker before release.
+# Dependencies locked by Cargo.lock; immutable base-image digests remain a deployment-hardening task.
 #
 # One Dockerfile = build + every test + release (BR89).
 #   docker build --target test .      runs ALL tests (Go, Rust, web, science); fails if any fails
@@ -10,9 +11,9 @@
 FROM rust:1.83-alpine AS rustbuilder
 RUN apk add --no-cache musl-dev
 WORKDIR /build/engine
-COPY engine/Cargo.toml ./
+COPY engine/Cargo.toml engine/Cargo.lock ./
 COPY engine/src ./src
-RUN cargo build --release
+RUN cargo build --locked --release
 
 FROM golang:1.26-alpine AS gobuilder
 WORKDIR /build/api
