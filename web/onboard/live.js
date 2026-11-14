@@ -79,7 +79,7 @@
   // GET /api/sites/{id}/sky result -> { samples, horizon } or null. 404 (route or site series absent) => null => local model.
   function skyFromResponse(res) {
     if (!res || !res.ok || !res.data || !Array.isArray(res.data.samples) || !res.data.samples.length) return null;
-    return { samples: res.data.samples, horizon: horizonFromSky(res.data.terrain_horizon), science_status: res.data.science_status, step_seconds: res.data.step_seconds };
+    return { samples: res.data.samples, horizon: horizonFromSky(res.data.terrain_horizon), science_status: res.data.science_status, step_seconds: res.data.step_seconds, next_transitions: res.data.next_transitions || null };
   }
 
   // Header badges from /readyz, /v1/capabilities and the live science_status. Always ends with the permanent no-flight chip.
@@ -109,7 +109,46 @@
     return tr.map((s, i) => ({ ...s, i, ms: startMs + i * stepMin * 60e3 }));
   }
 
-  const api = { stepOf, stamp, SEAL_LOCAL, SEAL_NOSRC, isNum, num, seal, liveFromCompare, summaryFromMetrics, delayRow, horizonFromSky, skyFromResponse, badges };
+  // API refusal body is {"error": message, "code": CODE}. Returns { code, message } (code null if the body is not that JSON).
+  function parseApiError(res) {
+    let o = null;
+    try { o = JSON.parse(res && res.error); } catch (e) { o = null; }
+    if (o && typeof o === "object" && (o.code || o.error)) return { code: o.code || null, message: String(o.error || "") };
+    return { code: null, message: String((res && res.error) || "sem detalhe") };
+  }
+  // Limit the API states in its own refusal text ("... onboard limit of 480", "... 1 to 3 sites"); null if absent.
+  function limitFromMessage(msg, kind) {
+    const m = kind === "samples" ? /limit of (\d+)/.exec(msg || "") : /1 to (\d+)/.exec(msg || "");
+    return m ? Number(m[1]) : null;
+  }
+  // Refusal text for the panels: any non-zero status means the API answered and said no.
+  function refusalText(res) {
+    const e = parseApiError(res);
+    return "A API respondeu HTTP " + res.status + " e recusou o pedido" + (e.code ? " (" + e.code + ")" : "") + ": " + e.message;
+  }
+  // Up to `max` ids: the user's picks in order, deduplicated. Empty picks fall back to the current site.
+  function pickSites(selected, current, max) {
+    const out = [];
+    (selected && selected.length ? selected : [current]).forEach(id => { if (id && !out.includes(id) && out.length < max) out.push(id); });
+    return out;
+  }
+  // next_transitions of GET /api/sites/{id}/sky -> rows { label, text } (never invents a value; null => its reason).
+  function transitionRows(nt) {
+    if (!nt) return null;
+    const one = (label, t, reason, names) => {
+      if (!t) return { label, text: "sem transição: " + (reason || "motivo não informado pela API") };
+      const hrs = Number(t.hours_from_start);
+      const res = Number(t.resolution_seconds);
+      return { label, text: (names[t.kind] || t.kind) + " em " + (Number.isFinite(hrs) ? hrs.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) : "?") + " h (" + t.epoch_utc +
+        "); resolução " + (Number.isFinite(res) ? res + " s" : "?") + ": a mudança ocorreu entre " + t.last_unchanged_utc + " e " + t.epoch_utc + ", sem interpolar" };
+    };
+    return [
+      one("Sol", nt.sun, nt.sun_null_reason, { sunrise: "nascer do Sol", sunset: "pôr do Sol" }),
+      one("Terra", nt.earth, nt.earth_null_reason, { earth_rise: "Terra nasce", earth_set: "Terra se põe" })
+    ];
+  }
+
+  const api = { parseApiError, limitFromMessage, refusalText, pickSites, transitionRows, stepOf, stamp, SEAL_LOCAL, SEAL_NOSRC, isNum, num, seal, liveFromCompare, summaryFromMetrics, delayRow, horizonFromSky, skyFromResponse, badges };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.OnboardLive = api;
 })(typeof window !== "undefined" ? window : globalThis);

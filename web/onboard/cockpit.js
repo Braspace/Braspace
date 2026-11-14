@@ -512,12 +512,23 @@
               h("thead", {}, h("tr", {}, h("th", { text: "início" }), h("th", { text: "fim" }), h("th", { class: "n", text: "horas" }))),
               h("tbody", {}, windows.map(([a, b]) => h("tr", {}, h("td", { text: at(a) }), h("td", { text: at(b) }), h("td", { class: "n", text: f1((b - a + 1) * stp / 60) })))))),
         h("p", { class: "note", text: "Visibilidade geométrica. Não garante enlace de rádio. Orçamento de RF não modelado." })),
+      nextTransitionsPanel(),
       h("section", { class: "panel span2" },
         h("h2", { text: "Transições (4.5) · instante por amostra" }),
         h("p", { class: "note", text: "O instante é o da primeira amostra que mudou. Bisseção (4.6) ainda pendente." }),
         transitionsTable(tr))
     ];
   };
+  // next_transitions from GET /api/sites/{id}/sky: time to the next Sun and Earth change, with its resolution.
+  function nextTransitionsPanel() {
+    const sky = skyNow();
+    const rows = sky ? L.transitionRows(sky.next_transitions) : null;
+    return h("section", { class: "panel span2", id: "next-transitions" },
+      h("h2", { text: "Próxima transição (API)" }),
+      rows
+        ? h("dl", { class: "readout" }, rows.flatMap(r => [h("dt", { text: r.label }), h("dd", { text: r.text }, " ", seal("api", { science_status: sky.science_status }))]))
+        : h("p", { class: "note", text: "Sem next_transitions: a API não respondeu /api/sites/{id}/sky para este lugar e período (ou a rota não existe nesta API). Não há valor do navegador no lugar dele." }));
+  }
   function transitionsTable(tr) {
     const rows = [];
     M.transitions(tr, "sun_visible", stepOf(tr)).forEach(x => rows.push(["Luz", x.to ? "escuro → luz" : "luz → escuro", x.index]));
@@ -1338,10 +1349,10 @@
 
   function kvRow(label, value) { return h("tr", {}, h("td", { text: label }), h("td", { class: "n", text: value })); }
   function apiError(res) {
-    // status 0 = no connection. Any other status means the API answered and refused: show its text.
+    // status 0 = no connection. Any other status means the API answered and refused: show its code and message.
     return h("div", { class: "caution", role: "alert" }, res.status === 0
       ? "API indisponível: " + (res.error || "sem conexão") + ". Suba a API Go (e o Rust engine, se o endpoint pedir) e o dev-server.py."
-      : "A API respondeu HTTP " + res.status + " e recusou o pedido: " + (res.error || "sem detalhe"));
+      : L.refusalText(res));
   }
   function apiPanelFrame(title, note, button, body) {
     return h("section", { class: "panel span2" },
@@ -1384,12 +1395,28 @@
 
   function comparePanel() {
     const r = S.apiResults.compare;
+    const cap = S.compareMax || 3; // /api/compare: "site_ids must contain 1 to 3 sites" (api/mission.go); refined from the refusal text
+    const sel = L.pickSites(S.compareSel, S.site, cap);
     const button = callButton("COMPARAR LUGARES (API)", async () => {
-      // /api/compare accepts 1 to 3 sites: current site first, then up to two others from the catalog.
-      const ids = (S.sitesApi || []).map(s => s.id).filter(id => id !== S.site);
-      const pick = [S.site].concat(ids.length ? ids : ["synthetic-demo-a", "synthetic-demo-b"].filter(id => id !== S.site)).slice(0, 3);
+      const pick = L.pickSites(S.compareSel, S.site, cap);
       S.apiResults.compare = await OnboardApi.compare({ site_ids: pick, start_utc: iso(startMs()), duration_hours: S.durationH, include_series: false });
+      const e = L.parseApiError(S.apiResults.compare);
+      if (!S.apiResults.compare.ok && e.code === "INVALID_SITES") S.compareMax = L.limitFromMessage(e.message, "sites") || S.compareMax;
     });
+    const catalog = (S.sitesApi || []).map(s => s.id);
+    const picker = h("fieldset", { class: "compare-pick" }, h("legend", { text: "Lugares a comparar (a API aceita de 1 a " + cap + ")" }),
+      catalog.map(id => {
+        const cb = h("input", { type: "checkbox", value: id });
+        cb.checked = sel.includes(id);
+        cb.disabled = !cb.checked && sel.length >= cap;
+        cb.addEventListener("change", () => {
+          const cur = L.pickSites(S.compareSel, S.site, cap).filter(x => x !== id);
+          S.compareSel = cb.checked ? cur.concat(id).slice(0, cap) : cur;
+          renderTab();
+        });
+        return h("label", { style: "margin-right:12px;white-space:nowrap" }, cb, " " + id);
+      }),
+      h("p", { class: "note", id: "compare-note", text: "Enviando " + sel.length + " de " + catalog.length + " lugares: " + sel.join(", ") + ". Máximo " + cap + " por consulta; os demais ficam de fora." }));
     let body = h("p", { class: "dim", text: "Ainda não consultado. Compara lugares do catálogo, com dados de série quando existirem." });
     if (r && !r.ok) body = apiError(r);
     if (r && r.ok) {
@@ -1406,14 +1433,14 @@
             h("td", { text: s.science_status || "—" }));
         }))));
     }
-    return apiPanelFrame("API · Comparação de lugares (/api/compare)", "Lugares sem série aparecem como NO_SERIES_DATA, sem números.", button, body);
+    return apiPanelFrame("API · Comparação de lugares (/api/compare)", "Lugares sem série aparecem como NO_SERIES_DATA, sem números.", button, h("div", {}, picker, body));
   }
 
   function siteEvalPanel() {
     const r = S.apiResults.siteEval;
     const button = callButton("AVALIAR COM SÉRIE (API)", async () => {
       const body = {
-        mission_id: "cockpit-" + S.site, start_utc: iso(startMs()), duration_hours: Math.min(S.durationH, 480), // onboard limit: 480 samples at 1 h
+        mission_id: "cockpit-" + S.site, start_utc: iso(startMs()), duration_hours: Math.min(S.durationH, S.onboardMax || S.durationH), // limit learned from the API refusal text
         candidates: [{ id: "planejado", site_id: S.site, delay_hours: 0 }, { id: "atraso-48h", site_id: S.site, delay_hours: 48 }],
         power: {
           battery_capacity_wh: S.power.battery_capacity_wh, initial_charge_wh: S.power.initial_charge_wh,
@@ -1421,17 +1448,28 @@
         },
         max_comm_blackout_hours: S.power.max_comm_blackout_hours
       };
-      S.apiResults.siteEval = await OnboardApi.siteEvaluate(body);
+      let res = await OnboardApi.siteEvaluate(body);
+      const e = L.parseApiError(res);
+      const lim = !res.ok && e.code === "WINDOW_TOO_LONG" ? L.limitFromMessage(e.message, "samples") : null;
+      if (lim && lim < body.duration_hours) {  // the API states its limit: retry once inside it and say so
+        S.onboardMax = lim;
+        body.duration_hours = lim;
+        res = await OnboardApi.siteEvaluate(body);
+        res.windowNote = "O pedido de " + S.durationH + " h passou do limite da API (" + lim + " amostras, WINDOW_TOO_LONG); a avaliação cobre só as primeiras " + lim + " h.";
+      } else if (S.onboardMax && S.onboardMax < S.durationH && res.ok) {
+        res.windowNote = "Limite da API: " + S.onboardMax + " h; a avaliação cobre só as primeiras " + S.onboardMax + " h de " + S.durationH + " h.";
+      }
+      S.apiResults.siteEval = res;
     });
     let body = h("p", { class: "dim", text: "Ainda não consultado. Só lugares com série ingerida (synthetic-demo-a e -b) são aceitos." });
     if (r && !r.ok) body = apiError(r);
     if (r && r.ok) {
       const c0 = (r.data.candidates || [])[0] || {};
-      body = h("dl", { class: "readout" },
+      body = h("div", {}, r.windowNote ? h("p", { class: "caution", role: "status", id: "window-note", text: r.windowNote }) : null, h("dl", { class: "readout" },
         h("dt", { text: "decisão combinada" }), h("dd", { text: r.data.combined_decision || "—" }),
         h("dt", { text: "simulador de energia (estado)" }), h("dd", { text: r.data.onboard ? r.data.onboard.simulation_status : "—" }),
         h("dt", { text: "ciência do primeiro candidato" }), h("dd", { text: c0.science_status || "—" }),
-        h("dt", { text: "riscos quebrados (primeiro candidato)" }), h("dd", { text: (c0.breached_risks || []).length ? String(c0.breached_risks.length) : "nenhum" }));
+        h("dt", { text: "riscos quebrados (primeiro candidato)" }), h("dd", { text: (c0.breached_risks || []).length ? String(c0.breached_risks.length) : "nenhum" })));
     }
     return apiPanelFrame("API · Energia com série de visibilidade (/api/onboard/site-evaluate)", "Sol e Terra vêm da série do servidor, não do navegador.", button, body);
   }
