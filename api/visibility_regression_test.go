@@ -83,7 +83,7 @@ func TestVisibilityEvidencePassportIsDeterministicAndUnverified(t *testing.T) {
     if first.Code != 200 || second.Code != 200 {
         t.Fatalf("HTTP %d and %d: %s", first.Code, second.Code, first.Body.String())
     }
-    a, b := decode(t, first), decode(t, second)
+    a := decode(t, first)
     passport, ok := a["evidence_passport"].(map[string]any)
     if !ok {
         t.Fatal("missing evidence passport")
