@@ -77,19 +77,41 @@ export class SiteSeries {
     const i0 = Math.ceil((t0 - this.start) / HOUR_MS);
     const i1 = i0 + hours;
     if (i0 < 0 || i1 > this.count) return { status: "NOT_COMPUTED", reason: "Requested dates are outside the computed ephemeris window." };
-    let sun = 0, earth = 0, both = 0, dark = 0, maxDark = 0, gap = 0, maxGap = 0, maxSunEl = -Infinity;
+    let sun = 0, earth = 0, both = 0, dark = 0, maxDark = 0, gap = 0, maxGap = 0, maxSunEl = -Infinity, darkRuns = 0, blackoutRuns = 0;
     for (let i = i0; i < i1; i++) {
       const s = this.sunMargin[i] >= 0, e = this.earthMargin[i] >= 0;
-      if (s) { sun++; dark = 0; } else { dark++; if (dark > maxDark) maxDark = dark; }
-      if (e) { earth++; gap = 0; } else { gap++; if (gap > maxGap) maxGap = gap; }
+      if (s) { sun++; dark = 0; } else { if (dark === 0) darkRuns++; dark++; if (dark > maxDark) maxDark = dark; }
+      if (e) { earth++; gap = 0; } else { if (gap === 0) blackoutRuns++; gap++; if (gap > maxGap) maxGap = gap; }
       if (s && e) both++;
       if (this.s.sunEl[i] > maxSunEl) maxSunEl = this.s.sunEl[i];
     }
     return {
       status: "COMPUTED", hours,
       sunPct: (100 * sun) / hours, earthPct: (100 * earth) / hours, bothPct: (100 * both) / hours,
-      longestDarkH: maxDark, longestBlackoutH: maxGap, maxSunElDeg: maxSunEl,
+      longestDarkH: maxDark, longestBlackoutH: maxGap, maxSunElDeg: maxSunEl, darkRuns, blackoutRuns,
     };
+  }
+
+  /** Fraction of hours per day with the body above the terrain horizon, for `days` days from t0. */
+  daily(t0, days, body) {
+    const m = body === "sun" ? this.sunMargin : this.earthMargin;
+    const i0 = Math.ceil((t0 - this.start) / HOUR_MS), out = [];
+    for (let d = 0; d < days; d++) {
+      let n = 0, v = 0;
+      for (let h = 0; h < 24; h++) { const i = i0 + d * 24 + h; if (i >= 0 && i < this.count) { n++; if (m[i] >= 0) v++; } }
+      out.push(n ? v / n : NaN);
+    }
+    return out;
+  }
+
+  /** Hours from t until the body next becomes `visible` (true/false); NOT_COMPUTED outside. */
+  nextState(t, body, visible) {
+    const m = body === "sun" ? this.sunMargin : this.earthMargin;
+    const i = this.index(t);
+    if (i < 0) return { status: "NOT_COMPUTED" };
+    if ((m[i] >= 0) === visible) return { status: "COMPUTED", hours: 0, at: t };
+    for (let k = i + 1; k < this.count; k++) if ((m[k] >= 0) === visible) return { status: "COMPUTED", hours: k - (t - this.start) / HOUR_MS, at: this.start + k * HOUR_MS };
+    return { status: "COMPUTED", hours: Infinity, at: null };
   }
 
   /** Hours until the visibility of 'sun' or 'earth' next changes, from time t. */

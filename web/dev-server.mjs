@@ -18,12 +18,14 @@ const staticFiles=new Map([
 // Polar Lab / Landing Lab: static page, modules and precomputed NASA-derived data.
 // Only fixed prefixes, a strict character set and known extensions are served.
 const labTypes={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",
- ".json":"application/json; charset=utf-8",".bin":"application/octet-stream",".jpg":"image/jpeg"};
+ ".json":"application/json; charset=utf-8",".bin":"application/octet-stream",".jpg":"image/jpeg",".woff2":"font/woff2"};
 export function labFile(pathname){
  if(pathname==="/lab.html")return {name:"lab.html",type:labTypes[".html"]};
- if(!/^\/(lab|data)\/[A-Za-z0-9_\-\/]+\.(js|css|json|bin|jpg)$/.test(pathname)||pathname.includes(".."))return null;
+ if(!/^\/(lab|data)\/[A-Za-z0-9_\-\/]+\.(js|css|json|bin|jpg|woff2)$/.test(pathname)||pathname.includes(".."))return null;
  const ext=pathname.slice(pathname.lastIndexOf("."));
- if(pathname.startsWith("/lab/")&&![".js",".css"].includes(ext))return null;
+ // lab/: code and styles, plus self-hosted OFL fonts under lab/fonts/ only
+ if(pathname.startsWith("/lab/")&&![".js",".css"].includes(ext)&&!(ext===".woff2"&&pathname.startsWith("/lab/fonts/")))return null;
+ if(ext===".woff2"&&!pathname.startsWith("/lab/fonts/"))return null;
  const name=path.normalize(pathname.slice(1));
  if(!name.startsWith("lab"+path.sep)&&!name.startsWith("data"+path.sep))return null;
  return {name,type:labTypes[ext]};
