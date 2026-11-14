@@ -42,6 +42,21 @@ export function onboardFile(pathname){
  const type=onboardTypes.get(name);
  return type?{name:"onboard/"+name,type}:null;
 }
+// Mission Studio has a fixed allowlist; source specs, secrets and local files
+// are deliberately inaccessible through this same-origin preview.
+const studioTypes=new Map([
+ ["index.html","text/html; charset=utf-8"],
+ ["app.js","text/javascript; charset=utf-8"],
+ ["api.js","text/javascript; charset=utf-8"],
+ ["studio.css","text/css; charset=utf-8"]
+]);
+export function studioFile(pathname){
+ if(pathname==="/studio/")return {name:"studio/index.html",type:studioTypes.get("index.html")};
+ if(!pathname.startsWith("/studio/"))return null;
+ const name=pathname.slice("/studio/".length);
+ const type=studioTypes.get(name);
+ return type?{name:"studio/"+name,type}:null;
+}
 const csp=[
   "default-src 'none'",
   "script-src 'self' https://cdn.jsdelivr.net",
@@ -116,7 +131,7 @@ export function createServer(){
   if(pathname==="/onboard/"||pathname==="/onboard/index.html"||pathname==="/onboard/cockpit.html"){
    res.setHeader("Content-Security-Policy",csp.replace("style-src 'self'","style-src 'self' 'unsafe-inline'"));
   }
-  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname);
+  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname)||studioFile(pathname);
   if(!file){res.writeHead(404);res.end("Not found");return;}
   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
   try{

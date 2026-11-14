@@ -1,0 +1,15 @@
+# C · Comparar
+
+**Origem visual:** Heloísa · BRASPACE MoonProof — Telas · https://claude.ai/artifact/QV5ykVW5q9HvyZsH68SPf1
+
+## Estrutura de tela, componentes e ações
+Três cenários A/B/C com duas regiões e duas datas, mesmas 14d e hardware hipotético; pergunta curta Qual cenário atende às regras? Tabela e linhas temporais, explicação por falhas e margens.
+
+## Tradução segura para implementação
+Studio Compare deve usar mesma janela UTC e só mostrar números AVAILABLE; regra do mockup não vira limite do sistema sem input.
+
+## Estados e validação
+- Placeholder, erro, sem série e offline precisam ser distintos; zero nunca substitui ausente.
+- Fontes científicas com units/UTC/frame/resolução e selo textual; dados do mockup são ILUSTRATIVOS.
+- Accessibility: foco visível, legenda de tabela, alvos de 44px, reduced motion e mobile responsivo.
+- Revisão pela autora de UX antes de declarar equivalência visual ao artefato.

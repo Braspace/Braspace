@@ -1,0 +1,19 @@
+# 06 — Evidence & Data
+
+**Origem:** requisitos relatados da Heloísa e código existente em web/lab/, não transcrição do artefato Claude.
+
+## Objetivo e componentes
+Fontes NASA/PDS/LOLA, JPL/NAIF e PGDA; proveniência, checksum, frame e limitações.
+
+## API, ação e estados
+GET /api/sites/{id}/sky para metadata; status VALIDATED nunca inferido.
+Comportamento offline: mostrar indisponibilidade; nunca números inventados nem badge VALIDATED.
+A navegação por teclado, identidade visual consistente, foco visível e layout mobile são obrigatórios.
+
+## Experiências
+- Público/estudante: explicação simples e progressiva.
+- Pesquisador: fonte, unidades, estado, séries e limitações.
+- Educador: exercícios de exploração e justificativas replicáveis.
+
+## Aceitação
+Fluxos e dados verificáveis, estados vazios claros, contato direto com Polaris Lab/Onboard quando aplicável, nenhum risco oculto e revisão humana por @lisanogueira.

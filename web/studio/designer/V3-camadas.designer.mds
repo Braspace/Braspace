@@ -1,0 +1,15 @@
+# v3 · Resposta / Por quê / Prova
+
+**Origem visual:** Heloísa · BRASPACE MoonProof — Telas · https://claude.ai/artifact/QV5ykVW5q9HvyZsH68SPf1
+
+## Estrutura de tela, componentes e ações
+Cada cartão possui níveis de profundidade no próprio cartão. Resposta: frase+até 3 valores. Por quê: explicação e gráfico de janelas. Prova: método, definição, passo amostral, incerteza e versões + exports.
+
+## Tradução segura para implementação
+Troca de camada não chama endpoint diferente e não altera número base; dados faltantes aparecem indisponíveis em qualquer camada.
+
+## Estados e validação
+- Placeholder, erro, sem série e offline precisam ser distintos; zero nunca substitui ausente.
+- Fontes científicas com units/UTC/frame/resolução e selo textual; dados do mockup são ILUSTRATIVOS.
+- Accessibility: foco visível, legenda de tabela, alvos de 44px, reduced motion e mobile responsivo.
+- Revisão pela autora de UX antes de declarar equivalência visual ao artefato.
