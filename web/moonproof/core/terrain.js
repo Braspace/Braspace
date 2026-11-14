@@ -12,7 +12,14 @@ function shade(grid) {
     if (!Number.isFinite(hx + hy)) { d[p + 3] = 255; continue; }
     const len = Math.hypot(hx, hy, 1), lam = Math.max(0, (-hx * L[0] - hy * L[1] + L[2]) * k / len);
     const v = Math.round(18 + 190 * Math.pow(lam, 1.4));
-    d[p] = v; d[p + 1] = v + 2; d[p + 2] = v + 6; d[p + 3] = 255;
+    // False-colour altitude: blue low ground to gold high ground, modulated
+    // by the real LOLA surface normal. This is a VISUAL ENCODING, not LROC imagery.
+    const altitude = grid.at(i,j), t = Math.max(0,Math.min(1,(altitude+5000)/10000));
+    const stops = [[17,49,95],[52,78,123],[124,132,137],[201,181,136],[255,217,117]];
+    const f = t*4, k0 = Math.min(3,Math.floor(f)), blend = f-k0;
+    const sh = .30 + .70*(v/210);
+    for(let c=0;c<3;c++)d[p+c] = Math.round((stops[k0][c]*(1-blend)+stops[k0+1][c]*blend)*sh);
+    d[p+3]=255;
   }
   return img;
 }
@@ -22,7 +29,7 @@ function shade(grid) {
  *  sites: [{ id, n, name, stereo_x_m, stereo_y_m }]; route: [siteId, ...] dotted line.
  * Returns Promise<{ select(id), zoom(f), grid, el }>.
  */
-export async function mountTerrain(container, { sites = [], selected = null, route = [], onSelect } = {}) {
+export async function mountTerrain(container, { sites = [], features = [], selected = null, route = [], onSelect } = {}) {
   container.classList.add("mp-terrain");
   Object.assign(container.style, { position: "fixed", inset: "0", overflow: "hidden", background: "var(--bg)" });
   const grid = await loadRegion();
@@ -54,7 +61,15 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
     vg.addColorStop(0, "rgba(7,9,12,0)"); vg.addColorStop(1, "rgba(7,9,12,.75)"); g.fillStyle = vg; g.fillRect(0, 0, W, H);
     const pts = route.map(id => sites.find(s => s.id === id)).filter(Boolean).map(s => toPx(s.stereo_x_m, s.stereo_y_m, W, H, mpp));
     if (pts.length > 1) { g.setLineDash([2, 7]); g.lineCap = "round"; g.lineWidth = 2.5; g.strokeStyle = "rgba(255,255,255,.85)"; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); g.setLineDash([]); }
-    layer.replaceChildren(...sites.map(s => {
+    const featureLabels=features.filter(f=>Number.isFinite(f.stereo_x_m)&&Number.isFinite(f.stereo_y_m))
+      .map(f=>{
+        const [x,y]=toPx(f.stereo_x_m,f.stereo_y_m,W,H,mpp);
+        const label=document.createElement("span");label.className="mp-feature-label";
+        label.textContent=f.name;label.style.left=x+"px";label.style.top=y+"px";
+        label.title="IAU feature centre · label only, NOT a landing site";
+        return label;
+      });
+    layer.replaceChildren(...featureLabels,...sites.map(s => {
       const [x, y] = toPx(s.stereo_x_m, s.stereo_y_m, W, H, mpp);
       const b = document.createElement("button"); b.type = "button"; b.className = "mp-marker"; b.dataset.site = s.id;
       b.textContent = s.n; b.setAttribute("aria-label", t("terrain.marker", { n: s.n, name: s.name })); b.setAttribute("aria-pressed", String(s.id === sel));
