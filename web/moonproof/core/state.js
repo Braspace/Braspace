@@ -11,7 +11,7 @@ export function parseState(search = globalThis.location?.search || "") {
   const q = new URLSearchParams(search);
   const s = { site: q.get("site") || null, start: q.get("start") || null, hours: null,
     layer: null, task: q.get("task") || null, lang: q.get("lang") || null, ...DEFAULT_RULES };
-  for (const k of NUM) if (q.has(k)) { const v = Number(q.get(k)); if (Number.isFinite(v) && v > 0) s[k] = v; }
+  for (const k of NUM) if (q.has(k)) { const raw=q.get(k),v=Number(raw); const limits=k==="hours"?[1,720]:k==="battery"?[0,100]:[0,720]; if (raw!=="" && Number.isFinite(v) && v>=limits[0] && v<=limits[1] && (k!=="hours" || Number.isInteger(v))) s[k]=v; }
   if (s.start && Number.isNaN(Date.parse(s.start))) s.start = null;
   if (!(s.task in TASKS)) s.task = null;
   const l = q.get("layer");
