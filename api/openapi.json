@@ -569,9 +569,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Image bytes",
+            "description": "Image bytes (image/jpeg) or a 3D model (model/gltf-binary, streamed from a verified disk cache; supports Range and If-None-Match)",
             "content": {
-              "image/jpeg": {}
+              "image/jpeg": {},
+              "model/gltf-binary": {}
             }
           },
           "404": {
@@ -2416,7 +2417,8 @@
             "enum": [
               "global_albedo_visualization",
               "science_elevation",
-              "global_dem_render"
+              "global_dem_render",
+              "visual_model_3d"
             ]
           },
           "registry_ref": {

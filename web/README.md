@@ -55,3 +55,9 @@ The Node tests cover static serving, content security policy, no path traversal,
 - [ ] Public HTTPS application and anonymous-reader <=7-slide English NASA demo.
 - [ ] AI assistance and any image generation disclosed and credited.
 - [ ] Authorized teammate submits NASA form and saves official confirmation before deadline.
+
+## API base for static hosting (BR41)
+
+`moon3d.js` builds its API paths with `window.BRASPACE_API_BASE || ""`. Same-origin deployments set nothing. A static host (GitHub Pages) sets it in `config.js` before the module loads, e.g. `window.BRASPACE_API_BASE = "https://api.example.org";`, so the file no longer needs to be rewritten at publish time. The CSP must then allow that origin in `img-src` (texture) and `connect-src` (model).
+
+The NASA SVS 14959 Moon model is loaded on demand with the button "Load NASA 3D model" (or `?model=1`); the sphere stays the default.
