@@ -57,6 +57,8 @@ test("breach reason (limit and measured value) comes from the API response",()=>
  const {t,ids}=loadApp();
  const risk={category:"EARTH_GEOMETRIC_BLACKOUT",severity:"HIGH",measured:41,allowed:7,unit:"h",explanation:"x"};
  assert.match(t.breachText(risk),/measured 41 h exceeds limit 7 h/);
+ assert.match(t.breachText({...risk,category:"ENERGY_RESERVE",measured:3,allowed:7}),/measured 3 h is below limit 7 h/);
+ assert.match(t.breachText({...risk,measured:7,allowed:7}),/measured 7 h equals limit 7 h/);
  assert.match(t.breachText({category:"X"}),/no measured\/limit values/);
  const resp={science_status:"UNVERIFIED_INPUTS",options:[
   {id:"baseline",simulation_status:"CONSTRAINTS_BREACHED",risks:[risk],metrics:{minimum_charge_wh:650,longest_earth_obstruction_hours:41}},
