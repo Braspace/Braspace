@@ -84,7 +84,9 @@
         "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R01",
         "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
         "source_accuracy_m": "5-10"
-      }
+      },
+      "series_file": "series/connecting-ridge-NAIF-PRELIMINARY.json",
+      "note": "NASA LOLA/NAIF source-derived preliminary site series. NOT independently scientifically validated; UNVERIFIED. Feature center, not landing point."
     },
     {
       "id": "connecting-ridge-extension",
