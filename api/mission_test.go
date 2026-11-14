@@ -110,7 +110,7 @@ func TestSites(t *testing.T) {
 		t.Fatal(rec.Code)
 	}
 	sites := decode(t, rec)["sites"].([]any)
-	if len(sites) != 15 {
+	if len(sites) != 16 {
 		t.Fatalf("got %d sites", len(sites))
 	}
 	for _, path := range []string{"/api/sites/unknown-site", "/api/sites/..%2Fetc", "/api/sites/UPPER"} {
@@ -133,7 +133,7 @@ func TestSites(t *testing.T) {
 	}
 }
 
-const compareBody = `{"site_ids":["synthetic-demo-a","synthetic-demo-b","malapert-massif"],"start_utc":"2026-12-01T00:00:00Z","duration_hours":72}`
+const compareBody = `{"site_ids":["synthetic-demo-a","synthetic-demo-b","haworth"],"start_utc":"2026-12-01T00:00:00Z","duration_hours":72}`
 
 func TestCompareDeterministicAndHonest(t *testing.T) {
 	h, _ := testAPI(t, "ok")
@@ -173,10 +173,10 @@ func TestCompareValidation(t *testing.T) {
 		{"date out of bounds", r("2026-12-01", "1999-12-01"), "", 422},
 		{"zero duration", r(`"duration_hours":72`, `"duration_hours":0`), "", 422},
 		{"duration too long", r(`"duration_hours":72`, `"duration_hours":721`), "", 422},
-		{"four sites", r(`"malapert-massif"`, `"malapert-massif","haworth"`), "", 422},
-		{"duplicate site", r(`"malapert-massif"`, `"synthetic-demo-a"`), "", 422},
-		{"invalid site id", r(`"malapert-massif"`, `"Robert'); DROP TABLE sites;--"`), "", 422},
-		{"unknown site", r(`"malapert-massif"`, `"atlantis"`), "", 404},
+		{"four sites", r(`"haworth"`, `"haworth","nobile-rim-2"`), "", 422},
+		{"duplicate site", r(`"haworth"`, `"synthetic-demo-a"`), "", 422},
+		{"invalid site id", r(`"haworth"`, `"Robert'); DROP TABLE sites;--"`), "", 422},
+		{"unknown site", r(`"haworth"`, `"atlantis"`), "", 404},
 	}
 	for _, tc := range cases {
 		req := httptest.NewRequest("POST", "/api/compare", strings.NewReader(tc.body))
@@ -304,7 +304,7 @@ func TestDelayScenarioErrors(t *testing.T) {
 		name, body, code string
 		status           int
 	}{
-		{"site without NASA data", r("synthetic-demo-a", "malapert-massif"), "DATA_NOT_AVAILABLE", 422},
+		{"site without NASA data", r("synthetic-demo-a", "haworth"), "DATA_NOT_AVAILABLE", 422},
 		{"unknown site", r("synthetic-demo-a", "atlantis"), "SITE_NOT_FOUND", 404},
 		{"no constraints", r(`"constraints":{"max_continuous_dark_hours":20,"min_earth_fraction":0.5}`, `"constraints":{}`), "CONSTRAINTS_REQUIRED", 422},
 		{"fraction above 1", r(`"min_earth_fraction":0.5`, `"min_earth_fraction":1.5`), "INVALID_CONSTRAINT", 422},

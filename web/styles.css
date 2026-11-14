@@ -23,3 +23,17 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:#86e5f2}a:hover{t
 .panel-view .source-box{margin:0 22px 14px}.panel-view>.placeholder{margin:0 0 14px}.panel-view .secondary{max-width:360px}.panel-view .small-muted{margin:8px 0}
 @media(max-width:890px){main{display:flex;flex-direction:column}.initial-state{order:-1;margin:12px 0}.initial-state p{display:none}.page-head{padding:12px 0}.lede{display:none}.eyebrow{display:none}.content{order:3}}
 @media(max-width:560px){.initial-state{flex-direction:column;align-items:stretch;gap:10px;padding:12px}.initial-state .primary{width:100%;min-width:0}.metrics-scope{font-size:12px}}
+
+/* 390 px phone layout (issue #125): scroll cue on the tab bar, readable globe overlay, no sideways page scroll. */
+html,body{max-width:100%;overflow-x:hidden}
+@media(max-width:560px){.topnav{overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-right:34px;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 34px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 34px),transparent)}.topnav::-webkit-scrollbar{display:none}.navitem{scroll-snap-align:start}}
+@media(max-width:430px){
+ .stage-overlay{flex-wrap:wrap;gap:4px 8px;letter-spacing:.06em;font-size:12px;text-shadow:0 1px 3px #000,0 0 8px #000}
+ .stage-top{top:10px;flex-direction:column;align-items:flex-start;padding:6px 8px;border-radius:8px;background:linear-gradient(180deg,#050c18d9,#050c1899);right:auto;max-width:calc(100% - 20px)}
+ .stage-top span{white-space:normal;max-width:100%}
+ .stage-top span:first-child{white-space:nowrap}
+ .stage-bottom{bottom:10px;padding:6px 8px;border-radius:8px;background:#050c18cc;color:#c6d6ea}
+ .stage-bottom span{max-width:100%;flex:1 1 100%;line-height:1.35}
+ .stage-bottom button{white-space:nowrap;font-size:12px;padding:8px 10px;min-height:36px}
+ .panel-head{padding:14px 14px}
+}

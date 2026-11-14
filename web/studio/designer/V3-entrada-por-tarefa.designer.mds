@@ -1,0 +1,15 @@
+# v3 · Entrada por tarefa
+
+**Origem visual:** Heloísa · BRASPACE MoonProof — Telas · https://claude.ai/artifact/QV5ykVW5q9HvyZsH68SPf1
+
+## Estrutura de tela, componentes e ações
+Três escolhas voluntárias: Explorar a Lua (Resposta), Dar uma aula (Por quê + Kit Aula), Planejar uma missão (Prova + Kit Planejamento). O mesmo núcleo e dados atendem a todos.
+
+## Tradução segura para implementação
+Seletor de experiência no Studio. User escolhe; jamais inferir perfil. Mostrar camada e ferramentas sempre disponíveis para outras escolhas.
+
+## Estados e validação
+- Placeholder, erro, sem série e offline precisam ser distintos; zero nunca substitui ausente.
+- Fontes científicas com units/UTC/frame/resolução e selo textual; dados do mockup são ILUSTRATIVOS.
+- Accessibility: foco visível, legenda de tabela, alvos de 44px, reduced motion e mobile responsivo.
+- Revisão pela autora de UX antes de declarar equivalência visual ao artefato.

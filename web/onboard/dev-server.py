@@ -17,6 +17,8 @@ import urllib.request
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 MAX_BODY = 256 * 1024
+# /readyz and /v1/capabilities feed the status badges, so they are proxied as well as /api/*.
+PROXY_PREFIXES = ("/api/", "/readyz", "/healthz", "/v1/")
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -61,7 +63,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(payload)
 
     def do_GET(self):
-        if self.path.startswith("/api/"):
+        if self.path.startswith(PROXY_PREFIXES):
             try:
                 with urllib.request.urlopen(self.api_base + self.path, timeout=15) as resp:
                     payload = resp.read()

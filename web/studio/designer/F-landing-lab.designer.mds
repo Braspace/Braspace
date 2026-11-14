@@ -1,0 +1,15 @@
+# F · Landing Lab
+
+**Origem visual:** Heloísa · BRASPACE MoonProof — Telas · https://claude.ai/artifact/QV5ykVW5q9HvyZsH68SPf1
+
+## Estrutura de tela, componentes e ações
+HUD 3DOF educativo: altitude, velocidade vertical/horizontal, empuxo, combustível, inclinação do terreno, zona-alvo, avisos e controles teclado/toque.
+
+## Tradução segura para implementação
+Implementação já existe em web/lab; não duplicar motores de física. O pouso em jogo não certifica segurança de missão.
+
+## Estados e validação
+- Placeholder, erro, sem série e offline precisam ser distintos; zero nunca substitui ausente.
+- Fontes científicas com units/UTC/frame/resolução e selo textual; dados do mockup são ILUSTRATIVOS.
+- Accessibility: foco visível, legenda de tabela, alvos de 44px, reduced motion e mobile responsivo.
+- Revisão pela autora de UX antes de declarar equivalência visual ao artefato.

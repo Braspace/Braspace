@@ -158,3 +158,12 @@ credits, never image bytes or thumbnails (`data/LUNAR_GALLERY.json` thumbnail po
 - Google restriction: no tiles downloaded or rehosted; policy recorded.
 - Renderer handoff: 2K SVS asset identified as the low-bandwidth candidate.
 - Scientific status: no asset is claimed as consumed by a running renderer.
+
+## MoonProof v3 fonts (web/moonproof/fonts/, BR91)
+
+| Asset | Source | License | Files (SHA-256) | Use |
+|---|---|---|---|---|
+| Manrope 400/500/600/700/800, latin subset | npm `@fontsource/manrope` 5.3.0 (files extracted with `npm pack`; not a dependency). Copyright 2019 The Manrope Project Authors | SIL OFL 1.1 (`web/moonproof/fonts/OFL-Manrope.txt`) | see `sha256sum web/moonproof/fonts/*.woff2` (BR91 relato) | UI text, self-hosted (`font-src 'self'`) |
+| IBM Plex Mono 400/600, latin subset | npm `@fontsource/ibm-plex-mono` 5.3.0. Copyright 2017 IBM Corp. | SIL OFL 1.1 (`web/moonproof/fonts/OFL-IBMPlexMono.txt`) | see `sha256sum` (BR91 relato) | coordinates, hashes, seals |
+
+Fonts are redistributed unmodified with their license; OFL allows bundling with software. Reserved Font Names are not used for derivatives.

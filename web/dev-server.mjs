@@ -31,6 +31,8 @@ export function labFile(pathname){
 // MoonProof v3 front (web/moonproof/): pages, core and screen modules/styles only.
 export function moonproofFile(pathname){
  if(pathname==="/moonproof/")return {name:"moonproof/index.html",type:labTypes[".html"]};
+ // Self-hosted OFL fonts (CSP font-src 'self'): woff2 only, flat folder.
+ if(/^\/moonproof\/fonts\/[a-z0-9\-]+\.woff2$/.test(pathname))return {name:path.normalize(pathname.slice(1)),type:"font/woff2"};
  if(!/^\/moonproof\/(?:(?:core|screens)\/)?[A-Za-z0-9_\-]+\.(html|js|css)$/.test(pathname))return null;
  const ext=pathname.slice(pathname.lastIndexOf("."));
  const sub=pathname.slice("/moonproof/".length);
@@ -43,7 +45,7 @@ export function moonproofFile(pathname){
 const onboardTypes=new Map([
  ["index.html","text/html; charset=utf-8"],
  ["cockpit.html","text/html; charset=utf-8"],
- ...["app.js","api.js","cockpit.js","features.js","model.js","request.js","sim.js"].map(name=>[name,"text/javascript; charset=utf-8"])
+ ...["app.js","api.js","cockpit.js","config.js","features.js","live.js","model.js","request.js","sim.js"].map(name=>[name,"text/javascript; charset=utf-8"])
 ]);
 export function onboardFile(pathname){
  if(pathname==="/onboard/")return {name:"onboard/index.html",type:onboardTypes.get("index.html")};
@@ -51,6 +53,21 @@ export function onboardFile(pathname){
  const name=pathname.slice("/onboard/".length);
  const type=onboardTypes.get(name);
  return type?{name:"onboard/"+name,type}:null;
+}
+// Mission Studio has a fixed allowlist; source specs, secrets and local files
+// are deliberately inaccessible through this same-origin preview.
+const studioTypes=new Map([
+ ["index.html","text/html; charset=utf-8"],
+ ["app.js","text/javascript; charset=utf-8"],
+ ["api.js","text/javascript; charset=utf-8"],
+ ["studio.css","text/css; charset=utf-8"]
+]);
+export function studioFile(pathname){
+ if(pathname==="/studio/")return {name:"studio/index.html",type:studioTypes.get("index.html")};
+ if(!pathname.startsWith("/studio/"))return null;
+ const name=pathname.slice("/studio/".length);
+ const type=studioTypes.get(name);
+ return type?{name:"studio/"+name,type}:null;
 }
 const csp=[
   "default-src 'none'",
@@ -115,7 +132,7 @@ export function createServer(){
   let parsed;
   try{parsed=new URL(req.url,"http://127.0.0.1");}catch{res.writeHead(400);res.end("invalid URL");return;}
   const pathname=parsed.pathname;
-  if((pathname.startsWith("/api/")||pathname==="/healthz"||pathname==="/readyz")){
+  if((pathname.startsWith("/api/")||pathname==="/healthz"||pathname==="/readyz"||pathname==="/v1/capabilities")){
    // Printable HTML report intentionally carries a strictly scoped inline stylesheet.
    if(pathname==="/api/onboard/report"||pathname==="/api/onboard/site-report")res.setHeader("Content-Security-Policy","default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
    if(!["GET","POST","HEAD","OPTIONS"].includes(req.method)){res.writeHead(405);res.end("Method not allowed");return;}
@@ -126,7 +143,7 @@ export function createServer(){
   if(pathname==="/onboard/"||pathname==="/onboard/index.html"||pathname==="/onboard/cockpit.html"){
    res.setHeader("Content-Security-Policy",csp.replace("style-src 'self'","style-src 'self' 'unsafe-inline'"));
   }
-  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname)||moonproofFile(pathname);
+  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname)||studioFile(pathname)||moonproofFile(pathname);
   if(!file){res.writeHead(404);res.end("Not found");return;}
   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
   try{

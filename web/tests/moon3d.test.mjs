@@ -70,3 +70,23 @@ test("the GLB loads on demand from the same three version and CDN already allowe
   assert.deepEqual([...hosts],["cdn.jsdelivr.net"]);
   assert.doesNotMatch(src,/VALIDATED/);
 });
+
+test("focus brings the site marker to the camera side of the globe (BR88)",async()=>{
+  const m=await import("../moon3d.js");
+  assert.equal(typeof m.focusRotation,"function","focusRotation exported");
+  const cam=m.CAMERA_POSITION,n=Math.hypot(cam.x,cam.y,cam.z);
+  for(const [lat,lon] of [[-85.4,31],[-89.5,0],[-84.8,-20],[-86,120],[0,0],[40,-100]]){
+    const r=m.focusRotation(lat,lon),v=lonLatToVector(lat,lon,1);
+    // Three.js Euler XYZ: matrix Rx*Ry*Rz, so Ry acts first.
+    const x1=v.x*Math.cos(r.y)+v.z*Math.sin(r.y),z1=-v.x*Math.sin(r.y)+v.z*Math.cos(r.y);
+    const y2=v.y*Math.cos(r.x)-z1*Math.sin(r.x),z2=v.y*Math.sin(r.x)+z1*Math.cos(r.x);
+    const facing=(x1*cam.x+y2*cam.y+z2*cam.z)/n;
+    assert.ok(facing>0.99,"marker for "+lat+","+lon+" faces the camera, got "+facing.toFixed(3));
+  }
+});
+
+test("model button no longer says Loading once the GLB is ready (BR88)",async()=>{
+  const src=await readFile(path.join(root,"moon3d.js"),"utf-8");
+  const ready=src.slice(src.indexOf("modelState=\"ready\""),src.indexOf("}catch(err)"));
+  assert.match(ready,/modelButton\.textContent\s*=\s*"NASA 3D model loaded"/);
+});

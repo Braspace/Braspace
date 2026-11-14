@@ -23,7 +23,7 @@ func TestSkyRouteFields(t *testing.T) {
 		Samples         []map[string]any     `json:"samples"`
 	}
 	raw := decode(t, rec)
-	for _, k := range []string{"api_version", "site_id", "science_status", "provenance", "observer_height_m", "terrain_horizon", "samples"} {
+	for _, k := range []string{"api_version", "site_id", "science_status", "scientifically_validated", "provenance", "observer_height_m", "terrain_horizon", "samples"} {
 		if _, ok := raw[k]; !ok {
 			t.Errorf("missing %s", k)
 		}
@@ -61,7 +61,7 @@ func TestSkyRouteFields(t *testing.T) {
 
 func TestSkyNoSeries(t *testing.T) {
 	h, _ := testAPI(t, "ok")
-	rec := do(h, "GET", "/api/sites/malapert-massif/sky", "")
+	rec := do(h, "GET", "/api/sites/haworth/sky", "")
 	if rec.Code != 404 || decode(t, rec)["code"] != "NO_SERIES_DATA" {
 		t.Fatalf("%d %s", rec.Code, rec.Body.String())
 	}
@@ -130,6 +130,7 @@ func TestSkyNeverValidated(t *testing.T) {
 	h, api := testAPI(t, "ok")
 	for _, id := range []string{"synthetic-demo-a", "synthetic-demo-b"} {
 		rec := do(h, "GET", "/api/sites/"+id+"/sky?hours=2", "")
+		if got := decode(t, rec)["scientifically_validated"]; got != false { t.Errorf("%s: unsafe attestation %v", id, got) }
 		if st := decode(t, rec)["science_status"]; rec.Code != 200 || st == "VALIDATED" || st != api.store.series[id].ScienceStatus {
 			t.Errorf("%s: %d status %v", id, rec.Code, st)
 		}
@@ -160,7 +161,7 @@ func TestSkyContractSchema(t *testing.T) {
 	h, _ := testAPI(t, "ok")
 	for url, status := range map[string]int{
 		"/api/sites/synthetic-demo-a/sky?hours=3": 200,
-		"/api/sites/malapert-massif/sky":          404,
+		"/api/sites/haworth/sky":          404,
 		"/api/sites/synthetic-demo-a/sky?step=7":  422,
 	} {
 		rec := do(h, "GET", url, "")
@@ -197,7 +198,7 @@ func TestDBSkySameAnswers(t *testing.T) {
 			}
 		}
 	}
-	if a, b := do(serve(embedded), "GET", "/api/sites/malapert-massif/sky", ""), do(serve(fromDB), "GET", "/api/sites/malapert-massif/sky", ""); a.Code != 404 || a.Body.String() != b.Body.String() {
+	if a, b := do(serve(embedded), "GET", "/api/sites/haworth/sky", ""), do(serve(fromDB), "GET", "/api/sites/haworth/sky", ""); a.Code != 404 || a.Body.String() != b.Body.String() {
 		t.Error("no-series answers differ")
 	}
 }

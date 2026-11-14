@@ -1,0 +1,83 @@
+# B-explore · Explorar (Camadas do terreno e "O que se vê daqui")
+
+## Pergunta que a tela responde
+**pt-BR:** Como é o terreno ao redor deste local e o que se vê no horizonte a partir dele?  
+**en:** What does the terrain look like around this site and what is visible on the horizon from here?
+
+## Quem usa e em que camada abre
+- **Público geral / Explorar a Lua:** abre na camada **1 · Resposta**.
+- **Educadores / Planejadores:** podem alternar para **2 · Por quê** (gráfico de horizonte 360°) e **3 · Prova** (proveniência do DEM 80 m/px e kernels NAIF).
+
+## Layout
+- **Desktop (1440×900):**
+  - Fundo *full-bleed*: terreno 3D do polo sul lunar pintado conforme a camada selecionada.
+  - **Topo:** Barra de navegação (`Explorar` ativo em Jade) + barra de contexto (`<Sítio> • <data> • <duração>`, selo `PRE`/`SIM`, `Alterar`, CTA `Adicionar à comparação`).
+  - **Coluna esquerda:** Painel com abas `Camadas` / `Locais` + `?`, 5 cartões-rádio de camada (`Altitude`, `Cor natural`, `Declividade`, `Luz do Sol média`, `Terra à vista`) e cartão de legenda da camada ativa.
+  - **Centro:** Terreno com marcadores numerados (`1`..`5`) e rótulo do sítio selecionado.
+  - **Coluna direita:** Cartão superior com ficha do ponto selecionado (número, nome, coordenadas, `Luz e contato`, `Terreno`) e botão fechar `×`; cartão inferior `O que se vê daqui` (perfil de horizonte N-L-S-O com posição atual de Sol e Terra + botões `Comparar` e `Pousar`).
+  - **Rodapé central:** Dica `Toque no terreno para criar um ponto novo`, barra de escala, `<`, `>`, seletor `Local N · <nome>`, `−`, `+`, coordenadas do cursor.
+- **Celular (390×844):**
+  - Mapa no topo com pílulas horizontais de camada (`Altitude`, `Natural`, `Sol médio`, `Terra`); folha inferior arrastável com ficha do sítio; barra de navegação inferior fixa.
+
+## Componentes
+- **Seletor `Camadas` / `Locais`:** Alterna entre lista de camadas visuais e lista dos 5 sítios.
+- **Lista de 5 camadas (rádio):** `Altitude`, `Cor natural`, `Declividade`, `Luz do Sol média`, `Terra à vista`. Estado: selecionado (Jade) / não selecionado (vidro).
+- **Cartão de legenda:** Título da camada, unidade (`metros`, `%`, `°`), barra de gradiente segmentada, rótulos min/máx.
+- **Ficha do ponto selecionado:** Círculo numerado, nome, coordenadas `lat · lon`, seção `Luz e contato` (`Sol visível`, `Terra visível`, `Maior noite`), seção `Terreno` (`Altitude`, `Declividade`).
+- **Cartão `O que se vê daqui`:** Gráfico SVG/Canvas do horizonte 360° (`terrain_horizon`) com marcadores de Sol e Terra, frase resumo de elevação acima da crista/horizonte, botões `Comparar` e `Pousar`.
+- **Barra inferior de mapa:** Escala, `<`, `>`, `Local N · <nome>`, `−`, `+`, coordenadas do cursor.
+
+## Textos
+| Elemento | pt-BR | en |
+|---|---|---|
+| Barra de contexto CTA | Adicionar à comparação | Add to comparison |
+| Abas esquerda | Camadas · Locais | Layers · Sites |
+| Instrução camadas | Escolha o que pintar no terreno. Uma camada por vez. | Choose what to paint on the terrain. One layer at a time. |
+| Camadas | Altitude · Cor natural · Declividade · Luz do Sol média · Terra à vista | Elevation · Natural color · Slope · Mean sunlight · Earth in view |
+| Legenda Altitude | Altitude · metros · Azul = mais baixo · amarelo = mais alto | Elevation · meters · Blue = lowest · yellow = highest |
+| Ficha Luz e contato | Luz e contato · Sol visível · Terra visível · Maior noite | Light and contact · Sun visible · Earth visible · Longest night |
+| Ficha Terreno | Terreno · Altitude · Declividade | Terrain · Elevation · Slope |
+| Horizonte | O que se vê daqui · agora · Comparar · Pousar | What is visible from here · now · Compare · Land |
+| Dica mapa | Toque no terreno para criar um ponto novo | Tap terrain to create a new point |
+
+## Dados
+| Elemento | Fonte exata (arquivo ou rota + campo) | Selo | Sem dado |
+|---|---|---|---|
+| Sítios e coordenadas | `web/data/sites.json` → `sites[].id`, `name`, `lat`, `lon` | `PRE` | `—` (`N/D`) |
+| Altitude | `web/data/sites.json` → `sites[].site_height_m` | `PRE` | `—` (`N/D`) |
+| Declividade | sem fonte: N/D | `N/D` | `—` (`N/D`) |
+| Sol visível, Terra visível, Maior noite | `web/data/sites.json` → `sites[].metrics.sun_center_visible_pct`, `earth_center_visible_pct`, `longest_darkness_h` | `PRE` | `—` (`N/D`) |
+| Perfil do horizonte 360° | `web/data/sites/<id>.json` → `terrain_horizon[].az`, `el` ou `GET /api/sites/{id}/sky` → `terrain_horizon` | `PRE` / `SIM` | `—` (`N/D`) |
+| Camadas PGDA / LOLA | `GET /api/layers` e `web/lab/terrain.js` | `PRE` | camada desabilitada |
+
+## Interações
+- **Clique:** Selecionar camada repinta o terreno 3D e atualiza a legenda; clicar em marcador abre a ficha do ponto; clicar em `Comparar` envia o sítio para `compare.html`; clicar em `Pousar` abre `landing.html` com o sítio selecionado.
+- **Teclado:** `Tab` e setas navegam entre camadas e marcadores.
+- **Arrastar:** Orbita o terreno 3D; zoom com roda ou `+`/`−`.
+
+## Ligações
+- `mission.html` (A), `compare.html` (C), `landing.html` (F), `recover.html` (D), `cockpit.html` (E), `evidence.html` (H).
+
+## Diferenças entre o desenho e a tela real
+1. **Sem números fixos:** `89,450°S · 222,800°E`, `71%`, `63%`, `46 h`, `+1.832 m`, `4,6°` são substituídos pelos valores reais de `sites.json`.
+2. **Selo `VAL` proibido:** Usa `PRE` para dados LOLA+SPICE e `SIM` para dados sintéticos.
+3. **Locais reais:** 5 sítios reais de `web/data/sites.json` em vez de `SR-01`..`SR-05`.
+4. **Bateria H1:** Não exibida diretamente aqui, mas se referenciada usa selo `SIM`.
+5. **Regras:** Não aplicável diretamente.
+6. **Sem domínio inventado:** Links usam query string local.
+7. **Resolução DEM:** O desenho diz `DEM 20 m/px`; a tela real mostra `DEM 80 m/px (LOLA)` conforme `provenance.terrain` em `sites/<id>.json`.
+8. **Landing Lab:** Botão `Pousar` abre `landing.html` com a física 3-DOF de `web/lab/physics.js`.
+
+## Critérios de aceite
+- [ ] Trocar entre as 5 camadas atualiza o terreno e a legenda sem erro no console.
+- [ ] Gráfico `O que se vê daqui` renderiza o `terrain_horizon` real do sítio.
+- [ ] Resolução exibida é `80 m/px` (LOLA), nunca `20 m/px`.
+- [ ] Declividade ausente mostra `—` com selo `N/D`.
+- [ ] Responsivo em 1440×900 e 390×844 sem rolagem lateral.
+
+## Correções feitas pela implementação (BR77)
+- **Camadas e fontes reais:** Altitude = grade LOLA 400 m (`web/data/region/south_pole_400m`, `PRE`); Cor natural = mosaico LROC WAC global de 2048 px do NASA SVS (`web/data/moon/lroc_color_2k.jpg`), só visualização, selo `N/D`; Declividade = derivada do DEM, `EST`; Luz do Sol média e Terra à vista = mapas PGDA `AVGVISIB_75S_120M_201608(_EARTH)` reamostrados a 400 m (`PRE`). A legenda mostra mínimo e máximo calculados da camada, a unidade e o produto de origem.
+- **Resolução:** "DEM 80 m/px → 400 m" (nativa do LDEM e a da grade servida), lida de `native_resolution_m` e `spacing_m`.
+- **Ponto novo:** clique no terreno ou coordenada digitada ("-89,5; 200") cria um ponto com 3 casas decimais; ficha mostra altitude e declividade da grade e as médias PGDA; "Maior noite" e o horizonte ficam `—` + `N/D` (só os cinco sítios têm série e perfil).
+- **O que se vê daqui:** perfil `terrain_horizon` do `sites/<id>.json` com Sol e Terra no instante inicial da janela; abre em "Por quê" para o gráfico aparecer.
+- **Celular:** chips de camada no topo (sem Declividade, como o M1), folha inferior arrastável pela alça com a ficha e o horizonte.

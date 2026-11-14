@@ -1,0 +1,15 @@
+# E · Cockpit
+
+**Origem visual:** Heloísa · BRASPACE MoonProof — Telas · https://claude.ai/artifact/QV5ykVW5q9HvyZsH68SPf1
+
+## Estrutura de tela, componentes e ações
+Estado atual de bateria, autonomia, próxima noite, piso, Sol/Terra, regras da missão, simulador de problemas painel a 50%/bateria -20%/atraso/sem antena, controle de tempo.
+
+## Tradução segura para implementação
+Consumidores do modelo fictício vivem em web/onboard/cockpit.html de João Victor; não recriar telemetria como real.
+
+## Estados e validação
+- Placeholder, erro, sem série e offline precisam ser distintos; zero nunca substitui ausente.
+- Fontes científicas com units/UTC/frame/resolução e selo textual; dados do mockup são ILUSTRATIVOS.
+- Accessibility: foco visível, legenda de tabela, alvos de 44px, reduced motion e mobile responsivo.
+- Revisão pela autora de UX antes de declarar equivalência visual ao artefato.
