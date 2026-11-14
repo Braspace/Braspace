@@ -100,3 +100,79 @@
 .glass-in b{font-size:22px;font-weight:800;line-height:1}.glass-in span{font-size:11px;font-weight:700;color:var(--text-2)}
 .glass-in .mp-seal{align-self:flex-start}
 @media (max-width:700px){.ex-readout{display:none}}
+/* ===== BR95: B at the boxes of docs/design/MEDIDAS.md (1440×900, capture B). Last block wins. ===== */
+/* Layer paint keeps the LOLA shading: the layer colour is blended over the relief, never an opaque block. */
+.ex-overlay{mix-blend-mode:color;opacity:.45}
+.ex-overlay[data-layer="natural"]{mix-blend-mode:normal;opacity:.75}
+.ex-scalebar,.ex-coordform{display:none}
+@media (min-width:701px){
+  .ex-left{left:28px!important;top:151px!important;width:299px!important;max-height:none!important;overflow:visible!important;padding:0!important;gap:0!important;display:block!important;background:none!important;border:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  .ex-tabs{gap:7px;height:29px;align-items:center}
+  .ex-tabs .mp-pill{min-height:29px;height:29px;padding:0 14px;font-size:13px;font-weight:600}
+  .ex-tabs .ex-q{margin-left:auto;width:29px!important;min-width:29px;height:29px;min-height:29px;font-size:13px}
+  .ex-left>.mp-label{margin:13px 2px 0!important;font-size:13px;line-height:1.35;color:var(--text-2)}
+  .ex-list{position:absolute;top:92px;left:0;width:299px;gap:10px!important}
+  .ex-radio{height:44px;min-height:44px!important;padding:0 16px 0 14px!important;gap:10px!important;border-radius:14px!important;background:rgba(12,15,18,.62)!important;border:1px solid rgba(255,255,255,.10)!important;font-size:14px;font-weight:600!important;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);color:#fff}
+  .ex-radio[aria-checked="true"]{background:var(--jade)!important;color:var(--jade-text);border-color:transparent!important}
+  .ex-dot{width:12px!important;height:12px!important;border:0!important;background:#F2F4F5}
+  .ex-radio[aria-checked="true"] .ex-dot{background:#F2F4F5!important;box-shadow:inset 0 0 0 3.5px #04110D!important;outline:2px solid #F2F4F5;outline-offset:-1px}
+  .ex-ico{display:grid;place-items:center;width:18px;height:18px}.ex-ico svg{width:17px;height:17px}
+  .ex-swatch{width:38px!important;height:8px!important;border-radius:4px!important}
+  #legend{position:absolute;top:368px;left:0;width:299px;height:117px;padding:14px 16px!important;border-radius:16px;background:var(--card)}
+  .ex-legend-head{gap:8px}.ex-legend-head b{font-size:14px}.ex-legend-head .mp-label{margin-left:0;font-size:12.5px}.ex-legend-head .mp-seal{margin-left:auto}
+  .ex-ramp{display:flex;gap:2px;height:12px!important;margin:12px 0 6px!important}
+  .ex-ramp i{flex:1;border-radius:2px}
+  .ex-scale{font-size:11px!important}
+  #legend>p{margin:6px 0 0!important;font-size:12px}
+  /* Right: site card (box from MEDIDAS.md) and "O que se vê daqui" (box from MEDIDAS.md). */
+  .ex-right{left:1060px!important;right:auto!important;top:151px!important;width:351px!important;bottom:auto!important;height:600px;overflow:visible!important;display:block!important;pointer-events:none}
+  .ex-right>*{position:absolute;left:0;pointer-events:auto}
+  #card-site{top:0;width:351px;height:318px;padding:18px 20px!important;border-radius:22px;overflow:hidden}
+  .ex-right.is-closed #card-site{display:none}
+  .ex-site-head{gap:12px}.ex-site-head h3{font-size:17px!important;font-weight:800}.ex-site-head p{margin:2px 0 0}
+  .ex-n{width:34px!important;height:34px!important}
+  .ex-close{width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important;padding:0!important;background:#14181d!important}
+  .ex-close svg{width:15px;height:15px}
+  .ex-site h4{margin:14px 0 2px!important;font-size:13px;color:#fff;font-weight:700}.ex-site h4 b{font-weight:700}
+  .ex-rows th{display:flex;align-items:center;gap:10px;height:30px;padding:0!important;font-size:14px;font-weight:500!important;color:var(--text-2)}
+  .ex-rows td{font-size:15px;white-space:nowrap}
+  .ex-rows .mp-seal{height:18px;font-size:9.5px;vertical-align:1px}
+  .ex-rico{display:grid;place-items:center;width:18px}.ex-rico svg{width:17px;height:17px}
+  .ex-rico.is-sun{color:var(--sun)}.ex-rico.is-earth{color:var(--earth)}.ex-rico.is-sunset{color:#F2A65A}
+  #card-horizon{top:328px;left:5px;width:346px;height:259px;padding:16px 18px!important;border-radius:22px;background:var(--glass);-webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);box-shadow:none}
+  .ex-right.is-closed #card-horizon{top:0}
+  .ex-from-head{display:flex;align-items:center;gap:8px}.ex-from-head h3{margin:0;font-size:15px;font-weight:700;flex:1}
+  .ex-from .ex-horizon{margin:10px 0 0;height:96px;width:100%;background:rgba(5,6,7,.7);border-radius:14px}
+  .ex-from-txt{margin:8px 0 0;font-size:12.5px;line-height:1.35;color:var(--text-2)}
+  .ex-actions{position:absolute;left:18px;right:18px;bottom:14px;margin:0!important;gap:8px}
+  .ex-actions .mp-pill{height:38px;min-height:38px;font-size:14px;font-weight:700}
+  .ex-actions .is-sim{flex:none;padding:0 18px;gap:6px;background:rgba(12,15,18,.6)}.ex-actions .is-sim svg{width:16px;height:16px}
+  /* Bottom: hint y=773; bar y=823: scale (x=362 w=148) · ‹ › site − + · coordinates (x=909 w=169). */
+  .ex-bottombar{position:fixed;z-index:11;left:0;right:0;top:823px;height:49px;pointer-events:none}
+  .ex-bottombar>*{pointer-events:auto}
+  .ex-scalebar{display:flex;position:absolute;left:362px;top:0;width:148px;height:48px;align-items:center;gap:10px;padding:0 16px;border-radius:16px;background:rgba(18,22,27,.6);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid var(--line)}
+  .ex-scalebar i{display:block;height:7px;border:1.5px solid #F2F4F5;border-top:0}
+  .ex-scale-u{display:flex;flex-direction:column;line-height:1;font-family:var(--mono)}.ex-scale-u b{font-size:13px}.ex-scale-u small{font-size:11px;color:var(--text-2)}
+  .ex-coordform{display:block;position:absolute;left:909px;top:0;width:169px;height:49px}
+  .ex-coordform input{width:100%;height:49px;border-radius:16px;border:1px solid var(--line);background:rgba(13,17,21,.82);color:#fff;padding:0 12px;font-size:11.5px;text-align:center}
+  .ex-dock-row .mc-sel{min-width:171px;max-width:200px!important}
+  .mc-dock{left:709px}
+  .ex-actions .is-sim{background:rgba(180,140,242,.16)!important;border:1px solid rgba(180,140,242,.6)!important;color:#E4D6FB!important}
+  .ex-coordform input{font-size:11px;padding:0 8px;line-height:1.25;white-space:normal}
+}
+@media (min-width:701px){
+  .ex-dock-row>.mp-pill:nth-child(2){margin-right:0}.ex-dock-row>.mp-pill:nth-child(4){margin-left:0}
+  .ex-dock-row .mc-sel{width:171px;min-width:171px;max-width:171px!important;padding:0 34px 0 18px!important;text-overflow:ellipsis}
+}
+@media (max-width:700px){.ex-bottombar{display:none}}
+/* BR95 round 2 */
+@media (min-width:701px){
+  .ex-ramp{display:block!important;height:12px!important;border-radius:6px}
+  .ex-legend-head .mp-label{margin-left:auto!important}.ex-legend-head .mp-seal{margin-left:0!important}
+  .ex-rows th{height:31px}
+  .ex-actions .mp-pill{height:38px;min-height:38px}
+  .ex-scale-u b{font-weight:600}.ex-scale-u small{font-size:11.5px}
+  .ex-from .ex-horizon{background:rgba(5,6,7,.55)}
+  .ex-coordform input{white-space:pre-line}
+}
+@media (min-width:701px){ .ex-dock-row .mc-sel{width:171px;min-width:171px;max-width:171px!important} .ex-rows th{height:33px} .ex-left>.mp-label{margin-right:12px!important} }

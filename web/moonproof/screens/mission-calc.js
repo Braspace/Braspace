@@ -124,3 +124,17 @@ export const RAMPS = {
 };
 export const rampColor = (name, t) => ramp(RAMPS[name], t);
 export const rampCss = name => `linear-gradient(90deg, ${RAMPS[name].map(c => `rgb(${c})`).join(", ")})`;
+
+/** Site name without the parenthetical note ("Mons Mouton (IM-2 Athena target)" → "Mons Mouton"); full name stays in title/aria. */
+export function shortName(name) { return String(name ?? "").replace(/\s*\([^)]*\)\s*$/, "").trim() || String(name ?? ""); }
+
+/**
+ * Energy bar of A, as flex weights over the window (hours): night = longest night (data),
+ * margin = battery margin (only when the API computed it from declared inputs), rest = the remainder.
+ * Unknown night → all "unknown" (hatched). Negative margin → no jade segment (the night is not covered).
+ */
+export function energySegments(nightH, marginH, windowH) {
+  if (!Number.isFinite(nightH) || !(windowH > 0)) return { unknown: 1 };
+  const n = Math.min(nightH, windowH), m = Number.isFinite(marginH) && marginH > 0 ? Math.min(marginH, windowH - n) : 0;
+  return { night: n / windowH, margin: m / windowH, rest: Math.max(0, windowH - n - m) / windowH };
+}
