@@ -40,7 +40,7 @@ def look_angles(body_moon_centered_km, lat_deg:float, lon_deg:float,
     up,north,east=site_basis(lat_deg,lon_deg)
     diff=tuple(float(b)-observer_radius_km*u for b,u in zip(body_moon_centered_km,up))
     u,n,e=dot(diff,up),dot(diff,north),dot(diff,east)
-    if abs(u)+abs(n)+abs(e)==0: raise ValueError("undefined look direction")
+    if math.hypot(u,n,e)<1e-9: raise ValueError("undefined look direction")
     return {"azimuth_deg":rounded(math.degrees(math.atan2(e,n))%360),
             "elevation_deg":rounded(math.degrees(math.atan2(u,math.hypot(n,e))))}
 
