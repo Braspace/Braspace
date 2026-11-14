@@ -1,0 +1,147 @@
+{
+  "api_version": "braspace.mission.v1",
+  "limitations": [
+    "Visibility is geometric line of sight to the Sun and Earth centers against the stored terrain horizon; Sun disc width, refraction, eclipses, RF link budget and DSN scheduling are not modelled.",
+    "Durations have a resolution of one series step; windows start and end on grid epochs.",
+    "Results are only as accurate as the stored horizon and ephemeris series; check science_status and provenance per site.",
+    "Constraint thresholds are caller-declared assumptions, not mission requirements."
+  ],
+  "model": {
+    "api_version": "braspace.mission.v1",
+    "analysis_version": "braspace.analysis.v1",
+    "engine_contract": "braspace.visibility.v1"
+  },
+  "nearby_considered": [],
+  "options": [
+    {
+      "kind": "baseline",
+      "site_id": "synthetic-demo-a",
+      "delay_hours": 0,
+      "start_utc": "2026-12-01T00:00:00Z",
+      "data_status": "AVAILABLE",
+      "science_status": "SYNTHETIC",
+      "engine_science_status": "UNVERIFIED_INPUTS",
+      "admissible": false,
+      "checks": [
+        {
+          "criterion": "longest_continuous_dark_hours",
+          "unit": "h",
+          "comparator": "\u003c=",
+          "limit": 20,
+          "value": 47,
+          "margin": -27,
+          "passed": false
+        }
+      ],
+      "breached": [
+        {
+          "criterion": "longest_continuous_dark_hours",
+          "unit": "h",
+          "comparator": "\u003c=",
+          "limit": 20,
+          "value": 47,
+          "margin": -27,
+          "passed": false
+        }
+      ],
+      "metrics": {
+        "sample_count": 72,
+        "step_hours": 1,
+        "sun_visible_fraction": 0.347222,
+        "earth_visible_fraction": 1,
+        "simultaneous_fraction": 0.347222,
+        "longest_continuous_dark_hours": 47,
+        "longest_continuous_comm_gap_hours": 0,
+        "min_sun_margin_deg": -0.36994,
+        "min_earth_margin_deg": 3.367571,
+        "sun_window_count": 1
+      }
+    },
+    {
+      "kind": "delay",
+      "site_id": "synthetic-demo-a",
+      "delay_hours": 24,
+      "start_utc": "2026-12-02T00:00:00Z",
+      "data_status": "AVAILABLE",
+      "science_status": "SYNTHETIC",
+      "engine_science_status": "UNVERIFIED_INPUTS",
+      "admissible": false,
+      "checks": [
+        {
+          "criterion": "longest_continuous_dark_hours",
+          "unit": "h",
+          "comparator": "\u003c=",
+          "limit": 20,
+          "value": 23,
+          "baseline_value": 47,
+          "margin": -3,
+          "passed": false
+        }
+      ],
+      "breached": [
+        {
+          "criterion": "longest_continuous_dark_hours",
+          "unit": "h",
+          "comparator": "\u003c=",
+          "limit": 20,
+          "value": 23,
+          "baseline_value": 47,
+          "margin": -3,
+          "passed": false
+        }
+      ],
+      "metrics": {
+        "sample_count": 72,
+        "step_hours": 1,
+        "sun_visible_fraction": 0.680556,
+        "earth_visible_fraction": 1,
+        "simultaneous_fraction": 0.680556,
+        "longest_continuous_dark_hours": 23,
+        "longest_continuous_comm_gap_hours": 0,
+        "min_sun_margin_deg": -0.269724,
+        "min_earth_margin_deg": 2.423392,
+        "sun_window_count": 1
+      }
+    }
+  ],
+  "outcome": {
+    "status": "NO_ADMISSIBLE_ALTERNATIVE",
+    "message": "No evaluated date or nearby site satisfies every declared constraint with the stored data. No alternative is proposed."
+  },
+  "provenance": {
+    "terrain_dataset_id": "SYNTHETIC-HORIZON-NOT-NASA",
+    "ephemeris_id": "SYNTHETIC-EPHEMERIS-NOT-NASA",
+    "frame": "MOON_ME",
+    "generator": "api/cmd/synthseries v1",
+    "note": "Synthetic test fixture. Not NASA data."
+  },
+  "request": {
+    "site_id": "synthetic-demo-a",
+    "start_utc": "2026-12-01T00:00:00Z",
+    "duration_hours": 72,
+    "delays_hours": [
+      24
+    ],
+    "constraints": {
+      "max_continuous_dark_hours": 20
+    },
+    "include_nearby": false,
+    "max_nearby": 2
+  },
+  "scenario_sha256": "6cc3a9a36191d0dc8fe0943367251f62c1599f188ce9298e7558f08716b9c3fa",
+  "scientifically_validated": false,
+  "site": {
+    "id": "synthetic-demo-a",
+    "name": "Synthetic demo site A",
+    "kind": "synthetic_test_fixture",
+    "series_file": "series/synthetic-demo-a.json",
+    "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location.",
+    "series": {
+      "start_utc": "2026-11-01T00:00:00Z",
+      "end_utc": "2027-01-01T00:00:00Z",
+      "step_seconds": 3600,
+      "science_status": "SYNTHETIC",
+      "observer_height_m": 2
+    }
+  }
+}
