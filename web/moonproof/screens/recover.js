@@ -24,7 +24,7 @@ register({
     "rec.src.api": "POST /api/scenarios/delay", "rec.src.static": "stored hourly series (web/data)", "rec.src": "Source", "rec.rules": "Rules", "rec.assumed": "assumed limit",
     "rec.def": "Margin", "rec.def.txt": "Hours left to the tighter rule (night or Earth loss); negative = violated. Not the onboard battery margin.",
     "rec.outside": "Window outside the computed series.", "rec.site": "Site", "rec.battery": "Battery margin", "rec.battery.nd": "needs the onboard API", "rec.sha": "Series SHA-256",
-    "rec.delay.aria": "Delay of {n} hours", "rec.day": "D{n}",
+    "rec.delay.aria": "Delay of {n} hours", "rec.day": "D{n}", "rec.chip.exit": "Exit D · switch site",
   },
   "pt-BR": {
     "rec.ctx": "Cenário {L} · {site}", "rec.landing.delayed": "pouso adiado", "rec.violated": "{n} REGRAS VIOLADAS", "rec.violated1": "1 REGRA VIOLADA", "rec.ok": "NENHUMA REGRA VIOLADA", "rec.nd": "SEM DADO",
@@ -37,7 +37,7 @@ register({
     "rec.src.api": "POST /api/scenarios/delay", "rec.src.static": "série horária gravada (web/data)", "rec.src": "Fonte", "rec.rules": "Regras", "rec.assumed": "limite assumido",
     "rec.def": "Folga", "rec.def.txt": "Horas que sobram até a regra mais apertada (noite ou perda da Terra); negativa = violada. Não é a folga da bateria de bordo.",
     "rec.outside": "Janela fora da série calculada.", "rec.site": "Local", "rec.battery": "Folga da bateria", "rec.battery.nd": "exige a API de bordo", "rec.sha": "SHA-256 da série",
-    "rec.delay.aria": "Atraso de {n} horas", "rec.day": "D{n}",
+    "rec.delay.aria": "Atraso de {n} horas", "rec.day": "D{n}", "rec.chip.exit": "Saída D · trocar de local",
   },
 });
 
@@ -84,7 +84,7 @@ async function draw() {
   const sats = DELAYS.filter(x => x !== sc.d).slice(0, 4);
   sats.forEach((x, k) => { const b = el("button", "mp-sat"); b.type = "button"; b.dataset.pos = String(k); b.setAttribute("role", "radio"); b.setAttribute("aria-checked", "false");
     b.setAttribute("aria-label", t("rec.delay.aria", { n: x })); b.textContent = "+" + fmtNum(x); b.onclick = () => write({ d: x, x: null }); dial.append(b); });
-  const p1 = el("div", "mp-glass"); p1.append(el("p", "mp-label mp-q", t("rec.step1")), dial);
+  const p1 = el("div", "mp-step1"); p1.append(el("p", "mp-label mp-q", t("rec.step1")), dial);
   const pills = el("div", "mp-pills");
   pills.append(pill("is-white", t("rec.newland"), fmtDate(t1)), pill("is-white", t("rec.end"), t("rec.endval", { d: fmtDay(t1 + sc.hours * HOUR_MS), n: fmtNum(sc.hours / DAY) })));
   const chg = el("div", "mp-change");
@@ -103,7 +103,7 @@ async function draw() {
     const b = el("button", "mp-exit"); b.type = "button"; b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(e === chosen)); b.tabIndex = e === chosen ? 0 : -1;
     const [name, sub] = exitText(e);
     const nm = el("span", "mp-exit-name", name); nm.append(el("small", "", sub));
-    b.append(el("span", "mp-scn-letter", EXIT_LETTERS[["wait", "switch", "shorten"].indexOf(e.kind)]), nm, Object.assign(el("span", "mp-exit-slack"), { textContent: t("rec.slackWord") + " " + signed(e.slack) }));
+    b.append(el("span", "mp-scn-letter", EXIT_LETTERS[["wait", "switch", "shorten"].indexOf(e.kind)]), nm, (() => { const s = el("span", "mp-exit-slack"); s.append(el("small", "", t("rec.slackWord")), Object.assign(el("b"), { textContent: signed(e.slack) })); return s; })());
     b.onclick = () => write({ x: e.kind });
     b.onkeydown = ev => { const d = ev.key === "ArrowDown" ? 1 : ev.key === "ArrowUp" ? -1 : 0; if (d) { ev.preventDefault(); write({ x: exits[(i + d + exits.length) % exits.length].kind }); document.querySelector('.mp-exit[aria-checked="true"]')?.focus(); } };
     list.append(b);
@@ -124,7 +124,7 @@ async function draw() {
   const tl = el("section", "mp-glass mp-scn-time"); tl.append(el("p", "mp-label mp-q", t("rec.timeline")));
   tl.append(trackRow(t("rec.planned"), series, t0, sc.hours, rules), trackRow(t("rec.after", { d: sc.d }), series, t1, sc.hours, rules));
   document.getElementById("time").replaceChildren(tl);
-  drawDock(); markMap(sc, chosen);
+  drawDock(); markMap(sc, chosen, delayed);
 }
 function seals(a, b) { const d = el("div", "mp-foot"); const m = a || b; d.append(m ? sealEl(m.seal) : sealEl("N/D"), el("span", "mp-label", m ? (m.origin === "api" ? t("rec.src.api") : t("rec.src.static")) : t("rec.outside"))); return d; }
 function pill(cls, k, v) { const p = el("div", "mp-pill " + cls); p.append(el("span", "", k), Object.assign(el("b"), { textContent: v })); return p; }
@@ -157,10 +157,29 @@ function drawDock() {
     b(`${t("rec.site")} ${list[i].n} · ${list[i].name}`, list[i].name, () => {}, "is-primary mp-sel"), b("›", "next", () => write({ site: list[(i + 1) % n].id, x: null })));
 }
 let terrain = null;
-function markMap(sc, chosen) {
+const route = []; // read by the terrain on every redraw; filled in place (B then the chosen exit site)
+let chips = [];
+function markMap(sc, chosen, delayed) {
+  const sw = chosen?.kind === "switch";
+  route.splice(0, route.length, ...(sw ? [sc.site, chosen.siteId] : []));
   terrain && terrain.select(sc.site);
+  const rules = { night: getState().night };
+  const worst = delayed ? longestRun(flagsOf(all.get(sc.site), Date.parse(sc.start) + sc.d * HOUR_MS, sc.hours).sun, false).len : 0;
+  chips = [];
+  if (delayed && worst > rules.night) chips.push({ site: sc.site, cls: "is-red", text: t("rec.nightOf", { v: fmtNum(worst) }) });
+  if (sw) chips.push({ site: chosen.siteId, cls: "is-jade", text: t("rec.chip.exit") });
+  placeChips();
   document.querySelectorAll(".mp-marker").forEach(m => { const isB = m.dataset.site === sc.site, isD = chosen?.kind === "switch" && m.dataset.site === chosen.siteId;
     m.hidden = !(isB || isD); m.firstChild.textContent = isB ? "B" : "D"; });
 }
-terrain = await mountTerrain(document.getElementById("terrain"), { sites: doc.sites, selected: scenario().site, route: [], onSelect: id => write({ site: id, x: null }) });
+terrain = await mountTerrain(document.getElementById("terrain"), { sites: doc.sites, selected: scenario().site, route, onSelect: id => write({ site: id, x: null }) });
+// Map chips follow their marker (the terrain rebuilds markers on redraw, so measure after the next frame).
+function placeChips() {
+  document.querySelectorAll(".mp-dist").forEach(c => c.remove());
+  requestAnimationFrame(() => { for (const c of chips) {
+    const m = document.querySelector(`.mp-marker[data-site="${c.site}"]`); if (!m || m.hidden || m.dataset.covered === "true") continue;
+    const r = m.getBoundingClientRect(), d = el("span", "mp-dist " + c.cls, c.text);
+    Object.assign(d.style, { left: r.left + r.width / 2 + "px", top: r.bottom + 8 + "px" }); document.body.append(d); } });
+}
+addEventListener("resize", () => placeChips());
 onState(() => draw()); addEventListener("hashchange", () => draw()); draw();

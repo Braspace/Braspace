@@ -137,13 +137,13 @@ async function draw() {
   });
 
   // chart for selected scenario
-  const chart = el("section", "mp-glass"); chart.append(el("h3", "", t("cmp.chart", { L: L(sel) })));
+  const chart = el("section", "mp-card mp-cmp-time"); chart.append(el("h3", "", t("cmp.chart", { L: L(sel) })));
   const fl = flagsOf(all.get(list[sel].site), Date.parse(list[sel].start), list[sel].hours);
   const sunD = dailyFractions(fl.sun.map(v => v)), earthD = dailyFractions(fl.earth.map(v => v));
   const wrap = el("div", "mp-day-chart");
   const leg = el("div", "mp-legend"); for (const [k, key] of [["sun", "cmp.sun"], ["earth", "cmp.earth"]]) { const sp = el("span"); sp.append(el("i", "sw " + k), t(key)); leg.append(sp); }
   const eb = barEl(earthD, "var(--earth)"); eb.classList.add("is-mirror");
-  const ax = el("div", "mp-axis"); ax.append(el("span", "", "D0"), el("span", "", "D" + Math.floor((sunD.length - 1) / 2)), el("span", "", "D" + (sunD.length - 1)));
+  const ax = el("div", "mp-axis"); ax.append(el("span", "", "D0"), el("span", "", "D" + Math.ceil((sunD.length - 1) / 2)), el("span", "", "D" + (sunD.length - 1)));
   wrap.append(leg, barEl(sunD, "var(--sun)"), eb, ax); chart.append(wrap);
 
   document.getElementById("left").replaceChildren(card.el, ul, chart);
@@ -156,13 +156,13 @@ function badge(j) {
   const b = el("span", "mp-badge");
   if (j.status === "nd") { b.classList.add("is-nd"); b.textContent = t("cmp.nd"); }
   else if (j.status === "pass") b.textContent = t("cmp.pass");
-  else { b.classList.add("is-fail"); b.textContent = "✕ " + t("cmp.fail." + j.reasons[0].key); }
+  else { b.classList.add("is-fail"); b.textContent = t("cmp.fail." + j.reasons[0].key); }
   return b;
 }
 function diffCard(list, ms, judged, rules) {
-  const c = el("section", "mp-glass"); const head = el("div", "mp-foot"); head.style.justifyContent = "space-between"; head.style.marginTop = "0";
+  const c = el("section", "mp-card"); const head = el("div", "mp-foot"); head.style.justifyContent = "space-between"; head.style.marginTop = "0";
   head.append(el("h3", "", t("cmp.diff")));
-  const full = el("button", "mp-pill is-white", t("cmp.full")); full.type = "button"; full.onclick = () => setState({ layer: "proof" }); head.append(full);
+  const full = el("button", "mp-chipg", t("cmp.full")); full.type = "button"; full.onclick = () => setState({ layer: "proof" }); head.append(full);
   const tb = el("table", "mp-diff"); const th = tb.createTHead().insertRow(); th.append(el("th"));
   list.forEach((_, i) => { const h = el("th", "", LETTERS[i]); h.scope = "col"; if (i === sel) h.setAttribute("aria-current", "true"); th.append(h); });
   const body = tb.createTBody();
