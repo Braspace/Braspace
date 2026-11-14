@@ -9,6 +9,8 @@
   --fs-title:60px; --fw-title:800; --ls-title:-.025em;
   --fs-answer:22px; --fs-card-title:16px; --fs-body:14.5px; --fs-label:12.5px; --fs-num:26px; --fs-coord:12px;
   --r-card:26px; --r-inner:18px; --r-pill:999px; --touch:44px; --margin:28px; --gap:12px;
+  /* Fibonacci-progression spacing, mapped to original 13/21/34px Heloisa rhythm. */
+  --fib-1:5px; --fib-2:8px; --fib-3:13px; --fib-4:21px; --fib-5:34px; --fib-6:55px;
 }
 @media (max-width:700px){:root{--fs-title:34px;--margin:14px}}
 *{box-sizing:border-box}
