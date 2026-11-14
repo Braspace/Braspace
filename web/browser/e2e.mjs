@@ -58,7 +58,7 @@ try{
  assert(await tabs.count()===13,"onboard cockpit missing required tabs");
  const onboardText=await desktop.locator("body").innerText();
  assert(onboardText.includes("No flight recommendation"),"onboard missing permanent no-flight disclaimer: "+onboardText.slice(0,300));
- assert(/SYNTHETIC|UNVERIFIED_INPUTS|science:\\s/i.test(onboardText),"onboard missing data-origin/science disclosure: "+onboardText.slice(0,300));
+ assert(/SYNTHETIC|UNVERIFIED_INPUTS|science:/i.test(onboardText),"onboard missing data-origin/science disclosure: "+onboardText.slice(0,300));
  await desktop.locator("nav.tabs button[data-tab='energia']").click();
  await desktop.locator("nav.tabs button[data-tab='replan']").click();
  const replanText=await desktop.locator("#views").innerText();
