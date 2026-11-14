@@ -346,7 +346,8 @@
     const W = 640, H = 260, L = 46, R = 16, T = 14, B = 34;
     const EMIN = -4, EMAX = 6;
     const x = a => L + (a / 360) * (W - L - R);
-    const y = e => T + ((EMAX - e) / (EMAX - EMIN)) * (H - T - B);
+    // values outside the scale are pinned to the edge, so curves never leave the chart
+    const y = e => T + ((EMAX - Math.max(EMIN, Math.min(EMAX, e))) / (EMAX - EMIN)) * (H - T - B);
     const box = svg("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img",
       "aria-label": "Horizonte sintético do lugar " + site.name + " com Sol e Terra no instante escolhido" });
 
@@ -362,8 +363,8 @@
     }
 
     // axis titles
-    box.append(svg("text", { x: 4, y: T - 4 }, "elevação (°)"));
-    box.append(svg("text", { x: W - R, y: H - 4, "text-anchor": "end" }, "azimute (°) →"));
+    box.append(svg("text", { x: L + 6, y: T - 4 }, "elevação (°) ↑"));
+    box.append(svg("text", { x: L, y: H - 4 }, "azimute (°) →"));
 
     // horizon area
     let d = "";
@@ -421,7 +422,7 @@
         h("ul", { class: "note" },
           ...[["3.2", "BLOQ", "leitura do DEM LOLA"], ["3.3", "PEND", "horizonte por raio"], ["3.4", "PEND", "distância máxima documentada"], ["3.5", "PEND", "pixels interpolados"], ["3.6", "PEND", "declive e crateras"]]
             .map(([id, st, t]) => h("li", {}, id + " ", tag(st), " " + t))),
-        h("p", { class: "note", text: "Horizonte sintético: uma senoide com rugosidade do lugar. Não é relevo lunar." }))
+        h("p", { class: "note", text: "Horizonte sintético: uma senoide com rugosidade do lugar. Não é relevo lunar. Valores fora da escala ficam encostados na borda do gráfico." }))
     ];
   };
 
