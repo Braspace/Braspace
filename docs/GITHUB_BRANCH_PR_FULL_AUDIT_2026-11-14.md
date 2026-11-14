@@ -91,3 +91,25 @@
 **Safety:** No branch force-push, no destructive reset, no automated approval of own PR, no scientific verification claim based solely on a PDS download or green CI.
 
 **Owned tasks remain in GitHub issues; relevant GitHub Projects (#2, #4–#10) are planning targets but project membership cannot be asserted without readback.**
+
+
+## Subsequent live reconciliation — 2026-11-14 (after additional team commits)
+
+**Updated main HEAD:** `3c4e59dc65c87e606c74f992561705eb3bbee871`. **33 branch refs**, **29 pull requests in history**, **14 open PRs** (5 draft), **67 issues** (56 open, 11 closed). This section supersedes earlier counts, but preserves the original table as an audit snapshot.
+
+### Branches discovered after the original inventory
+
+| New branch | HEAD (12) | Context |
+|---|---|---|
+| `agent/astrid/br30-polar-elevation-map` | `01bec85f5526` | [#92](https://github.com/Braspace/Braspace/pull/92) (open) |
+| `agent/pietra/br36-sources-catalog` | `754657088769` | [#93](https://github.com/Braspace/Braspace/pull/93) (open) |
+| `agent/stella/br31-mission-dashboard-shell` | `d9f98d1d611b` | [#91](https://github.com/Braspace/Braspace/pull/91) (open) |
+| `team/Ninzinhu/onboard-dashboard-prototype` | `9b905329792c` | [#94](https://github.com/Braspace/Braspace/pull/94) (open, draft) |
+
+### Latest integration gates
+
+- Landed: [#83 patched Go dependencies](https://github.com/Braspace/Braspace/pull/83), [#88 external smoke script](https://github.com/Braspace/Braspace/pull/88), [#74 computed server visibility + consumables](https://github.com/Braspace/Braspace/pull/74), [#87 public NASA links/PDF proof](https://github.com/Braspace/Braspace/pull/87), [#78 same-origin NASA SVS layer adapter](https://github.com/Braspace/Braspace/pull/78). Re-check exact merged commits before repeating this claim.
+- New front PRs [#91 dashboard shell](https://github.com/Braspace/Braspace/pull/91), [#92 LOLA polar elevation map](https://github.com/Braspace/Braspace/pull/92) are separate from the production cockpit and await design/scientific review. #92 also touches `docs/ASSET_LICENSE_MATRIX.md`, already changed by #78: **preserve both**.
+- Reviewer requests: Gabriel Freire on [#85](https://github.com/Braspace/Braspace/pull/85), Joel on [#75](https://github.com/Braspace/Braspace/pull/75), [#86](https://github.com/Braspace/Braspace/pull/86), [#82](https://github.com/Braspace/Braspace/pull/82), [#89](https://github.com/Braspace/Braspace/pull/89), Heloísa/João on #91 and Joel/Heloísa on #92. A request is **not an approval**.
+- PR #86 corrects a ~0.5px LOLA image registration error and topocentric light-time; correcting it changes Connecting Ridge horizon and visibility materially. Old #75/#82 derived outputs and #80 checksums must not be considered valid after correction without fresh recomputation.
+- Private source repository remains independent of a public anonymous NASA project page; **submission receipt not verified**.
