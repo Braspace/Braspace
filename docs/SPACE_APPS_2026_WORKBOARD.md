@@ -4,7 +4,7 @@
 > **Challenge:** Lunar Landing Site Navigator  
 > **Deadline:** 2026-11-15 23:59, Uberlândia time (America/Sao_Paulo)  
 > **Owner:** @gustavofullstack  
-> **Source of truth:** GitHub Issues #1–#43, #46–#52, #54–#61 and #63–#69 (65 issues total; #44, #45, #53, #62 and #70 are pull requests); original NASA submission form remains authoritative.
+> **Source of truth:** GitHub Issues #1–#43, #46–#52, #54–#61 and #63–#69 (65 issues total, 55 open/10 closed at readback; #44, #45, #53, #62, #70–#89 are PR numbers, not issues); original NASA submission form remains authoritative.
 
 ## Do this first (P0)
 
@@ -33,7 +33,7 @@
 
 | Existing organization board | Issue references |
 |---|---|
-| [Kanban #2](https://github.com/orgs/Braspace/projects/2) | All 65 open issues: primary tracking and in-progress overview |
+| [Kanban #2](https://github.com/orgs/Braspace/projects/2) | 65 tracked issues (open + closed): primary tracking and in-progress overview |
 | [Team Planning #4](https://github.com/orgs/Braspace/projects/4) | [#1](https://github.com/Braspace/Braspace/issues/1), [#4](https://github.com/Braspace/Braspace/issues/4), [#7](https://github.com/Braspace/Braspace/issues/7), [#37](https://github.com/Braspace/Braspace/issues/37), [#42](https://github.com/Braspace/Braspace/issues/42), [#50](https://github.com/Braspace/Braspace/issues/50), [#51](https://github.com/Braspace/Braspace/issues/51), [#52](https://github.com/Braspace/Braspace/issues/52), [#55](https://github.com/Braspace/Braspace/issues/55), [#60](https://github.com/Braspace/Braspace/issues/60), [#61](https://github.com/Braspace/Braspace/issues/61), [#66](https://github.com/Braspace/Braspace/issues/66), [#67](https://github.com/Braspace/Braspace/issues/67) |
 | [Feature Release #5](https://github.com/orgs/Braspace/projects/5) | [#9](https://github.com/Braspace/Braspace/issues/9), [#23](https://github.com/Braspace/Braspace/issues/23), [#29](https://github.com/Braspace/Braspace/issues/29), [#33](https://github.com/Braspace/Braspace/issues/33), [#38](https://github.com/Braspace/Braspace/issues/38), [#46](https://github.com/Braspace/Braspace/issues/46), [#48](https://github.com/Braspace/Braspace/issues/48), [#54](https://github.com/Braspace/Braspace/issues/54), [#58](https://github.com/Braspace/Braspace/issues/58), [#63](https://github.com/Braspace/Braspace/issues/63) |
 | [Bug Tracker #6](https://github.com/orgs/Braspace/projects/6) | [#6](https://github.com/Braspace/Braspace/issues/6), [#17](https://github.com/Braspace/Braspace/issues/17), [#22](https://github.com/Braspace/Braspace/issues/22), [#28](https://github.com/Braspace/Braspace/issues/28), [#31](https://github.com/Braspace/Braspace/issues/31), [#35](https://github.com/Braspace/Braspace/issues/35), [#39](https://github.com/Braspace/Braspace/issues/39), [#40](https://github.com/Braspace/Braspace/issues/40), [#49](https://github.com/Braspace/Braspace/issues/49), [#50](https://github.com/Braspace/Braspace/issues/50), [#56](https://github.com/Braspace/Braspace/issues/56), [#59](https://github.com/Braspace/Braspace/issues/59), [#65](https://github.com/Braspace/Braspace/issues/65), [#68](https://github.com/Braspace/Braspace/issues/68) |
@@ -65,7 +65,7 @@ First reproducible milestone: choose **one** authoritative NASA lunar terrain/el
 
 ## Expanded scope 2026-11-14 — Heloísa + 15 competitors
 
-**65 open issues / 6 leads.** The seven additional assigned issues below extend but **do not invalidate or close** the original 43. Keep focus on scientifically valid P0 results before expanding.
+**65 tracked issues / 6 leads (55 open, 10 closed as of 2026-11-14 snapshot).** The seven additional assigned issues below extend but **do not invalidate or close** the original 43. Keep focus on scientifically valid P0 results before expanding.
 
 | Tracker | Issue | Lead | Priority | Need / tangible result |
 |---|---|---|---|---|
@@ -158,3 +158,13 @@ NASA Space Apps project remains **Lunar Landing Site Navigator**, focused on the
 **Conflict-safe integration:** [BRANCH_CONFLICT_AUDIT_2026-11-14.md](BRANCH_CONFLICT_AUDIT_2026-11-14.md) documents all branch overlaps and ordering across #53, #71, #72, #44. Do not make a teammate force-rebase or lose their changes. Issue assignment does not imply completion.
 
 **Submission blockers:** authentic NASA LOLA terrain used in the scientific engine, validated SPICE Sun/Earth direction, functional public MoonProof UI, anonymous project/deck links, AI disclosure, and official **Submit for Judging** confirmation.
+
+## Continuous GitHub integration checkpoint — 2026-11-14
+
+**Main verified merges (snapshot):** [#45](https://github.com/Braspace/Braspace/pull/45) Go/Rust bootstrap, [#53](https://github.com/Braspace/Braspace/pull/53) Go compare/replan/PostgreSQL, [#70](https://github.com/Braspace/Braspace/pull/70) educational onboard computer, [#71](https://github.com/Braspace/Braspace/pull/71) NASA LOLA *research manifest*, [#72](https://github.com/Braspace/Braspace/pull/72) printable report, [#73](https://github.com/Braspace/Braspace/pull/73) MoonProof 3D web, [#74](https://github.com/Braspace/Braspace/pull/74) server-computed series/crew consumables, [#83](https://github.com/Braspace/Braspace/pull/83) patched Go/pgx dependency baseline, [#87](https://github.com/Braspace/Braspace/pull/87) anonymous NASA project + 7-slide evidence checks, [#88](https://github.com/Braspace/Braspace/pull/88) public smoke script, when the specific PR is actually marked **merged** in GitHub. **Do not infer a merge for currently open PRs.**
+
+**Main technical issues:** [#63](https://github.com/Braspace/Braspace/issues/63) onboard educational simulator v1 closed with evidence. [#54](https://github.com/Braspace/Braspace/issues/54) 3D original Globe stays open for science coordinate alignment and visual QA, [#58](https://github.com/Braspace/Braspace/issues/58) report stays open for print/accessibility validation, [#65](https://github.com/Braspace/Braspace/issues/65) independent scientific accuracy review remains open.
+
+**Safe merge order for open work:** Go/UX [#78](https://github.com/Braspace/Braspace/pull/78) licensed map-layer/media adapter → [#76](https://github.com/Braspace/Braspace/pull/76) fail-closed grid/engine → [#85](https://github.com/Braspace/Braspace/pull/85) sample null guard (stacked on #76) → [#84](https://github.com/Braspace/Braspace/pull/84) engineering review fixes; science [#75](https://github.com/Braspace/Braspace/pull/75) NASA LOLA/NAIF draft depends on [#86](https://github.com/Braspace/Braspace/pull/86) half-pixel + light-time correction, and results/hashes in #80/#82 need regeneration after physics changes.
+
+**All 29 branch refs/PR links and dependency matrix:** [GITHUB_BRANCH_PR_FULL_AUDIT_2026-11-14.md](GITHUB_BRANCH_PR_FULL_AUDIT_2026-11-14.md). This is a timestamped snapshot; fresh GitHub readback is required before any merge. Board memberships in GitHub Projects v2 have **not** been verified.
