@@ -16,7 +16,20 @@ Consultas feitas em 2026-11-14, por busca pública e leitura das páginas com We
 | QuickMap (`quickmap.lroc.asu.edu`) | Endereço não apareceu nos resultados | **Não verificada** |
 | LOLA Data Node (`imbrium.mit.edu`) | Apareceu em busca; não foi aberto | **Não verificada diretamente** |
 
-## 1. LOLA: DEMs do polo sul (PGDA)
+## 0. Dataset escolhido pela equipe (prevalece sobre as seções 1 e 7)
+
+Atualização de 2026-11-14, após leitura da branch `team/maccachera/spaceapps-2026` (PR #71, em rascunho, ainda não está em `main`):
+
+- **Produto:** `LDEM_80S_80M.IMG` (rótulo `LDEM_80S_80M.LBL`), PDS `LRO-L-LOLA-4-GDR-V1.0`, versão V2.0.
+- **Resolução:** 80 m por pixel, 80°S a 90°S, 7.600 × 7.600 amostras, 115.520.000 bytes.
+- **Formato:** `LSB_INTEGER` de 16 bits. `HEIGHT_m = DN × 0.5`. Raio de referência 1.737.400 m.
+- **Projeção:** polar estereográfica, latitude planetocêntrica, longitude positiva para leste. Quadro MOON_ME do DE421.
+- **Verificação:** SHA-256 conferido no arquivo local e no download oficial do PDS, segundo `data/LOLA_80S_80M_VERIFICATION.md` do branch.
+- **Status:** o arquivo não está versionado no Git. O time ainda aguarda reconhecimento de Joel e Gabriel. Nenhum cálculo com ele foi feito.
+
+**Correção:** a recomendação anterior de usar o `Site01` do PGDA (5 m) não vale para o time. Esse produto fica como alternativa de maior resolução, sem seleção. A projeção não é mais "a confirmar": o rótulo do dataset já a descreve. Ainda falta conferir com `gdalinfo` no arquivo real.
+
+## 1. LOLA: DEMs do polo sul (PGDA, alternativa não escolhida)
 
 **Produto:** "High-Resolution LOLA Topography for Lunar South Pole Sites", de Michael Kenneth Barker, NASA Goddard.
 
@@ -94,7 +107,7 @@ Apareceu em busca como nó de dados LOLA com DEMs de 5 m/pixel. A página não f
 ## Pendências antes de usar qualquer dado
 
 1. Abrir a página do desafio no navegador e salvar o texto oficial.
-2. Escolher o sítio e o produto LOLA e anotar identificador, versão e data no registro de fontes.
+2. Produto LOLA já escolhido pela equipe (seção 0). Falta o reconhecimento de Joel e Gabriel e a entrada em `main` pela PR #71.
 3. Confirmar licença de redistribuição do produto LOLA escolhido.
 4. Confirmar o binário de orientação lunar (`pck/`) e a versão do kernel de quadros.
 5. Abrir Moon Trek e QuickMap no navegador e registrar o que de fato oferecem.

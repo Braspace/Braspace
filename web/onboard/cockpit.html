@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BRASPACE · Computador de bordo</title>
+<style>
+/* Crew-centred layout: status first, one alarm summary, flat panels, no decorative buttons.
+   References: NASA ISS display standards (crew-centred, minimal colour), F Prime dashboard
+   (modular channel tables), mission-control summary-plus-main-area pattern.
+   Educational simulator. Synthetic data. Not flight software. */
+:root {
+  --bg: #0b0e11; --panel: #12171c; --line: #252d35; --line2: #1a2026;
+  --txt: #d8e1da; --dim: #7a8a82; --faint: #4d5a54;
+  --nom: #7fd39a; --warn: #e3ad4a; --bad: #e0666a; --sun: #e3ad4a; --earth: #6bbfd6;
+  --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--txt); font: 14px/1.45 var(--sans); }
+body { padding: 0 max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px)); overflow-x: hidden; }
+.wrap { max-width: 1120px; margin: 0 auto; min-width: 0; }
+.mono, code, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.dim { color: var(--dim); font-size: 12px; }
+.faint { color: var(--faint); font-size: 11px; }
+:focus-visible { outline: 1px solid var(--earth); outline-offset: 2px; }
+
+/* top status strip */
+.top { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); padding: 14px 0 12px; border-bottom: 1px solid var(--line); }
+@media (min-width: 720px) { .top { grid-template-columns: minmax(0, 1fr) auto; align-items: end; } }
+.mission { font-family: var(--mono); font-size: 13px; letter-spacing: .14em; color: var(--txt); }
+.mission small { display: block; color: var(--dim); letter-spacing: .04em; font-size: 12px; margin-top: 2px; }
+.clock { font-family: var(--mono); text-align: right; }
+.clock .utc { font-size: 22px; color: var(--txt); }
+.clock .met { font-size: 12px; color: var(--dim); }
+.status-row { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: .08em; color: var(--dim); }
+.status-row b { font-weight: 400; color: var(--txt); }
+.status-row .ok b { color: var(--nom); }
+.status-row .warn b { color: var(--warn); }
+.status-row .bad b { color: var(--bad); }
+
+/* alarm summary: one line, expands on demand */
+.alarm { margin: 12px 0 0; border: 1px solid var(--line); border-left-width: 3px; background: var(--panel); padding: 10px 14px; font-family: var(--mono); font-size: 12px; }
+.alarm.none { border-left-color: var(--nom); }
+.alarm.on { border-left-color: var(--bad); }
+.alarm summary { cursor: pointer; list-style: none; display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
+.alarm summary::-webkit-details-marker { display: none; }
+.alarm .count { color: var(--bad); }
+.alarm ul { margin: 8px 0 0; padding-left: 16px; color: var(--txt); display: grid; gap: 4px; }
+.alarm .sev-CRITICAL { color: var(--bad); } .alarm .sev-HIGH { color: var(--warn); } .alarm .sev-MEDIUM { color: var(--dim); }
+
+/* navigation: text tabs with an underline, not pills */
+nav.tabs { display: flex; flex-wrap: wrap; gap: 0 2px; border-bottom: 1px solid var(--line); margin-top: 14px; }
+a { color: var(--earth); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--faint); }
+a:hover { text-decoration-color: var(--earth); }
+.fuelout { color: var(--bad); }
+nav.tabs button {
+  appearance: none; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--dim);
+  font: 12px/1 var(--mono); letter-spacing: .08em; padding: 10px 12px 9px; cursor: pointer; white-space: nowrap;
+}
+nav.tabs button span { color: var(--faint); margin-right: 6px; }
+nav.tabs button:hover { color: var(--txt); }
+nav.tabs button[aria-pressed="true"] { color: var(--txt); border-bottom-color: var(--earth); }
+
+/* panels: flat, thin rules, section heads */
+main { display: grid; gap: 14px; padding-top: 16px; min-width: 0; }
+.grid { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); min-width: 0; }
+@media (min-width: 860px) { .grid.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); } .span2 { grid-column: 1 / -1; } }
+.panel { background: var(--panel); border: 1px solid var(--line); padding: 14px 16px; min-width: 0; }
+.panel h2 { margin: 0 0 12px; font: 11px/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--line2); padding-bottom: 8px; }
+.panel h2 em { font-style: normal; color: var(--faint); }
+
+/* readouts: label small, value large */
+.readout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0; margin: 0; }
+.readout dt, .readout dd { padding: 7px 0; border-bottom: 1px solid var(--line2); margin: 0; }
+.readout dt { font: 11px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+.readout dd { font: 15px/1.4 var(--mono); color: var(--txt); text-align: right; font-variant-numeric: tabular-nums; }
+.readout dd small { font-size: 11px; color: var(--dim); margin-left: 4px; }
+
+/* forms: underlined fields */
+.fields { display: grid; gap: 14px 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); }
+label { display: grid; gap: 4px; font: 10px/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); min-width: 0; }
+input, select {
+  font: 14px var(--mono); color: var(--txt); background: transparent; border: 0; border-bottom: 1px solid var(--line);
+  border-radius: 0; padding: 6px 0; min-height: 32px; width: 100%; min-width: 0;
+}
+select option { background: var(--panel); }
+input:focus, select:focus { border-bottom-color: var(--earth); outline: none; }
+input[aria-invalid="true"] { border-bottom-color: var(--bad); color: var(--bad); }
+input[type="range"] { accent-color: var(--earth); padding: 0; border: 0; }
+.hint { font: 11px var(--sans); color: var(--faint); text-transform: none; letter-spacing: 0; }
+.hint.err { color: var(--bad); }
+
+/* buttons: plain, square, no shadows */
+.btn { appearance: none; font: 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--txt); background: transparent; border: 1px solid var(--line); border-radius: 0; padding: 8px 14px; min-height: 34px; cursor: pointer; }
+.btn:hover { border-color: var(--dim); }
+.btn.primary { border-color: var(--earth); color: var(--earth); }
+.btn.primary:hover { background: #0e1d24; }
+.btn[aria-pressed="true"] { border-color: var(--txt); color: var(--txt); }
+.btn:disabled { color: var(--faint); border-color: var(--line2); cursor: default; }
+.seg { display: inline-flex; border: 1px solid var(--line); }
+.seg .btn { border: 0; border-right: 1px solid var(--line); }
+.seg .btn:last-child { border-right: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+
+/* tags: a bracketed code, not a coloured pill */
+.tag { display: inline-block; font: 10px/1 var(--mono); letter-spacing: .1em; padding: 3px 6px; border: 1px solid currentColor; color: var(--dim); white-space: nowrap; }
+.tag.SIM { color: var(--nom); } .tag.PARC { color: var(--warn); } .tag.PEND { color: var(--dim); }
+.tag.BLOQ { color: var(--bad); } .tag.ESQ { color: #a592d6; } .tag.SINT { color: var(--sun); }
+
+/* bars and strips */
+.bar { height: 4px; background: var(--line2); margin-top: 8px; }
+.bar > span { display: block; height: 100%; background: var(--nom); }
+.bar.warn > span { background: var(--warn); } .bar.bad > span { background: var(--bad); }
+.strip { display: flex; height: 12px; border: 1px solid var(--line); }
+.strip > i { flex: 1 1 0; min-width: 0; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font: 11px var(--mono); color: var(--dim); margin-top: 8px; }
+.legend i { display: inline-block; width: 8px; height: 8px; margin-right: 6px; vertical-align: 0; }
+
+/* tables */
+.table { width: 100%; border-collapse: collapse; font: 12px var(--mono); }
+.table th, .table td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line2); vertical-align: top; }
+.table th { color: var(--faint); font-weight: 400; letter-spacing: .1em; text-transform: uppercase; font-size: 10px; }
+.table td.n, .table th.n { text-align: right; font-variant-numeric: tabular-nums; }
+.scroll { overflow-x: auto; min-width: 0; }
+svg text { font: 10px var(--mono); fill: var(--dim); }
+.note { font-size: 12px; color: var(--dim); margin: 10px 0 0; max-width: 70ch; }
+.notice, .caution { border-left: 2px solid var(--warn); padding: 6px 10px; color: var(--txt); font-size: 13px; background: #14110a; margin-bottom: 12px; }
+.caution[role="alert"] { border-left-color: var(--bad); }
+button { appearance: none; font: 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--txt); background: transparent; border: 1px solid var(--line); border-radius: 0; padding: 8px 14px; min-height: 34px; cursor: pointer; }
+button:hover { border-color: var(--dim); }
+button[aria-pressed="true"] { border-color: var(--txt); }
+button:disabled { color: var(--faint); border-color: var(--line2); cursor: default; }
+button.go { border-color: var(--nom); color: var(--nom); }
+.btn.go:hover { background: #0d1a12; }
+.edu { border-left: 2px solid var(--earth); padding: 6px 10px; color: var(--txt); font-size: 13px; margin-top: 10px; }
+ul.plain { margin: 0; padding-left: 16px; display: grid; gap: 6px; font-size: 13px; }
+textarea { width: 100%; min-height: 140px; font: 12px var(--mono); color: var(--txt); background: #080a0c; border: 1px solid var(--line); padding: 10px; border-radius: 0; }
+.hidden { display: none !important; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="mission">
+      BRASPACE · COMPUTADOR DE BORDO
+      <small>simulador educacional · dados sintéticos · não é software de voo</small>
+    </div>
+    <div class="clock" aria-live="off">
+      <div class="utc" id="utc">--:--:--</div>
+      <div class="met" id="met">T- --</div>
+    </div>
+    <div class="status-row" role="status" aria-label="Estado do sistema">
+      <span class="ok">DADOS <b>SINTÉTICOS</b></span>
+      <span class="warn">VALIDAÇÃO <b>PENDENTE</b></span>
+      <span id="lamp-api">API <b>?</b></span>
+      <span class="bad">RECOMENDAÇÃO DE VOO <b>NENHUMA</b></span>
+    </div>
+  </header>
+
+  <details class="alarm none" id="alarm" open>
+    <summary id="alarm-sum">SEM ALARMES DO MODELO</summary>
+    <ul id="alarm-list"></ul>
+  </details>
+
+  <nav class="tabs" aria-label="Painéis">
+    <button type="button" data-tab="entrada" aria-pressed="true"><span>01</span>ENTRADA</button>
+    <button type="button" data-tab="geometria" aria-pressed="false"><span>02</span>GEOMETRIA</button>
+    <button type="button" data-tab="horizonte" aria-pressed="false"><span>03</span>HORIZONTE</button>
+    <button type="button" data-tab="janelas" aria-pressed="false"><span>04</span>JANELAS</button>
+    <button type="button" data-tab="energia" aria-pressed="false"><span>05</span>ENERGIA</button>
+    <button type="button" data-tab="vida" aria-pressed="false"><span>06</span>VIDA</button>
+    <button type="button" data-tab="replan" aria-pressed="false"><span>07</span>REPLANEJAR</button>
+    <button type="button" data-tab="visual" aria-pressed="false"><span>08</span>VISUAL</button>
+    <button type="button" data-tab="sens" aria-pressed="false"><span>09</span>SENSIBILIDADE</button>
+    <button type="button" data-tab="historico" aria-pressed="false"><span>10</span>REGISTRO</button>
+    <button type="button" data-tab="lanc" aria-pressed="false"><span>11</span>LANÇAMENTOS</button>
+    <button type="button" data-tab="status" aria-pressed="false"><span>12</span>STATUS</button>
+  </nav>
+
+  <main id="views"></main>
+</div>
+
+<script src="sim.js"></script>
+<script src="request.js"></script>
+<script src="model.js"></script>
+<script src="features.js"></script>
+<script src="cockpit.js"></script>
+</body>
+</html>
