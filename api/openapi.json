@@ -1134,7 +1134,8 @@
               "LAYER_UNAVAILABLE",
               "NO_SERIES_DATA",
               "INVALID_STEP",
-              "REQUEST_CANCELED"
+              "REQUEST_CANCELED",
+              "TOO_MANY_EVALUATIONS"
             ]
           }
         },

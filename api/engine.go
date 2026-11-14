@@ -171,7 +171,7 @@ func (ev *evaluator) evaluate(ctx context.Context, s *siteSeries, from, to int) 
 	over := ev.planned > maxEngineCallsPerRequest
 	ev.mu.Unlock()
 	if over {
-		return nil, errf(http.StatusUnprocessableEntity, "REQUEST_TOO_LARGE",
+		return nil, errf(http.StatusUnprocessableEntity, "TOO_MANY_EVALUATIONS",
 			"request needs more than %d engine evaluations; shorten the window or reduce delays/sites", maxEngineCallsPerRequest)
 	}
 	out := make([]engineResult, to-from)

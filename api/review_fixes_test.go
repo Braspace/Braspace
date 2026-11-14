@@ -16,7 +16,7 @@ func TestRequestEngineBudget(t *testing.T) {
 	maxEngineCallsPerRequest = 100
 	defer func() { maxEngineCallsPerRequest = old }()
 	rec := do(h, "POST", "/api/compare", `{"site_ids":["synthetic-demo-a","synthetic-demo-b"],"start_utc":"2026-12-01T00:00:00Z","duration_hours":72}`)
-	if rec.Code != 422 || decode(t, rec)["code"] != "REQUEST_TOO_LARGE" {
+	if rec.Code != 422 || decode(t, rec)["code"] != "TOO_MANY_EVALUATIONS" {
 		t.Fatalf("144 evaluations over a budget of 100: %d %s", rec.Code, rec.Body.String())
 	}
 	// Overlapping delay windows hit the cache and do not count twice.
