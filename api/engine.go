@@ -69,7 +69,11 @@ func newEngineClient(binary string) *engineClient {
 
 func (e *engineClient) available() bool {
 	st, err := os.Stat(e.binary)
-	return err == nil && !st.IsDir() && st.Mode()&0o111 != 0
+	if err != nil || st.IsDir() {
+		return false
+	}
+	// Windows has no execute bit; existence of a regular file is the check there.
+	return runtime.GOOS == "windows" || st.Mode()&0o111 != 0
 }
 
 func (e *engineClient) call(ctx context.Context, req visibilityRequest) (engineResult, error) {
