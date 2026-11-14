@@ -68,11 +68,14 @@ export function freeArea(W, H, rects) {
 
 function overlayRects(container) {
   const out = [];
-  const els = [...document.body.children].flatMap(e => getComputedStyle(e).display === "contents" ? [...e.children] : [e]);
+  // Screens may wrap their fixed panels in a non-positioned container: look one level inside it.
+  const els = [...document.body.children].flatMap(e => { const c = getComputedStyle(e); return c.display === "contents" || (c.position === "static" && c.display !== "none") ? [...e.children] : [e]; });
   for (const el of els) {
     if (el === container || el.contains(container) || el.hidden) continue;
     const cs = getComputedStyle(el); if (cs.position !== "fixed" || cs.display === "none" || cs.visibility === "hidden") continue;
-    out.push(el.getBoundingClientRect());
+    const r = el.getBoundingClientRect();
+    if (r.width >= innerWidth * .9 && r.height >= innerHeight * .9) continue; // full-screen overlay (e.g. rays svg), not a panel
+    out.push(r);
   }
   return out;
 }
@@ -217,7 +220,7 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
       const cands = features.filter(f => !sites.some(s => s.name && f.name && s.name.startsWith(f.name))).sort((a, b) => b.d - a.d)
         .map(f => { const [x, y] = toPx(f.stereo_x_m, f.stereo_y_m); return { f, x, y, w: f.name.length * 7 + 6, h: 16 }; })
         .filter(c => c.x > c.w / 2 && c.y > 8 && c.x < W - c.w / 2 && c.y < H - 8);
-      const placed = placeLabels(cands, [...panels, ...marks]);
+      const placed = placeLabels(cands, [...panels, ...marks]).slice(0, 8);
       labels.replaceChildren(...placed.map(p => { const s = document.createElement("span"); s.className = "mp-feature";
         s.dataset.type = p.f.type; s.textContent = p.f.name; Object.assign(s.style, { left: p.x + "px", top: p.y + "px" }); return s; }));
       container.dataset.labels = String(placed.length);
