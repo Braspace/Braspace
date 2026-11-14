@@ -559,17 +559,28 @@
     return h("span", { class: "tag " + st, text: label });
   }
 
+  // Tooltip text for a site: name, coordinates and distance from the pole (colatitude).
+  function siteTip(s) {
+    return s.name + " · lat " + s.lat.toFixed(2) + "° · lon " + s.lon.toFixed(2) + "° · " + (s.lat + 90).toFixed(2) + "° do polo";
+  }
+
   VIEWS.visual = () => {
     const W = 320, cx = 160, cy = 160, R0 = 150;
     const box = svg("svg", { viewBox: "0 0 320 320", width: "100%", style: "max-width:440px;display:block;margin:0 auto", role: "img", "aria-label": "Mapa polar ampliado com os sítios sintéticos" });
-    [60, 120, R0].forEach(r => box.append(svg("circle", { cx, cy, r, fill: "none", stroke: "#263241", "stroke-dasharray": r === R0 ? "" : "3 3" })));
+    // rings: 1 degree of colatitude = 60 px; labels sit just above each ring
+    [[60, "1°"], [120, "2°"], [R0, "2,5°"]].forEach(([r, lab]) => {
+      box.append(svg("circle", { cx, cy, r, fill: "none", stroke: "#263241", "stroke-dasharray": r === R0 ? "" : "3 3" }));
+      box.append(svg("text", { x: cx + 6, y: cy - r + 12 }, lab + " do polo"));
+    });
     box.append(svg("circle", { cx, cy, r: 3, fill: "#6f8b7c" }));
     box.append(svg("text", { x: cx + 6, y: cy - 6 }, "polo sul"));
     Object.entries(M.SITES).forEach(([id, s]) => {
       const r = (s.lat + 90) * 60, rad = s.lon * Math.PI / 180;
       const x = cx + r * Math.cos(rad), y = cy + r * Math.sin(rad);
       const on = id === S.site;
-      box.append(svg("circle", { cx: x, cy: y, r: on ? 7 : 5, fill: on ? "#5fd8ff" : "#ffb020" }));
+      const dot = svg("circle", { cx: x, cy: y, r: on ? 7 : 5, fill: on ? "#5fd8ff" : "#ffb020", tabindex: "0", role: "img", "aria-label": siteTip(s) });
+      dot.append(svg("title", {}, siteTip(s)));
+      box.append(dot);
       box.append(svg("text", { x: x + 9, y: y + 4, fill: on ? "#5fd8ff" : undefined }, s.name));
     });
     return [
@@ -765,12 +776,17 @@
 
   function polarCard() {
     const box = svg("svg", { viewBox: "0 0 320 320", width: "100%", style: "max-width:300px;display:block;margin:0 auto", role: "img", "aria-label": "Mapa polar com os sítios sintéticos" });
-    [60, 120, 150].forEach(r => box.append(svg("circle", { cx: 160, cy: 160, r, fill: "none", stroke: "#263241", "stroke-width": 1.5 })));
+    [[60, "1°"], [120, "2°"], [150, "2,5°"]].forEach(([r, lab]) => {
+      box.append(svg("circle", { cx: 160, cy: 160, r, fill: "none", stroke: "#263241", "stroke-width": 1.5 }));
+      box.append(svg("text", { x: 166, y: 160 - r + 12 }, lab + " do polo"));
+    });
     box.append(svg("circle", { cx: 160, cy: 160, r: 3, fill: "#8fa0b3" }));
     Object.entries(M.SITES).forEach(([id, s]) => {
       const r = (s.lat + 90) * 60, rad = s.lon * Math.PI / 180;
       const x = 160 + r * Math.cos(rad), y = 160 + r * Math.sin(rad), on = id === S.site;
-      box.append(svg("circle", { cx: x, cy: y, r: on ? 8 : 5, fill: on ? "#5fb3d8" : "#e8a317" }));
+      const dot = svg("circle", { cx: x, cy: y, r: on ? 8 : 5, fill: on ? "#5fb3d8" : "#e8a317", tabindex: "0", role: "img", "aria-label": siteTip(s) });
+      dot.append(svg("title", {}, siteTip(s)));
+      box.append(dot);
       box.append(svg("text", { x: x + 10, y: y + 4, style: on ? "fill:#2c5f8a;font-weight:600" : "" }, s.name));
     });
     return h("section", { class: "panel" },
