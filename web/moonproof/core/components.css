@@ -2,7 +2,9 @@
    Reference: ref/front/heloisa-telas A-mission-control, S-design-system, M1 (design @lisanogueira). */
 .mp-pill{display:inline-flex;align-items:center;justify-content:center;gap:var(--s1);min-height:var(--touch);padding:0 18px;border-radius:var(--r-pill);border:1px solid var(--line-2);background:var(--glass);-webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);color:var(--text);font-weight:500;font-size:14px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background-color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease),transform var(--t-fast) var(--ease)}
 .mp-pill:active{transform:scale(.98)}
-.mp-pill svg{flex:none}
+/* Shared icons (core/icons.js) carry width/height 24: pills size them here. */
+.mp-pill svg{flex:none;width:17px;height:17px}
+.mp-pill.is-round svg{width:20px;height:20px}
 .mp-pill.is-round{width:var(--touch);padding:0;font-size:18px}
 .mp-pill:hover{border-color:rgba(255,255,255,.32)}
 .mp-pill[aria-current="page"],.mp-pill[aria-pressed="true"],.mp-pill.is-primary{background:var(--jade);color:var(--jade-text);border-color:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
@@ -89,6 +91,10 @@
 .mp-marker[aria-pressed="true"]{border-color:var(--jade);box-shadow:0 0 0 7px rgba(46,196,160,.25),0 0 30px rgba(46,196,160,.6)}
 .mp-marker-label{position:absolute;top:52px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:12.5px;font-weight:700;padding:4px 11px;border-radius:var(--r-pill);background:rgba(5,6,7,.8);pointer-events:none}
 .mp-marker[aria-pressed="true"] .mp-marker-label{background:var(--jade);color:var(--jade-text)}
+/* IAU/USGS crater and mons names over the terrain (core/terrain.js): plain text, no box, never clickable. */
+.mp-terrain-labels{position:absolute;inset:0;pointer-events:none}
+.mp-feature{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:12.5px;font-weight:500;color:rgba(242,244,245,.82);text-shadow:0 1px 3px rgba(0,0,0,.85)}
+.mp-feature[data-type="Mons"]{font-style:italic}
 .mp-help-pop{position:fixed;z-index:30;top:calc(var(--margin) + var(--touch) + 8px);right:var(--margin);width:300px;padding:var(--s2) var(--s3);animation:mp-in var(--t) var(--ease)}
 .mp-help-pop p{margin:var(--s1) 0;display:flex;align-items:center;gap:var(--s1);color:var(--text-2);font-size:13px}
 /* Fidelity audit A/B/Entry (items 5-13, 15), measured against the @lisanogueira canvas. */
