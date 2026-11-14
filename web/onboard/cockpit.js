@@ -1769,8 +1769,10 @@
     const DS = window.MoonproofDS;
     if (!DS) { box.replaceChildren(...L.badges(S.badge).map(b => h("span", { class: "chip " + b.kind, text: b.text })), lamp); return; }
     const items = [{ kind: "sim", text: "Protótipo · modelo sintético no navegador" }, { kind: "nd", text: "Não validado" }];
-    if (S.badge.apiUp && S.badge.readyz) items.push({ kind: "est", text: "API science: " + (S.badge.readyz.science_status || "N/D") });
-    if (S.badge.seriesStatus) items.push({ kind: "est", text: "Série: " + S.badge.seriesStatus });
+    // Every API-derived chip of L.badges stays (readyz, science, validated, LOLA/SPICE, series) and so does its
+    // permanent last chip "No flight recommendation": the v3 strip changes the look, not what is disclosed.
+    const live = L.badges(S.badge).slice(2);
+    live.forEach((c, i) => items.push({ kind: i === live.length - 1 ? "nd" : "est", text: c.text }));
     const strip = DS.provenanceStrip({ items, note: "Sem recomendação de voo" });
     strip.append(h("span", { class: "it" }, "API:", lamp));
     box.replaceChildren(strip);
