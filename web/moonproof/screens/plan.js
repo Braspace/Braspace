@@ -4,6 +4,8 @@ import { loadSites, windowMetrics, api, sealFor } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
 import { register, t, fmtNum } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo, DEFAULT_RULES } from "../core/state.js";
+import { parseRules, shareUrl, shortVersion } from "./plan-model.js";
+import { pickVersion, parseConfigCommit } from "./evidence-model.js";
 
 register({
   en: {
@@ -24,6 +26,7 @@ register({
     "plan.csv": "CSV · hourly",
     "plan.json": "JSON",
     "plan.pdf": "PDF Passport",
+    "plan.version": "Plan version",
     "plan.urlNote": "The link reopens this exact calculation with the same rules and version.",
     "plan.tableTitle": "All metrics · Proof layer",
     "plan.legend": "Red = violates rule · green = best value",
@@ -61,6 +64,7 @@ register({
     "plan.csv": "CSV · hora a hora",
     "plan.json": "JSON",
     "plan.pdf": "Passaporte PDF",
+    "plan.version": "Versão do plano",
     "plan.urlNote": "O link reabre exatamente este cálculo, com as mesmas regras e a mesma versão.",
     "plan.tableTitle": "Todas as métricas · camada Prova",
     "plan.legend": "Vermelho = viola a regra · verde = melhor valor",
@@ -91,15 +95,17 @@ const terrain = await mountTerrain(document.getElementById("terrain"), {
   onSelect: (id) => setState({ site: id })
 });
 
-const rulesDraft = {
-  night: Number(getState().night ?? DEFAULT_RULES.night),
-  blackout: Number(getState().blackout ?? DEFAULT_RULES.blackout),
-  battery: Number(getState().battery ?? DEFAULT_RULES.battery),
-  mast: Number(new URLSearchParams(location.search).get("mast") ?? 2),
-  slope: Number(new URLSearchParams(location.search).get("slope") ?? 8),
-  sunMode: new URLSearchParams(location.search).get("sunMode") || "center",
-  step: Number(new URLSearchParams(location.search).get("step") ?? 1)
-};
+// Rules (editable defaults live in plan-model.js on top of DEFAULT_RULES): `rules=` in the link wins over the single params; the three limits that core/state.js owns are reconciled once.
+const rulesDraft = parseRules(location.search);
+if (rulesDraft.night !== getState().night || rulesDraft.blackout !== getState().blackout || rulesDraft.battery !== getState().battery) {
+  setState({ night: rulesDraft.night, blackout: rulesDraft.blackout, battery: rulesDraft.battery });
+}
+// Plan version = deployment commit (config.js) or /api/health; absent → "—" + N/D. Same source as the Evidence screen.
+const [health, cfg] = await Promise.all([
+  api("/api/health", { timeoutMs: 3000 }),
+  fetch(((window.BRASPACE_API_BASE) || "") + "/config.js", { cache: "no-store" }).then((r) => (r.ok ? r.text() : "")).catch(() => "")
+]);
+const version = pickVersion({ configCommit: parseConfigCommit(cfg), health: health.ok ? health.data : null });
 
 function downloadFile(filename, content, mime) {
   const blob = new Blob([content], { type: mime });
@@ -233,6 +239,9 @@ async function draw() {
     setState({ night: rulesDraft.night, blackout: rulesDraft.blackout, battery: rulesDraft.battery, layer: "proof" });
   });
 
+  // The page URL itself carries the scenario, rules= and v=, so a reload reproduces this calculation.
+  const shareHref = shareUrl(location.href, rulesDraft, version?.value);
+  history.replaceState(null, "", new URL(shareHref).search + location.hash);
   const exportEl = document.getElementById("plan-export");
   exportEl.innerHTML = `
     <div class="mp-plan-head"><h2>${t("plan.exportTitle")}</h2></div>
@@ -241,10 +250,12 @@ async function draw() {
       <button id="btn-json" class="mp-btn-white" type="button">${t("plan.json")}</button>
       <button id="btn-pdf" class="mp-btn-white" type="button">${t("plan.pdf")}</button>
     </div>
-    <div class="mp-url-box" id="plan-url">${location.href}</div>
+    <div class="mp-url-box" id="plan-url">${shareHref}</div>
+    <p class="mp-note mp-version"><span>${t("plan.version")}</span> <b>${shortVersion(version?.value) ?? t("nd")}</b><span class="mp-version-seal"></span></p>
     <p class="mp-note">${t("plan.urlNote")}</p>
   `;
 
+  if (!version) exportEl.querySelector(".mp-version-seal").appendChild(sealEl("N/D"));
   exportEl.querySelector("#btn-csv").addEventListener("click", () => {
     const header = "site,hour_idx,sun,earth";
     const lines = [header];
@@ -271,9 +282,7 @@ async function draw() {
         <thead>
           <tr>
             <th>${t("plan.colMetric")}</th><th>${t("plan.colUnit")}</th>
-            <th>${scenarios[0]?.n} · ${scenarios[0]?.name}</th>
-            <th>${scenarios[1]?.n} · ${scenarios[1]?.name}</th>
-            <th>${scenarios[2]?.n} · ${scenarios[2]?.name}</th>
+            ${scenarios.map((s, i) => `<th scope="col" title="${s.n} · ${s.name}"><span class="mp-col-letter">${String.fromCharCode(65 + i)}</span><small class="mp-col-site">${s.n} · ${s.name}</small></th>`).join("")}
             <th>${t("plan.colRule")}</th><th>${t("plan.colMargin")}</th>
             <th>${t("plan.colUnc")}</th><th>${t("plan.colOrigin")}</th>
           </tr>

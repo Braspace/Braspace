@@ -1,9 +1,10 @@
 import { mountShell } from "../core/shell.js";
-import { mountTerrain } from "../core/terrain.js";
-import { loadSites, sealFor } from "../core/data.js";
+import { mountTerrain, shadeValue } from "../core/terrain.js";
+import { loadSites, loadRegion, sealFor } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
 import { register, t } from "../core/i18n.js";
-import { getState, setState, hrefTo } from "../core/state.js";
+import { getState, setState, hrefTo, DEFAULT_RULES } from "../core/state.js";
+import { qrSvg } from "./qr.js";
 
 register({
   en: {
@@ -16,7 +17,7 @@ register({
     "act.s3": "Question & answer",
     "act.s3d": "answer only at the end",
     "act.s4": "Share",
-    "act.s4d": "link without login",
+    "act.s4d": "link or QR, no login",
     "act.tip": "Classroom tip: let students explore 5 min before showing anything on the projector.",
     "act.previewTitle": "How students will see it",
     "act.laptop": "Laptop",
@@ -39,7 +40,16 @@ register({
     "act.shareTitle": "Step 4 · share with the class",
     "act.copy": "Copy link",
     "act.copied": "Copied!",
-    "act.present": "Present on projector"
+    "act.present": "Present on projector",
+    "act.tSiteD": "among the scenarios",
+    "act.tDateD": "stays on {date}",
+    "act.tProofD": "sources and tables",
+    "act.tRulesD": "assumed limits {night} h and {blackout} h stay fixed",
+    "act.tLabD": "as an extra challenge",
+    "act.students": "students",
+    "act.access": "Students join without an account · you follow the answers here",
+    "act.qrLabel": "QR code of the share link",
+    "act.layers": "Layers"
   },
   "pt-BR": {
     "act.kit": "Kit Aula",
@@ -51,7 +61,7 @@ register({
     "act.s3": "Pergunta e resposta",
     "act.s3d": "a resposta só aparece no fim",
     "act.s4": "Compartilhar",
-    "act.s4d": "link sem login",
+    "act.s4d": "link ou QR, sem login",
     "act.tip": "Dica de uso em aula: deixe a turma explorar 5 min antes de mostrar qualquer coisa no projetor.",
     "act.previewTitle": "Como os alunos vão ver",
     "act.laptop": "Notebook",
@@ -74,13 +84,23 @@ register({
     "act.shareTitle": "Passo 4 · compartilhar com a turma",
     "act.copy": "Copiar link",
     "act.copied": "Copiado!",
-    "act.present": "Apresentar no projetor"
+    "act.present": "Apresentar no projetor",
+    "act.tSiteD": "entre os cenários",
+    "act.tDateD": "fica em {date}",
+    "act.tProofD": "fontes e tabelas",
+    "act.tRulesD": "limites assumidos de {night} h e {blackout} h ficam fixos",
+    "act.tLabD": "como desafio extra",
+    "act.students": "alunos",
+    "act.access": "Alunos entram sem conta · você acompanha as respostas aqui",
+    "act.qrLabel": "QR code do link de compartilhamento",
+    "act.layers": "Camadas"
   }
 });
 
 const shell = mountShell({ screen: "compare", onLang: draw });
 const doc = await loadSites();
 const scenarios = doc.sites.slice(0, 3);
+const grid = await loadRegion();
 await mountTerrain(document.getElementById("terrain"), { sites: doc.sites, selected: getState().site });
 
 const cfg = {
@@ -93,7 +113,9 @@ const cfg = {
   allowRules: false,
   allowLab: true
 };
+const LAYERS = [["answer", "act.l1"], ["why", "act.l2"], ["proof", "act.l3"]];
 
+// location.href keeps the scenario (site, start, rules…) and the activity switches ride on the query string.
 function shareUrl() {
   const u = new URL(location.href);
   u.searchParams.set("layer", cfg.openLayer);
@@ -105,10 +127,53 @@ function shareUrl() {
   return u.toString();
 }
 
+/** Hillshade of the real LOLA grid fitted to the scenarios, drawn once per size; markers use the same transform. */
+const reliefCache = { key: "", canvas: null };
+function hAt(i, j) {
+  const a = Math.floor(i), b = Math.floor(j);
+  if (a < 0 || b < 0 || a >= grid.nx - 1 || b >= grid.ny - 1) return NaN;
+  const u = i - a, v = j - b, d = grid.data, n = grid.nx, q = b * n + a;
+  return (d[q] * (1 - u) + d[q + 1] * u) * (1 - v) + (d[q + n] * (1 - u) + d[q + n + 1] * u) * v;
+}
+function paintPreviewTerrain(frame) {
+  const W = frame.clientWidth, H = frame.clientHeight;
+  if (!W || !H || !scenarios.length) return;
+  const xs = scenarios.map((s) => s.stereo_x_m), ys = scenarios.map((s) => s.stereo_y_m);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  // usable area keeps markers clear of the badge (top) and the question glass (bottom)
+  const pad = 40, top = 48, bot = H - 100;
+  const mpp = Math.max((x1 - x0) / (W - 2 * pad), (y1 - y0) / (bot - top), grid.dx / 4);
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, py = (top + bot) / 2;
+  const dpr = Math.min(2, devicePixelRatio || 1), w = Math.round(W * dpr), h = Math.round(H * dpr);
+  const key = [w, h, mpp.toFixed(2), cx.toFixed(0), cy.toFixed(0)].join();
+  if (reliefCache.key !== key) {
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+    const img = new ImageData(w, h), px = img.data, e = 0.5, m = mpp / dpr;
+    for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) {
+      const x = cx + (c - w / 2) * m, y = cy - (r - py * dpr) * m, fi = (x - grid.x0) / grid.dx, fj = (y - grid.y0) / grid.dx, p = (r * w + c) * 4;
+      const hx = (hAt(fi + e, fj) - hAt(fi - e, fj)) / (2 * e * grid.dx), hy = (hAt(fi, fj + e) - hAt(fi, fj - e)) / (2 * e * grid.dx);
+      const v = Number.isFinite(hx + hy) ? shadeValue(hx, hy) : 7;
+      px[p] = v; px[p + 1] = v + 2; px[p + 2] = v + 7; px[p + 3] = 255;
+    }
+    cv.getContext("2d").putImageData(img, 0, 0);
+    reliefCache.key = key; reliefCache.canvas = cv;
+  }
+  const host = frame.querySelector(".mp-pv-map");
+  const cv = document.createElement("canvas"); cv.width = w; cv.height = h; cv.setAttribute("aria-hidden", "true");
+  cv.getContext("2d").drawImage(reliefCache.canvas, 0, 0);
+  host.replaceChildren(cv, ...scenarios.map((s) => {
+    const mk = document.createElement("span"); mk.className = "mp-pv-marker"; mk.textContent = s.n; mk.setAttribute("aria-hidden", "true");
+    mk.style.left = W / 2 + (s.stereo_x_m - cx) / mpp + "px"; mk.style.top = py - (s.stereo_y_m - cy) / mpp + "px";
+    return mk;
+  }));
+}
+
 function draw() {
+  const focusKey = document.activeElement?.dataset?.focus;
+  const startDate = (getState().start || "2027-03-14T06:00:00Z").slice(0, 10);
   shell.setContext({
     site: `${scenarios.length} cenários`,
-    date: (getState().start || "2027-03-14T06:00:00Z").slice(0, 10),
+    date: startDate,
     days: "14",
     seal: sealFor(doc.status),
     online: true
@@ -122,45 +187,42 @@ function draw() {
     [4, t("act.s4"), t("act.s4d")]
   ];
   stepsEl.innerHTML = `
-    <div><small style="color:var(--jade);font-weight:700">${t("act.kit")}</small><h2 style="margin:2px 0 0">${t("act.title")}</h2></div>
+    <div><span class="mp-act-kicker">${t("act.kit")}</span><h1 class="mp-act-h1">${t("act.title")}</h1></div>
     ${steps.map(([n, title, sub]) => `
-      <div class="mp-step-item ${n < cfg.step ? "is-done" : n === cfg.step ? "is-active" : ""}" data-step="${n}">
+      <button class="mp-step-item ${n < cfg.step ? "is-done" : n === cfg.step ? "is-active" : ""}" data-step="${n}" data-focus="step${n}" type="button" ${n === cfg.step ? 'aria-current="step"' : ""}>
         <span class="mp-step-num">${n < cfg.step ? "✓" : n}</span>
-        <div><strong style="font-size:13px">${title}</strong><div style="font-size:12px;color:var(--text-dim)">${sub}</div></div>
-      </div>
+        <span class="mp-step-txt"><strong>${title}</strong><span>${sub}</span></span>
+      </button>
     `).join("")}
-    <p style="font-size:12px;color:var(--text-dim);margin-top:auto">${t("act.tip")}</p>
+    <p class="mp-act-tip">${t("act.tip")}</p>
   `;
   stepsEl.querySelectorAll("[data-step]").forEach((el) => {
     el.onclick = () => { cfg.step = Number(el.dataset.step); draw(); };
   });
 
   const prevEl = document.getElementById("act-preview");
+  const openIdx = LAYERS.findIndex(([k]) => k === cfg.openLayer);
   prevEl.innerHTML = `
     <div class="mp-act-head">
       <h2>${t("act.previewTitle")}</h2>
       <div class="mp-chip-row">
-        <button class="mp-chip ${cfg.device === "laptop" ? "is-active" : ""}" data-dev="laptop" type="button">${t("act.laptop")}</button>
-        <button class="mp-chip ${cfg.device === "mobile" ? "is-active" : ""}" data-dev="mobile" type="button">${t("act.mobile")}</button>
+        <button class="mp-chip ${cfg.device === "laptop" ? "is-active" : ""}" data-dev="laptop" data-focus="dev-laptop" type="button" aria-pressed="${cfg.device === "laptop"}">${t("act.laptop")}</button>
+        <button class="mp-chip ${cfg.device === "mobile" ? "is-active" : ""}" data-dev="mobile" data-focus="dev-mobile" type="button" aria-pressed="${cfg.device === "mobile"}">${t("act.mobile")}</button>
       </div>
     </div>
     <div class="mp-preview-frame ${cfg.device === "mobile" ? "is-mobile" : ""}">
-      <div class="mp-act-head">
-        <span style="background:var(--pill-white);color:var(--pill-ink);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700">${t("act.badge")}</span>
-        <span id="prev-seal"></span>
-      </div>
-      <div style="font-size:13px;color:var(--text-dim)">${scenarios.map((s) => `${s.n} · ${s.name}`).join("  |  ")}</div>
-      <div>
-        <strong style="font-size:15px">${t("act.prompt")}</strong>
-        <div style="font-size:12.5px;color:var(--text-dim);margin-top:4px">${t("act.promptSub")}</div>
+      <div class="mp-pv-map"></div>
+      <span class="mp-pv-badge">${t("act.badge")}</span>
+      <span id="prev-seal" class="mp-pv-seal"></span>
+      <div class="mp-pv-q mp-glass">
+        <strong>${t("act.prompt")}</strong>
+        <span>${t("act.promptSub")}</span>
       </div>
     </div>
-    <div class="mp-act-head">
-      <span style="font-size:12.5px;color:var(--text-dim)">${t("act.openIn")}</span>
-      <div class="mp-chip-row">
-        <button class="mp-chip ${cfg.openLayer === "answer" ? "is-active" : ""}" data-layer="answer" type="button">${t("act.l1")}</button>
-        <button class="mp-chip ${cfg.openLayer === "why" ? "is-active" : ""}" data-layer="why" type="button">${t("act.l2")}</button>
-        <button class="mp-chip ${cfg.openLayer === "proof" ? "is-active" : ""}" data-layer="proof" type="button">${t("act.l3")}</button>
+    <div class="mp-act-head mp-act-open">
+      <span>${t("act.openIn")}</span>
+      <div class="mp-chip-row mp-layer-tabs" role="tablist" aria-label="${t("act.layers")}">
+        ${LAYERS.map(([k, label], i) => `<button role="tab" class="mp-layer-tab ${i < openIdx ? "is-open" : ""} ${k === cfg.openLayer ? "is-active" : ""}" data-layer="${k}" data-focus="layer-${k}" type="button" aria-selected="${k === cfg.openLayer}" tabindex="${k === cfg.openLayer ? 0 : -1}">${t(label)}</button>`).join("")}
       </div>
     </div>
   `;
@@ -168,27 +230,36 @@ function draw() {
   prevEl.querySelectorAll("[data-dev]").forEach((b) => { b.onclick = () => { cfg.device = b.dataset.dev; draw(); }; });
   prevEl.querySelectorAll("[data-layer]").forEach((b) => {
     b.onclick = () => { cfg.openLayer = b.dataset.layer; setState({ layer: cfg.openLayer }); draw(); };
+    b.onkeydown = (ev) => {
+      const d = ev.key === "ArrowRight" ? 1 : ev.key === "ArrowLeft" ? -1 : 0;
+      if (!d) return;
+      ev.preventDefault();
+      cfg.openLayer = LAYERS[(LAYERS.findIndex(([k]) => k === cfg.openLayer) + d + LAYERS.length) % LAYERS.length][0];
+      setState({ layer: cfg.openLayer }); draw();
+    };
   });
+  paintPreviewTerrain(prevEl.querySelector(".mp-preview-frame"));
 
   const ctrlEl = document.getElementById("act-controls");
+  const vars = { date: startDate, night: DEFAULT_RULES.night, blackout: DEFAULT_RULES.blackout };
   const toggles = [
-    ["allowSite", t("act.tSite")],
-    ["allowDate", t("act.tDate")],
-    ["allowProof", t("act.tProof")],
-    ["allowRules", t("act.tRules")],
-    ["allowLab", t("act.tLab")]
+    ["allowSite", "act.tSite", "act.tSiteD"],
+    ["allowDate", "act.tDate", "act.tDateD"],
+    ["allowProof", "act.tProof", "act.tProofD"],
+    ["allowRules", "act.tRules", "act.tRulesD"],
+    ["allowLab", "act.tLab", "act.tLabD"]
   ];
   ctrlEl.innerHTML = `
-    <div class="mp-act-head"><h2>${t("act.ctrlTitle")}</h2></div>
-    ${toggles.map(([k, label]) => `
-      <div class="mp-toggle-row">
-        <span>${label}</span>
-        <button class="mp-switch ${cfg[k] ? "is-on" : ""}" data-toggle="${k}" type="button" aria-pressed="${cfg[k]}"></button>
-      </div>
+    <div class="mp-act-head"><h2>${t("act.ctrlTitle")}</h2><span class="mp-act-students">${t("act.students")}</span></div>
+    ${toggles.map(([k, label, sub]) => `
+      <label class="mp-toggle-row">
+        <span class="mp-toggle-txt"><span>${t(label)}</span><small>${t(sub, vars)}</small></span>
+        <button class="mp-switch ${cfg[k] ? "is-on" : ""}" data-toggle="${k}" data-focus="sw-${k}" type="button" role="switch" aria-checked="${cfg[k]}"></button>
+      </label>
     `).join("")}
     <div class="mp-teacher-notes">
       <strong>${t("act.notesTitle")}</strong>
-      <p style="margin:6px 0 0">${t("act.notesBody")}</p>
+      <p>${t("act.notesBody")}</p>
     </div>
   `;
   ctrlEl.querySelectorAll("[data-toggle]").forEach((b) => {
@@ -197,20 +268,29 @@ function draw() {
 
   const shareEl = document.getElementById("act-share");
   const url = shareUrl();
+  let qr = "";
+  try { qr = qrSvg(url, { label: t("act.qrLabel") }); } catch { qr = ""; } // too long for a QR: omit it, the link stays
   shareEl.innerHTML = `
-    <div style="flex:1;min-width:220px">
-      <strong style="font-size:14px">${t("act.shareTitle")}</strong>
-      <div class="mp-share-url">${url}</div>
+    ${qr ? `<div class="mp-qr">${qr}</div>` : ""}
+    <div class="mp-share-main">
+      <strong>${t("act.shareTitle")}</strong>
+      <div class="mp-share-url" id="share-url"></div>
+      <div class="mp-share-note">${t("act.access")}</div>
     </div>
     <div class="mp-chip-row">
-      <button id="btn-copy" class="mp-btn-outline" type="button">${t("act.copy")}</button>
-      <a class="mp-btn-jade" href="${hrefTo("present.html")}">${t("act.present")}</a>
+      <button id="btn-copy" class="mp-btn-outline" data-focus="copy" type="button">${t("act.copy")}</button>
+      <a class="mp-btn-jade" id="btn-present">${t("act.present")}</a>
     </div>
   `;
+  shareEl.querySelector("#share-url").textContent = url;
+  shareEl.querySelector("#btn-present").href = hrefTo("present.html"); // set as a property: the URL state never enters the markup string
   shareEl.querySelector("#btn-copy").onclick = async () => {
     try { await navigator.clipboard?.writeText(url); } catch {}
     shareEl.querySelector("#btn-copy").textContent = t("act.copied");
   };
+
+  if (focusKey) document.querySelector(`[data-focus="${focusKey}"]`)?.focus();
 }
 
+addEventListener("resize", () => { const f = document.querySelector(".mp-preview-frame"); if (f) paintPreviewTerrain(f); });
 draw();
