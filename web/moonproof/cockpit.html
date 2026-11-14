@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>moonproof · Cockpit</title>
+<link rel="stylesheet" href="core/tokens.css"><link rel="stylesheet" href="core/components.css"><link rel="stylesheet" href="screens/cockpit.css">
+<script type="module" src="screens/cockpit.js"></script>
+</head>
+<body>
+<div id="terrain"></div>
+<div class="mp-sheet" id="sheet"><button type="button" class="mp-handle" id="handle"></button>
+<aside class="mp-ck-left" id="left"></aside>
+<aside class="mp-ck-right" id="right"></aside></div>
+<div class="mp-links"><a class="mp-pill" id="onboard" href="../onboard/"></a></div>
+<div class="mp-player" id="player" role="group">
+  <button type="button" class="mp-pill mp-round" id="restart">↻</button>
+  <button type="button" class="mp-pill is-primary mp-round" id="play">▶</button>
+  <input type="range" id="range" min="0" max="1" step="1" value="0">
+  <span class="mp-time" id="time"></span><span class="mp-label" id="end"></span>
+  <select id="speed"></select>
+</div>
+</body>
+</html>

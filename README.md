@@ -49,6 +49,26 @@ flowchart LR
 
 ---
 
+## MoonProof screens (`web/moonproof/`)
+
+Design by @lisanogueira (Heloísa), implemented on the shared core (`core/`: tokens, shell, terrain, layers, i18n, state). Every number comes from `web/data/` or the API; the design sheet's illustrative numbers are never in the code (`core-no-design-numbers.test.mjs`).
+
+| Page | Screen | Designer spec |
+|---|---|---|
+| `mission.html` / `explore.html` | A Mission Control, B Explore (+ mobile, 390 px) | `designer/A-*`, `B-*`, `M1-mobile-explorar` |
+| `compare.html` | C Compare (+ mobile) | `designer/C-*`, `M2-mobile-comparar` |
+| `recover.html` | D Replan | `designer/D-*` |
+| `cockpit.html` | E Cockpit | `designer/E-*` |
+| `landing.html` | F Landing Lab | `designer/F-*` |
+| `debrief.html` | G Debrief | `designer/G-*` |
+| `evidence.html` | H Evidence | `designer/H-*` |
+| `present.html`, `activity.html`, `plan.html` | v3 Class kit (present, build activity) and Planning kit | `designer/K1-*`, `K2-*`, `K3-*` |
+| `rules.html` | v3 core, layers and kits rules | `designer/V3-camadas` |
+
+Serve with `cd web && node dev-server.mjs` (set `BRASPACE_WEB_PORT` if 5173 is taken) and open `/moonproof/`.
+
+---
+
 ## Running Locally
 
 ### Quick Start (API + Rust Engine)
@@ -68,16 +88,17 @@ curl -fsS http://127.0.0.1:8080/api/health
 
 ## Testing
 
-All suites verified against `main` (`0e646c3c50ad665c34013415809e951e489a3b0f`):
+All suites below were run natively on branch `integration/studio-full-20261114` (HEAD `67542db`, 2026-11-14). The Docker `--target test` run is not part of this evidence.
 
 | Suite | Command | Result |
 |---|---|---|
-| **Web (Node test runner)** | `npm --prefix web test` | 74 passed, 0 failed |
-| **Onboard Cockpit** | `node --test web/onboard/test/*.mjs` | 49 passed, 0 failed, 1 skipped |
-| **Go API** | `cd api && go test ./...` | `api` & `api/onboard` pass |
-| **Rust Engine** | `cd engine && cargo test` | 3 unit + 6 integration passed |
+| **Web + MoonProof + Onboard (Node test runner)** | `cd web && node --test tests/*.test.mjs moonproof/tests/*.test.mjs onboard/test/*.mjs` | 264 passed, 0 failed, 1 skipped |
+| **Web lint** | `npm --prefix web run lint` | exit 0 |
+| **Go API** | `cd api && go vet ./... && go test -race -count=1 ./...` | `api` & `api/onboard` pass |
+| **Rust Engine** | `cd engine && cargo test --locked --all-targets` | 3 unit + 6 integration passed |
 | **Python Science** | `python3 -m unittest discover -s science/tests` | 21 tests OK |
 | **Python Root** | `python3 -m unittest discover -s tests` | 9 tests OK |
+| **Full stack (web -> Go -> Rust)** | `node scripts/fullstack-e2e.mjs` (with `BRASPACE_E2E_API_BIN`, `BRASPACE_E2E_RUST_BIN`) | PASS (synthetic data only) |
 
 See [`docs/TESTING.md`](docs/TESTING.md) for details.
 

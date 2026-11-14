@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Bootstrap build. Dependencies are not yet pinned to immutable digests.
+# Bootstrap build. Dependencies are not yet pinned to immutable digests (Node is pinned to a patched 22.x: CVE-2026-111497, Brotli).
 #
 # One Dockerfile = build + every test + release (BR89).
 #   docker build --target test .      runs ALL tests (Go, Rust, web, science); fails if any fails
@@ -45,13 +45,15 @@ RUN mkdir -p /markers && echo ok > /markers/rust
 
 # test-web: lint, server tests, onboard cockpit tests, and the real
 # web -> Go -> Rust end-to-end replay (scripts/fullstack-e2e.mjs).
-FROM node:22-alpine AS test-web
+FROM node:22.23.5-alpine AS test-web
 RUN apk add --no-cache curl
 WORKDIR /src
 COPY web/ ./web/
 COPY scripts/ ./scripts/
 COPY examples/ ./examples/
 COPY data/ ./data/
+# web/moonproof/tests/evidence-model.test.mjs checks the registry against this matrix.
+COPY docs/ASSET_LICENSE_MATRIX.md ./docs/ASSET_LICENSE_MATRIX.md
 COPY --from=gobuilder /out/api /opt/e2e/braspace-e2e-api
 COPY --from=rustbuilder /build/engine/target/release/braspace-lunar-engine /src/engine/target/debug/braspace-lunar-engine
 # No package-lock.json in web/ (no dependencies): npm ci is not applicable.

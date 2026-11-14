@@ -1,0 +1,65 @@
+# M2 · Comparar no celular (390×844)
+
+Fonte do desenho: `MobileSheet.dc.html` (Heloísa; título "Comparar no celular"), com `Compare.dc.html` como referência do desktop. Tela real: `web/moonproof/compare.html` + `screens/compare.js` + `screens/scenario.css` + `screens/compare-mobile.css` (bloco `@media (max-width:700px)`), sobre `core/` (barra superior, barra de contexto e barra de navegação inferior vêm do `shell.js`). Os números do desenho são **ilustrativos** e não entram no código.
+
+## Pergunta que a tela responde
+**pt-BR:** Qual cenário (local + data) é o melhor, por quê, e o que muda se ele atrasar?
+**en:** Which scenario (site + date) is best, why, and what changes if it is delayed?
+
+## Quem usa e em que camada abre
+Público geral no celular. Abre na camada **1 · Resposta** do cartão de veredito (a camada vem do estado `layer`, nunca é escolhida pela tela). Quem quer "Por quê" ou "Prova" usa os três botões do cartão, todos com alvo de 44 px. "Prova" mostra a definição, a fonte e o selo de cada cenário e o editor de cenários e regras.
+
+## Layout (≤ 700 px; medido em 390×844)
+Uma única coluna que rola entre a barra de contexto e a barra de navegação, como no `<main>` do desenho (o desenho também não tem folha arrastável nem mapa em primeiro plano):
+1. **Barra superior** (shell, 12–66): marca, `?` (legenda dos selos) e idioma.
+2. **Barra de contexto** (shell, 74–120): `<n> cenários · <n> locais • <n> datas • <n> dias` + selo. O botão "E se … atrasar?" da barra fica **oculto** no celular porque o cartão de veredito tem o mesmo botão (mesmo destino, `recover.html`, cenário preservado).
+3. **Coluna rolável** (128–754, `left/right` 12, `bottom` 90): cartão de veredito, pílulas A/B/C, tabela "Diferenças" e, no fim, o gráfico "Sol e Terra por dia".
+4. **Barra de navegação inferior** (shell, 766–832): cinco módulos, Comparar em Jade.
+5. **Fundo:** o terreno do `core/terrain.js` continua atrás, escurecido por um véu (`rgba(5,6,8,.55)`), como o fundo escurecido do desenho. Os marcadores numerados ficam ocultos no celular (o desenho não os tem); a seleção é pelas pílulas A/B/C.
+
+## Regiões do desenho e como foram tratadas
+| Região no desenho | Na tela real | Estado |
+|---|---|---|
+| Fundo de relevo escurecido (imagem + véu) | Terreno real do `core/terrain.js` + véu em `body::before`; marcadores ocultos | dado real; o desenho usava imagem ilustrativa |
+| Cabeçalho em pílula (logo, "Comparar 3 cenários", data · dias, selo `ILUSTR.`, ajuda) | Barra superior + barra de contexto do shell; o selo vem de `sealFor(status)` (`PRE`/`SIM`/`N/D`) | adaptado: o selo `ILUSTR.` não existe, o selo real é o do dado |
+| Cartão de recomendação em vidro ("Qual é melhor?", frase de 19/800, linha de motivo) | `#verdict` (`createLayerCard`): título, selo, frase do veredito (19/800), camadas 1 Resposta / 2 Por quê / 3 Prova | fiel no conteúdo; a frase e os motivos são calculados das regras declaradas, nunca fixos |
+| Pílulas A / B ✓ / C (3 em linha, 44 px, selecionada em Jade) | `.mp-scn-list`: três pílulas de 44 px em linha, selecionada em Jade, letra + local (reticências); o selo de status continua no nome acessível | adaptado: o "✓" do desenho marca o vencedor e a tela marca o **selecionado**, então não há "✓" (um selecionado pode falhar) |
+| Tabela "Diferenças" em cartão preto (colunas A B C, B em Jade) | `#right > section`: cartão preto `--card`, colunas A B C com a coluna selecionada em Jade, grupos Energia e Contato com a regra assumida, melhor valor em Jade e violação em coral com "✕" | fiel; mais linhas que o desenho (Sol visível, Folga até a regra, Sol e Terra juntos) porque a tela real mostra todas as medidas |
+| Linhas "Maior noite", "Folga bateria", "Terra visível", "Perda da Terra" | "Maior noite", "Folga da bateria" (sempre `t("nd")` hoje: exige a API de bordo), "Terra visível", "Maior perda da Terra" | dado real; ausente = `t("nd")` (traço longo), nunca 0 |
+| Botão "E se B atrasar?" (Jade, 48 px, largura total) | Botão Jade de 48 px e largura total dentro do cartão de veredito; segue o cenário selecionado ("E se A atrasar?") | adaptado: fica no cartão, não no fim da coluna (ver pedidos) |
+| Botão "Pousar" | Contorno lilás de 48 px abaixo do CTA (o lilás só como contorno, regra do `components.css`) | o desenho não o tem; mantido da tela desktop |
+| Barra de navegação inferior (5 módulos, Comparar ativo em Jade) | `.mp-bottomnav` do shell | idêntica em estrutura |
+| Gráfico "Sol e Terra por dia" | rola no fim da coluna, com legenda e eixo D0..Dn | não está no desenho; mantido por ser a camada "Por quê" visual |
+
+## Componentes e tokens
+- Tipografia **Manrope** (self-hosted em `fonts/`); números tabulares.
+- Jade `--jade` para o selecionado e o CTA; cartão preto `--card` para a tabela de números; vidro (`--glass` + `backdrop-filter`) no cartão de veredito e no gráfico; lilás `--sim` só como contorno.
+- Alvos de toque **≥ 44 px** em tudo que é interativo (`--touch`): botões de camada, pílulas A/B/C, CTA e "Pousar" (48), "Tabela completa", e os campos do editor (select, data, horas, remover, adicionar).
+- Sem rolagem lateral da página: `scrollWidth` = 390. A rolagem é só vertical e contida na coluna.
+
+## Estados
+- **Normal:** veredito com a frase calculada, pílulas, tabela completa e gráfico do cenário selecionado.
+- **Dado ausente:** valor `t("nd")` e selo `N/D`, nunca 0; cenário sem janela na série mostra "Sem dado" e `N/D`.
+- **Nenhum cenário atende:** frase "Nenhum cenário atende a todas as regras", com ✕ coral nas células que violam.
+- **API offline:** a tela usa a série horária gravada; o selo `PRE` permanece e o rótulo "offline · pré-calculado" fica oculto por falta de espaço.
+- **Camada "Prova":** o cartão cresce e a coluna rola; o editor quebra em linhas (local em linha própria, data e horas lado a lado).
+- **Idioma:** `pt-BR` e `en` pelo `i18n.js`; nenhum texto novo foi criado nesta tela.
+
+## O que é ilustrativo e o que é dado real
+- **Ilustrativo (do desenho, não vai ao código):** imagem de fundo, "Comparar 3 cenários", "14 mar 2027 · 14 dias", o selo `ILUSTR.`, "B atende a todas as regras", "A tem noite longa demais. C perde a Terra por 160 h.", e os valores 68 h, 46 h, 30 h, −8 h, +14 h, +30 h, 61 %, 63 %, 34 %, 40 h, 38 h, 160 h.
+- **Dado real:** tudo o que aparece vem de `web/data/sites.json`, `web/data/sites/<id>.json` ou de `POST /api/compare`, calculado por `scenario-calc.js` e `scenario-data.js`; selos só por `sealFor`. Hoje o selo é `PRE`; `VAL` não aparece.
+- Os limites de noite e de perda da Terra são **assumidos** (rotulados "limite assumido") e editáveis na camada Prova. Visibilidade da Terra é geométrica, não garante enlace de rádio. Pedras menores que 20 m não estão nos dados (`N/D`).
+
+## Interações
+- Toque numa pílula A/B/C: seleciona o cenário (atualiza o gráfico e o texto do CTA). Setas ↑ ↓ ← → entre as pílulas.
+- "E se … atrasar?" → `recover.html` com o cenário na URL; "Pousar" → `landing.html`.
+- "Tabela completa" abre a camada 3 · Prova. A coluna rola com o dedo.
+
+## Pedidos fora do arquivo de CSS (não feitos aqui)
+1. `screens/compare.js`: mover o `.mp-actions` (CTA "E se … atrasar?") para depois da tabela "Diferenças", como no desenho; hoje ele fica dentro do cartão de veredito porque o `createLayerCard` o recebe por `insertBefore`.
+2. `screens/compare.js`: na pílula de cenário, dar ao botão um `aria-label` com letra, local e estado (hoje o selo fica só visualmente oculto) e um `title` com o nome completo do local, que no celular aparece cortado por reticências.
+3. `core/shell.js` (`wireSheet`): em `compare.html` o `#right` vira `[data-mp-sheet]` por padrão; aqui o CSS o desfaz com `display:contents`. Melhor seria a tela marcar `data-mp-sheet` num elemento inexistente ou o shell ignorar telas que não querem a folha.
+4. Opcional, `core/shell.js`: no celular a barra de contexto mostrar "Comparar N cenários" e a data/dias em duas linhas, como no desenho.
+
+## Ligações
+`explore.html` (B, ver M1), `compare.html` (C), `recover.html` (D), `landing.html` (F), `cockpit.html` (E), `evidence.html` (H), `mission.html` (A).

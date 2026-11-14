@@ -1,0 +1,66 @@
+# K2-kit-class-present · Kit Aula · Apresentar
+
+**Pergunta que a tela responde**
+Como apresentar um desafio de escolha de sítio lunar em sala de aula (modo projetor), sem expor as notas do professor?
+
+**Quem usa e em que camada abre**
+- Público-alvo: professores em sala de aula ("Dar uma aula").
+- Camada em que abre: **2 Por quê** (cartões com 2 métricas-chave por cenário e temporizador de discussão; resposta oculta até clicar `Revelar resposta`).
+
+**Layout**
+- **Desktop (1440×900):**
+  - **Topo:** Barra simplificada para projetor (`moonproof`, pílula branca `Apresentando · Missão <N>`, barra de progresso de 4 etapas, botão `Sair`).
+  - **Superior esquerdo:** Bloco da pergunta (`Pergunta X de 4`, título `Onde vocês pousariam?`, restrições da missão).
+  - **Superior direito:** Cartão do temporizador (`Discutam em dupla` + `MM:SS`) e nota de privacidade (`Notas do professor aparecem só no seu notebook, não no projetor`).
+  - **Centro:** Terreno lunar com marcadores dos 3 cenários (`A`, `B`, `C`).
+  - **Inferior:** 3 cartões de cenário lado a lado (`Cenário A`, `Cenário B`, `Cenário C`, cada um com `Maior noite` e `Sem ver a Terra`) + botões `Revelar resposta` (jade) e `Próxima pergunta` à direita.
+- **Celular (390×844):**
+  - Pergunta e temporizador no topo; cartões de cenário empilhados abaixo com botões de controle fixos no rodapé.
+
+**Componentes**
+- `BarraProjetor`: marca, badge da missão, progresso 1..4, botão `Sair`.
+- `BlocoPerguntaAula`: número da pergunta, enunciado e restrições.
+- `TemporizadorDupla`: contagem regressiva/progressiva para discussão. Estados: rodando, pausado, zerado.
+- `CartaoCenarioAula` (×3): nome do cenário e 2 métricas principais. Estados: oculto (antes de revelar), revelado (destaca vencedor/violações).
+- `ControlesApresentacao`: `Revelar resposta` e `Próxima pergunta`.
+
+**Textos**
+| pt-BR | en |
+|---|---|
+| Apresentando · Missão | Presenting · Mission |
+| Sair | Exit |
+| Pergunta 2 de 4 | Question 2 of 4 |
+| Onde vocês pousariam? | Where would you land? |
+| Discutam em dupla | Discuss in pairs |
+| Notas do professor aparecem só no seu notebook, não no projetor. | Teacher notes appear only on your laptop, not on the projector. |
+| Maior noite / Sem ver a Terra | Longest night / Earth blackout |
+| Revelar resposta / Próxima pergunta | Reveal answer / Next question |
+
+**Dados**
+| Elemento | Fonte exata (arquivo ou rota e campo) | Selo | O que mostrar sem dado |
+|---|---|---|---|
+| `Maior noite` e `Sem ver a Terra` por cenário | `web/data/sites.json` (`sites[].metrics.longest_darkness_h`, `longest_earth_blackout_h`) ou `POST /api/compare` | `PRE` | `—` com selo `N/D` |
+| Restrições da missão | Configuradas no Kit Aula (`core/state.js`, padrão `60 h` e `72 h`) | `SIM` | padrão editável |
+
+**Interações**
+- Clique em `Revelar resposta` destaca o cenário que atende às restrições.
+- Clique em `Próxima pergunta` avança o progresso (`1..4`).
+- Clique em `Sair` retorna para `activity.html` (`K3-kit-class-activity`) ou `compare.html`.
+
+**Ligações**
+- `activity.html` (`K3-kit-class-activity`), `compare.html` (`C-comparar`).
+
+**Diferenças entre o desenho e a tela real**
+1. **Nenhum número fixo:** `68 h`, `46 h`, `30 h`, `40 h`, `38 h`, `160 h` vêm de `web/data/sites.json` / `/api/compare`.
+2. **Selo `VAL`:** não usado; dados dos sítios são `PRE`.
+3. **Locais reais:** cenários A, B, C correspondem a sítios reais de `web/data/sites.json`.
+4. **Bateria:** limite de 60 h rotulado como premissa educativa (`SIM`).
+5. **Regras:** `60 h` e `72 h` rotulados como "assumed limit".
+6. **Sem domínio inventado:** sem URLs fictícias.
+7. **Dado real:** fontes documentadas na camada Prova.
+8. **Landing Lab:** pode ser aberto como desafio extra se habilitado.
+
+**Critérios de aceite**
+- `Revelar resposta` e `Próxima pergunta` funcionam sem recarregar a página.
+- Nenhuma nota do professor aparece na tela de apresentação.
+- Funciona em `1440×900` e `390×844` sem rolagem horizontal.

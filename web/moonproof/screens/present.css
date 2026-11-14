@@ -1,0 +1,202 @@
+.mp-present-top {
+  position: fixed;
+  top: 18px;
+  left: 28px;
+  right: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 20;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.mp-present-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+}
+.mp-logo-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid var(--text);
+  border-right-color: var(--jade);
+  display: inline-block;
+}
+.mp-pill-white {
+  background: var(--pill-white,var(--pill));
+  color: var(--pill-ink,var(--pill-text));
+  border-radius: var(--r-pill);
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.mp-present-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.mp-progress {
+  display: flex;
+  gap: 6px;
+}
+.mp-progress-seg {
+  width: 28px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.22);
+}
+.mp-progress-seg.is-done {
+  background: var(--jade);
+}
+.mp-btn-exit {
+  background: var(--glass);
+  color: var(--text);
+  border: 1px solid var(--border,var(--line-2));
+  border-radius: var(--r-pill);
+  padding: 10px 16px;
+  text-decoration: none;
+  font-weight: 600;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.mp-present-layout {
+  position: fixed;
+  inset: 84px 28px 24px 28px;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: auto 1fr auto;
+  gap: 16px;
+  pointer-events: none;
+  z-index: 15;
+}
+.mp-present-q {
+  grid-column: 1;
+  grid-row: 1;
+  pointer-events: auto;
+  max-width: 620px;
+}
+.mp-q-idx {
+  color: var(--jade);
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.mp-present-q h1 {
+  margin: 0 0 8px 0;
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.mp-present-q p {
+  margin: 0;
+  color: var(--text-dim,var(--text-2));
+  font-size: 16px;
+}
+.mp-present-side {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+}
+.mp-timer-card, .mp-privacy-card {
+  padding: 16px;
+}
+.mp-timer-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+.mp-timer-val {
+  font-size: 28px;
+  font-weight: 800;
+  font-family: var(--font-mono,var(--mono));
+}
+.mp-privacy-card {
+  font-size: 13px;
+  color: var(--text-dim,var(--text-2));
+}
+.mp-present-bottom {
+  grid-column: 1 / span 2;
+  grid-row: 3;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  pointer-events: auto;
+}
+.mp-present-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 240px));
+  gap: 12px;
+}
+.mp-sc-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 2px solid transparent;
+}
+.mp-sc-card.is-winner {
+  border-color: var(--jade);
+}
+.mp-sc-card.is-fail {
+  border-color: var(--fail);
+}
+.mp-sc-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+.mp-sc-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+.mp-present-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 200px;
+}
+.mp-btn-jade {
+  background: var(--jade);
+  color: var(--jade-ink,var(--jade-text));
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 12px 18px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.mp-btn-outline {
+  background: var(--glass);
+  color: var(--text);
+  border: 1px solid var(--border,var(--line-2));
+  border-radius: var(--r-pill);
+  padding: 12px 18px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+@media (max-width: 900px) {
+  .mp-present-top { position: static; padding: 14px 12px 0; }
+  .mp-present-layout {
+    position: static;
+    margin: 12px;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+  .mp-present-q, .mp-present-side, .mp-present-bottom { grid-column: 1; grid-row: auto; }
+  .mp-present-bottom { flex-direction: column; align-items: stretch; }
+  .mp-present-cards { grid-template-columns: 1fr; }
+}
