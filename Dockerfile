@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Bootstrap build. Dependencies are not yet pinned to immutable digests.
+# Bootstrap build. Dependencies are not yet pinned to immutable digests (Node is pinned to a patched 22.x: CVE-2026-111497, Brotli).
 #
 # One Dockerfile = build + every test + release (BR89).
 #   docker build --target test .      runs ALL tests (Go, Rust, web, science); fails if any fails
@@ -45,7 +45,7 @@ RUN mkdir -p /markers && echo ok > /markers/rust
 
 # test-web: lint, server tests, onboard cockpit tests, and the real
 # web -> Go -> Rust end-to-end replay (scripts/fullstack-e2e.mjs).
-FROM node:22-alpine AS test-web
+FROM node:22.23.5-alpine AS test-web
 RUN apk add --no-cache curl
 WORKDIR /src
 COPY web/ ./web/
