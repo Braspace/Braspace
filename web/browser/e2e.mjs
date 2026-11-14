@@ -52,6 +52,22 @@ try{
  assert(desktop.url().endsWith("/index.html"),"classic UI navigation failed");
  assert((await desktop.locator("body").innerText()).includes("UNVERIFIED INPUTS"),"classic scientific disclaimer absent");
  await desktop.screenshot({path:path.join(out,"moonproof-classic-desktop.png"),fullPage:true});
+ const onboardResponse=await desktop.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});
+ assert(onboardResponse?.status()===200,"onboard cockpit HTTP");
+ const tabs=desktop.locator("nav.tabs button[data-tab]");
+ assert(await tabs.count()===13,"onboard cockpit missing required tabs");
+ assert((await desktop.locator("body").innerText()).includes("Não validado"),"onboard synthetic disclaimer missing");
+ await desktop.locator("nav.tabs button[data-tab='energia']").click();
+ await desktop.locator("nav.tabs button[data-tab='replan']").click();
+ assert((await desktop.locator("#views").innerText()).length>80,"onboard replan panel empty");
+ await desktop.screenshot({path:path.join(out,"onboard-cockpit-desktop.png"),fullPage:true});
+ const trainingResponse=await desktop.goto(base+"/onboard/index.html",{waitUntil:"domcontentloaded",timeout:30000});
+ assert(trainingResponse?.status()===200,"onboard training form HTTP");
+ await desktop.locator("#run").click();
+ await desktop.locator("#results-card").waitFor({state:"visible",timeout:30000});
+ assert((await desktop.locator("body").innerText()).includes("UNVERIFIED_INPUTS"),"onboard training lost disclaimer");
+ await desktop.screenshot({path:path.join(out,"onboard-training-desktop.png"),fullPage:true});
+
  const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  mobile.on("pageerror",error=>errors.push("mobile: "+error.message));
  const mobileResponse=await mobile.goto(base+"/lab.html",{waitUntil:"domcontentloaded",timeout:30000});
@@ -61,6 +77,11 @@ try{
  await mobile.screenshot({path:path.join(out,"polar-lab-mobile.png"),fullPage:true});
  const overflow=await mobile.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
  assert(overflow.width<=overflow.viewport+4,"mobile horizontal overflow: "+JSON.stringify(overflow));
+ const mobileCockpit=await mobile.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});
+ assert(mobileCockpit?.status()===200,"mobile cockpit HTTP status");
+ await mobile.locator("nav.tabs button[data-tab='status']").click();
+ assert((await mobile.locator("#views").innerText()).length>80,"mobile cockpit status empty");
+ await mobile.screenshot({path:path.join(out,"onboard-cockpit-mobile.png"),fullPage:true});
  assert(errors.length===0,"browser JS errors: "+errors.join(" | "));
  console.log("PASS Chromium Polar Lab desktop+mobile navigation, disclaimers, evidence and screenshots",out);
 }catch(e){console.error("FAIL Chromium QA",e?.stack||e);console.error(diagnostics);process.exitCode=1;}

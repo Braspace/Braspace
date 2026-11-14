@@ -28,6 +28,20 @@ export function labFile(pathname){
  if(!name.startsWith("lab"+path.sep)&&!name.startsWith("data"+path.sep))return null;
  return {name,type:labTypes[ext]};
 }
+// Restrict Onboard Cockpit static access to reviewed HTML and JS files.
+// No arbitrary directory traversal, Python server source or local secrets.
+const onboardTypes=new Map([
+ ["index.html","text/html; charset=utf-8"],
+ ["cockpit.html","text/html; charset=utf-8"],
+ ...["app.js","api.js","cockpit.js","features.js","model.js","request.js","sim.js"].map(name=>[name,"text/javascript; charset=utf-8"])
+]);
+export function onboardFile(pathname){
+ if(pathname==="/onboard/")return {name:"onboard/index.html",type:onboardTypes.get("index.html")};
+ if(!pathname.startsWith("/onboard/"))return null;
+ const name=pathname.slice("/onboard/".length);
+ const type=onboardTypes.get(name);
+ return type?{name:"onboard/"+name,type}:null;
+}
 const csp=[
   "default-src 'none'",
   "script-src 'self' https://cdn.jsdelivr.net",
@@ -81,7 +95,11 @@ export function createServer(){
    proxyAPI(req,res);
    return;
   }
-  const file=staticFiles.get(pathname)||labFile(pathname);
+  // Cockpit HTML uses scoped inline CSS; do not relax the global CSP.
+  if(pathname==="/onboard/"||pathname==="/onboard/index.html"||pathname==="/onboard/cockpit.html"){
+   res.setHeader("Content-Security-Policy",csp.replace("style-src 'self'","style-src 'self' 'unsafe-inline'"));
+  }
+  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname);
   if(!file){res.writeHead(404);res.end("Not found");return;}
   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
   try{
