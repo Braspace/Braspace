@@ -117,7 +117,7 @@
   function setLamp(kind, text) {
     const el = $("lamp-api");
     el.className = kind;
-    el.replaceChildren("API ", h("b", { text }));
+    el.replaceChildren(h("b", { text }));
   }
 
   // API option for a delay (or null if not calculated)
@@ -692,6 +692,146 @@
     ];
   };
 
+  // ---------- API panels (linked to the Go API in main) ----------
+  // Each panel calls one endpoint on demand and keeps the last response in S.apiResults.
+  // Nothing here replaces the synthetic panels: they are shown above them, labelled as API data.
+  S.apiResults = {};
+  const CATALOG_IDS = []; // filled from /api/sites
+  S.catalog = null;
+
+  function kvRow(label, value) { return h("tr", {}, h("td", { text: label }), h("td", { class: "n", text: value })); }
+  function apiError(res) {
+    return h("div", { class: "caution", role: "alert" }, "API indisponível: " + (res.error || ("HTTP " + res.status)) +
+      ". Suba a API Go (e o Rust engine, se o endpoint pedir) e o dev-server.py.");
+  }
+  function apiPanelFrame(title, note, button, body) {
+    return h("section", { class: "panel span2" },
+      h("h2", { text: title }),
+      h("div", { class: "row" }, h("span", { class: "dim", text: note }), button),
+      body);
+  }
+  function callButton(label, onClick) {
+    const b = h("button", { type: "button", class: "go", text: label });
+    b.addEventListener("click", async () => { b.disabled = true; b.textContent = "CONSULTANDO…"; await onClick(); b.disabled = false; b.textContent = label; renderTab(); });
+    return b;
+  }
+
+  function delayPanel() {
+    const r = S.apiResults.delay;
+    const button = callButton("CONSULTAR REPLANEJAMENTO", async () => {
+      const body = {
+        site_id: S.site, start_utc: iso(startMs()), duration_hours: S.durationH,
+        delays_hours: [24, 48, 72],
+        constraints: { max_continuous_dark_hours: M.LIMITS.darkH, min_earth_fraction: 0.5 },
+        include_nearby: true, max_nearby: 2
+      };
+      S.apiResults.delay = await OnboardApi.scenarioDelay(body);
+    });
+    let body = h("p", { class: "dim", text: "Ainda não consultado. Usa a API /api/scenarios/delay com sítios que têm série de dados." });
+    if (r && !r.ok) body = apiError(r);
+    if (r && r.ok) {
+      const d = r.data;
+      body = h("div", { class: "scroll" }, h("table", { class: "table" },
+        h("thead", {}, h("tr", {}, h("th", { text: "opção" }), h("th", { text: "sítio" }), h("th", { class: "n", text: "atraso h" }), h("th", { text: "restrições" }))),
+        h("tbody", {}, (d.options || []).map(o => h("tr", {},
+          h("td", { text: o.kind || "—" }),
+          h("td", { text: o.site_id || "—" }),
+          h("td", { class: "n", text: o.delay_hours !== undefined && o.delay_hours !== null ? String(o.delay_hours) : "—" }),
+          h("td", { text: (o.checks || []).map(c => c.criterion + ": " + (c.passed ? "ok" : "violada")).join(" · ") || (o.data_status || "—") }))))),
+        h("p", { class: "note", text: "Estado: " + (d.outcome ? d.outcome.status : "—") + (d.outcome && d.outcome.message ? " · " + d.outcome.message : "") + " · request " + (d.scenario_sha256 || "—").slice(0, 12) + "…" }));
+    }
+    return apiPanelFrame("API · Replanejamento por atraso (/api/scenarios/delay)", "Dados de série do sítio atual, sem dado de série o resultado é NO_SERIES_DATA.", button, body);
+  }
+
+  function comparePanel() {
+    const r = S.apiResults.compare;
+    const button = callButton("COMPARAR SÍTIOS (API)", async () => {
+      const ids = (S.sitesApi || []).map(s => s.id);
+      const pick = ids.length ? ids : ["synthetic-demo-a", "synthetic-demo-b", "malapert-massif"];
+      S.apiResults.compare = await OnboardApi.compare({ site_ids: pick, start_utc: iso(startMs()), duration_hours: S.durationH, include_series: false });
+    });
+    let body = h("p", { class: "dim", text: "Ainda não consultado. Compara sítios do catálogo, com dados de série quando existirem." });
+    if (r && !r.ok) body = apiError(r);
+    if (r && r.ok) {
+      body = h("div", { class: "scroll" }, h("table", { class: "table" },
+        h("thead", {}, h("tr", {}, h("th", { text: "sítio" }), h("th", { text: "dados" }), h("th", { class: "n", text: "luz" }), h("th", { class: "n", text: "escuridão h" }), h("th", { text: "ciência" }))),
+        h("tbody", {}, (r.data.results || []).map(s => {
+          const m = s.evaluation && s.evaluation.metrics;
+          const id = typeof s.site === "object" && s.site ? (s.site.id || s.site.name) : s.site;
+          return h("tr", {},
+            h("td", { text: id || "—" }),
+            h("td", {}, tag(s.data_status === "AVAILABLE" ? "SIM" : "PEND"), " ", h("span", { class: "dim", text: s.data_status || "—" })),
+            h("td", { class: "n", text: m ? (m.sun_visible_fraction * 100).toFixed(0) + "%" : "—" }),
+            h("td", { class: "n", text: m ? f1(m.longest_continuous_dark_hours) : "—" }),
+            h("td", { text: s.science_status || "—" }));
+        }))));
+    }
+    return apiPanelFrame("API · Comparação de sítios (/api/compare)", "Sítios sem série aparecem como NO_SERIES_DATA, sem números.", button, body);
+  }
+
+  function siteEvalPanel() {
+    const r = S.apiResults.siteEval;
+    const button = callButton("AVALIAR COM SÉRIE (API)", async () => {
+      const body = {
+        mission_id: "cockpit-" + S.site, start_utc: iso(startMs()), duration_hours: S.durationH,
+        candidates: [{ id: "planejado", site_id: S.site, delay_hours: 0 }, { id: "atraso-48h", site_id: S.site, delay_hours: 48 }],
+        power: {
+          battery_capacity_wh: S.power.battery_capacity_wh, initial_charge_wh: S.power.initial_charge_wh,
+          reserve_wh: S.power.reserve_wh, solar_generation_w: S.power.solar_generation_w, load_w: S.power.load_w
+        },
+        max_comm_blackout_hours: S.power.max_comm_blackout_hours
+      };
+      S.apiResults.siteEval = await OnboardApi.siteEvaluate(body);
+    });
+    let body = h("p", { class: "dim", text: "Ainda não consultado. Só sítios com série ingerida (synthetic-demo-a e -b) são aceitos." });
+    if (r && !r.ok) body = apiError(r);
+    if (r && r.ok) {
+      const c0 = (r.data.candidates || [])[0] || {};
+      body = h("dl", { class: "readout" },
+        h("dt", { text: "decisão combinada" }), h("dd", { text: r.data.combined_decision || "—" }),
+        h("dt", { text: "simulador de energia (estado)" }), h("dd", { text: r.data.onboard ? r.data.onboard.simulation_status : "—" }),
+        h("dt", { text: "ciência do primeiro candidato" }), h("dd", { text: c0.science_status || "—" }),
+        h("dt", { text: "riscos quebrados (primeiro candidato)" }), h("dd", { text: (c0.breached_risks || []).length ? String(c0.breached_risks.length) : "nenhum" }));
+    }
+    return apiPanelFrame("API · Energia com série de visibilidade (/api/onboard/site-evaluate)", "Sol e Terra vêm da série do servidor, não do navegador.", button, body);
+  }
+
+  function reportPanel() {
+    const r = S.apiResults.report;
+    const button = callButton("GERAR RELATÓRIO", async () => {
+      const req = buildApiRequest(REPLAN_DELAYS);
+      if (!req.ok) { S.apiResults.report = { ok: false, error: req.errors.join("; ") }; return; }
+      const res = await OnboardApi.report(req.body);
+      S.apiResults.report = res;
+      if (res.ok) {
+        const url = URL.createObjectURL(new Blob([res.data], { type: "text/html" }));
+        window.open(url, "_blank", "noopener");
+      }
+    });
+    let body = h("p", { class: "dim", text: "Relatório HTML imprimível a partir do mesmo pedido de ENTRADA (/api/onboard/report)." });
+    if (r && !r.ok) body = apiError(r);
+    if (r && r.ok) body = h("p", { class: "note", text: "Relatório gerado e aberto em nova aba (" + Math.round(r.data.length / 1024) + " KB)." });
+    return apiPanelFrame("API · Relatório (/api/onboard/report)", "Gera HTML a partir das amostras sintéticas. Não é documento de submissão.", button, body);
+  }
+
+  const API_EXTRA = { replan: delayPanel, visual: comparePanel, energia: siteEvalPanel, historico: reportPanel };
+  for (const k of Object.keys(API_EXTRA)) {
+    const base = VIEWS[k];
+    VIEWS[k] = () => [API_EXTRA[k](), ...base()];
+  }
+
+  async function loadHealth() {
+    const r = await OnboardApi.health();
+    if (r.status === 503) { setLamp("warn", "API OK · ENGINE INDISPONÍVEL"); return; }
+    if (!r.ok) { setLamp("bad", "API OFF"); return; }
+    const eng = r.data && r.data.engine ? String(r.data.engine) : "desconhecido";
+    setLamp(eng === "available" ? "ok" : "warn", "API OK · ENGINE " + eng.toUpperCase());
+  }
+  async function loadSites() {
+    const r = await OnboardApi.sites();
+    if (r.ok) S.sitesApi = (r.data.sites || []).map(s => ({ id: s.id, name: s.name, series: !!s.series }));
+  }
+
   // ---------- rendering ----------
   function renderTab() {
     const box = $("views");
@@ -719,6 +859,8 @@
     const initial = tabFromHash();
     if (initial) S.tab = initial;
     tickClock(); setInterval(tickClock, 1000);
+    loadHealth();
+    loadSites();
     renderAlarm();
     renderTab();
   }
