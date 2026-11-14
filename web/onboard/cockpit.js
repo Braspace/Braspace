@@ -1092,6 +1092,79 @@
     ];
   };
 
+  // ---------- Sensitivity: redesigned view ----------
+  // Replaces the earlier VIEWS.sens. Each variation shows three centred bars: the change in
+  // light, darkness and Earth visibility against the baseline. Colour says whether the change is good.
+  VIEWS.sens = () => {
+    const base = M.summary(track(0), S.stepMin);
+    const rows = M.SENS_VARIANTS.filter(v => v.key !== "base").map(v => {
+      const stepMin = v.opts.stepMul ? S.stepMin * v.opts.stepMul : S.stepMin;
+      const cnt = Math.floor((S.durationH * 60) / stepMin);
+      const tr = M.track({ siteId: S.site, startMs: startMs(), stepMin, count: cnt, delayH: 0, dh: v.opts.dh, roughMult: v.opts.roughMult });
+      const sum = M.summary(tr, stepMin);
+      return { v, sum, dLight: sum.sunlitH - base.sunlitH, dDark: sum.darkH - base.darkH, dEarth: sum.earthH - base.earthH };
+    });
+    const maxAbs = Math.max(1, ...rows.flatMap(r => [Math.abs(r.dLight), Math.abs(r.dDark), Math.abs(r.dEarth)]));
+    const biggest = rows.reduce((a, b) => (Math.abs(b.dDark) > Math.abs(a.dDark) ? b : a), rows[0] || { v: { label: "—" }, dDark: 0 });
+    const headline = maxAbs < 1e-9
+      ? "Nenhuma das variações muda o resultado neste cenário."
+      : "A variação que mais mexe na escuridão é: " + biggest.v.label.toLowerCase() + " (" + (biggest.dDark >= 0 ? "+" : "") + f1(biggest.dDark, 0) + " h).";
+
+    // a signed bar centred on zero; sign and colour are explicit in the label
+    const deltaBar = (value, good) => {
+      const pct = Math.abs(value) / maxAbs * 48;
+      const color = Math.abs(value) < 1e-9 ? "var(--faint)" : (good(value) ? "var(--green)" : "var(--red)");
+      return h("div", { style: "position:relative;height:10px;background:var(--line2);border-radius:999px;margin:6px 0" },
+        h("span", { style: "position:absolute;top:-3px;bottom:-3px;left:50%;width:2px;background:var(--faint)" }),
+        h("span", { style: "position:absolute;top:0;bottom:0;border-radius:999px;background:" + color + ";" +
+          (value >= 0 ? "left:50%;width:" + pct + "%" : "right:50%;width:" + pct + "%") }));
+    };
+    const fmtDelta = x => (Math.abs(x) < 1e-9 ? "sem mudança" : (x > 0 ? "+" : "") + f1(x, 1) + " h");
+    const cards = h("div", { class: "grid three span2" }, rows.map(r => h("section", { class: "panel" },
+      h("h2", { style: "margin:0", text: r.v.label }),
+      h("div", { class: "dim", style: "margin-top:4px", text: "comparado com a base de " + f1(base.darkH, 0) + " h de escuridão" }),
+      h("div", { style: "margin-top:14px" },
+        h("div", { class: "row" }, h("span", { text: "Luz" }), h("span", { class: "num", text: fmtDelta(r.dLight) })),
+        deltaBar(r.dLight, x => x > 0)),
+      h("div", { style: "margin-top:10px" },
+        h("div", { class: "row" }, h("span", { text: "Escuridão" }), h("span", { class: "num", text: fmtDelta(r.dDark) })),
+        deltaBar(r.dDark, x => x < 0)),
+      h("div", { style: "margin-top:10px" },
+        h("div", { class: "row" }, h("span", { text: "Terra visível" }), h("span", { class: "num", text: fmtDelta(r.dEarth) })),
+        deltaBar(r.dEarth, x => x > 0)))));
+
+    const legend = h("div", { class: "legend" },
+      h("span", {}, h("i", { style: "background:var(--green)" }), "mudança favorável"),
+      h("span", {}, h("i", { style: "background:var(--red)" }), "mudança desfavorável"),
+      h("span", {}, "a linha do centro é a base"));
+
+    const trade = h("section", { class: "panel span2" },
+      h("h2", {}, "Compromissos ciência × engenharia", h("em", { text: "9.5" })),
+      h("div", { class: "grid three" },
+        h("div", { class: "panel", style: "background:var(--card2)" },
+          h("div", { class: "row" }, h("strong", { text: "Mais luz" }), h("span", { class: "chip " + (base.sunlitH >= 40 ? "ok" : "warn"), text: base.sunlitH >= 40 ? "favorece energia" : "limita energia" })),
+          h("p", { class: "dim", style: "margin:8px 0 0", text: "O Sol mais alto aumenta o tempo com luz." })),
+        h("div", { class: "panel", style: "background:var(--card2)" },
+          h("div", { class: "row" }, h("strong", { text: "Mais Terra visível" }), h("span", { class: "chip " + (base.earthH >= 36 ? "ok" : "warn"), text: base.earthH >= 36 ? "favorece comunicação" : "limita comunicação" })),
+          h("p", { class: "dim", style: "margin:8px 0 0", text: "Visibilidade geométrica, não é enlace de rádio." })),
+        h("div", { class: "panel", style: "background:var(--card2)" },
+          h("div", { class: "row" }, h("strong", { text: "Menos escuridão" }), h("span", { class: "chip " + (base.darkH <= M.LIMITS.darkH ? "ok" : "bad"), text: base.darkH <= M.LIMITS.darkH ? "dentro do limite" : "acima do limite" })),
+          h("p", { class: "dim", style: "margin:8px 0 0", text: "Escuridão longa exige bateria maior." }))),
+      h("p", { class: "note", text: "Não há ranking único entre luz, comunicação e energia. A escolha é do time." }));
+
+    return [
+      h("section", { class: "panel span2" },
+        h("div", { class: "row" },
+          h("div", {}, h("h2", { style: "margin:0", text: "Sensibilidade do modelo" }), h("p", { class: "dim", style: "margin:6px 0 0", text: headline })),
+          h("span", { class: "chip info", text: "modelo sintético" })),
+        h("div", { style: "margin-top:12px" }, legend)),
+      cards,
+      trade,
+      h("section", { class: "panel span2" },
+        h("div", { class: "edu" }, "Cada cartão muda uma premissa do modelo e mostra o efeito. Não é incerteza calibrada nem probabilidade. Com DEM real e efemérides validadas, estes testes passam a ser evidência científica."))
+    ];
+  };
+
   // ---------- Replanning: redesigned view ----------
   // Replaces the earlier VIEWS.replan. Kept above the API wrapper loop, which adds the API panel.
   const VERDICT_CHIP = { VIAVEL: ["ok", "VIÁVEL"], MARGEM_REDUZIDA: ["warn", "MARGEM REDUZIDA"], NAO_VIAVEL: ["bad", "NÃO VIÁVEL"] };
