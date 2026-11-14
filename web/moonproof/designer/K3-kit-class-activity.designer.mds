@@ -10,10 +10,10 @@ Como o professor configura uma atividade com cenários reais, define o que os al
 **Layout**
 - **Desktop (1440×900):**
   - **Topo:** Barra de navegação global (`Comparar` ativo em jade; `Aula` ativo em branco à direita).
-  - **Coluna esquerda:** Cartão `Kit Aula — Montar atividade` com stepper de 4 passos (`1 Escolher cenários ✓`, `2 O que os alunos podem mexer`, `3 Pergunta e resposta`, `4 Compartilhar`) e caixa `Dica de uso em aula`.
-  - **Coluna central:** Cartão `Como os alunos vão ver` com seletor `Notebook` | `Celular`, prévia do terreno com marcadores `A`, `B`, `C`, pergunta configurada e seletor `Abrem em: 1 Resposta · 2 Por quê · 3 Prova`.
-  - **Coluna direita:** Cartão `Passo 2 · o que pode mexer` com 5 toggles (`Trocar de local`, `Trocar a data`, `Ver a camada Prova`, `Mudar as regras`, `Abrir o Landing Lab`) e seção `Notas do professor · só você vê`.
-  - **Rodapé:** Barra horizontal `Passo 4 · compartilhar com a turma` com QR code gerado localmente, URL da página, botão `Copiar link` e CTA `Apresentar no projetor`.
+  - **Coluna esquerda (300 px, vidro):** Cartão `Kit Aula — Montar atividade` com stepper de 4 passos (círculos de 30 px) (`1 Escolher cenários ✓`, `2 O que os alunos podem mexer`, `3 Pergunta e resposta`, `4 Compartilhar`) e caixa `Dica de uso em aula`.
+  - **Coluna central:** Cartão `Como os alunos vão ver` com seletor `Notebook` | `Celular`, quadro de 300 px com o relevo LOLA real ajustado aos 3 cenários, marcadores de 36 px (numerados como `n` do `sites.json`), selo de origem, chip branco `Prévia do aluno`, vidro com a pergunta, e abas `Abrem em: 1 Resposta · 2 Por quê · 3 Prova` (`role="tablist"`, 28 px; camadas já percorridas em `rgba(46,196,160,.16)`/`#7FE6CB`, ativa em jade).
+  - **Coluna direita:** **cartão preto sólido** (`.mp-card`, sombra `0 18px 40px`) `Passo 2 · o que pode mexer` com marca `alunos` e 5 linhas de duas linhas (título + subtítulo) com interruptor `role="switch"` + `aria-checked` (44×26, bolinha de 20 px por `::after`): `Trocar de local`, `Trocar a data` (subtítulo mostra a data do estado), `Ver a camada Prova`, `Mudar as regras` (limites `DEFAULT_RULES`, "assumed limit"), `Abrir o Landing Lab`; e seção `Notas do professor · só você vê`.
+  - **Rodapé:** Barra horizontal `Passo 4 · compartilhar com a turma` com QR code REAL (84×84 em caixa `#F2F4F5`, padding 6, raio 10) gerado em `screens/qr.js` a partir da URL de compartilhamento, a própria URL (texto), a nota `Alunos entram sem conta · você acompanha as respostas aqui`, botão `Copiar link` e CTA `Apresentar no projetor`.
 - **Celular (390×844):**
   - Passos, prévia, toggles e compartilhamento empilhados em coluna única sem rolagem lateral (sem sobreposição entre cards).
 
@@ -38,7 +38,8 @@ Como o professor configura uma atividade com cenários reais, define o que os al
 | Elemento | Fonte exata (arquivo ou rota e campo) | Selo | O que mostrar sem dado |
 |---|---|---|---|
 | Cenários A, B, C | `web/data/sites.json` (`sites[].id`, `name`, `lat`, `lon`) | `PRE` | `—` |
-| URL de compartilhamento e QR Code | `window.location.href` com parâmetros da atividade na query string (`core/state.js`) | — | omite botão QR se não couber |
+| URL de compartilhamento e QR Code | `window.location.href` com parâmetros da atividade na query string (`core/state.js`); o QR codifica exatamente esse texto (`screens/qr.js`: byte mode, correção L, versões 1–40, máscara automática) | — | omite o QR se a URL passar de 2953 bytes; o link continua |
+| Relevo da prévia | `web/data/region/south_pole_400m` (`loadRegion`, sombreado `shadeValue`) | — | quadro escuro sem relevo |
 
 **Interações**
 - Alternar toggles atualiza a prévia do aluno e a query string de compartilhamento.
@@ -54,11 +55,13 @@ Como o professor configura uma atividade com cenários reais, define o que os al
 3. **Locais reais:** usa sítios de `web/data/sites.json`.
 4. **Bateria:** notas mencionam simplificação do modelo (`SIM`).
 5. **Regras:** `60 h` e `72 h` rotulados como "assumed limit".
-6. **Sem domínio inventado:** `moonproof.app/a/LUA-7K2` NÃO existe; usa a própria URL da página com query string e QR code gerado no navegador sem serviço externo.
+6. **Sem domínio inventado:** `moonproof.app/a/LUA-7K2` NÃO existe; usa a própria URL da página com query string e QR code gerado no navegador sem serviço externo. O QR do desenho é ilustrativo; o da tela é decodificável e leva à URL real. Com URL longa o símbolo tem ~41–69 módulos: a 84 px a leitura por câmera depende de tela nítida.
+9. **"Você acompanha as respostas aqui":** texto pedido pela coordenação; não existe coleta de respostas dos alunos no código (sem rota de API). Texto de intenção, não de recurso entregue.
 7. **Dado real:** referenciado na camada Prova.
 8. **Landing Lab:** toggle opcional para abrir `landing.html`.
 
 **Critérios de aceite**
-- Nenhum `moonproof.app` no código; QR code gerado localmente.
+- Nenhum `moonproof.app` no código; QR code gerado localmente e decodificado de volta para a URL real (`web/tests/activity-qr-switch.test.mjs`).
+- Interruptores com `role="switch"`/`aria-checked`; abas com `role="tab"`/`aria-selected` e setas.
 - Toggles alteram a prévia e a URL gerada.
 - Sem sobreposição de cards em `1440×900` e `390×844`.
