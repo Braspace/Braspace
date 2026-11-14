@@ -1,5 +1,13 @@
 // BRASPACE MoonProof frontend. NASA-derived metrics are NEVER invented here.
 // The training fixture below is explicitly synthetic; Go owns evaluation.
+// GitHub Pages is static: its generated config.js rewrites fetch(), but
+// three.js TextureLoader / GLTFLoader do not use that fetch wrapper.
+// Provide the public API origin before bootGlobe() imports moon3d.js.
+// Only our official Pages hostname gets this fallback; local/proxy and
+// self-hosted deployments retain their own origin or explicit configuration.
+if (globalThis.location?.hostname === "braspace.github.io" && !globalThis.BRASPACE_API_BASE) {
+  globalThis.BRASPACE_API_BASE = "https://braspace-api.srv1898743.hstgr.cloud";
+}
 const byId = id => document.getElementById(id);
 const fields = ["start","duration","delay","battery","initial","reserve","generation","load","blackout"];
 const state = {sites:[],selected:null,globe:null,lastRequest:null,lastResponse:null,apiReady:false};
