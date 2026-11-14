@@ -46,7 +46,7 @@ for (const page of pages) test(`${page}: only its own pill is current`, async ()
   assert.equal(cur[0].getAttribute("href")?.split("?")[0] ?? cur[0].href?.split("?")[0], own.page);
   // The page's own pill is the one for its file. Sub-views keep their parent's pill: mission.html is A (overview of
   // Explore), plan.html / activity.html are the v3 kits (views of Compare), debrief.html is G (view of Landing Lab).
-  const VIEW_OF = { "mission.html": "explore.html", "plan.html": "compare.html", "activity.html": "compare.html", "debrief.html": "landing.html" };
+  const VIEW_OF = { "mission.html": "explore.html", "plan.html": "compare.html", "activity.html": "compare.html", "debrief.html": "landing.html", "rules.html": "evidence.html" };
   assert.equal(own.page, VIEW_OF[page] ?? page, `${page} highlights ${own.page}`);
   const bcur = bottom.all().filter(e => e.getAttribute("aria-current") === "page");
   assert.ok(bcur.length <= 1, "bottom nav: at most one current");
