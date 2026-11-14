@@ -145,12 +145,13 @@ function legend() {
     sc.append(el("span", null, fmtVal(min, fmtNum, nd(), d)), el("span", null, fmtVal(max, fmtNum, nd(), d))); c.append(sc); }
   c.append(el("p", "mp-label", t(L.legend)));
   const src = L.id === "altitude" || L.id === "slope" ? `${grid.h.source} · ${grid.h.method}` : L.id === "natural" ? "NASA SVS 4720 · lroc_color_2k.jpg" : grid.h.layers["pgda_" + L.id].product + " · " + grid.h.layers["pgda_" + L.id].resolution_m + " m";
-  c.append(el("p", "mp-label ex-src", src));
+  // The provenance stays one tap away (the design legend is a compact card).
+  const dt = el("details", "ex-srcbox"); dt.append(el("summary", "mp-label", t("proof.source")), el("p", "mp-label ex-src", src)); c.append(dt);
   return c;
 }
 
 function drawRight(s, m) {
-  const right = $("right"); right.replaceChildren(card(s, m), fromHere(s, m));
+  const right = $("right"); right.replaceChildren(card(s, m), fromHere(s, m, DESK_HORIZON));
   $("sheet-body").replaceChildren(card(s, m, true), fromHere(s, m));
 }
 
@@ -185,7 +186,8 @@ function card(s, m, mobile) {
   return c;
 }
 
-function fromHere(s, m) {
+const DESK_HORIZON = [310, 70]; // desktop card: the chart is a 310 x 88 strip (70 + 18 for the N/E/S/W labels)
+function fromHere(s, m, size = []) {
   const g = point ? null : m.series.at(m.t0), hz = point ? null : m.series.horizon;
   const status = point ? null : doc.status;
   let answer, why;
@@ -193,7 +195,7 @@ function fromHere(s, m) {
   else {
     const fmtM = x => t(x >= 0 ? "ex.above" : "ex.below", { n: fmtVal(Math.abs(x), fmtNum, nd(), 1, "°") });
     answer = t("ex.from.ans", { s: fmtM(g.sunMargin), e: fmtM(g.earthMargin) });
-    why = horizonSvg(hz, g);
+    why = horizonSvg(hz, g, ...size);
   }
   const c = createLayerCard({ id: "card-horizon", title: t("ex.from"), status: status || "NO_DATA", answer, why: why || undefined,
     layer: getState().layer === "answer" ? "why" : getState().layer, onLayer: l => setState({ layer: l }),
@@ -208,8 +210,8 @@ function fromHere(s, m) {
   if (point) c.append(el("p", "mp-label", t("ex.point.noseries")));
   return c;
 }
-export function horizonSvg(hz, g) {
-  const W = 320, Hh = 110, r = elRange(hz, [g.sunEl, g.earthEl]);
+export function horizonSvg(hz, g, W = 320, Hh = 110) {
+  const r = elRange(hz, [g.sunEl, g.earthEl]);
   const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
   svg.setAttribute("viewBox", `0 0 ${W} ${Hh + 18}`); svg.setAttribute("class", "ex-horizon"); svg.setAttribute("role", "img");
   const mk = (tag, at) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(at)) e.setAttribute(k, v); svg.append(e); return e; };
@@ -224,26 +226,27 @@ export function horizonSvg(hz, g) {
 
 function dock(s) {
   const d = $("dock"), i = doc.sites.indexOf(s), n = doc.sites.length;
-  const btn = (txt, label, fn) => { const b = el("button", "mp-pill", txt); b.type = "button"; b.setAttribute("aria-label", label); b.onclick = fn; return b; };
+  const btn = (txt, label, fn) => { const b = el("button", "mp-pill ex-round", txt); b.type = "button"; b.setAttribute("aria-label", label); b.onclick = fn; return b; };
   const sel = el("select", "mp-pill is-primary ex-sel"); sel.setAttribute("aria-label", t("ctx.site"));
   for (const x of doc.sites) sel.append(new Option(`${t("ctx.site")} ${x.n} · ${x.name}`, x.id, false, x.id === s.id));
   sel.onchange = () => { point = null; setState({ site: sel.value }); };
   const go = id => { point = null; setState({ site: id }); };
+  // Coordinates pill: shows the selected site/point and is also the "type a coordinate" field (Enter creates the point).
+  const px = point ? point : s;
   const form = el("form", "ex-coord"); const lab = el("label", "sr-only", t("ex.coord")); const inp = el("input", "mp-coord"); inp.id = "coord"; lab.htmlFor = "coord";
-  inp.placeholder = t("ex.coord.ph"); inp.value = point ? `${fmtNum(point.lat, 3)}; ${fmtNum(((point.lon % 360) + 360) % 360, 3)}` : "";
-  const sub = el("button", "mp-pill", t("ex.go")); sub.type = "submit";
-  form.append(lab, inp, sub);
+  inp.placeholder = t("ex.coord.ph"); inp.title = t("ex.coord.ph"); inp.value = coordText(px.lat, px.lon, fmtNum, nd()); inp.setAttribute("enterkeyhint", "go"); inp.autocomplete = "off";
+  inp.onfocus = () => inp.select();
+  form.append(lab, inp);
   form.onsubmit = e => { e.preventDefault(); const c = parseCoord(inp.value.replace(/;/g, " ").replace(/(\d),(\d)/g, "$1.$2")); if (!c) { inp.setCustomValidity(t("ex.coord.bad")); inp.reportValidity(); return; } inp.setCustomValidity(""); pointAt(c.lat, c.lon); draw(); };
   const row = el("div", "ex-dock-row");
-  row.append(btn("‹", t("mc.prev"), () => go(doc.sites[(i + n - 1) % n].id)), sel, btn("›", t("mc.next"), () => go(doc.sites[(i + 1) % n].id)),
-    btn("−", t("mc.zout"), () => { terrain.zoom(0.7); frame(); }), btn("+", t("mc.zin"), () => { terrain.zoom(1.4); frame(); }), form);
-  // Scale bar (a round length that fits ~90 px at the current zoom) and the readout of the selected point.
+  // Scale bar: a round length that fits ~70 px at the current zoom.
   const nice = m => { const p = 10 ** Math.floor(Math.log10(m)); return [1, 2, 5, 10].map(k => k * p).filter(v => v <= m).pop(); };
-  const mpp = terrain.mpp, len = mpp ? nice(mpp * 90) : 0, info = el("div", "ex-dock-row ex-readout");
+  const mpp = terrain.mpp, len = mpp ? nice(mpp * 70) : 0;
   if (len) { const sc = el("span", "mp-pill ex-scalebar"); const bar = el("i"); bar.style.width = Math.round(len / mpp) + "px";
-    sc.append(bar, len >= 1000 ? `${fmtNum(len / 1000)} km` : `${fmtNum(len)} m`); info.append(sc); }
-  const px = point ? point : s; info.append(el("span", "mp-pill mp-coord ex-readout-xy", coordText(px.lat, px.lon, fmtNum, nd())));
-  d.replaceChildren(el("p", "mc-hint", t("ex.tap")), row, info);
+    sc.append(bar, len >= 1000 ? `${fmtNum(len / 1000)} km` : `${fmtNum(len)} m`); row.append(sc); }
+  row.append(btn("‹", t("mc.prev"), () => go(doc.sites[(i + n - 1) % n].id)), btn("›", t("mc.next"), () => go(doc.sites[(i + 1) % n].id)), sel,
+    btn("−", t("mc.zout"), () => { terrain.zoom(0.7); frame(); }), btn("+", t("mc.zin"), () => { terrain.zoom(1.4); frame(); }), form);
+  d.replaceChildren(el("p", "mc-hint", t("ex.tap")), row);
 }
 function chips() {
   const c = $("chips"); c.replaceChildren();
