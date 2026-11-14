@@ -143,12 +143,13 @@ async function runTraining(event){
  try{
   const site=state.selected;
   if(site?.series){
-   const resp=await apiRequest("/api/onboard/site-evaluate",siteRequest(site),false);
-   state.lastRequest=onboardRequestFrom(resp);
+   const sreq=siteRequest(site);
+   const resp=await apiRequest("/api/onboard/site-evaluate",sreq,false);
+   state.lastRequest=onboardRequestFrom(resp);state.lastSiteRequest=sreq;
    renderResult(resp.onboard,resp);
    setStatus("Visibility computed from stored "+site.series.science_status+" series for "+site.name+".");
   }else{
-   const req=buildRequest();state.lastRequest=req;
+   const req=buildRequest();state.lastRequest=req;state.lastSiteRequest=null;
    const r=await apiRequest("/api/onboard/evaluate",req,false);
    renderResult(r);
    setStatus(site?"No computed series for "+site.name+" yet: synthetic training output only.":"Go mission computer connected. Synthetic educational output only.");
@@ -163,7 +164,8 @@ async function openReport(){
  if(!state.lastRequest)return;
  const button=byId("report");button.disabled=true;
  try{
-  const html=await apiRequest("/api/onboard/report",state.lastRequest,true);
+  // Computed-series runs get the report with crew consumables and the combined decision.
+  const html=state.lastSiteRequest?await apiRequest("/api/onboard/site-report",state.lastSiteRequest,true):await apiRequest("/api/onboard/report",state.lastRequest,true);
   const blob=new Blob([html],{type:"text/html;charset=utf-8"});
   const url=URL.createObjectURL(blob),tab=window.open(url,"_blank","noopener,noreferrer");
   if(!tab){const a=document.createElement("a");a.href=url;a.download="braspace-mission-report.html";a.click();}

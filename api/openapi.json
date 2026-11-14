@@ -467,6 +467,151 @@
         }
       }
     },
+    "/api/onboard/site-report": {
+      "post": {
+        "summary": "Printable mission report (#72) for the site-evaluate input, with crew consumables and the combined decision",
+        "operationId": "siteOnboardReport",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteOnboardRequest"
+              },
+              "examples": {
+                "synthetic": {
+                  "externalValue": "../examples/mission/onboard-site-evaluate.request.json"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Standalone print-friendly HTML (Print \u2192 Save as PDF)",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "400": {
+            "description": "Malformed JSON, unknown field or trailing data (INVALID_JSON)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown site (SITE_NOT_FOUND)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body above 128 KiB (REQUEST_TOO_LARGE)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type must be application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation or data availability error; see `code`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error (INTERNAL)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Engine failed or returned an invalid contract (ENGINE_ERROR)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Engine binary unavailable (ENGINE_UNAVAILABLE)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Engine call exceeded 2 s or request exceeded 20 s (ENGINE_TIMEOUT)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/onboard/report": {
+      "post": {
+        "summary": "Printable mission report for an onboard request (owned by #72)",
+        "operationId": "onboardReport",
+        "responses": {
+          "200": {
+            "description": "HTML",
+            "content": {
+              "text/html": {}
+            }
+          },
+          "400": {
+            "description": "Invalid JSON"
+          },
+          "413": {
+            "description": "Too large"
+          },
+          "415": {
+            "description": "Content-Type"
+          },
+          "422": {
+            "description": "Invalid scenario"
+          }
+        }
+      }
+    },
     "/api/onboard/evaluate": {
       "post": {
         "summary": "Onboard simulator v1 with caller-supplied visibility booleans (owned by #70)",

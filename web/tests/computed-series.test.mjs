@@ -21,3 +21,8 @@ test("crew consumables carry a rate source and the result names its data status"
  assert.match(app,/COMPUTED FROM STORED SERIES · /);
  for(const id of ['id="crew"','id="o2"','id="food"'])assert.ok(html.includes(id),"missing "+id);
 });
+
+test("computed runs print the report with consumables",()=>{
+ assert.match(app,/"\/api\/onboard\/site-report"/);
+ assert.match(app,/state\.lastSiteRequest=null/);
+});
