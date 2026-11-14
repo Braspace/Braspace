@@ -1529,6 +1529,7 @@
         "enum": [
           "SYNTHETIC",
           "UNVERIFIED",
+          "PRELIMINARY",
           "VALIDATED"
         ],
         "description": "Status of the stored horizon/ephemeris series."
@@ -1547,6 +1548,7 @@
             "type": "string",
             "enum": [
               "artemis_iii_candidate_region",
+              "landing_target_candidate_region",
               "synthetic_test_fixture"
             ]
           },

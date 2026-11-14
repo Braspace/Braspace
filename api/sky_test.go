@@ -61,7 +61,7 @@ func TestSkyRouteFields(t *testing.T) {
 
 func TestSkyNoSeries(t *testing.T) {
 	h, _ := testAPI(t, "ok")
-	rec := do(h, "GET", "/api/sites/malapert-massif/sky", "")
+	rec := do(h, "GET", "/api/sites/haworth/sky", "")
 	if rec.Code != 404 || decode(t, rec)["code"] != "NO_SERIES_DATA" {
 		t.Fatalf("%d %s", rec.Code, rec.Body.String())
 	}
@@ -160,7 +160,7 @@ func TestSkyContractSchema(t *testing.T) {
 	h, _ := testAPI(t, "ok")
 	for url, status := range map[string]int{
 		"/api/sites/synthetic-demo-a/sky?hours=3": 200,
-		"/api/sites/malapert-massif/sky":          404,
+		"/api/sites/haworth/sky":          404,
 		"/api/sites/synthetic-demo-a/sky?step=7":  422,
 	} {
 		rec := do(h, "GET", url, "")
@@ -197,7 +197,7 @@ func TestDBSkySameAnswers(t *testing.T) {
 			}
 		}
 	}
-	if a, b := do(serve(embedded), "GET", "/api/sites/malapert-massif/sky", ""), do(serve(fromDB), "GET", "/api/sites/malapert-massif/sky", ""); a.Code != 404 || a.Body.String() != b.Body.String() {
+	if a, b := do(serve(embedded), "GET", "/api/sites/haworth/sky", ""), do(serve(fromDB), "GET", "/api/sites/haworth/sky", ""); a.Code != 404 || a.Body.String() != b.Body.String() {
 		t.Error("no-series answers differ")
 	}
 }

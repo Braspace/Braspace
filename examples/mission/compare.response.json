@@ -15,13 +15,13 @@
     "site_ids": [
       "synthetic-demo-a",
       "synthetic-demo-b",
-      "malapert-massif"
+      "haworth"
     ],
     "start_utc": "2026-12-01T00:00:00Z",
     "duration_hours": 72,
     "include_series": false
   },
-  "request_sha256": "87bb28c33544ed8349118f57697be29df0f55d3d5744fedb98772560bfe0805f",
+  "request_sha256": "f924b2ea2f0d14c1d513eb354265ac46220b81fa63c44b4cf1e9ff0ffa094fd5",
   "results": [
     {
       "site": {
@@ -153,15 +153,15 @@
     },
     {
       "site": {
-        "id": "malapert-massif",
-        "name": "Malapert Massif",
+        "id": "haworth",
+        "name": "Haworth",
         "kind": "artemis_iii_candidate_region",
         "coordinate": {
-          "latitude_deg": -85.9948,
-          "longitude_deg": -0.23578,
+          "latitude_deg": -86.7639,
+          "longitude_deg": -22.777,
           "role": "feature_center",
           "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
-          "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R23",
+          "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row Haworth",
           "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
           "source_accuracy_m": "5-10"
         }
