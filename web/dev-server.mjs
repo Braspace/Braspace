@@ -34,6 +34,9 @@ export function labFile(pathname){
 // untrusted resource paths are intentionally not exposed via the HTTP server.
 export function moonproofFile(pathname){
  if(pathname==="/moonproof/")return {name:"moonproof/index.html",type:labTypes[".html"]};
+ // Exact OFL WOFF2 allowlist: no arbitrary assets, licenses, or traversal served.
+ if(/^\/moonproof\/fonts\/(?:manrope-latin-(?:400|500|600|700|800)-normal|ibm-plex-mono-latin-(?:400|600)-normal)\.woff2$/.test(pathname))
+  return {name:pathname.slice(1),type:"font/woff2"};
  if(!/^\/moonproof\/(?:(?:core|screens)\/)?[A-Za-z0-9_\-]+\.(html|js|css)$/.test(pathname))return null;
  const ext=pathname.slice(pathname.lastIndexOf("."));
  const sub=pathname.slice("/moonproof/".length);
