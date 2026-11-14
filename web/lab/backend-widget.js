@@ -1,6 +1,6 @@
 // Optional Go API health/provenance readout. Never substitutes synthetic data
 // for the scientific 2025–2028 lab products when the backend is unavailable.
-import {backendStatus,backendSky,presentationStatus} from "./backend-bridge.js";
+import {backendStatus,backendSky,backendVectorAvailability,presentationStatus} from "./backend-bridge.js";
 const button=document.getElementById("api-sync");
 const feedback=document.getElementById("api-feedback");
 async function refresh(){
@@ -21,6 +21,8 @@ async function refresh(){
   }else{
    note+=" · chosen Shackleton site has no Go series; NASA-derived lab data remains separate";
   }
+  const vector=await backendVectorAvailability();
+  note+=" · pgvector metadata "+(vector.available?"available":vector.enabled?"not ready":"disabled");
   feedback.textContent=note+".";
  }catch(e){
   feedback.textContent="Go/PostgreSQL API offline or incompatible ("+(e.code||"unavailable")+"); the preliminary Polar Lab continues with its versioned static assets.";
