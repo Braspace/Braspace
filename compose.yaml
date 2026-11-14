@@ -3,6 +3,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    # Optional exact-origin allowlist for Pages/external frontend. The Go
+    # middleware rejects wildcard origins; empty disables cross-origin access.
+    environment:
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
     ports:
       - "127.0.0.1:${BRASPACE_PORT:-8080}:8080"
     read_only: true

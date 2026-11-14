@@ -1,0 +1,45 @@
+name: BRASPACE Compose CORS contract
+
+on:
+  pull_request:
+    paths:
+      - "compose.yaml"
+      - "api/middleware.go"
+      - "tests/test_compose_cors_contract.py"
+      - ".github/workflows/compose-cors.yml"
+  push:
+    branches:
+      - "fix/p0-compose-cors-frontend-20261114"
+
+permissions:
+  contents: read
+
+jobs:
+  cors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static contract regression
+        run: python3 -m unittest discover -s tests -p test_compose_cors_contract.py -v
+      - name: Validate Compose environment and real API preflight
+        env:
+          BRASPACE_PORT: "18199"
+          CORS_ALLOWED_ORIGINS: https://braspace.github.io
+        run: |
+          set -euo pipefail
+          docker compose config --format json > /tmp/braspace-compose-cors.json
+          python3 -c 'import json; c=json.load(open("/tmp/braspace-compose-cors.json")); assert c["services"]["api"]["environment"]["CORS_ALLOWED_ORIGINS"]=="https://braspace.github.io"'
+          docker compose -p braspace-cors-qa up --build -d
+          trap 'docker compose -p braspace-cors-qa logs; docker compose -p braspace-cors-qa down --volumes' EXIT
+          for i in $(seq 1 60); do if curl -fsS http://127.0.0.1:18199/readyz; then break; fi; sleep 2; done
+          curl -fsS http://127.0.0.1:18199/readyz >/dev/null
+          allow=$(mktemp)
+          deny=$(mktemp)
+          allowed_code=$(curl -sS -D "$allow" -o /dev/null -w '%{http_code}' -X OPTIONS http://127.0.0.1:18199/api/sites -H 'Origin: https://braspace.github.io' -H 'Access-Control-Request-Method: GET')
+          test "$allowed_code" = 204
+          grep -qi '^access-control-allow-origin: https://braspace.github.io' "$allow"
+          denied_code=$(curl -sS -D "$deny" -o /dev/null -w '%{http_code}' -X OPTIONS http://127.0.0.1:18199/api/sites -H 'Origin: https://evil.example' -H 'Access-Control-Request-Method: GET')
+          test "$denied_code" = 403
+          ! grep -qi '^access-control-allow-origin:' "$deny"
+          echo "PASS: exact allowed origin; unrelated origin blocked"
