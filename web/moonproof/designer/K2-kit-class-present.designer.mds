@@ -17,6 +17,15 @@ Como apresentar um desafio de escolha de sítio lunar em sala de aula (modo proj
 - **Celular (390×844):**
   - Pergunta e temporizador no topo; cartões de cenário empilhados abaixo com botões de controle fixos no rodapé.
 
+**Escala de projetor (medida contra V3Apresentar, 1440×900; travada por `tests/present-scale.test.mjs`)**
+- Topo: marca SVG 32 px (19 px/800), pílula branca 34 px com ícone, progresso 4 × (28×6, raio 3, inativo `rgba(255,255,255,.25)`), `Sair` 44 px com ícone.
+- Pergunta: kicker 20 px `#7FE6CB`, título 56/62 px 800 (`letter-spacing:-.025em`), subtítulo 24/34 px `#B7C0C9`; bloco em `left:40`, `top:110`.
+- Cronômetro (vidro, `right:40`, `top:120`): rótulo 18 px/700 + valor 44 px/800; nota de privacidade (vidro, 300 px) com ícone e texto 14/20 px.
+- Cartões de cenário (vidro, padding 22/24): círculo preto sólido A/B/C de 52 px (borda 2 px `#F2F4F5`, sombra `0 18px 40px rgba(0,0,0,.45)`), "Cenário X" 22 px/800, linhas com ícone de 30 px, rótulo 20 px/600 e valor 40 px/800; o nome do sítio real aparece em 13 px sob o título.
+- Botões: `Revelar resposta` 72 px/20 px (jade, texto `#04110D`) e `Próxima pergunta` 56 px/17 px, coluna de 250 px.
+- Marcadores no terreno: A/B/C em discos pretos de 64 px (letra no lugar do número do sítio; rótulo de nome oculto).
+- Os blocos são filhos diretos do `body` com `position:fixed` para o `terrain.js` enquadrar a área livre entre eles; abaixo de 900 px empilham em fluxo normal.
+
 **Componentes**
 - `BarraProjetor`: marca, badge da missão, progresso 1..4, botão `Sair`.
 - `BlocoPerguntaAula`: número da pergunta, enunciado e restrições.
@@ -58,7 +67,9 @@ Como apresentar um desafio de escolha de sítio lunar em sala de aula (modo proj
 5. **Regras:** `60 h` e `72 h` rotulados como "assumed limit".
 6. **Sem domínio inventado:** sem URLs fictícias.
 7. **Dado real:** fontes documentadas na camada Prova.
-8. **Landing Lab:** pode ser aberto como desafio extra se habilitado.
+8. **Rótulo "(limite assumido)":** o design omite; mantido nas duas regras (`60 h`, `72 h`) por exigência de integridade (limite assumido, editável).
+9. **Pílula do topo:** o design cola "Missão 03" na pílula; aqui sai só "Apresentando · Missão" porque não há número de missão com fonte.
+10. **Landing Lab:** pode ser aberto como desafio extra se habilitado.
 
 **Critérios de aceite**
 - `Revelar resposta` e `Próxima pergunta` funcionam sem recarregar a página.
