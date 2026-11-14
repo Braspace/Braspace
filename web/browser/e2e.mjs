@@ -111,6 +111,13 @@ try{
  assert(studioMobile?.status()===200,"Studio mobile HTTP");
  await mobile.locator("#role").selectOption("educator");
  assert(await mobile.locator('[data-view="learn"]').isVisible(),"educator screen not visible");
+ await mobile.locator("#reveal-answer").scrollIntoViewIfNeeded();
+ await mobile.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ const geometry=await mobile.locator("#reveal-answer").evaluate(button=>{
+  const r=button.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+  return {x,y,rect:{top:r.top,left:r.left,width:r.width,height:r.height},scrollY:scrollY,viewport:{innerWidth,innerHeight},atPoint:document.elementsFromPoint(x,y).slice(0,5).map(node=>({tag:node.tagName,id:node.id,className:String(node.className).slice(0,70)}))};
+ });
+ console.log("STUDIO MOBILE REVEAL GEOMETRY",JSON.stringify(geometry));
  await mobile.locator("#reveal-answer").click();
  assert(await mobile.locator("#lesson-answer").isVisible(),"classroom answer not revealed");
  await mobile.locator("#next-question").click();
