@@ -82,3 +82,15 @@
 .mc-earth .mp-stat-core{background:rgba(255,255,255,.14)}
 .mc-dock{bottom:28px}
 .mc-sel{height:48px;font:700 15px var(--font)}
+/* Design A: two 210px stat circles overflow the 330px column (row margin -8 -20 -8 -24).
+   The column scrolls, so it is widened by transparent padding instead of clipping them. */
+@media (min-width:1301px){
+  .mc-left{left:4px;width:424px;padding:0 70px 0 24px;box-sizing:border-box;pointer-events:none}
+  .mc-left>*{pointer-events:auto}
+  .mc-circles{display:flex;gap:0;margin:-8px -70px -8px -24px;padding:0}
+  .mc-circles .mp-stat{width:210px;height:210px;margin:0!important;flex-shrink:0}
+  .mc-circles .mp-stat-core{inset:60.2px}
+  .mc-circles .mp-stat-core .mp-num{font-size:28px}
+  .mc-circles .mp-sat{width:44px;height:44px;margin:-22px 0 0 -22px}
+  .mc-circles .mp-sat span{font-size:8.5px}
+}
