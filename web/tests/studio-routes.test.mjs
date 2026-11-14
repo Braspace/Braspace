@@ -30,4 +30,6 @@ test("studio contains seven screens, three roles, API-only metrics and scientifi
  for(const label of ["data-task=\"public\"","data-task=\"researcher\"","data-task=\"educator\"","data-layer=\"answer\"","data-layer=\"why\"","data-layer=\"proof\""])assert.ok(html.includes(label),"Heloisa V3 task/layer missing: "+label);
  assert.match(html,/Kit Aula|KIT AULA/);
  assert.match(html,/Download source-bearing JSON/);
+ assert.ok(html.includes('id="sun-transition"')&&html.includes('id="earth-transition"'));
+
 });
