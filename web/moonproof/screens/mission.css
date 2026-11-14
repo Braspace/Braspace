@@ -87,9 +87,11 @@
 @media (min-width:1301px){
   .mc-left{left:4px;width:424px;padding:0 70px 0 24px;box-sizing:border-box;pointer-events:none}
   .mc-left>*{pointer-events:auto}
-  .mc-circles{display:flex;gap:0;margin:-8px -70px -8px -24px;padding:0}
-  .mc-circles .mp-stat{width:210px;height:210px;margin:0!important;flex-shrink:0}
-  .mc-circles .mp-stat-core{inset:60.2px}
+  .mc-circles{display:flex;gap:0;margin:0 -70px 0 -24px;padding:0}
+  /* The box is the 140px halo; the 35px margin gives the 210px footprint, so satellites sit on the halo. */
+  .mc-circles .mp-stat{width:140px;height:140px;margin:35px!important;flex-shrink:0}
+  .mc-circles .mp-stat::before{inset:0}
+  .mc-circles .mp-stat-core{inset:25.2px}
   .mc-circles .mp-stat-core .mp-num{font-size:28px}
   .mc-circles .mp-sat{width:44px;height:44px;margin:-22px 0 0 -22px}
   .mc-circles .mp-sat span{font-size:8.5px}
