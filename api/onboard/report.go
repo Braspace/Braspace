@@ -11,7 +11,6 @@ import (
 	"io"
 	"mime"
 	"net/http"
-	"strings"
 )
 
 const reportTemplate = `<!doctype html>
