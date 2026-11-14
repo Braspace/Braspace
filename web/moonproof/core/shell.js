@@ -54,6 +54,19 @@ export function mountShell({ screen, context = null, onLang } = {}) {
   const ctx = document.createElement("div"); ctx.className = "mp-context"; ctx.setAttribute("role", "status");
   const bottom = document.createElement("nav"); bottom.className = "mp-bottomnav";
   document.body.prepend(top, ctx); document.body.append(bottom);
+  // Landmarks: every screen gets one <main> region and one <h1> (visually hidden: the design shows no
+  // page title on map screens). Elements are not moved, so core/terrain.js "body > *" framing still works.
+  if (!document.querySelector("main,[role=main]")) {
+    const m = ["#terrain", "#left", "#bottom", "#panel"].map(s => document.querySelector(s)).find(Boolean);
+    if (m) m.setAttribute("role", "main");
+  }
+  if (!document.querySelector("h1")) {
+    const h = document.createElement("h1"); h.className = "sr-only"; h.dataset.mpTitle = "";
+    h.textContent = String(document.title || "moonproof").replace(/^moonproof\s*·\s*/i, ""); document.body.append(h);
+    // A screen that renders its own <h1> later (Evidence, Class kit) keeps only its own.
+    if (globalThis.MutationObserver) { const mo = new MutationObserver(() => { if (document.querySelectorAll("h1").length > 1) { h.remove(); mo.disconnect(); } });
+      mo.observe(document.body, { childList: true, subtree: true }); }
+  }
   let cur = context;
   const active = currentNav(screen);
   function render() {

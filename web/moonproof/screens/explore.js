@@ -9,7 +9,7 @@ import { createLayerCard, sealEl } from "../core/layers.js";
 import { t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { southStereoInverse, southStereoForward } from "../../lab/coords.js";
-import { coordText, parseCoord, pxToStereo, stereoToPx, pgdaAt, rampColor, rampCss, horizonPoints, elRange, fmtVal } from "./mission-calc.js";
+import { coordText, parseCoord, pgdaAt, rampColor, rampCss, horizonPoints, elRange, fmtVal } from "./mission-calc.js";
 import "./mission-i18n.js";
 
 const DAY = 24, $ = id => document.getElementById(id);
@@ -69,25 +69,29 @@ async function paint() {
   const W = tc.clientWidth, H = tc.clientHeight, dpr = devicePixelRatio || 1;
   overlay.width = W * dpr; overlay.height = H * dpr;
   const g = overlay.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-  const src = await layerImage(layer), v = terrain.view, mpp = v.span / Math.min(W, H);
-  const [x0, y0] = stereoToPx(grid.x0, grid.y0 + (grid.ny - 1) * grid.dx, v, W, H);
-  g.imageSmoothingEnabled = false; g.drawImage(src, x0, y0, grid.nx * grid.dx / mpp, grid.ny * grid.dx / mpp);
-  if (point) { const [px, py] = stereoToPx(point.x, point.y, v, W, H); pin.hidden = false; pin.style.left = px + "px"; pin.style.top = py + "px"; } else pin.hidden = true;
+  // Same projection as the relief under it (core/terrain.js), so the layer lines up with the craters.
+  const src = await layerImage(layer), mpp = terrain.mpp || terrain.view.span / Math.min(W, H);
+  const [x0, y0] = terrain.toPx(grid.x0, grid.y0 + (grid.ny - 1) * grid.dx), w = grid.nx * grid.dx / mpp, h = grid.ny * grid.dx / mpp;
+  g.imageSmoothingEnabled = false; g.drawImage(src, x0, y0, w, h);
+  // Soft edge where the data ends (the layer only covers its grid; no data is invented past it).
+  g.globalCompositeOperation = "destination-out"; const f = Math.min(48, w / 6, h / 6);
+  for (const [ax, ay, bx, by, rx, ry, rw, rh] of [[x0, 0, x0 + f, 0, x0, y0, f, h], [x0 + w, 0, x0 + w - f, 0, x0 + w - f, y0, f, h], [0, y0, 0, y0 + f, x0, y0, w, f], [0, y0 + h, 0, y0 + h - f, x0, y0 + h - f, w, f]]) {
+    const gr = g.createLinearGradient(ax, ay, bx, by); gr.addColorStop(0, "rgba(0,0,0,1)"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(rx, ry, rw, rh); }
+  g.globalCompositeOperation = "source-over";
+  if (point) { const [px, py] = terrain.toPx(point.x, point.y); pin.hidden = false; pin.style.left = px + "px"; pin.style.top = py + "px"; } else pin.hidden = true;
 }
 
 // ---- free area framing: chosen site/point between the side panels
 function frame() {
   const s = site(), tx = point ? point.x : s.stereo_x_m, ty = point ? point.y : s.stereo_y_m;
   if (!point) terrain.select(s.id);
-  const W = innerWidth, Hh = innerHeight, mpp = terrain.view.span / Math.min(W, Hh);
-  if (W > 700) { const L = $("left").getBoundingClientRect().right, R = $("right").getBoundingClientRect().left; terrain.view.cx = tx - ((L + R) / 2 - W / 2) * mpp; terrain.view.cy = ty; }
-  else { terrain.view.cx = tx; terrain.view.cy = ty; } // phone: core/terrain.js already centres the point in the free area above the sheet
+  terrain.view.cx = tx; terrain.view.cy = ty; // core/terrain.js centres it in the free area between the panels
   terrain.redraw(); paint();
 }
 const site = () => doc.sites.find(s => s.id === getState().site);
 
 overlay.addEventListener("click", e => {
-  const r = tc.getBoundingClientRect(), [x, y] = pxToStereo(e.clientX - r.left, e.clientY - r.top, terrain.view, r.width, r.height);
+  const r = tc.getBoundingClientRect(), [x, y] = terrain.fromPx(e.clientX - r.left, e.clientY - r.top);
   if (!grid.contains(x, y)) return; const { lat, lon } = southStereoInverse(x, y); point = { x, y, lat, lon }; draw();
 });
 

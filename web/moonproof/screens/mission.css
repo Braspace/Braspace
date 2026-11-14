@@ -24,7 +24,7 @@
 .mc-table th{text-align:left;font-weight:600;color:var(--text-2);padding:5px 0;font-size:13px}
 .mc-table td,.mc-table thead th{text-align:right;font-weight:800;padding:5px 0 5px 13px;width:56px}
 .mc-table td+td{color:var(--text-2);font-weight:600}
-.mc-table td.is-worse{color:var(--fail)}.mc-table td.is-worse::after{content:"\00a0✕";font-size:10px}
+.mc-table td.is-worse{color:var(--fail-text)}.mc-table td.is-worse::after{content:"\00a0✕";font-size:10px}
 .mc-now-big{font-size:34px;margin:8px 0 0}
 .mc-compass{align-self:flex-end;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,#4C9BFF 0 52%,#1d3f73 53% 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;flex:none}
 .mc-compass small{font-size:10px;font-weight:700;letter-spacing:.08em}.mc-compass b{font-size:20px}
@@ -80,7 +80,7 @@
 /* Fidelity audit (items 9, 12, 14). */
 @media (min-width:1301px){.mc-left,.mc-right{top:150px}.mc-right{width:300px}}
 .mc-earth .mp-stat-core{background:rgba(255,255,255,.14)}
-.mc-dock{bottom:28px}
+@media (min-width:701px){.mc-dock{bottom:28px}}
 .mc-sel{height:48px;font:700 15px var(--font)}
 /* Design A: two 210px stat circles overflow the 330px column (row margin -8 -20 -8 -24).
    The column scrolls, so it is widened by transparent padding instead of clipping them. */
@@ -97,6 +97,19 @@
   .mc-circles .mp-sat span{font-size:8.5px}
 }
 .mc-vs{display:block;width:100%;max-width:none!important;margin-top:10px}
-/* UX audit: on phones the zoom/site dock sat on top of the sheet; it goes under the context bar. */
-@media (max-width:700px){.mc-dock{top:128px;bottom:auto;right:12px;left:auto;transform:none}}
 .mc-circles .mp-sat span{font-size:10px}
+/* UX audit: .mc-right also carries [data-mp-sheet], so the core turned it into a second fixed sheet on top
+   of .mc-panels (the numbers card covered the stat circles). Inside the Mission sheet it stays in flow. */
+@media (max-width:700px){
+  .mc-panels [data-mp-sheet]{position:static!important;left:auto!important;right:auto!important;bottom:auto!important;top:auto!important;width:auto!important;height:auto!important;max-height:none!important;overflow:visible;background:transparent;border:0;border-radius:0}
+  .mc-panels [data-mp-sheet]>.mp-sheet-grip{display:none!important}
+  .mc-circles{overflow:hidden}
+}
+@media (max-width:700px){
+  .mc-dock{top:134px;bottom:auto;right:12px;left:auto;transform:none}
+  .mc-circles{display:grid;grid-template-columns:1fr 1fr;margin:0;gap:0;justify-items:center;padding:4px 0}
+  .mc-circles .mp-stat{width:118px;height:118px;margin:26px 0!important}
+  .mc-circles .mp-stat::before{inset:0}
+  .mc-circles .mp-stat-core{inset:16px}
+  .mc-circles .mp-stat-core .mp-num{font-size:22px}
+}

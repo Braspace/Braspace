@@ -95,3 +95,10 @@
   .mp-scn-right{max-height:calc(100vh - 250px)}
 }
 @media (max-width:700px){.mp-chipg{min-height:var(--touch)}}
+/* UX audit: at 375-390 px the fixed dock measured 418 px and cut its first and last buttons. */
+@media (max-width:700px){
+  .mp-scn-dock{max-width:calc(100vw - 16px);box-sizing:border-box;flex-wrap:nowrap}
+  .mp-scn-dock>*{flex:0 1 auto;min-width:0}
+  .mp-scn-dock .mp-pill:not(select){min-width:44px;padding:0 10px}
+  .mp-scn-dock select.mp-pill{min-width:0;flex:1 1 120px;text-overflow:ellipsis}
+}

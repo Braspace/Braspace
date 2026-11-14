@@ -97,7 +97,7 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
   let features = [];
   if (labels) try { features = ((await loadSites()).features || []).filter(f => !f.landing_site && Number.isFinite(f.stereo_x_m)); } catch { features = []; }
   container.dataset.features = String(features.length);
-  let lastMpp = 0;
+  let lastMpp = 0, lastSx = 0, lastSy = 0, lastW = 0, lastH = 0;
   let sel = selected, focus = selected, free = null, relief = null, reliefKey = "";
   const ext = grid.nx * grid.dx;
   function frame(W, H) {
@@ -122,7 +122,7 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
   function draw() {
     const W = container.clientWidth, H = container.clientHeight, dpr = Math.min(3, devicePixelRatio || 1);
     if (!W || !H) return;
-    const { mpp, sx, sy } = frame(W, H); lastMpp = mpp;
+    const { mpp, sx, sy } = frame(W, H); lastMpp = mpp; lastSx = sx; lastSy = sy; lastW = W; lastH = H;
     container.dataset.free = [free.l, free.t, free.r, free.b].map(Math.round).join(",");
     const w = Math.round(W * dpr), h = Math.round(H * dpr);
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
@@ -159,7 +159,10 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
   const api = { el: container, grid, view,
     select(id) { sel = id; focus = id; const s = sites.find(x => x.id === id); if (s) { view.cx = s.stereo_x_m; view.cy = s.stereo_y_m; } draw(); },
     zoom(f) { view.span = Math.min(ext, Math.max(4000, view.span / f)); draw(); }, redraw: draw,
-    get free() { return free; }, get mpp() { return lastMpp; } };
+    get free() { return free; }, get mpp() { return lastMpp; },
+    /** The projection actually drawn: stereo metres <-> CSS px of the container. */
+    toPx(x, y) { return [lastW / 2 + (x - lastSx) / lastMpp, lastH / 2 - (y - lastSy) / lastMpp]; },
+    fromPx(px, py) { return [lastSx + (px - lastW / 2) * lastMpp, lastSy - (py - lastH / 2) * lastMpp]; } };
   // Panels are rendered after the map: re-frame when the overlays change size or appear.
   let pending = 0, lastFree = "";
   const reframe = () => { if (pending) return; pending = requestAnimationFrame(() => { pending = 0;
