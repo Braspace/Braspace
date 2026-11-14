@@ -1,0 +1,43 @@
+{
+  "mission_id": "BRASPACE-EDUCATIONAL-ONBOARD-DEMO",
+  "candidates": [
+    {
+      "id": "baseline",
+      "site_id": "synthetic-demo-a",
+      "start_utc": "2026-12-01T00:00:00Z",
+      "source_claim": "SYNTHETIC-NOT-NASA",
+      "step_minutes": 60,
+      "max_comm_blackout_hours": 1,
+      "power": {
+        "battery_capacity_wh": 200,
+        "initial_charge_wh": 150,
+        "reserve_wh": 50,
+        "solar_generation_w": 0,
+        "load_w": 80
+      },
+      "samples": [
+        {"sun_visible": false, "earth_visible": false},
+        {"sun_visible": false, "earth_visible": false}
+      ]
+    },
+    {
+      "id": "date-delay-experimental-alternative",
+      "site_id": "synthetic-demo-a",
+      "start_utc": "2026-12-03T00:00:00Z",
+      "source_claim": "SYNTHETIC-NOT-NASA",
+      "step_minutes": 60,
+      "max_comm_blackout_hours": 1,
+      "power": {
+        "battery_capacity_wh": 200,
+        "initial_charge_wh": 150,
+        "reserve_wh": 50,
+        "solar_generation_w": 110,
+        "load_w": 80
+      },
+      "samples": [
+        {"sun_visible": true, "earth_visible": true},
+        {"sun_visible": true, "earth_visible": true}
+      ]
+    }
+  ]
+}
