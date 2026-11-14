@@ -19,7 +19,7 @@ Como diferentes regras de missão (noite, perda da Terra, bateria, mastro, decli
 
 **Visual (fidelidade ao desenho `V3ComparePlan`)**
 - `Regras da missão` e a tabela são cartões pretos sólidos (`#050607`, borda `rgba(255,255,255,.06)`, sombra `0 18px 40px rgba(0,0,0,.45)`); `Exportar e reproduzir` segue em vidro.
-- Campos numéricos e seletores: 64×36, raio 999, borda `#5E6C7D`, fundo `rgba(255,255,255,.06)`, 14/700 centrado; botão primário 48 px 15/700; botões de exportar brancos de 38 px; URL em caixa mono 11,5/17.
+- Geometria medida por DOM na prancha (1440×900): cartão de regras 382 px de largura a partir de y=150 (padding 20), campos numéricos 70×40 (caixa do `<input>` 64×36 + padding/borda), raio 999, borda `#5E6C7D`, fundo `rgba(255,255,255,.06)`, 14/700 centrado, passo vertical de 52 px; os dois seletores são texto + chevron, sem pílula; botão primário 340×48 15/700 em y=556; cartão Exportar 368×260 em x=1044,y=150 com a versão do plano na linha do título; botões de exportar brancos de 38 px; URL em caixa mono 11,5/17; tabela ancorada embaixo (altura mínima 415 em 1440×900, afastada 6 px do cartão de regras para não sobrepor).
 - Tabela: colunas alinhadas à direita, cabeçalhos `A`/`B`/`C` (com `n · nome` do sítio abaixo, em corpo pequeno, para casar com os marcadores numerados do terreno), violação em `var(--bad, #FF7A80)`, melhor valor em jade, linhas com `border-top rgba(255,255,255,.06)`, selo de origem em pílula. Cores com fallback `var(--x, valor)`; `core/` não foi alterado.
 
 **Componentes**
@@ -64,6 +64,7 @@ Como diferentes regras de missão (noite, perda da Terra, bateria, mastro, decli
 6. **Sem domínio inventado:** `moonproof.app/c?s=A,B,C&t=…&rules=…&v=…` vira a URL real da página (`window.location.href` com a query do cenário, `rules=` e `v=` reais; sem `a41c9e2`).
 7. **Dado real:** fontes e incertezas seguem `web/data/sites.json`.
 8. **Landing Lab:** não aplicável diretamente aqui.
+9. **Sem linha `Sol + Terra juntos`:** a tela mede 7 métricas; a janela não calcula Sol e Terra simultâneos com fonte, então a linha não é inventada (a altura do cartão vem do mínimo, não de uma linha de enchimento).
 
 **Critérios de aceite**
 - Editar uma regra e recalcular atualiza violações, margens e URL.
