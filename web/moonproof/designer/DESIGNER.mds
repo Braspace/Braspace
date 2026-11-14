@@ -1,0 +1,37 @@
+# MoonProof — Heloísa visual source, DESIGNER.mds and running screen contract
+## Provenance / access
+- **Requested source:** https://claude.ai/artifact/QV5ykVW5q9HvyZsH68SPf1, MoonProof screens A–H, two mobile references, V3 layers and educator/planner kits.
+- Heloísa's user-shared screenshots are available in the conversation and used as the actual design reference; the shared Claude page presently displays **Sign in to see this artifact's data** to unauthenticated retrieval. Thus the **private system prompt/internal app sources cannot be extracted**. This is a faithful implementation from visible screens, not a claim to have copied hidden instructions.
+- The original A–H, V3 and mobile specifications are mirrored as individual `*.designer.mds` files under this directory. They include boundaries: no fake scientific VAL, never reuse illustrative mockup numbers.
+- Original author and repo source: @lisanogueira / PR #148, shared MoonProof core and 400 m/pixel LOLA DEM; independently reviewed backend series only later.
+
+## Screen mapping and actual implementation
+| Source Heloísa screen | Routed frontend | Implementation and source |
+| --- | --- | --- |
+| V3 Entry | /moonproof/ | index.html + screens/entry.js |
+| A Mission Control | /moonproof/mission.html | screens/mission.js, terrain-first and layered PRE stats |
+| B Explorar | /moonproof/explore.html | screens/workflow.js + LOLA terrain + honest layer selector |
+| C Comparar | /moonproof/compare.html | screens/workflow.js + three same-duration PRE scenarios A/B/C, explicitly chosen limits |
+| D Replanejar | /moonproof/recover.html | screens/workflow.js + real series shifts /api/scenarios/delay Go bridge |
+| E Cockpit | /moonproof/cockpit.html | screens/workflow.js + geometry PRE + link to operational training cockpit |
+| F Landing Lab | /moonproof/landing.html | screens/workflow.js + link to existing functional /lab.html 3DOF simulator |
+| G Debrief | /moonproof/debrief.html | screens/workflow.js + links to existing landing simulation; no fabricated attempt |
+| H Evidências | /moonproof/evidence.html | screens/workflow.js + provenance, PRE/SIM/N-D, JSON passport |
+| V3 Kit Aula | /moonproof/learn.html | screens/workflow.js + 4 guided questions, reveal answer, no tracking |
+| V3 Kit Planejamento | /moonproof/plan.html | screens/workflow.js + editable thresholds, real source metrics, JSON/CSV |
+| Mobile Explore/Compare | responsive same routes | screens/workflow.css + bottom nav and 390 px browser tests |
+
+## Actual implementation boundaries
+- `web/moonproof/core/terrain.js` uses source-grid LOLA 400 m shaded relief; blue/gold is **false-color elevation rendering**. Markers derive from five catalogue feature centres, crater labels from IAU feature-centre coordinates; neither is a flight-certified touchdown point or native 20 m terrain.
+- Design tokens preserve #07090C / #050607 / #2EC4A0 / #F2F4F5 and blur 22px, Manrope/IBM Plex Mono family with system fallbacks, 26px cards, 999px pills, 44px touch targets.
+- Scenario numeric data derives from `web/data/sites.json` plus SHA-carrying hourly series. API data is optional and explicitly gated, never swapped into PRE results silently. Status `PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED` remains visible.
+- Screens E/F/G integrate with **existing** full-function modules. A wrapper with N/D is not a completed new 3DOF simulator or a recorded debrief. Original linked modules remain the working execution path.
+- V3 answer/why/proof uses `core/layers.js`; kits add tools rather than change identical button semantics. No silent per-user detection.
+- `Dockerfile.web` and `compose.release.yaml` serve the 11 V3 URLs with the Go/Rust backend on a private Docker network. The release CI publishes to GHCR **only after every gate**, on main.
+- `web/moonproof/tests/visual-e2e.mjs` exercises Chromium desktop and mobile source labels, markers, compare, replanning controls and classroom conceal/reveal.
+
+## Acceptance and unresolved work
+- Author review @lisanogueira is needed to approve exact composition; user screenshots are stronger evidence than an inaccessible Claude system prompt.
+- Source-grade visual differences remain: 400 m LOLA false-color vs the 20 m/pixel illustrative artwork; true API-supplied 3D terrain/GLB should be reviewed under PR #142.
+- No NASA approval, photorealistic LROC texture claim, RF guarantee or full-featured onboard hardware certification.
+- CI must pass at the exact final HEAD; do not merge stacked PRs before #148 owner review and new Docker/Chromium results.
