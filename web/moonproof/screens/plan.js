@@ -161,7 +161,7 @@ async function computeRows() {
       check: (v) => v <= rulesDraft.night,
       best: "min",
       margin: metrics[1]?.longestDarkH.value != null ? rulesDraft.night - metrics[1].longestDarkH.value : null,
-      unc: "±1", status: doc.status
+      unc: "1 h step", status: doc.status
     },
     {
       label: t("plan.mBlackout"), unit: "h",
@@ -170,19 +170,19 @@ async function computeRows() {
       check: (v) => v <= rulesDraft.blackout,
       best: "min",
       margin: metrics[1]?.longestBlackoutH.value != null ? rulesDraft.blackout - metrics[1].longestBlackoutH.value : null,
-      unc: "±1", status: doc.status
+      unc: "1 h step", status: doc.status
     },
     {
       label: t("plan.mSun"), unit: "%",
       vals: metrics.map((m) => m.sunPct.value),
       rule: t("nd"), check: null, best: "max", margin: null,
-      unc: "±0.3", status: doc.status
+      unc: t("nd"), status: doc.status
     },
     {
       label: t("plan.mEarth"), unit: "%",
       vals: metrics.map((m) => m.earthPct.value),
       rule: t("nd"), check: null, best: "max", margin: null,
-      unc: "±0.3", status: doc.status
+      unc: t("nd"), status: doc.status
     },
     {
       label: t("plan.mBattery"), unit: "h",
@@ -232,17 +232,17 @@ async function draw() {
     <label class="mp-rule-row"><span>${t("plan.night")}</span><input id="r-night" type="number" value="${rulesDraft.night}"><span>h</span></label>
     <label class="mp-rule-row"><span>${t("plan.blackout")}</span><input id="r-blackout" type="number" value="${rulesDraft.blackout}"><span>h</span></label>
     <label class="mp-rule-row"><span>${t("plan.battery")}</span><input id="r-battery" type="number" value="${rulesDraft.battery}"><span>%</span></label>
-    <label class="mp-rule-row"><span>${t("plan.mast")}</span><input id="r-mast" type="number" value="${rulesDraft.mast}"><span>m</span></label>
+    <label class="mp-rule-row"><span>${t("plan.mast")} (${t("nd")})</span><input id="r-mast" type="number" value="${rulesDraft.mast}" disabled><span>m</span></label>
     <label class="mp-rule-row"><span>${t("plan.slope")}</span><input id="r-slope" type="number" value="${rulesDraft.slope}"><span>°</span></label>
     <div class="mp-plan-sep" role="presentation"></div>
-    <label class="mp-rule-select"><span>${t("plan.sunMode")}</span>
-      <select id="r-sun">
+    <label class="mp-rule-select"><span>${t("plan.sunMode")} (${t("nd")})</span>
+      <select id="r-sun" disabled>
         <option value="center" ${rulesDraft.sunMode === "center" ? "selected" : ""}>${t("plan.sunCenter")}</option>
         <option value="limb" ${rulesDraft.sunMode === "limb" ? "selected" : ""}>${t("plan.sunLimb")}</option>
       </select>
     </label>
-    <label class="mp-rule-select"><span>${t("plan.step")}</span>
-      <select id="r-step">
+    <label class="mp-rule-select"><span>${t("plan.step")} (${t("nd")})</span>
+      <select id="r-step" disabled>
         <option value="1" ${rulesDraft.step === 1 ? "selected" : ""}>1 h</option>
         <option value="3" ${rulesDraft.step === 3 ? "selected" : ""}>3 h</option>
       </select>
@@ -279,13 +279,21 @@ async function draw() {
 
   if (!version) exportEl.querySelector(".mp-version-seal").appendChild(sealEl("N/D"));
   exportEl.querySelector("#btn-csv").addEventListener("click", () => {
-    const header = "site,hour_idx,sun,earth";
+    const hours = st.hours || 336;
+    const header = "site,utc,sun_visible,earth_visible,sun_margin_deg,earth_margin_deg";
     const lines = [header];
     metrics.forEach((m, idx) => {
       const s = scenarios[idx];
-      (m.series || []).slice(0, 48).forEach((pt, h) => {
-        lines.push(`${s.id},${h},${pt.sun ?? ""},${pt.earth ?? ""}`);
-      });
+      const series = m.series;
+      if (!series || !Number.isFinite(series.count)) return;
+      const i0 = Math.max(0, Math.ceil((m.t0 - series.start) / HOUR_MS));
+      const n = Math.max(0, Math.min(hours, series.count - i0));
+      for (let h = 0; h < n; h++) {
+        const sunM = series.sunMargin[i0 + h];
+        const earthM = series.earthMargin[i0 + h];
+        const utc = new Date(series.start + (i0 + h) * HOUR_MS).toISOString().replace(".000Z", "Z");
+        lines.push(`${s.id},${utc},${sunM >= 0 ? 1 : 0},${earthM >= 0 ? 1 : 0},${sunM},${earthM}`);
+      }
     });
     downloadFile("moonproof-plan.csv", lines.join("\n"), "text/csv");
   });
@@ -293,7 +301,8 @@ async function draw() {
     downloadFile("moonproof-plan.json", JSON.stringify({ rules: rulesDraft, scenarios: scenarios.map((s) => s.id), rows }, null, 2), "application/json");
   });
   exportEl.querySelector("#btn-pdf").addEventListener("click", () => {
-    window.open(hrefTo("evidence.html") + "&print=1", "_blank", "noopener");
+    const evHref = hrefTo("evidence.html");
+    window.open(evHref + (evHref.includes("?") ? "&" : "?") + "print=1", "_blank", "noopener");
   });
 
   const tableEl = document.getElementById("plan-table");

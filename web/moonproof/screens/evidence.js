@@ -115,3 +115,4 @@ function download(passport) {
 }
 onState(() => draw());
 await draw();
+if (new URLSearchParams(location.search).get("print") === "1") globalThis.print?.();

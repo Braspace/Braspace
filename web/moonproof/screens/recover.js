@@ -70,7 +70,7 @@ async function draw() {
   let base = metricsAt(sc.site, t0, sc.hours), delayed = metricsAt(sc.site, t1, sc.hours);
   if (online) { const r = await apiDelayMetrics({ siteId: sc.site, startIso: new Date(t0).toISOString(), hours: sc.hours, delayH: sc.d, rules }); if (r.base && r.delayed) { base = r.base; delayed = r.delayed; } }
   const jd = judge(delayed, rules), jb = judge(base, rules);
-  const exits = computeExits({ metricsAt, siteId: sc.site, siteIds: doc.sites.map(s => s.id), startMs: t0, hours: sc.hours, delayH: sc.d, rules, searchDays: Math.floor(sc.hours / DAY) });
+  const exits = computeExits({ metricsAt, siteId: sc.site, siteIds: doc.sites.map(s => s.id), startMs: t0, hours: sc.hours, delayH: sc.d, rules, searchDays: Math.max(30, Math.floor(sc.hours / DAY)) });
   const chosen = exits.find(e => e.kind === sc.x) || exits[0] || null;
   shell.setContext({ site: t("rec.ctx", { L: "B", site: String(site.n) }), date: fmtDay(t1), days: fmtNum(sc.hours / DAY),
     seal: (delayed || base)?.seal || "N/D", online, action: { label: t("rec.step4.short"), href: hrefTo("compare.html") + "#" + compareHash(sc, chosen) } });
