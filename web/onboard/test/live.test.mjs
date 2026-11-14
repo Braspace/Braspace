@@ -55,9 +55,14 @@ test("badges: read from readyz/capabilities; permanent no-flight chip; offline s
   assert.match(off[0].text, /browser model only/); assert.equal(off[off.length - 1].text, "No flight recommendation");
 });
 
-test("cockpit.html has no fixed status chips; badges are rendered from the API", () => {
+test("cockpit.html: static chips are only a fallback inside #badges; cockpit.js replaces them from the API", () => {
   const h = src("cockpit.html");
-  assert.ok(!/PROTÓTIPO · sintético/.test(h) && !/Não validado/.test(h) && !/Sem recomendação de voo/.test(h));
+  // main's test 133 needs the three honest chips in the served HTML; they sit INSIDE #badges, which renderBadges() replaces.
+  const box = h.slice(h.indexOf('id="badges"'), h.indexOf('id="lamp-api"'));
+  for (const t of ["PROTÓTIPO · sintético", "Não validado", "Sem recomendação de voo"]) {
+    assert.ok(box.includes(t), t); assert.equal(h.split(t).length - 1, 1, t + " only once, inside #badges");
+  }
+  assert.match(src("cockpit.js"), /box\.replaceChildren\(\.\.\.L\.badges/);
   assert.ok(h.includes('id="badges"') && h.indexOf("live.js") < h.indexOf("cockpit.js"));
 });
 
