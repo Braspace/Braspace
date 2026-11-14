@@ -74,7 +74,7 @@ export async function createMoon(stage,status) {
   };
   function setSites(sites){
     while(markers.children.length){
-      const o=markers.children.pop();markers.remove(o);o.geometry?.dispose();o.material?.dispose();
+      const o=markers.children[0];markers.remove(o);o.geometry?.dispose();o.material?.dispose();
     }
     for(const site of (sites||[]).slice(0,25)){
       const lat=Number(site.coordinate?.latitude_deg),lon=Number(site.coordinate?.longitude_deg);
