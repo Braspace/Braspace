@@ -32,17 +32,17 @@ NASA PDS LRO/LOLA DEM         JPL/NAIF SPICE kernels          Mission parameters
                               provenance & limitations
 ```
 
-**Implementation reality:** PR #45 is merged to main with Go/Rust/Docker green; #53 (Gabriel Freire) has site catalog, compare and delay API in review, no real NASA LOLA/SPICE science yet confirmed. PR #70 (Gustavo) implements an **independent** deterministic Go educational onboard resource and risk engine. It requires CI and review before merging. #54 (Gustavo) 3D globe and #58 (Gustavo) Mission Report/PDF remain separate not-implemented tickets.
+**Implementation reality:** PR #45 is merged to main with Go/Rust/Docker green; #53 (Gabriel Freire) has site catalog, compare and delay API in review, no real NASA LOLA/SPICE science yet confirmed. PR #70 (Gustavo) **merged to main** as commit `2fbb3498be19223451001c176677ea03bb3f0cd4` after successful Go/Rust/Docker CI. It implements an **independent**, deterministic educational onboard resource and risk engine. Scientific input remains unverified. #54 (Gustavo) 3D globe and #58 (Gustavo) Mission Report/PDF remain separate not-implemented tickets.
 
 ## Virtual onboard subsystem map
 
 | Subsystem | Input | Calculation / output | V1 status | Work item |
 |---|---|---|---|---|
-| Mission Clock | UTC, sample step, duration, date-delay candidates | Time-indexed simulation | Implemented in PR #70, CI pending | #63 |
-| Power Management | Battery Wh, solar generation W as caller assumption, load W, Sun visible | Battery SoC proxy, minimum charge Wh, unserved Wh | Implemented in PR #70, synthetic only | #63 |
-| Communications Supervisor | Earth geometrically visible per step and maximum allowed gap h | Longest Earth obstruction, threshold breach | Implemented in PR #70; no RF budget/DSN scheduling | #63 |
-| Risk Monitor | Configured reserve Wh, blackout h and time-indexed samples | NOMINAL / SAFE_MODE / POWER_LOSS, categorical risk | Implemented in PR #70, unverified science inputs | #63/#68 |
-| Scenario Evaluator | Baseline and alternative samples/configurations | Deterministic comparison and educational choice ONLY if all constraints met | Implemented in PR #70, not autonomous search | #63/#64 |
+| Mission Clock | UTC, sample step, duration, date-delay candidates | Time-indexed simulation | Implemented in merged PR #70 (CI passed) | #63 |
+| Power Management | Battery Wh, solar generation W as caller assumption, load W, Sun visible | Battery SoC proxy, minimum charge Wh, unserved Wh | Implemented in merged PR #70, synthetic only | #63 |
+| Communications Supervisor | Earth geometrically visible per step and maximum allowed gap h | Longest Earth obstruction, threshold breach | Implemented in merged PR #70; no RF budget/DSN scheduling | #63 |
+| Risk Monitor | Configured reserve Wh, blackout h and time-indexed samples | NOMINAL / SAFE_MODE / POWER_LOSS, categorical risk | Implemented in merged PR #70, unverified science inputs | #63/#68 |
+| Scenario Evaluator | Baseline and alternative samples/configurations | Deterministic comparison and educational choice ONLY if all constraints met | Implemented in merged PR #70, not autonomous search | #63/#64 |
 | Landing date/site search | NASA-backed DEM and date-time series, candidate sites | Nearby landing sites or arrival-delay windows | Already proposed in open PR #53; integration pending | #46/#64 |
 | Scientific data origin | Real LOLA, NAIF SPICE, ephemerides, frame and epochs | Source-backed Sun/Earth above true terrain | Pending | #65/#66 |
 | Cockpit UI + visual Moon | Sensor cards, alarm timeline, 3D Moon | Understandable mission state in five-area hub | Not yet implemented | #54/#67 |
@@ -84,4 +84,8 @@ NASA PDS LRO/LOLA DEM         JPL/NAIF SPICE kernels          Mission parameters
 
 [PR #70](https://github.com/Braspace/Braspace/pull/70) Onboard Computer v1 code | [PR #53](https://github.com/Braspace/Braspace/pull/53) existing date/site API | [#63](https://github.com/Braspace/Braspace/issues/63) Gustavo | [#64](https://github.com/Braspace/Braspace/issues/64) Gabriel Freire | [#65](https://github.com/Braspace/Braspace/issues/65) Joel | [#66](https://github.com/Braspace/Braspace/issues/66) Maccachero | [#67](https://github.com/Braspace/Braspace/issues/67) Heloísa | [#68](https://github.com/Braspace/Braspace/issues/68) João Victor.
 
-**Status:** strategic documentation, with a code PR under review. Nothing is marked NASA-submitted.
+**Status:** V1 educational onboard API merged with passing CI. No real NASA-backed scientific pipeline or live UI is claimed; nothing is NASA-submitted.
+
+## Coordinating current team-owned consumables work
+
+Gabriel Freire independently opened [issue #69](https://github.com/Braspace/Braspace/issues/69) for **oxygen, food and crew consumable autonomy**. This is distinct from the merged v1 battery/solar assumption and geometric Earth-outage model. Coordinate the typed DTO with #64 and PR #53; do **not** duplicate or overwrite Gabriel's work, and do not treat food/oxygen simulation as verified until code and tests are accepted.
