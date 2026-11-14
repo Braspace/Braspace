@@ -33,7 +33,7 @@ try{
  assert(r?.status()===200,"desktop lab page failed");
  assert((await desktop.locator("body").innerText()).includes("PRELIMINARY"),"missing scientific disclaimer");
  await desktop.locator("#api-feedback").waitFor({state:"visible",timeout:30000});
- await desktop.waitForFunction(()=>!document.querySelector("#api-feedback")?.textContent?.includes("not yet checked"),{timeout:30000});
+ await desktop.waitForFunction(()=>{const status=document.querySelector("#api-feedback")?.textContent||"";return !status.includes("not yet checked")&&!status.includes("checking…");},null,{timeout:30000});
  if(process.env.BRASPACE_REQUIRE_BACKEND==="1"){
   const status=await desktop.locator("#api-feedback").innerText();
   assert(status.includes("Go/Rust engine ready"),"browser did not confirm connected Go/Rust backend: "+status);
