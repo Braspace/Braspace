@@ -67,6 +67,50 @@ type seriesSample struct {
 	Earth direction `json:"earth"`
 }
 
+// SampleError is the typed load error for a series sample that is null,
+// absent or missing a required field. It is never replaced by a zero angle.
+type SampleError struct {
+	Index  int
+	Reason string
+}
+
+func (e *SampleError) Error() string {
+	if e.Index < 0 {
+		return "series sample: " + e.Reason
+	}
+	return fmt.Sprintf("series sample %d: %s", e.Index, e.Reason)
+}
+
+type rawDirection struct {
+	AzimuthDeg   *float64 `json:"azimuth_deg"`
+	ElevationDeg *float64 `json:"elevation_deg"`
+}
+
+// UnmarshalJSON requires sun and earth, each with both angles. null, {} and
+// partial objects are rejected so a missing sample can never become az 0/el 0.
+func (s *seriesSample) UnmarshalJSON(b []byte) error {
+	if bytes.Equal(bytes.TrimSpace(b), []byte("null")) {
+		return &SampleError{Index: -1, Reason: "sample is null"}
+	}
+	var raw struct {
+		Sun   *rawDirection `json:"sun"`
+		Earth *rawDirection `json:"earth"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&raw); err != nil {
+		return &SampleError{Index: -1, Reason: err.Error()}
+	}
+	for name, d := range map[string]*rawDirection{"sun": raw.Sun, "earth": raw.Earth} {
+		if d == nil || d.AzimuthDeg == nil || d.ElevationDeg == nil {
+			return &SampleError{Index: -1, Reason: name + " direction missing azimuth_deg/elevation_deg"}
+		}
+	}
+	s.Sun = direction{*raw.Sun.AzimuthDeg, *raw.Sun.ElevationDeg}
+	s.Earth = direction{*raw.Earth.AzimuthDeg, *raw.Earth.ElevationDeg}
+	return nil
+}
+
 // siteSeries is the server-side input for one site: its terrain horizon and
 // Sun/Earth look angles on a fixed time grid. Produced offline by the science
 // pipeline; the API never accepts these values from clients.
