@@ -6,7 +6,7 @@ import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, hrefTo } from "../core/state.js";
 import { TerrainGrid } from "../../lab/terrain.js";
 import { TEXTS } from "./landing-texts.js";
-import { ASSUMED, loadAttempts, evaluateRules, rulesMet, verdictKey, descentBars, keyPoints, brakingAssessment, fuelFrac } from "./landing-model.js";
+import { attemptExport, ASSUMED, loadAttempts, evaluateRules, rulesMet, verdictKey, descentBars, keyPoints, brakingAssessment, fuelFrac } from "./landing-model.js";
 
 register(TEXTS);
 const $ = id => document.getElementById(id);
@@ -98,9 +98,14 @@ function draw() {
   const a = (icon, txt, href, cls) => { const x = el("a", "mp-pill " + cls); x.innerHTML = ico(icon, 17); x.append(txt); x.href = href; return x; };
   const sid = A.site;
   $("actions").replaceChildren(a(ICO.again, t("deb.again"), hrefTo("landing.html"), "is-primary"),
-    a(ICO.compare, t("deb.compare"), hrefTo("debrief.html") + (location.search ? "&" : "?") + "compare=1", ""), a(ICO.explore, t("deb.explore", { s: A.siteName }), hrefTo("explore.html", { ...getState(), site: sid }), ""));
+    a(ICO.compare, t("deb.compare"), hrefTo("debrief.html") + (location.search ? "&" : "?") + "compare=1", ""), a(ICO.explore, t("deb.explore", { s: A.siteName }), hrefTo("explore.html", { ...getState(), site: sid }), ""), exportBtn(A));
   drawMap(A, kp, rules);
 }
+function exportBtn(A) { // AUD-17: the attempt is local and temporary; this keeps a versioned JSON copy
+  const b = el("button", "mp-pill"); b.type = "button"; b.textContent = t("deb.export"); b.title = t("deb.local");
+  b.onclick = () => { const url = URL.createObjectURL(new Blob([JSON.stringify(attemptExport(A), null, 2)], { type: "application/json" }));
+    const l = Object.assign(document.createElement("a"), { href: url, download: `landing-attempt-${A.site || "site"}.json` }); l.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); };
+  return b; }
 function history_(list) {
   const s = el("section", "deb-card black"); s.append(el("h3", "", t("deb.hist")));
   const tb = el("table", "deb-hist"); const hd = el("tr"); for (const k of ["n", "res", "vz", "dist", "fuel"]) hd.append(el("th", "", t("deb.hist." + k))); tb.append(hd);

@@ -12,7 +12,7 @@ Como diferentes regras de missão (noite, perda da Terra, bateria, mastro, decli
   - **Topo:** Barra de navegação global (`Comparar` ativo em jade; `Planejar` ativo em branco à direita) + barra de contexto (`3 cenários • janela • passo`, selo `PRE`/`SIM`, `Abrir em: Prova`, etiqueta `Kit Planejamento`).
   - **Esquerda:** Cartão `Regras da missão` (`editáveis` em jade) com 5 campos numéricos (`Noite máxima` h, `Perda máxima da Terra` h, `Piso da bateria` %, `Altura do mastro` m, `Declividade máxima` °), 2 seletores (`Sol visível quando`, `Passo de cálculo`), botão `Recalcular 3 cenários` e nota de rodapé.
   - **Centro (fundo):** Terreno lunar com marcadores numerados (`A`/`B`/`C` ou `1`/`2`/`3`) dos cenários.
-  - **Superior direito:** Cartão `Exportar e reproduzir` com botões `CSV · hora a hora`, `JSON`, `Passaporte PDF` e caixa de link reproduzível com query string.
+  - **Superior direito:** Cartão `Exportar e reproduzir` com botões `CSV · hora a hora`, `JSON`, `Imprimir / salvar como PDF` e caixa de link reproduzível com query string.
   - **Inferior centro-direita:** Cartão largo `Todas as métricas · camada Prova` com tabela de 9 colunas (`Métrica`, `Unid.`, `A`, `B`, `C`, `Regra`, `Margem B`, `Incerteza`, `Origem`) e destaque semântico (vermelho = viola regra, verde = melhor valor).
 - **Celular (390×844):**
   - Terreno no topo; regras editáveis, tabela comparativa com rolagem horizontal interna (sem vazar a página) e exportação empilhados na folha inferior.
@@ -24,8 +24,8 @@ Como diferentes regras de missão (noite, perda da Terra, bateria, mastro, decli
 
 **Componentes**
 - `ShellNav` + `BarraContexto`: com `Planejar` ativo.
-- `PainelRegrasMissao`: 5 inputs numéricos + 2 selects + botão `Recalcular 3 cenários`. Estados: editado, recalculando, salvo.
-- `PainelExportarReproduzir`: botões CSV, JSON, PDF/impressão e URL copiável.
+- `PainelRegrasMissao`: 5 inputs numéricos + 2 selects + botão `Recalcular 3 cenários`. Estados: editado, recalculando. Mastro, declividade e `Sol visível quando` levam a etiqueta `sem efeito` (o motivo está no hover e para leitores de tela); o passo de cálculo é aplicado de verdade.
+- `PainelExportarReproduzir`: botões CSV, JSON, imprimir/salvar como PDF (passaporte HTML local, impresso pelo navegador) e URL copiável.
 - `TabelaProvaComparacao`: matriz de métricas com destaque de violação/melhor valor e coluna `Origem` (`PRE`, `SIM`, `EST`, `N/D`).
 
 **Textos**
@@ -43,14 +43,19 @@ Como diferentes regras de missão (noite, perda da Terra, bateria, mastro, decli
 **Dados**
 | Elemento | Fonte exata (arquivo ou rota e campo) | Selo | O que mostrar sem dado |
 |---|---|---|---|
-| Métricas dos 3 cenários | `POST /api/compare` e `web/data/sites.json` (`sites[].metrics.*`) | `PRE` (ou `SIM` se sintético) | `—` com selo `N/D` |
-| Folga da bateria | `POST /api/onboard/evaluate` ou `POST /api/onboard/site-evaluate` | `SIM` | `—` com selo `N/D` |
+| Métricas dos 3 cenários | série horária gravada (`web/data/sites/*.bin`, a mesma que o Comparar usa); `POST /api/compare` (`site_ids`, `start_utc`, `duration_hours`) só confirma se a API responde e quais sítios ela tem | `PRE` (ou `SIM` se sintético) | `—` com selo `N/D` |
+| Folga da bateria | `POST /api/onboard/site-evaluate` com o envelope completo (o mesmo `runScenario` do Cockpit): perfil de energia hipotético declarado + piso da bateria da regra; folga = (menor carga − piso) ÷ consumo, em horas | `SIM` | `—` com selo `N/D` |
 | Regras da missão | Padrão editável em `core/state.js` (`60, 72, 30, 2, 8`), rotulado "assumed limit" | `SIM` | padrão editável |
+| Declividade no ponto | `sites[].metrics.slope_deg`: não existe nos 5 locais | `N/D` | `—` com selo `N/D` |
+| Incerteza | um passo da grade (passo de cálculo; para %, 1 amostra da janela): resolução, não incerteza do modelo | — | `—` |
 | Rugosidade < 20 m | sem fonte: N/D | `N/D` | `N/D` |
 
 **Interações**
 - Alterar qualquer regra e clicar `Recalcular 3 cenários` atualiza a tabela, margens e URL da página. A URL é a da própria página: cenário (`site`, `start`, `hours`…) + `rules=noite,perda,bateria,mastro,declividade` (vírgulas legíveis) + `v=<versão>` quando a implantação publica uma (commit de `config.js` ou `/api/health`, 7 caracteres para commit hex); sem versão, `v` é omitido e a tela mostra `—` com selo `N/D`. Recarregar a URL reproduz as regras (`rules=` vence os parâmetros soltos; `sunMode`/`step` só aparecem se diferentes do padrão). Lógica pura em `screens/plan-model.js`.
-- Clicar `CSV`, `JSON` ou `Passaporte PDF` exporta os dados atuais.
+- Cenários A/B/C são os do Comparar (`#sc=` do link; senão o primeiro sítio, o segundo e o segundo duas janelas depois), cada um com seu início e duração.
+- Nada é salvo: o link com `rules=` reabre o cálculo.
+- Clicar `CSV` ou `JSON` baixa a série hora a hora real de cada cenário (cabeçalho com unidades; sem série, linha `N/D` com aviso).
+- `Imprimir / salvar como PDF` abre uma janela com o passaporte do plano (regras, linhas da tabela, origem e selos, versão, limites) e chama a impressão do navegador; não gera PDF nativo.
 
 **Ligações**
 - `compare.html` (`C-comparar`), `evidence.html` (`H-evidence`).
@@ -59,7 +64,7 @@ Como diferentes regras de missão (noite, perda da Terra, bateria, mastro, decli
 1. **Nenhum número fixo:** valores da tabela (`68`, `46`, `30`, `160`, etc.) vêm de `POST /api/compare` e `web/data/sites.json`.
 2. **Selo `VAL`:** substituído por `PRE` ("PRELIMINARY not NASA-reviewed").
 3. **Locais reais:** cenários usam sítios reais de `web/data/sites.json`.
-4. **Bateria:** `Folga da bateria` vem de `POST /api/onboard/evaluate` com selo `SIM`.
+4. **Bateria:** `Folga da bateria` vem de `POST /api/onboard/site-evaluate` com selo `SIM`.
 5. **Regras:** rotuladas como "assumed limit" (padrão editável).
 6. **Sem domínio inventado:** `moonproof.app/c?s=A,B,C&t=…&rules=…&v=…` vira a URL real da página (`window.location.href` com a query do cenário, `rules=` e `v=` reais; sem `a41c9e2`).
 7. **Dado real:** fontes e incertezas seguem `web/data/sites.json`.

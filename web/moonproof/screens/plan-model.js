@@ -1,6 +1,7 @@
 // Kit Planejamento: pure model for the reproducible link (rules= + version). No DOM, no network.
 // mast/slope/sunMode/step are editable defaults (assumed limits); night/blackout/battery come from core/state.js.
 import { DEFAULT_RULES } from "../core/state.js";
+import { parseHash } from "./scenario-calc.js";
 
 export const PLAN_DEFAULTS = Object.freeze({ ...DEFAULT_RULES, mast: 2, slope: 8, sunMode: "center", step: 1 });
 /** Order of the numbers inside `rules=`. */
@@ -34,4 +35,195 @@ export function shareUrl(href, rules, version) {
   v ? p.set("v", v) : p.delete("v");
   u.search = p.toString().replace(/%2C/gi, ",");
   return u.toString();
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Calculation, API bodies and exports. Pure: the caller passes the loaded series and an `api`-like `call`.
+ * A missing value stays null (rendered "—" + N/D); nothing here invents a number.
+ * ------------------------------------------------------------------------------------------- */
+const HOUR_MS = 3600e3;
+const fin = v => typeof v === "number" && Number.isFinite(v);
+const isoOf = ms => (fin(ms) ? new Date(ms).toISOString() : null);
+
+/** Which rules change the numbers. mast / sunMode / slope are informational unless the data can honour them. */
+export function ruleEffects({ hasSlopeData = false } = {}) {
+  return Object.freeze({ night: "applied", blackout: "applied", battery: "applied", step: "applied",
+    mast: "info", sunMode: "info", slope: hasSlopeData ? "applied" : "info" });
+}
+
+/** Step of the stored series in hours (from its own metadata), or null. */
+export function seriesStepH(series) {
+  const s = series?.meta?.series?.step_seconds;
+  return fin(s) && s > 0 ? s / 3600 : null;
+}
+/** Observer height [m] the stored series was computed for, or null. */
+export function observerHeightM(series) {
+  const h = series?.meta?.site?.observer_height_m;
+  return fin(h) ? h : null;
+}
+
+/** Sample indices of [t0, t0+hours) taken every `calcStepH` hours; null when the step cannot be honoured or the window is outside the series. */
+function windowIndices(series, t0, hours, calcStepH) {
+  const sh = seriesStepH(series);
+  if (!sh || !series?.sunMargin || !series?.earthMargin || !fin(t0) || !fin(hours) || hours <= 0) return null;
+  const k = calcStepH / sh, total = hours / sh;
+  if (!(Number.isInteger(k) && k >= 1) || !Number.isInteger(total)) return null;
+  const i0 = Math.ceil((t0 - series.start) / (sh * HOUR_MS));
+  if (i0 < 0 || i0 + total > series.count) return null;
+  const idx = [];
+  for (let i = i0; i < i0 + total; i += k) idx.push(i);
+  return { i0, idx, sh };
+}
+
+/** Window metrics sampled every `calcStepH` h (the "Calculation step" rule). At the series step it equals SiteSeries.window(). */
+export function strideMetrics(series, t0, hours, calcStepH) {
+  const w = windowIndices(series, t0, hours, calcStepH);
+  if (!w) return null;
+  let sun = 0, earth = 0, both = 0, dark = 0, maxDark = 0, gap = 0, maxGap = 0;
+  for (const i of w.idx) {
+    const s = series.sunMargin[i] >= 0, e = series.earthMargin[i] >= 0;
+    if (s) { sun++; dark = 0; } else { dark++; if (dark > maxDark) maxDark = dark; }
+    if (e) { earth++; gap = 0; } else { gap++; if (gap > maxGap) maxGap = gap; }
+    if (s && e) both++;
+  }
+  const n = w.idx.length;
+  return { stepH: calcStepH, samples: n, sunPct: 100 * sun / n, earthPct: 100 * earth / n, bothPct: 100 * both / n,
+    longestDarkH: maxDark * calcStepH, longestBlackoutH: maxGap * calcStepH };
+}
+
+const r2 = x => Math.round(x * 100) / 100;
+/** The real hourly series of the window (Sun/Earth visibility and margin above the local horizon, deg). null when unavailable. */
+export function hourlyRows(series, t0, hours, calcStepH) {
+  const w = windowIndices(series, t0, hours, calcStepH);
+  if (!w) return null;
+  return w.idx.map(i => ({ offset_h: (i - w.i0) * w.sh, utc: isoOf(series.start + i * w.sh * HOUR_MS),
+    sun_visible: series.sunMargin[i] >= 0, earth_visible: series.earthMargin[i] >= 0,
+    sun_margin_deg: r2(series.sunMargin[i]), earth_margin_deg: r2(series.earthMargin[i]) }));
+}
+
+/** One-step grid resolution of a metric, in the metric's unit: hours for durations, percent of the window for fractions. */
+export function gridUncertainty(kind, stepH, samples) {
+  if (!fin(stepH)) return null;
+  if (kind === "h") return stepH;
+  return fin(samples) && samples > 0 ? 100 / samples : null;
+}
+
+/** Signed hours of load the battery can carry from its lowest charge down to the floor. Negative = floor breached. */
+export function batteryMarginH(trace, reserveWh, loadW) {
+  if (!Array.isArray(trace) || !trace.length || !trace.every(fin) || !fin(reserveWh) || !fin(loadW) || loadW <= 0) return null;
+  return (Math.min(...trace) - reserveWh) / loadW;
+}
+
+/** Scenarios the Compare screen shows: `#sc=` in the link, else its derived defaults (first site, second site, second site two windows later). */
+export function compareScenarios({ hash = "", sites, start, hours, windowStart, max = 3 }) {
+  const siteIds = sites.map(s => s.id), known = id => siteIds.includes(id);
+  const hs = parseHash(hash).sc.filter(s => known(s.site));
+  const t0 = start || windowStart, hrs = hours;
+  if (hs.length) return hs.map(s => ({ site: s.site, start: s.start || t0, hours: s.hours || hrs }));
+  const later = isoOf(Date.parse(t0) + 2 * hrs * HOUR_MS), second = siteIds[1] || siteIds[0];
+  return [{ site: siteIds[0], start: t0, hours: hrs }, { site: second, start: t0, hours: hrs }, { site: second, start: later, hours: hrs }].slice(0, Math.min(max, 3));
+}
+
+/** Body of POST /api/compare (api/openapi.json CompareRequest). One window; null when it cannot be expressed. */
+export function compareBody({ siteIds, startIso, hours }) {
+  const ids = [...new Set(siteIds || [])].slice(0, 3), ms = Date.parse(startIso);
+  if (!ids.length || !Number.isFinite(ms) || !fin(hours) || hours <= 0) return null;
+  return { site_ids: ids, start_utc: isoOf(ms), duration_hours: hours };
+}
+
+/** What the table may say about the API after POST /api/compare. `res` = core/data.js api() result or null (no call). */
+export function compareOutcome(res) {
+  if (!res) return { state: "skipped", unavailable: [] };
+  if (!res.ok) return { state: res.offline ? "offline" : "rejected", error: res.error || null, unavailable: [] };
+  const results = Array.isArray(res.data?.results) ? res.data.results : [];
+  const unavailable = results.filter(r => r?.data_status !== "AVAILABLE").map(r => r?.site?.id ?? null).filter(Boolean);
+  return { state: results.length && !unavailable.length ? "ok" : "partial", unavailable };
+}
+
+/**
+ * The whole table. `entries` = [{site, start, hours, series|null}]. `call` is core/data.js api(); `run` is cockpit-model runScenario.
+ * Energy inputs come only from `power` (the declared/assumed profile) and the battery-floor rule. Slope/roughness stay null without data.
+ */
+export async function computePlan({ status, entries, rules, power, call, run, online = true, slopeOf = () => null }) {
+  const reserve = fin(power?.battery_capacity_wh) ? power.battery_capacity_wh * rules.battery / 100 : null;
+  const per = await Promise.all(entries.map(async e => {
+    const t0 = Date.parse(e.start), m = e.series ? strideMetrics(e.series, t0, e.hours, rules.step) : null;
+    let battery = null, runOk = false;
+    if (online && m && fin(reserve)) {
+      const samples = (hourlyRows(e.series, t0, e.hours, seriesStepH(e.series)) || []).map(x => ({ sun_visible: x.sun_visible, earth_visible: x.earth_visible }));
+      const r = await run(call, { siteId: e.site.id, startIso: isoOf(t0), hours: e.hours, power: { ...power, reserve_wh: reserve },
+        maxBlackoutH: Math.min(rules.blackout, e.hours), samples, delayH: 0 });
+      runOk = !!r.ok;
+      if (r.ok) battery = batteryMarginH(r.trace, reserve, power.load_w);
+    }
+    return { m, battery, runOk, slope: slopeOf(e.site) };
+  }));
+  const col = f => per.map(p => (p.m ? f(p.m) : null));
+  const any = vals => vals.some(v => v != null);
+  const maxOf = xs => (xs.every(fin) && xs.length ? Math.max(...xs) : null);
+  const stepH = maxOf(per.filter(p => p.m).map(p => p.m.stepH)), samples = per.filter(p => p.m).map(p => p.m.samples);
+  const pctUnc = per.some(p => p.m) ? maxOf(samples.map(n => gridUncertainty("pct", stepH, n))) : null;
+  const B = 1, cmpB = (limit, vals) => (vals[B] != null ? limit - vals[B] : null);
+  const night = col(m => m.longestDarkH), blackout = col(m => m.longestBlackoutH), battery = per.map(p => p.battery), slope = per.map(p => p.slope);
+  const row = (id, unit, vals, o) => ({ id, unit, vals, limit: null, best: null, margin: null, unc: null, status: any(vals) ? status : null, ...o });
+  const rows = [
+    row("night", "h", night, { limit: { kind: "max", value: rules.night }, best: "min", margin: cmpB(rules.night, night), unc: { unit: "h", value: gridUncertainty("h", stepH) } }),
+    row("blackout", "h", blackout, { limit: { kind: "max", value: rules.blackout }, best: "min", margin: cmpB(rules.blackout, blackout), unc: { unit: "h", value: gridUncertainty("h", stepH) } }),
+    row("sun", "%", col(m => m.sunPct), { best: "max", unc: { unit: "%", value: pctUnc } }),
+    row("earth", "%", col(m => m.earthPct), { best: "max", unc: { unit: "%", value: pctUnc } }),
+    row("battery", "h", battery, { limit: { kind: "min", value: 0 }, best: "max", margin: battery[B] ?? null, status: any(battery) ? "SYNTHETIC" : null }),
+    row("slope", "deg", slope, { limit: { kind: "max", value: rules.slope }, best: "min", margin: cmpB(rules.slope, slope) }),
+    row("rough", null, per.map(() => null), { status: "NOT_COMPUTED" })
+  ];
+  return { rows, stepH, hasSlopeData: any(slope), batteryAsked: online ? per.filter(p => p.runOk).length : 0, scenarios: per.length };
+}
+
+/** true when the value breaks the row's rule. */
+export function violates(row, v) {
+  return !!row.limit && v != null && (row.limit.kind === "max" ? v > row.limit.value : v < row.limit.value);
+}
+
+const csvCell = v => { const s = v == null ? "" : String(v); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+export const CSV_HEADER = Object.freeze(["scenario", "site_id", "site_name", "window_start_utc", "window_hours", "step_h", "sample_utc", "offset_h",
+  "sun_visible_0_1", "earth_visible_0_1", "sun_margin_deg", "earth_margin_deg", "origin_status", "note"]);
+
+/** CSV of the real hourly series of every scenario. A scenario without series becomes one N/D row with the reason in `note`; never an exception. */
+export function csvDocument({ scenarios, stepH, status, nd = "N/D", warning = "" }) {
+  const lines = [CSV_HEADER.join(",")];
+  scenarios.forEach((s, i) => {
+    const head = [String.fromCharCode(65 + i), s.siteId, s.siteName, s.start, s.hours, stepH];
+    if (!s.rows?.length) { lines.push([...head, nd, nd, nd, nd, nd, nd, nd, warning].map(csvCell).join(",")); return; }
+    for (const r of s.rows) lines.push([...head, r.utc, r.offset_h, r.sun_visible ? 1 : 0, r.earth_visible ? 1 : 0, r.sun_margin_deg, r.earth_margin_deg, status || nd, ""].map(csvCell).join(","));
+  });
+  return lines.join("\n") + "\n";
+}
+
+/** JSON export: rules (with which ones took effect), the table, and the same hourly series as the CSV (null + warning when absent). */
+export function jsonDocument({ rules, effects, power, scenarios, rows, calcStepH, seriesStep, status, version, link, generatedAt, warning = "" }) {
+  return { schema: "moonproof.plan.v1", generated_at: generatedAt, version: version ?? null, link: link ?? null, origin_status: status ?? null,
+    rules: { ...rules, label: "assumed limit", effect: effects },
+    power: power ? { ...power, label: "assumed limit" } : null, calc_step_h: calcStepH ?? null, series_step_h: seriesStep ?? null,
+    scenarios: scenarios.map((s, i) => ({ id: String.fromCharCode(65 + i), site_id: s.siteId, site_name: s.siteName, start_utc: s.start, hours: s.hours,
+      series_sha256: s.sha256 ?? null, series: s.rows?.length ? s.rows : null, warning: s.rows?.length ? null : warning })),
+    rows: rows.map(r => ({ id: r.id, unit: r.unit, values: r.vals, limit: r.limit, margin_b: r.margin, uncertainty: r.unc, origin_status: r.status })) };
+}
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+/**
+ * Printable passport of the plan: a self-contained HTML page (no external resource, no network) for the browser's print dialog ("Save as PDF").
+ * `L` holds every visible text (already translated); the seals are the ones from sealFor().
+ */
+export function passportHtml({ lang, L, version, link, generatedAt, origin, rules, columns, rows, limits }) {
+  const th = c => `<th scope="col">${esc(c.head)}<small>${esc(c.sub)}</small></th>`;
+  const tr = r => `<tr><th scope="row">${esc(r.label)}</th><td>${esc(r.unit)}</td>${r.cells.map(c => `<td>${esc(c)}</td>`).join("")}<td>${esc(r.rule)}</td><td>${esc(r.margin)}</td><td>${esc(r.unc)}</td><td>${esc(r.seal)}</td></tr>`;
+  return `<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><title>${esc(L.title)}</title>
+<style>body{font:13px/1.45 system-ui,sans-serif;margin:24px;color:#111}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:18px 0 6px}
+table{border-collapse:collapse;width:100%}th,td{border:1px solid #999;padding:4px 7px;text-align:right;vertical-align:top}th:first-child,td:first-child,th[scope=row]{text-align:left}
+small{display:block;font-weight:400;color:#444}dl{display:grid;grid-template-columns:max-content 1fr;gap:2px 14px;margin:0}dt{color:#444}dd{margin:0;word-break:break-all}
+ul{margin:4px 0 0 18px;padding:0}button{font:inherit;padding:6px 14px;margin:10px 0}@media print{button{display:none}body{margin:12mm}}</style></head><body>
+<h1>${esc(L.title)}</h1><p>${esc(L.how)}</p><button type="button" onclick="print()">${esc(L.print)}</button>
+<dl><dt>${esc(L.version)}</dt><dd>${esc(version)}</dd><dt>${esc(L.generated)}</dt><dd>${esc(generatedAt)}</dd><dt>${esc(L.origin)}</dt><dd>${esc(origin)}</dd><dt>${esc(L.link)}</dt><dd>${esc(link)}</dd></dl>
+<h2>${esc(L.rules)}</h2><table><thead><tr><th>${esc(L.colMetric)}</th><th>${esc(L.value)}</th><th>${esc(L.effect)}</th></tr></thead><tbody>${rules.map(r => `<tr><th scope="row">${esc(r.label)}</th><td>${esc(r.value)}</td><td>${esc(r.effect)}</td></tr>`).join("")}</tbody></table>
+<h2>${esc(L.scenarios)}</h2><table><thead><tr><th>${esc(L.colMetric)}</th><th>${esc(L.colUnit)}</th>${columns.map(th).join("")}<th>${esc(L.colRule)}</th><th>${esc(L.colMargin)}</th><th>${esc(L.colUnc)}</th><th>${esc(L.colOrigin)}</th></tr></thead><tbody>${rows.map(tr).join("")}</tbody></table>
+<h2>${esc(L.limits)}</h2><ul>${limits.map(x => `<li>${esc(x)}</li>`).join("")}</ul></body></html>`;
 }
