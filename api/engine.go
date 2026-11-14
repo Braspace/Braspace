@@ -73,10 +73,16 @@ func (e *engineClient) call(ctx context.Context, req visibilityRequest) (engineR
 		log.Printf("engine error: %v; stderr: %.300s", err, stderr.String())
 		return engineResult{}, errEngineFailed
 	}
+	return parseEngineResult(req, stdout.Bytes())
+}
+
+// parseEngineResult is the shared fail-closed contract for direct and
+// mission/scenario routes. Neither route accepts synthetic 'VALIDATED' claims.
+func parseEngineResult(req visibilityRequest, payload []byte) (engineResult, error) {
 	// The current engine is a classifier of caller-supplied inputs, not a
 	// NASA-validated solver; reject attempts to self-certify or forge margins.
 	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(stdout.Bytes(), &raw); err != nil || raw == nil {
+	if err := json.Unmarshal(payload, &raw); err != nil || raw == nil {
 		return engineResult{}, errEngineContract
 	}
 	for _, key := range []string{"site_id", "epoch_utc", "science_status",
@@ -85,7 +91,7 @@ func (e *engineClient) call(ctx context.Context, req visibilityRequest) (engineR
 		if _, present := raw[key]; !present { return engineResult{}, errEngineContract }
 	}
 	var res engineResult
-	if err := json.Unmarshal(stdout.Bytes(), &res); err != nil ||
+	if err := json.Unmarshal(payload, &res); err != nil ||
 		res.SiteID != req.SiteID || res.EpochUTC != req.EpochUTC ||
 		res.ScienceStatus != "UNVERIFIED_INPUTS" ||
 		!finite(res.SunHorizonDeg) || !finite(res.EarthHorizonDeg) ||

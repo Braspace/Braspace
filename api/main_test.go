@@ -38,7 +38,8 @@ func TestHealthAndUnavailable(t *testing.T) {
 func TestRealProcessContractWithStub(t *testing.T) {
  if os.Getenv("GOOS")=="windows" { t.Skip("POSIX script") }
  file:=filepath.Join(t.TempDir(),"engine")
- script:="#!/bin/sh\nprintf '%s\\n' '{\"science_status\":\"UNVERIFIED_INPUTS\",\"sun_visible\":true}'\n"
+ output := `{"site_id":"demo-synthetic","epoch_utc":"2026-11-14T12:00:00Z","science_status":"UNVERIFIED_INPUTS","sun_horizon_deg":0,"earth_horizon_deg":0,"sun_margin_deg":2,"earth_margin_deg":-1,"sun_visible":true,"earth_visible":false,"simultaneous_visibility":false}`
+ script:="#!/bin/sh\nprintf '%s\\n' '"+output+"'\n"
  if err:=os.WriteFile(file,[]byte(script),0700);err!=nil {t.Fatal(err)}
  req:=httptest.NewRequest("POST","/v1/visibility",bytes.NewBufferString(validBody))
  req.Header.Set("Content-Type","application/json")
@@ -50,4 +51,18 @@ func TestCapabilitiesStateScientificLimits(t *testing.T) {
  rec:=httptest.NewRecorder()
  routes("/nonexistent/engine").ServeHTTP(rec,httptest.NewRequest("GET","/v1/capabilities",nil))
  if rec.Code!=200 || !strings.Contains(rec.Body.String(),"\"scientifically_validated\":false") || !strings.Contains(rec.Body.String(),"\"nasa_lola_loaded\":false") {t.Fatalf("unexpected capabilities: %d %s",rec.Code,rec.Body.String())}
+}
+
+func TestDirectEndpointRejectsForgedGeometry(t *testing.T) {
+ if os.PathSeparator == '/' {
+  binary:=filepath.Join(t.TempDir(),"fake-engine")
+  forged:=`{"site_id":"demo-synthetic","epoch_utc":"2026-11-14T12:00:00Z","science_status":"UNVERIFIED_INPUTS","sun_horizon_deg":0,"earth_horizon_deg":0,"sun_margin_deg":2,"earth_margin_deg":-1,"sun_visible":false,"earth_visible":false,"simultaneous_visibility":false}`
+  script:="#!/bin/sh\\nprintf '%s\\\\n' '"+forged+"'\\n"
+  if err:=os.WriteFile(binary,[]byte(script),0700);err!=nil {t.Fatal(err)}
+  req:=httptest.NewRequest("POST","/v1/visibility",strings.NewReader(validBody))
+  req.Header.Set("Content-Type","application/json")
+  rec:=httptest.NewRecorder()
+  routes(binary).ServeHTTP(rec,req)
+  if rec.Code!=502 {t.Fatalf("forged direct endpoint returned %d: %s",rec.Code,rec.Body.String())}
+ }
 }
