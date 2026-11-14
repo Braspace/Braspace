@@ -45,8 +45,8 @@ func TestNearbyWithDifferentObserverHeightIsNotCompared(t *testing.T) {
 	b, _ := embeddedSiteData.ReadFile("sitedata/series/synthetic-demo-b.json")
 	b10 := strings.Replace(string(b), `"observer_height_m":2`, `"observer_height_m":10`, 1)
 	cat := `{"schema":"braspace.site-catalog.v1","note":"","sites":[
-		{"id":"synthetic-demo-a","name":"A","kind":"synthetic_test_fixture","series_file":"a.json","nearby":["synthetic-demo-b"]},
-		{"id":"synthetic-demo-b","name":"B","kind":"synthetic_test_fixture","series_file":"b.json"}]}`
+		{"id":"synthetic-demo-a","name":"A","kind":"synthetic_test_fixture","series_file":"a.json","series_sha256":"` + sha256Hex(a) + `","nearby":["synthetic-demo-b"]},
+		{"id":"synthetic-demo-b","name":"B","kind":"synthetic_test_fixture","series_file":"b.json","series_sha256":"` + sha256Hex([]byte(b10)) + `"}]}`
 	st, err := loadStore(fstest.MapFS{"catalog.json": {Data: []byte(cat)}, "a.json": {Data: a}, "b.json": {Data: []byte(b10)}})
 	if err != nil {
 		t.Fatal(err)
@@ -94,8 +94,8 @@ func TestSubSecondSeriesStartRejected(t *testing.T) {
 	if bad == string(a) {
 		t.Fatal("replacement did not apply")
 	}
-	cat := `{"schema":"braspace.site-catalog.v1","note":"","sites":[{"id":"synthetic-demo-a","name":"A","kind":"k","series_file":"a.json"}]}`
-	if _, err := loadStore(fstest.MapFS{"catalog.json": {Data: []byte(cat)}, "a.json": {Data: []byte(bad)}}); err == nil {
-		t.Fatal("sub-second start_utc must be rejected")
+	cat := `{"schema":"braspace.site-catalog.v1","note":"","sites":[{"id":"synthetic-demo-a","name":"A","kind":"k","series_file":"a.json","series_sha256":"` + sha256Hex([]byte(bad)) + `"}]}`
+	if _, err := loadStore(fstest.MapFS{"catalog.json": {Data: []byte(cat)}, "a.json": {Data: []byte(bad)}}); err == nil || !strings.Contains(err.Error(), "whole second") {
+		t.Fatalf("sub-second start_utc must be rejected for that reason, got %v", err)
 	}
 }
