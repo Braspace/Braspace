@@ -11,7 +11,7 @@ import (
 // BR101: Postgres migration, idempotency and integrity tests. Skipped only
 // when TEST_DATABASE_URL is unset (as the other TestDB* tests).
 
-func TestDBBR101MigrationsFromEmptyApply001And002(t *testing.T) {
+func TestDBBR101MigrationsFromEmptyApplyAll(t *testing.T) {
 	db := testDB(t)
 	ctx := context.Background()
 	applied, err := migrate(ctx, db)
@@ -140,8 +140,8 @@ func TestDBBR101SwappedSeriesHashIsRefused(t *testing.T) {
 	}
 }
 
-// Migration 003 removed VALIDATED from the CHECK constraint (#185); both the
-// schema and the loader/ingest must refuse it.
+// VALIDATED is refused by the schema (migration 003, #185), and still by the
+// loader and the ingest if the CHECK were ever loosened again.
 func TestDBBR101ValidatedIsRefusedByLoaderAndIngest(t *testing.T) {
 	db := ingested(t)
 	ctx := context.Background()
@@ -149,7 +149,17 @@ func TestDBBR101ValidatedIsRefusedByLoaderAndIngest(t *testing.T) {
 		t.Fatal("CHECK must refuse an unknown status")
 	}
 	if _, err := db.Exec(ctx, `UPDATE site_series SET science_status = 'VALIDATED' WHERE site_id = 'synthetic-demo-a'`); err == nil {
-		t.Fatal("CHECK must refuse VALIDATED after migration 003 (#185)")
+		t.Fatal("CHECK must refuse VALIDATED (migration 003)")
+	}
+	// Loosen the CHECK on this disposable schema to reach the loader's own rule.
+	if _, err := db.Exec(ctx, `ALTER TABLE site_series DROP CONSTRAINT site_series_science_status_check`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(ctx, `UPDATE site_series SET science_status = 'VALIDATED' WHERE site_id = 'synthetic-demo-a'`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := loadStoreFromDB(ctx, db); err == nil || !strings.Contains(err.Error(), "VALIDATED") {
+		t.Fatalf("a VALIDATED label in the database must not load, got %v", err)
 	}
 	good, _ := embeddedSiteData.ReadFile("sitedata/series/synthetic-demo-a.json")
 	if !strings.Contains(string(good), `"science_status":"SYNTHETIC"`) {
@@ -171,7 +181,31 @@ func TestDBBR101ValidatedIsRefusedByLoaderAndIngest(t *testing.T) {
 	}
 	var n int
 	_ = db.QueryRow(ctx, `SELECT count(*) FROM site_series WHERE science_status = 'VALIDATED'`).Scan(&n)
-	if n != 0 {
-		t.Fatalf("VALIDATED rows = %d, want 0 (refused by migration 003 and ingest)", n)
+	if n != 1 { // only the row this test set by hand; ingest must not have added any
+		t.Fatalf("VALIDATED rows = %d, want 1 (the hand-edited one)", n)
+	}
+}
+
+// A database that already holds a VALIDATED row must not pass migration 003
+// silently: the migration fails and is not recorded as applied.
+func TestDBBR101Migration003RefusesExistingValidatedRow(t *testing.T) {
+	db := ingested(t)
+	ctx := context.Background()
+	for _, q := range []string{
+		`DELETE FROM schema_migrations WHERE name = '003_no_validated_status.sql'`,
+		`ALTER TABLE site_series DROP CONSTRAINT site_series_science_status_check`,
+		`UPDATE site_series SET science_status = 'VALIDATED' WHERE site_id = 'synthetic-demo-a'`,
+	} {
+		if _, err := db.Exec(ctx, q); err != nil {
+			t.Fatalf("%v\n%s", err, q)
+		}
+	}
+	if _, err := migrate(ctx, db); err == nil {
+		t.Fatal("migration 003 must fail while a VALIDATED row exists")
+	}
+	var done bool
+	_ = db.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE name = '003_no_validated_status.sql')`).Scan(&done)
+	if done {
+		t.Fatal("a failed migration must not be recorded as applied")
 	}
 }

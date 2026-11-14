@@ -36,7 +36,8 @@ register({
     "act.tRules": "Change rules",
     "act.tLab": "Open Landing Lab",
     "act.notesTitle": "Teacher notes · only you see",
-    "act.notesBody": "Concept: at the lunar pole, the Sun skims the horizon, so a hill decides light. Model simplification: ideal battery, no temperature effect (SIM).",
+    "act.notesBody": "Concept: at the lunar pole, the Sun skims the horizon, so a hill decides light.",
+    "act.notesBody2": "Model simplification: ideal battery, no temperature effect (SIM).",
     "act.shareTitle": "Step 4 · share with the class",
     "act.copy": "Copy link",
     "act.copied": "Copied!",
@@ -80,7 +81,8 @@ register({
     "act.tRules": "Mudar as regras",
     "act.tLab": "Abrir o Landing Lab",
     "act.notesTitle": "Notas do professor · só você vê",
-    "act.notesBody": "Conceito: no polo, o Sol anda rente ao horizonte, então um morro decide se há luz. Simplificação do modelo: bateria ideal, sem efeito de temperatura (SIM).",
+    "act.notesBody": "Conceito: no polo, o Sol anda rente ao horizonte, então um morro decide se há luz.",
+    "act.notesBody2": "Simplificação do modelo: bateria ideal, sem efeito de temperatura (SIM).",
     "act.shareTitle": "Passo 4 · compartilhar com a turma",
     "act.copy": "Copiar link",
     "act.copied": "Copiado!",
@@ -97,7 +99,8 @@ register({
   }
 });
 
-const shell = mountShell({ screen: "compare", onLang: draw });
+// The board has no context bar on this screen: context null hides it (core/shell.js).
+mountShell({ screen: "compare", context: null, onLang: draw });
 const doc = await loadSites();
 const scenarios = doc.sites.slice(0, 3);
 const grid = await loadRegion();
@@ -113,6 +116,7 @@ const cfg = {
   allowRules: false,
   allowLab: true
 };
+const PRESENT_ICON = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2.5" y="1.5" width="11" height="13" rx="2"/><path d="M5.5 11V8.5M8 11V5.5M10.5 11V7.5" stroke-linecap="round"/></svg>';
 const LAYERS = [["answer", "act.l1"], ["why", "act.l2"], ["proof", "act.l3"]];
 
 // location.href keeps the scenario (site, start, rules…) and the activity switches ride on the query string.
@@ -171,14 +175,6 @@ function paintPreviewTerrain(frame) {
 function draw() {
   const focusKey = document.activeElement?.dataset?.focus;
   const startDate = (getState().start || "2027-03-14T06:00:00Z").slice(0, 10);
-  shell.setContext({
-    site: `${scenarios.length} cenários`,
-    date: startDate,
-    days: "14",
-    seal: sealFor(doc.status),
-    online: true
-  });
-
   const stepsEl = document.getElementById("act-steps");
   const steps = [
     [1, t("act.s1"), t("act.s1d")],
@@ -260,6 +256,7 @@ function draw() {
     <div class="mp-teacher-notes">
       <strong>${t("act.notesTitle")}</strong>
       <p>${t("act.notesBody")}</p>
+      <p>${t("act.notesBody2")}</p>
     </div>
   `;
   ctrlEl.querySelectorAll("[data-toggle]").forEach((b) => {
@@ -277,9 +274,9 @@ function draw() {
       <div class="mp-share-url" id="share-url"></div>
       <div class="mp-share-note">${t("act.access")}</div>
     </div>
-    <div class="mp-chip-row">
+    <div class="mp-chip-row mp-share-btns">
       <button id="btn-copy" class="mp-btn-outline" data-focus="copy" type="button">${t("act.copy")}</button>
-      <a class="mp-btn-jade" id="btn-present">${t("act.present")}</a>
+      <a class="mp-btn-jade" id="btn-present">${PRESENT_ICON}${t("act.present")}</a>
     </div>
   `;
   shareEl.querySelector("#share-url").textContent = url;

@@ -66,3 +66,4 @@
 
 .mp-ev-right{display:grid;gap:12px;align-content:start}
 @media (max-width:700px){.mp-ev{top:176px}}
+.mp-row-between{display:flex;justify-content:space-between;align-items:center}

@@ -234,6 +234,7 @@ async function draw() {
     <label class="mp-rule-row"><span>${t("plan.battery")}</span><input id="r-battery" type="number" value="${rulesDraft.battery}"><span>%</span></label>
     <label class="mp-rule-row"><span>${t("plan.mast")}</span><input id="r-mast" type="number" value="${rulesDraft.mast}"><span>m</span></label>
     <label class="mp-rule-row"><span>${t("plan.slope")}</span><input id="r-slope" type="number" value="${rulesDraft.slope}"><span>°</span></label>
+    <div class="mp-plan-sep" role="presentation"></div>
     <label class="mp-rule-select"><span>${t("plan.sunMode")}</span>
       <select id="r-sun">
         <option value="center" ${rulesDraft.sunMode === "center" ? "selected" : ""}>${t("plan.sunCenter")}</option>
@@ -266,14 +267,13 @@ async function draw() {
   history.replaceState(null, "", new URL(shareHref).search + location.hash);
   const exportEl = document.getElementById("plan-export");
   exportEl.innerHTML = `
-    <div class="mp-plan-head"><h2>${t("plan.exportTitle")}</h2></div>
+    <div class="mp-plan-head"><h2>${t("plan.exportTitle")}</h2><p class="mp-note mp-version"><span>${t("plan.version")}</span> <b>${shortVersion(version?.value) ?? t("nd")}</b><span class="mp-version-seal"></span></p></div>
     <div class="mp-export-actions">
       <button id="btn-csv" class="mp-btn-white" type="button">${t("plan.csv")}</button>
       <button id="btn-json" class="mp-btn-white" type="button">${t("plan.json")}</button>
       <button id="btn-pdf" class="mp-btn-white" type="button">${t("plan.pdf")}</button>
     </div>
     <div class="mp-url-box" id="plan-url">${shareHref}</div>
-    <p class="mp-note mp-version"><span>${t("plan.version")}</span> <b>${shortVersion(version?.value) ?? t("nd")}</b><span class="mp-version-seal"></span></p>
     <p class="mp-note">${t("plan.urlNote")}</p>
   `;
 

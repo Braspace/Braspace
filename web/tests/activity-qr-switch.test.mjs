@@ -136,3 +136,15 @@ test("activity.js i18n: en and pt-BR have the same keys, incl. the access note",
   assert.match(pt, /"act\.access": "Alunos entram sem conta · você acompanha as respostas aqui"/);
   assert.match(en, /"act\.access": "Students join without an account · you follow the answers here"/);
 });
+
+// Board geometry (V3Atividade, measured by DOM at 1440x900): no context bar, panels anchored at the board's own top.
+const activityGeometryChecks = (js, css) => [
+  [/mountShell\(\{[^}]*context:\s*null/.test(js) && !/shell\.setContext/.test(js), "shell mounted with context null (the board has no context bar)"],
+  [/\.mp-act-layout\s*\{[^}]*inset:\s*97px 29px 28px 29px/.test(css), "panels start at y=97 with 29 px side margins"],
+  [/grid-template-columns:\s*320px minmax\(0, 552fr\) minmax\(300px, 510fr\)/.test(css), "columns 320 / 552 / 510"],
+  [/\.mp-act-share\s*\{[^}]*padding:\s*16px 20px 15px/.test(css), "share bar 129 px tall (96 px QR + padding)"],
+  [/\.mp-btn-jade\s*\{[^}]*height:\s*47px/.test(css) && /\.mp-btn-outline\s*\{[^}]*height:\s*47px/.test(css), "share buttons 47 px"],
+];
+test("activity: panel geometry follows the V3Atividade board", () => {
+  for (const [ok, what] of activityGeometryChecks(read("screens/activity.js"), read("screens/activity.css"))) assert.ok(ok, what);
+});
