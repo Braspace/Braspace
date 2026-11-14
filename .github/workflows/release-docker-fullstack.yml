@@ -157,8 +157,8 @@ jobs:
           retention-days: 14
 
   publish:
-    name: Publish source-reviewed API + frontend to GHCR
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    name: Publish source-reviewed API + frontend to GHCR (private release gate)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.BRASPACE_GHCR_RELEASE_ENABLED == 'true'
     needs: [web, go-rust, postgres, docker-e2e]
     runs-on: ubuntu-latest
     timeout-minutes: 25
