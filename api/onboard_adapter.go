@@ -63,6 +63,10 @@ func (m *missionAPI) adaptSeries(ctx context.Context, ev *evaluator, label, site
 	if ser.StepSeconds%60 != 0 {
 		return onboardInput{}, errf(http.StatusUnprocessableEntity, "GRID_UNSUPPORTED", "%s: series step must be whole minutes", label)
 	}
+	if !gridAligned(ser, start, hours) {
+		return onboardInput{}, errf(http.StatusUnprocessableEntity, "GRID_NOT_ALIGNED",
+			"%s: start and duration must match the %d-second sample grid", label, ser.StepSeconds)
+	}
 	from, to, ok := span(ser, start, hours)
 	if !ok {
 		return onboardInput{}, errf(http.StatusUnprocessableEntity, "OUTSIDE_COVERAGE", "%s: series covers %s to %s", label, ser.StartUTC, ser.end().Format(time.RFC3339))

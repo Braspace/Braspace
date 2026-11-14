@@ -236,3 +236,8 @@ engine produce identical comparison output.
 
 Sun disc width, refraction, eclipses, RF link budget, DSN scheduling. Durations have one
 series-step resolution.
+
+
+### Exact temporal grid and scientific integrity guardrails (2026-11-14)
+
+All starts and durations must match the stored `step_seconds` grid exactly; no floor/ceil window rounding. A per-site comparison reports `data_status=GRID_NOT_ALIGNED` without metrics for off-grid input. Onboard adaptation and delay-planning baselines reject it with HTTP 422 `GRID_NOT_ALIGNED`. Source files with a self-declared `VALIDATED` label are rejected until independent SPICE/LOLA scientific validation attestation is implemented. Rust stdout must match the current `UNVERIFIED_INPUTS` protocol and returned site/epoch/angle margins and visibility must agree. These checks detect malformed software inputs; they do not replace NASA scientific verification.
