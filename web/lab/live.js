@@ -13,13 +13,18 @@ export const SITE_MAP = Object.freeze({
 
 export const OFFLINE_SEAL = Object.freeze({ text: "offline · precomputed", cls: "offline", live: false });
 
-/** Seal text comes ONLY from the response. "validated" appears only when science_status === "VALIDATED". */
+/** Strict UI gate: a nested status string alone never certifies science.
+ * Require the response-level explicit attestation and pinned provenance too. */
 export function sealFor(resp) {
   const st = resp && typeof resp === "object" ? resp.science_status ?? resp.provenance?.science_status : undefined;
   const eng = resp?.engine_science_status;
-  const label = { SYNTHETIC: "synthetic", UNVERIFIED: "unverified inputs", VALIDATED: "validated", NO_SERIES_DATA: "no series data" }[st];
+  const prov=resp?.provenance;
+  const certified=st==="VALIDATED" && resp?.scientifically_validated===true &&
+    typeof prov?.terrain_sha256==="string" && /^[0-9a-f]{64}$/.test(prov.terrain_sha256) &&
+    typeof prov?.ephemeris_id==="string" && prov.ephemeris_id.length>0 && prov.frame==="MOON_ME";
+  const label = { SYNTHETIC: "synthetic", UNVERIFIED: "unverified inputs", VALIDATED: certified ? "validated" : "unverified inputs", NO_SERIES_DATA: "no series data" }[st];
   if (!label) return { text: "live API · status not reported", cls: "unknown", live: true };
-  return { text: `live API · ${label}${eng && eng !== st ? ` (${eng})` : ""}`, cls: st === "VALIDATED" ? "validated" : "unverified", live: true };
+  return { text: `live API · ${label}${eng && eng !== st ? ` (${eng})` : ""}`, cls: certified ? "validated" : "unverified", live: true };
 }
 
 const trim = b => String(b || "").replace(/\/+$/, "");
@@ -52,7 +57,10 @@ export function createLive({ base, fetchImpl = globalThis.fetch?.bind(globalThis
   api.covers = (labId, t0, hours) => { const c = api.coverage(labId); return Boolean(c) && t0 >= c.start && t0 + hours * 3600e3 <= c.end; };
   const guard = async fn => { try { return { ok: true, data: await fn() }; } catch (e) { api.seal = OFFLINE_SEAL; return { ok: false, error: e.message }; } };
   /** Each method returns {ok, data, seal}; seal is derived from the response, or offline on failure. */
-  const wrap = async (fn) => { const r = await guard(fn); return r.ok ? { ...r, seal: sealFor(r.data?.results?.[0] ?? r.data?.candidates?.[0] ?? r.data?.options?.[0] ?? r.data) } : { ...r, seal: OFFLINE_SEAL }; };
+  const wrap = async (fn) => { const r = await guard(fn); if (!r.ok) return { ...r, seal: OFFLINE_SEAL };
+    const item = r.data?.results?.[0] ?? r.data?.candidates?.[0] ?? r.data?.options?.[0] ?? r.data;
+    return { ...r, seal: sealFor({ ...item, scientifically_validated: r.data?.scientifically_validated === true }) };
+  };
   api.sky = (labId, startUtc, hours = 1) => wrap(() => call(`/api/sites/${encodeURIComponent(api.apiId(labId))}/sky?start=${encodeURIComponent(startUtc)}&hours=${hours}`));
   api.compare = (labIds, startUtc, hours) => wrap(() => call("/api/compare", { site_ids: labIds.map(api.apiId), start_utc: startUtc, duration_hours: hours }));
   api.delay = (labId, startUtc, hours, delays, constraints) => wrap(() => call("/api/scenarios/delay", { site_id: api.apiId(labId), start_utc: startUtc, duration_hours: hours, delays_hours: delays, observer_height_m: 2, max_nearby: 0, constraints }));
@@ -61,8 +69,8 @@ export function createLive({ base, fetchImpl = globalThis.fetch?.bind(globalThis
 }
 
 /** Percent view of an API /compare site result (fractions 0..1 -> %). Returns null unless data_status === AVAILABLE. */
-export function compareRow(result) {
+export function compareRow(result, scientificallyValidated = false) {
   if (!result || result.data_status !== "AVAILABLE" || !result.evaluation) return null;
   const m = result.evaluation.metrics;
-  return { sunPct: m.sun_visible_fraction * 100, earthPct: m.earth_visible_fraction * 100, bothPct: m.simultaneous_fraction * 100, longestDarkH: m.longest_continuous_dark_hours, longestBlackoutH: m.longest_continuous_comm_gap_hours, windows: result.evaluation.simultaneous_windows || [], seal: sealFor(result) };
+  return { sunPct: m.sun_visible_fraction * 100, earthPct: m.earth_visible_fraction * 100, bothPct: m.simultaneous_fraction * 100, longestDarkH: m.longest_continuous_dark_hours, longestBlackoutH: m.longest_continuous_comm_gap_hours, windows: result.evaluation.simultaneous_windows || [], seal: sealFor({ ...result, scientifically_validated: scientificallyValidated }) };
 }
