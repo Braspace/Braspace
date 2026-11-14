@@ -45,3 +45,20 @@ test("training code explicitly refuses to synthesize NASA source status",async()
  assert.match(moon,/NASA SVS/);
  assert.match(moon,/not terrain science|NOT precision/);
 });
+
+test("live cockpit dependencies are served, not silently blocked by the static allowlist",async()=>{
+ const page=await fetch(base+"/onboard/cockpit.html");
+ assert.equal(page.status,200);
+ const html=await page.text();
+ for(const file of ["live.js","config.js"]){
+  assert.match(html,new RegExp('<script src="'+file.replace(".","\\.")+'"></script>'));
+  const response=await fetch(base+"/onboard/"+file);
+  assert.equal(response.status,200,"missing required cockpit script "+file);
+  assert.match(response.headers.get("content-type")||"",/text\\/javascript/);
+  assert.ok((await response.text()).length>50,file+" appears empty");
+ }
+ for(const unsafe of ["/onboard/.env","/onboard/secret.js","/onboard/../../api/main.go"]){
+  const response=await fetch(base+unsafe);
+  assert.equal(response.status,404,"unapproved path should remain inaccessible: "+unsafe);
+ }
+});
