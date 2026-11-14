@@ -186,7 +186,7 @@ The server then exits with a one-line `site data rejected, not starting: …` me
 }
 ```
 
-`science_status`: `SYNTHETIC` (fixtures), `UNVERIFIED` (real inputs, not yet checked
+`science_status`: `SYNTHETIC` (fixtures), `PRELIMINARY` (derived from NASA LOLA + SPICE by science/export_api_series.py, not independently validated), `UNVERIFIED` (real inputs, not yet checked
 against references) or `VALIDATED` (reference checks in BS-017 passed).
 `scientifically_validated` in responses is true only when both the data and the engine
 report `VALIDATED`.
