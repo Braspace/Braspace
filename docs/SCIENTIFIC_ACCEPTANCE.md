@@ -19,3 +19,8 @@ Accept a claim as `VALIDATED` only if it has: input data/version/hash, exact fra
 Science owner @joeljato and data owner @maccachera must review source-to-output evidence. Do not simulate a scientific source by setting caller-provided `terrain_dataset_id=NASSA`; bootstrap output must remain `UNVERIFIED_INPUTS` regardless of identifiers.
 
 No autonomous go/no-go decisions for actual landers or human missions.
+
+
+## Integrity gate added 2026-11-14
+
+The JSON loader now rejects `VALIDATED` series pending an independently verifiable scientific attestation. The engine IPC must return `UNVERIFIED_INPUTS` with correct site, epoch, finite angles and consistent visibility; an arbitrary binary cannot self-promote science status. Mission time grids cannot round silently. NASA LOLA source verification exists in [draft PR #71](https://github.com/Braspace/Braspace/pull/71), but real terrain-horizon and Sun/Earth ephemeris computations remain pending.

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"math"
 	"os"
@@ -189,6 +190,11 @@ func validateSeries(s *siteSeries) error {
 	if !scienceStatuses[s.ScienceStatus] {
 		return fmt.Errorf("invalid science_status %q", s.ScienceStatus)
 	}
+	// A stored label is not a scientific validation receipt. Do not accept
+	// VALIDATED until independent reference evidence is enforced at ingestion.
+	if s.ScienceStatus == "VALIDATED" {
+		return errors.New("VALIDATED requires independent science attestation; this engine does not support it")
+	}
 	p := s.Provenance
 	if p.TerrainDatasetID == "" || p.EphemerisID == "" || p.Frame != "MOON_ME" || p.Generator == "" {
 		return errors.New("series provenance incomplete (terrain, ephemeris, MOON_ME frame, generator)")
@@ -224,7 +230,15 @@ func validateSeries(s *siteSeries) error {
 func decodeStrict(raw []byte, v any) error {
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.DisallowUnknownFields()
-	return dec.Decode(v)
+	if err := dec.Decode(v); err != nil {
+		return err
+	}
+	var extra any
+	if err := dec.Decode(&extra); err != io.EOF {
+		if err != nil { return err }
+		return errors.New("trailing JSON document")
+	}
+	return nil
 }
 
 // greatCircleKm uses a spherical Moon (R = 1737.4 km, the LOLA reference radius).

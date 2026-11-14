@@ -682,6 +682,7 @@
               "INVALID_CANDIDATES",
               "GRID_UNSUPPORTED",
               "GRID_MISMATCH",
+              "GRID_NOT_ALIGNED",
               "WINDOW_TOO_LONG",
               "INVALID_SCENARIO"
             ]
@@ -1159,7 +1160,8 @@
         "enum": [
           "AVAILABLE",
           "NO_SERIES_DATA",
-          "OUTSIDE_COVERAGE"
+          "OUTSIDE_COVERAGE",
+          "GRID_NOT_ALIGNED"
         ]
       },
       "SiteResult": {
