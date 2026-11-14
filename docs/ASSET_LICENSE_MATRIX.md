@@ -158,3 +158,9 @@ credits, never image bytes or thumbnails (`data/LUNAR_GALLERY.json` thumbnail po
 - Google restriction: no tiles downloaded or rehosted; policy recorded.
 - Renderer handoff: 2K SVS asset identified as the low-bandwidth candidate.
 - Scientific status: no asset is claimed as consumed by a running renderer.
+
+## Crateras e montes do polo sul (BR70 features)
+
+| Class | Example | Source and accessed | Handling |
+| --- | --- | --- | --- |
+| IAU/USGS Gazetteer of Planetary Nomenclature (centros, Moon) | `web/moonproof/data/features.json` (35 feições, lat ≤ -84) | Shapefile `MOON_nomenclature_center_pts.zip`, https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip, metadata pubdate 2012-10-02, "Public domain"; acesso 2026-11-14 UTC (ver `accessed_utc` no JSON) | Nomes e coordenadas oficiais (centro, leste positivo). Uso como rótulo de mapa; sem dado físico derivado. Cada feição com URL da ficha USGS |
