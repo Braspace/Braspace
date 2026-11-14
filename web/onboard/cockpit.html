@@ -10,7 +10,7 @@
 :root {
   --bg: #0b1118; --side: #0f1923; --side2: #1a2a3a; --side-txt: #b9c7d4; --side-dim: #6f8397;
   --card: #141e29; --card2: #101922; --line: #243243; --line2: #1b2736;
-  --ink: #e6edf5; --muted: #8fa0b3; --faint: #5d6e80;
+  --ink: #e6edf5; --muted: #9db0c3; --faint: #7d8ea1;
   --blue: #3f7fb0; --blue-hi: #5fb3d8; --green: #3fbf80; --red: #e0606e; --amber: #e8a317; --sky: #5fd8ff;
   --ok-bg: #0f2a20; --ok-line: #2a6b4f; --warn-bg: #2b2210; --warn-line: #7a5a1a; --bad-bg: #2e1419; --bad-line: #7a2c39;
   --info-bg: #102535; --info-line: #2d5a7a; --ai-bg: #1d1a33; --ai-line: #4a3f8a; --ai: #b7aaf0;
@@ -127,6 +127,11 @@ button:disabled { opacity: .55; cursor: default; }
 ul.plain { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13px; }
 svg text { font: 11px var(--sans); fill: var(--muted); }
 .hidden { display: none !important; }
+a { color: var(--blue-hi); text-decoration-color: var(--faint); }
+a:hover { color: var(--sky); }
+.empty { border: 1px dashed var(--line); border-radius: 10px; padding: 16px; color: var(--muted); font-size: 13px; display: grid; gap: 6px; }
+.empty strong { color: var(--ink); font-weight: 600; }
+.axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; font-family: var(--mono); }
 
 /* ---- alarms: compact chip in the top bar, list opens as a dropdown ---- */
 details.alarm { position: relative; }

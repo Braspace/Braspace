@@ -201,7 +201,8 @@
             h("button", { type: "button", "aria-pressed": S.audience === "technical", onclick: () => { S.audience = "technical"; renderTab(); } }, "TÉCNICO"),
             h("button", { type: "button", "aria-pressed": S.audience === "educational", onclick: () => { S.audience = "educational"; renderTab(); } }, "EDUCATIVO")),
           h("button", { type: "button", id: "calc", class: "go", onclick: calculate }, "CALCULAR")),
-        h("p", { class: "note", text: "Calcular envia o cenário à API para energia e riscos. Os demais painéis usam o modelo sintético do navegador." }),
+        h("p", { class: "note", text: "TÉCNICO mostra valores e premissas. EDUCATIVO acrescenta explicações em cada painel." }),
+        h("p", { class: "note", text: "CALCULAR envia o cenário à API para energia e riscos. Os demais painéis usam o modelo sintético do navegador." }),
         edu("Modo educativo: o sítio define o horizonte; a data define onde Sol e Terra estão; a energia depende do que o sol entrega e do que a carga consome.")),
       h("section", { class: "panel" },
         h("h2", { text: "Energia do cenário (entrada)" }),
@@ -235,7 +236,7 @@
       h("section", { class: "panel" },
         h("h2", { text: "02 · Geometria do Sol e da Terra" }),
         h("div", { class: "row" }, h("span", { class: "mono", text: fmt(startMs() + cur.i * S.stepMin * 60e3) }), tag("SINT")),
-        h("div", { style: "margin:8px 0" }, slider),
+        h("label", { style: "margin:8px 0" }, "Instante do cenário (arraste ou reproduza)", slider),
         h("div", { class: "row" },
           h("button", { type: "button", "aria-pressed": !!S.playing, onclick: togglePlay }, S.playing ? "PAUSAR" : "REPRODUZIR"),
           h("span", { class: "dim", text: "passo " + S.stepMin + " min" })),
@@ -254,6 +255,7 @@
         strip("Luz do Sol", tr, s => s.sun_visible, "#ffb020"),
         strip("Terra visível", tr, s => s.earth_visible, "#5fd8ff"),
         h("div", { class: "legend" }, h("span", {}, h("i", { style: "background:#ffb020" }), "luz"), h("span", {}, h("i", { style: "background:#5fd8ff" }), "Terra visível"), h("span", {}, h("i", { style: "background:#1c3240" }), "sem")),
+        h("div", { class: "axis" }, h("span", { text: fmt(startMs()) }), h("span", { text: fmt(startMs() + (tr.length - 1) * S.stepMin * 60e3) })),
         h("dl", { class: "readout", style: "margin-top:10px" },
           h("dt", { text: "PRÓXIMA MUDANÇA DE LUZ" }), h("dd", { text: nextS ? fmt(startMs() + nextS.tH * 0 + nextS.index * S.stepMin * 60e3) + (nextS.to ? " (escurece→luz)" : " (luz→escuro)") : "nenhuma após T" }),
           h("dt", { text: "PRÓXIMA MUDANÇA DA TERRA" }), h("dd", { text: nextE ? fmt(startMs() + nextE.index * S.stepMin * 60e3) : "nenhuma após T" })),
@@ -301,6 +303,10 @@
       box.append(svg("line", { x1: x(a), x2: x(a), y1: T, y2: H - B, stroke: "#263241" }));
       box.append(svg("text", { x: x(a), y: H - B + 16, "text-anchor": "middle" }, names[a] + " " + a + "°"));
     }
+
+    // axis titles
+    box.append(svg("text", { x: 4, y: T - 4 }, "elevação (°)"));
+    box.append(svg("text", { x: W - R, y: H - 4, "text-anchor": "end" }, "azimute (°) →"));
 
     // horizon area
     let d = "";
@@ -421,7 +427,11 @@
         h("div", { style: "margin-top:8px" }, tag("ESQ"), " ", h("span", { class: "dim", text: "modelo de painel (5.3) sem parâmetros de hardware" }))),
       h("section", { class: "panel" },
         h("h2", { text: "Bateria (cálculo da API)" }),
-        opt ? batteryReadout(opt) : h("p", { class: "note", text: "Clique em CALCULAR na ENTRADA para ver a bateria." }),
+        opt ? batteryReadout(opt) : h("div", { class: "empty" },
+          h("strong", { text: "A bateria ainda não foi calculada." }),
+          h("span", { text: "1. Ajuste capacidade, carga e solar na ENTRADA." }),
+          h("span", { text: "2. Clique no botão + no canto inferior direito." }),
+          h("span", { text: "3. A curva de carga e o estado (NOMINAL, SAFE_MODE, POWER_LOSS) aparecem aqui." })),
         opt ? batteryChart(opt) : null,
         h("div", { style: "margin-top:8px" }, tag("SIM"), " ", h("span", { class: "dim", text: "bateria: coeficientes da API, não de hardware" })))
     ];
@@ -521,7 +531,7 @@
             h("td", { class: "n", text: f1(r.sum.darkH) }),
             h("td", { class: "n", text: f1(r.sum.blockH) }),
             h("td", { class: "n", text: r.o ? f1(r.o.metrics.minimum_charge_wh) : "—" }),
-            h("td", { text: r.v.length ? r.v.map(x => x.text).join("; ") : "nenhuma" })))))),
+            h("td", { title: r.v.map(x => x.text).join("; ") }, r.v.length ? (r.v[0].text + (r.v.length > 1 ? " (+" + (r.v.length - 1) + ")" : "")) : "nenhuma")))))),
         h("p", { class: "note", text: S.api ? "Bateria e riscos vêm da API para o sítio atual. Escuridão e bloqueio são do modelo." : "Bateria só aparece depois de CALCULAR. Escuridão e bloqueio são do modelo." })),
       h("section", { class: "panel" },
         h("h2", { text: "Busca de data no mesmo sítio (7.4)" }),
@@ -620,6 +630,7 @@
     return [
       h("section", { class: "panel" },
         h("h2", { text: "10 · Registro de cenários" }),
+        h("p", { class: "note", text: "Cenários salvos nesta sessão: " + S.saved.length + ". Use o JSON ao lado para levar os dados para outra ferramenta." }),
         h("button", { type: "button", class: "go", onclick: () => { S.saved.push(record); renderTab(); } }, "SALVAR CENÁRIO ATUAL"),
         h("p", { class: "note", text: "Só nesta sessão. Se a página fechar, o registro some." }),
         S.saved.length === 0 ? h("p", { class: "dim", text: "Nenhum cenário salvo." }) :
@@ -652,7 +663,9 @@
     return [
       h("section", { class: "panel span2" },
         h("h2", { text: "11 · Lançamentos e falhas (contexto)" }),
-        h("div", { class: "caution", text: "Lançamentos não entram no cálculo de viabilidade. Esta seção está pendente de decisão de escopo (#7) e de integração pelo backend." }),
+        h("div", { class: "empty" },
+          h("strong", { text: "Lançamentos não entram no cálculo de viabilidade." }),
+          h("span", { text: "Esta área depende de decisão de escopo (#7) e de integração pelo backend (Launch Library 2, com cache, 15 requisições por hora sem chave)." })),
         h("div", { class: "scroll" }, h("table", { class: "table" },
           h("thead", {}, h("tr", {}, h("th", { text: "id" }), h("th", { text: "item" }), h("th", { text: "estado" }), h("th", { text: "nota" }))),
           h("tbody", {}, items.map(x => h("tr", {}, h("td", { text: x.id }), h("td", { text: x.title }), h("td", {}, tag(x.status)), h("td", { text: x.note })))))),
