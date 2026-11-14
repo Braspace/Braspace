@@ -14,6 +14,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/Braspace/Braspace/api/onboard"
 )
 
 //go:embed openapi.json
@@ -80,6 +82,7 @@ func (m *missionAPI) register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/sites/{id}", m.getSite)
 	mux.HandleFunc("POST /api/compare", m.compare)
 	mux.HandleFunc("POST /api/scenarios/delay", m.delayScenario)
+	mux.HandleFunc("POST /api/onboard/site-evaluate", m.siteOnboard)
 	mux.HandleFunc("GET /api/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		_, _ = w.Write(openAPISpec)
@@ -333,23 +336,37 @@ type delayScenarioRequest struct {
 	Constraints     missionConstraints `json:"constraints"`
 	IncludeNearby   *bool              `json:"include_nearby,omitempty"`
 	MaxNearby       int                `json:"max_nearby"`
+	// Optional resource models (#69): crew consumables, and the onboard
+	// energy/comms simulator from #70 applied to each option.
+	Crew                 *crewSpec      `json:"crew,omitempty"`
+	Power                *onboard.Power `json:"power,omitempty"`
+	MaxCommBlackoutHours *float64       `json:"max_comm_blackout_hours,omitempty"`
+}
+
+type onboardSummary struct {
+	SimulationStatus string          `json:"simulation_status"`
+	EndMode          string          `json:"end_mode"`
+	Metrics          onboard.Metrics `json:"metrics"`
+	Risks            []onboard.Risk  `json:"risks"`
 }
 
 type scenarioOption struct {
-	Kind                string            `json:"kind"`
-	SiteID              string            `json:"site_id"`
-	DelayHours          float64           `json:"delay_hours"`
-	DistanceKm          *float64          `json:"distance_km,omitempty"`
-	StartUTC            string            `json:"start_utc"`
-	DataStatus          string            `json:"data_status"`
-	Reason              string            `json:"reason,omitempty"`
-	ScienceStatus       string            `json:"science_status,omitempty"`
-	EngineScienceStatus string            `json:"engine_science_status,omitempty"`
-	Admissible          bool              `json:"admissible"`
-	Checks              []constraintCheck `json:"checks"`
-	Breached            []constraintCheck `json:"breached"`
-	Metrics             *metrics          `json:"metrics,omitempty"`
-	Evaluation          *evaluation       `json:"evaluation,omitempty"`
+	Kind                string             `json:"kind"`
+	SiteID              string             `json:"site_id"`
+	DelayHours          float64            `json:"delay_hours"`
+	DistanceKm          *float64           `json:"distance_km,omitempty"`
+	StartUTC            string             `json:"start_utc"`
+	DataStatus          string             `json:"data_status"`
+	Reason              string             `json:"reason,omitempty"`
+	ScienceStatus       string             `json:"science_status,omitempty"`
+	EngineScienceStatus string             `json:"engine_science_status,omitempty"`
+	Admissible          bool               `json:"admissible"`
+	Checks              []constraintCheck  `json:"checks"`
+	Breached            []constraintCheck  `json:"breached"`
+	Metrics             *metrics           `json:"metrics,omitempty"`
+	Evaluation          *evaluation        `json:"evaluation,omitempty"`
+	Consumables         *consumablesResult `json:"consumables,omitempty"`
+	Onboard             *onboardSummary    `json:"onboard,omitempty"`
 }
 
 type scenarioOutcome struct {
@@ -396,6 +413,7 @@ func (m *missionAPI) delayScenario(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	ev := newEvaluator(m.engine)
 
+	var baseOpt *scenarioOption
 	option := func(kind string, target *site, delay float64, dist *float64, baseline *metrics) (scenarioOption, error) {
 		at := start.Add(time.Duration(delay * float64(time.Hour)))
 		res, err := m.evaluateSite(ctx, ev, target, at, req.DurationHours, false)
@@ -411,6 +429,11 @@ func (m *missionAPI) delayScenario(w http.ResponseWriter, r *http.Request) {
 			o.Admissible = allPassed(o.Checks)
 			o.Metrics = &res.Evaluation.Metrics
 			o.StartUTC = res.Evaluation.StartUTC
+			if err := m.resourceChecks(ctx, ev, &req, &o, target, at, delay, baseOpt); err != nil {
+				return scenarioOption{}, err
+			}
+			o.Breached = breached(o.Checks)
+			o.Admissible = allPassed(o.Checks)
 		}
 		return o, nil
 	}
@@ -424,6 +447,7 @@ func (m *missionAPI) delayScenario(w http.ResponseWriter, r *http.Request) {
 		writeError(w, errf(http.StatusUnprocessableEntity, "OUTSIDE_COVERAGE", "baseline window is outside stored data: %s", base.Reason))
 		return
 	}
+	baseOpt = &base
 	options := []scenarioOption{base}
 	for _, d := range req.DelaysHours {
 		o, err := option("delay", s, d, nil, base.Metrics)
@@ -473,8 +497,19 @@ func (m *missionAPI) delayScenario(w http.ResponseWriter, r *http.Request) {
 }
 
 func normalizeScenario(req *delayScenarioRequest) error {
-	if req.Constraints.empty() {
-		return errf(http.StatusUnprocessableEntity, "CONSTRAINTS_REQUIRED", "declare at least one constraint (e.g. max_continuous_dark_hours)")
+	if req.Constraints.empty() && req.Crew == nil && req.Power == nil {
+		return errf(http.StatusUnprocessableEntity, "CONSTRAINTS_REQUIRED", "declare at least one constraint, crew or power model")
+	}
+	if req.Crew != nil {
+		if err := req.Crew.validate(); err != nil {
+			return err
+		}
+	}
+	if (req.Power == nil) != (req.MaxCommBlackoutHours == nil) {
+		return errf(http.StatusUnprocessableEntity, "INVALID_POWER", "power and max_comm_blackout_hours go together")
+	}
+	if req.Power != nil && (!finite(*req.MaxCommBlackoutHours) || *req.MaxCommBlackoutHours < 0 || *req.MaxCommBlackoutHours > req.DurationHours) {
+		return errf(http.StatusUnprocessableEntity, "INVALID_POWER", "max_comm_blackout_hours must be in [0, duration_hours]")
 	}
 	for name, v := range map[string]*float64{
 		"max_continuous_dark_hours": req.Constraints.MaxContinuousDarkHours, "max_continuous_comm_gap_hours": req.Constraints.MaxContinuousCommGapHours,
@@ -518,6 +553,57 @@ func normalizeScenario(req *delayScenarioRequest) error {
 	if req.MaxNearby < 0 || req.MaxNearby > 3 {
 		return errf(http.StatusUnprocessableEntity, "INVALID_NEARBY", "max_nearby must be 1..3")
 	}
+	return nil
+}
+
+// resourceChecks adds consumable and onboard energy/comms results to an option
+// and appends their constraint checks (with baseline values when available).
+func (m *missionAPI) resourceChecks(ctx context.Context, ev *evaluator, req *delayScenarioRequest, o *scenarioOption, target *site, at time.Time, delay float64, base *scenarioOption) error {
+	if req.Crew != nil {
+		cons := consumables(req.Crew, at, req.DurationHours, delay)
+		o.Consumables = &cons
+		var bc *consumablesResult
+		if base != nil {
+			bc = base.Consumables
+		}
+		o.Checks = append(o.Checks, consumableChecks(req.Crew, &cons, bc)...)
+	}
+	if req.Power == nil {
+		return nil
+	}
+	in, err := m.adaptSeries(ctx, ev, "option "+o.Kind, target.ID, at, req.DurationHours)
+	if err != nil {
+		return err
+	}
+	resp, err := onboard.Evaluate(onboard.Request{MissionID: "delay-replan", Candidates: []onboard.Candidate{in.candidate(o.Kind, *req.Power, *req.MaxCommBlackoutHours)}})
+	if err != nil {
+		return errf(http.StatusUnprocessableEntity, "INVALID_POWER", "%s", err)
+	}
+	opt := resp.Options[0]
+	o.Onboard = &onboardSummary{SimulationStatus: opt.SimulationStatus, EndMode: opt.EndMode, Metrics: opt.Metrics, Risks: opt.Risks}
+	var bm *onboard.Metrics
+	if base != nil && base.Onboard != nil {
+		bm = &base.Onboard.Metrics
+	}
+	add := func(name, unit, cmp string, limit float64, pick func(onboard.Metrics) float64) {
+		v := pick(opt.Metrics)
+		margin := limit - v
+		if cmp == ">=" {
+			margin = v - limit
+		}
+		cc := constraintCheck{Criterion: name, Unit: unit, Comparator: cmp, Limit: limit, Value: v, Margin: round6(margin), Passed: margin >= 0}
+		if cmp == ">=" && name == "min_battery_charge_wh" {
+			cc.Passed = v > limit // onboard v1 treats reaching the reserve as a breach
+		}
+		if bm != nil {
+			b := pick(*bm)
+			cc.BaselineValue = &b
+		}
+		o.Checks = append(o.Checks, cc)
+	}
+	add("min_battery_charge_wh", "Wh", ">=", req.Power.ReserveWh, func(m onboard.Metrics) float64 { return m.MinChargeWh })
+	add("unserved_energy_wh", "Wh", "<=", 0, func(m onboard.Metrics) float64 { return m.UnservedEnergyWh })
+	add("longest_earth_obstruction_hours", "h", "<=", *req.MaxCommBlackoutHours, func(m onboard.Metrics) float64 { return m.LongestEarthObstructionHours })
 	return nil
 }
 
