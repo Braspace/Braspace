@@ -596,7 +596,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK. Engine result including evidence_passport and science_status; never VALIDATED.",
             "content": {
               "application/json": {
                 "schema": {
@@ -636,10 +636,25 @@
             }
           },
           "422": {
-            "description": "Invalid inputs"
+            "description": "Invalid inputs (null or incomplete look angles are rejected, never read as zero)"
           },
           "502": {
-            "description": "Engine failed"
+            "description": "Engine failed, timed out or returned an invalid contract. Body: {\"error\": string} (no code field).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1211,12 +1226,13 @@
           "start_utc": {
             "type": "string",
             "format": "date-time",
-            "description": "RFC3339 UTC"
+            "description": "RFC3339 with offset (normalized to UTC). Must fall on a series grid epoch; otherwise GRID_NOT_ALIGNED."
           },
           "duration_hours": {
             "type": "number",
             "exclusiveMinimum": 0,
-            "maximum": 720
+            "maximum": 720,
+            "description": "Must be a whole multiple of the series step (and the window must start on a grid epoch); otherwise the site is reported as GRID_NOT_ALIGNED, never rounded."
           },
           "include_series": {
             "type": "boolean"
@@ -1354,12 +1370,13 @@
           "start_utc": {
             "type": "string",
             "format": "date-time",
-            "description": "RFC3339 UTC"
+            "description": "RFC3339 with offset (normalized to UTC). Must fall on a series grid epoch; otherwise GRID_NOT_ALIGNED."
           },
           "duration_hours": {
             "type": "number",
             "exclusiveMinimum": 0,
-            "maximum": 720
+            "maximum": 720,
+            "description": "Must be a whole multiple of the series step (and the window must start on a grid epoch); otherwise the site is reported as GRID_NOT_ALIGNED, never rounded."
           },
           "delays_hours": {
             "type": [
@@ -1895,12 +1912,13 @@
           "start_utc": {
             "type": "string",
             "format": "date-time",
-            "description": "RFC3339 UTC"
+            "description": "RFC3339 with offset (normalized to UTC). Must fall on a series grid epoch; otherwise GRID_NOT_ALIGNED."
           },
           "duration_hours": {
             "type": "number",
             "exclusiveMinimum": 0,
-            "maximum": 720
+            "maximum": 720,
+            "description": "Must be a whole multiple of the series step (and the window must start on a grid epoch); otherwise the site is reported as GRID_NOT_ALIGNED, never rounded."
           },
           "candidates": {
             "type": "array",
