@@ -18,9 +18,10 @@ test("12-tab cockpit is navigable from classic and Polar Lab",async()=>{
  assert.match(html,/PROTÓTIPO · sintético/);
  assert.match(html,/Não validado/);
  assert.match(html,/Sem recomendação de voo/);
- assert.equal((html.match(/data-tab="/g)||[]).length,12);
+ assert.equal((html.match(/<button[^>]*data-tab="/g)||[]).length,12);
 });
 test("same-origin onboard static allowlist serves only exact required assets",async()=>{
+ assert.equal(onboardFile("/onboard/../api/main.go"),null);
  for(const path of ["/onboard/","/onboard/index.html","/onboard/cockpit.html",
  "/onboard/api.js","/onboard/app.js","/onboard/cockpit.js","/onboard/features.js",
  "/onboard/model.js","/onboard/request.js","/onboard/sim.js"]){
@@ -36,7 +37,7 @@ test("same-origin onboard static allowlist serves only exact required assets",as
   }
  }
  for(const path of ["/onboard/dev-server.py","/onboard/package.json","/onboard/README.md",
- "/onboard/test/front.test.mjs","/onboard/.env","/onboard/../api/main.go"]){
+ "/onboard/test/front.test.mjs","/onboard/.env","/onboard/%2e%2e%2fapi%2fmain.go"]){
   const response=await fetch(root+path);assert.equal(response.status,404,path);
  }
  const r=await fetch(root+"/onboard/cockpit.html",{method:"POST"});
