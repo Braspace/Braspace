@@ -52,6 +52,26 @@ try{
  assert(desktop.url().endsWith("/index.html"),"classic UI navigation failed");
  assert((await desktop.locator("body").innerText()).includes("UNVERIFIED INPUTS"),"classic scientific disclaimer absent");
  await desktop.screenshot({path:path.join(out,"moonproof-classic-desktop.png"),fullPage:true});
+
+ // João Victor's onboard cockpit is an independent UI. Exercise it against
+ // the same running Go API without representing its synthetic numbers as NASA.
+ const cockpitResponse=await desktop.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});
+ assert(cockpitResponse?.status()===200,"onboard cockpit not served");
+ await desktop.locator("#views").waitFor({state:"visible",timeout:15000});
+ await desktop.waitForFunction(()=>document.querySelector("#views")?.textContent?.trim().length>30,null,{timeout:15000});
+ const cockpitText=await desktop.locator("body").innerText();
+ assert(/sint[eé]tic|n[aã]o validado/i.test(cockpitText),"cockpit missing synthetic status");
+ await desktop.locator("nav.tabs button[data-tab]").first().click();
+ await desktop.screenshot({path:path.join(out,"jv-onboard-cockpit-desktop.png"),fullPage:true});
+ const onboardResponse=await desktop.goto(base+"/onboard/index.html",{waitUntil:"domcontentloaded",timeout:30000});
+ assert(onboardResponse?.status()===200,"onboard form not served");
+ await desktop.locator("#run").waitFor({state:"visible",timeout:15000});
+ if(process.env.BRASPACE_REQUIRE_BACKEND==="1"){
+  await desktop.locator("#run").click();
+  await desktop.locator("#results-card").waitFor({state:"visible",timeout:30000});
+  assert((await desktop.locator("#hash").innerText()).includes("UNVERIFIED_INPUTS"),"onboard form falsely promoted scientific status");
+ }
+ await desktop.screenshot({path:path.join(out,"jv-onboard-form-desktop.png"),fullPage:true});
  const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  mobile.on("pageerror",error=>errors.push("mobile: "+error.message));
  const mobileResponse=await mobile.goto(base+"/lab.html",{waitUntil:"domcontentloaded",timeout:30000});
