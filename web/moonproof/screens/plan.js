@@ -9,6 +9,7 @@ import { pickVersion, parseConfigCommit } from "./evidence-model.js";
 
 register({
   en: {
+    "plan.h1": "Planning Kit",
     "plan.title": "Mission rules",
     "plan.editable": "editable · assumed limit",
     "plan.night": "Max night",
@@ -47,6 +48,7 @@ register({
     "plan.noSource": "no source"
   },
   "pt-BR": {
+    "plan.h1": "Kit Planejamento",
     "plan.title": "Regras da missão",
     "plan.editable": "editáveis · limite assumido",
     "plan.night": "Noite máxima",
@@ -193,6 +195,8 @@ async function computeRows() {
 }
 
 async function draw() {
+  document.getElementById("plan-h1").textContent = t("plan.h1");
+  document.title = `MoonProof · ${t("plan.h1")}`;
   const st = getState();
   const { live, metrics, rows } = await computeRows();
   shell.setContext({

@@ -294,3 +294,7 @@
   }
   .mp-chip, .mp-layer-tab { min-height: 36px; height: 36px; }
 }
+
+/* Touch target: the tabs keep the design's 28 px look; an invisible 44 px hit area sits around them (project contract: 44 px). */
+.mp-layer-tab { position: relative; }
+.mp-layer-tab::after { content: ""; position: absolute; inset: -8px -2px; }
