@@ -72,7 +72,7 @@ All suites verified against `main` (`0e646c3c50ad665c34013415809e951e489a3b0f`):
 
 | Suite | Command | Result |
 |---|---|---|
-| **Web (Node test runner)** | `npm --prefix web test` | 74 passed, 0 failed |
+| **Web (Node test runner)** | `npm --prefix web test` | 93 passed, 0 failed |
 | **Onboard Cockpit** | `node --test web/onboard/test/*.mjs` | 49 passed, 0 failed, 1 skipped |
 | **Go API** | `cd api && go test ./...` | `api` & `api/onboard` pass |
 | **Rust Engine** | `cd engine && cargo test` | 3 unit + 6 integration passed |
