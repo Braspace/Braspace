@@ -124,3 +124,5 @@
   .mp-bottomnav .mp-pill svg{width:21px;height:21px}
   .mp-sheet-grip::before{width:40px;height:4px}
 }
+svg.mp-logo{width:32px;height:32px;border:0;border-radius:0;box-shadow:none}
+.mp-brand{font-weight:800}

@@ -183,7 +183,7 @@ async function numbersCard(s, m) {
   const head = el("div", "mp-layer-head"); head.append(el("h3", null, t("mc.numbers", { site: s.name })));
   const sel = el("select"); sel.setAttribute("aria-label", t("mc.vs"));
   for (const x of others) sel.append(new Option(`${t("mc.vs")} ${x.n} · ${x.name}`, x.id, false, x.id === otherId));
-  sel.onchange = () => { otherId = sel.value; draw(); }; head.append(sel); c.append(head);
+  sel.onchange = () => { otherId = sel.value; draw(); }; sel.className = "mc-vs"; c.append(head, sel);
   const h = (x) => x.value == null ? null : x.value * hours() / 100;
   const both = w => w.raw.status === "COMPUTED" ? w.raw.bothPct * hours() / 100 : null;
   const table = (title, rows, lowerBetter) => {
