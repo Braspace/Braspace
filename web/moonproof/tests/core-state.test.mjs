@@ -18,3 +18,16 @@ test("task sets the opening layer unless layer is explicit", () => {
   for (const [task, layer] of Object.entries(TASKS)) assert.equal(parseState("?task=" + task).layer, layer);
   assert.equal(parseState("?task=plan&layer=why").layer, "why");
 });
+
+test("zero-hour darkness/earth limit and 0% battery floor round-trip; invalid ranges fail closed",()=>{
+ const s=parseState("?night=0&blackout=0&battery=0&hours=24");
+ assert.equal(s.night,0);assert.equal(s.blackout,0);assert.equal(s.battery,0);
+ assert.equal(s.hours,24);
+ const back=parseState("?"+toQuery(s));
+ assert.equal(back.night,0);assert.equal(back.blackout,0);assert.equal(back.battery,0);
+ const invalid=parseState("?hours=721&night=-1&blackout=721&battery=101");
+ assert.equal(invalid.hours,null);
+ assert.equal(invalid.night,DEFAULT_RULES.night);
+ assert.equal(invalid.blackout,DEFAULT_RULES.blackout);
+ assert.equal(invalid.battery,DEFAULT_RULES.battery);
+});
