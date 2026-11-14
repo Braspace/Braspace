@@ -36,6 +36,19 @@ test("prohibit directory traversal and unexpected methods",async()=>{
  const post=await fetch(base+"/",{method:"POST"});assert.equal(post.status,405);
 });
 
+test("Polar Lab: page, modules and NASA-derived data are served; traversal is refused",async()=>{
+ const page=await fetch(base+"/lab.html");assert.equal(page.status,200);
+ assert.match(page.headers.get("content-security-policy"),/default-src 'none'/);
+ const html=await page.text();
+ for(const word of ["Landing Lab","PRELIMINARY","NASA does not endorse"])assert.ok(html.includes(word),"missing "+word);
+ for(const [route,kind] of [["/lab/app.js","text/javascript"],["/lab/lab.css","text/css"],["/data/sites.json","application/json"],["/data/region/south_pole_400m.bin","application/octet-stream"],["/data/moon/lroc_color_2k.jpg","image/jpeg"]]){
+  const r=await fetch(base+route);assert.equal(r.status,200,route);assert.ok(r.headers.get("content-type").includes(kind),route);
+ }
+ for(const bad of ["/lab/../dev-server.mjs","/data/../../package.json","/lab/sites.json","/data/x.mjs","/data/%2e%2e/dev-server.mjs","/lab/.hidden.js"]){
+  const r=await fetch(base+bad);assert.equal(r.status,404,bad);
+ }
+});
+
 test("training code explicitly refuses to synthesize NASA source status",async()=>{
  const app=await readFile(path.join(root,"app.js"),"utf-8");
  const moon=await readFile(path.join(root,"moon3d.js"),"utf-8");
