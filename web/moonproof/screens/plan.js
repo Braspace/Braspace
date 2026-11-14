@@ -115,17 +115,12 @@ async function computeRows() {
   const hours = st.hours || 336;
   const live = await api("/api/compare", {
     method: "POST",
-    body: { sites: scenarios.map((s) => s.id), start: st.start, hours }
+    body: { site_ids: scenarios.map((s) => s.id), start_utc: st.start || doc.window.start_utc, duration_hours: hours, include_series: false }
   });
   const metrics = await Promise.all(scenarios.map((s) => windowMetrics(doc, s, st.start, hours)));
-  const evals = await Promise.all(
-    scenarios.map((s) =>
-      api("/api/onboard/site-evaluate", {
-        method: "POST",
-        body: { site_id: s.id, max_night_h: rulesDraft.night, max_blackout_h: rulesDraft.blackout, battery_floor_pct: rulesDraft.battery }
-      })
-    )
-  );
+  // No power/crew assumptions were supplied. The real API contract requires
+  // a full onboard request; show N/D rather than posting invalid/fabricated inputs.
+  const evals = scenarios.map(() => ({ ok: false, data: null }));
 
   const rows = [
     {
@@ -135,7 +130,7 @@ async function computeRows() {
       check: (v) => v <= rulesDraft.night,
       best: "min",
       margin: metrics[1]?.longestDarkH.value != null ? rulesDraft.night - metrics[1].longestDarkH.value : null,
-      unc: "±1", status: doc.status
+      unc: "1 h grid · not independently validated", status: doc.status
     },
     {
       label: t("plan.mBlackout"), unit: "h",
@@ -150,7 +145,7 @@ async function computeRows() {
       label: t("plan.mSun"), unit: "%",
       vals: metrics.map((m) => m.sunPct.value),
       rule: t("nd"), check: null, best: "max", margin: null,
-      unc: "±0.3", status: doc.status
+      unc: "N/D · independent benchmark pending", status: doc.status
     },
     {
       label: t("plan.mEarth"), unit: "%",
@@ -241,26 +236,35 @@ async function draw() {
       <button id="btn-json" class="mp-btn-white" type="button">${t("plan.json")}</button>
       <button id="btn-pdf" class="mp-btn-white" type="button">${t("plan.pdf")}</button>
     </div>
-    <div class="mp-url-box" id="plan-url">${location.href}</div>
+    <div class="mp-url-box" id="plan-url"></div>
     <p class="mp-note">${t("plan.urlNote")}</p>
   `;
 
+  exportEl.querySelector("#plan-url").textContent = location.href;
   exportEl.querySelector("#btn-csv").addEventListener("click", () => {
-    const header = "site,hour_idx,sun,earth";
-    const lines = [header];
+    const lines = ["site,epoch_utc,sun_visible,earth_visible,source_status,series_sha256"];
+    const startUtc = st.start || doc.window.start_utc;
+    const t0 = Date.parse(startUtc);
     metrics.forEach((m, idx) => {
-      const s = scenarios[idx];
-      (m.series || []).slice(0, 48).forEach((pt, h) => {
-        lines.push(`${s.id},${h},${pt.sun ?? ""},${pt.earth ?? ""}`);
-      });
+      const series = m.series;
+      if (!series || m.sunPct.value == null || !Number.isFinite(t0)) return;
+      const sha = m.sunPct.detail?.sha256 || "";
+      for (let h = 0; h < hours; h++) {
+        const epoch = t0 + h * 3600000;
+        const i = series.index(epoch);
+        if (i < 0 || i >= series.count) continue;
+        const columns = [scenarios[idx].id, new Date(epoch).toISOString(),
+          Number(series.sunMargin[i] >= 0), Number(series.earthMargin[i] >= 0), doc.status, sha];
+        lines.push(columns.map(v => '"' + String(v).replaceAll('"', '""') + '"').join(","));
+      }
     });
     downloadFile("moonproof-plan.csv", lines.join("\n"), "text/csv");
   });
   exportEl.querySelector("#btn-json").addEventListener("click", () => {
-    downloadFile("moonproof-plan.json", JSON.stringify({ rules: rulesDraft, scenarios: scenarios.map((s) => s.id), rows }, null, 2), "application/json");
+    downloadFile("moonproof-plan.json", JSON.stringify({ rules: rulesDraft, scenarios: scenarios.map((s) => s.id), rows, science_status: doc.status, scientifically_validated: false, utc_start: st.start || doc.window.start_utc, duration_hours: hours }, null, 2), "application/json");
   });
   exportEl.querySelector("#btn-pdf").addEventListener("click", () => {
-    window.open(hrefTo("evidence.html") + "&print=1", "_blank", "noopener");
+    window.open(hrefTo("evidence.html"), "_blank", "noopener");
   });
 
   const tableEl = document.getElementById("plan-table");
