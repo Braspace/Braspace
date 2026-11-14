@@ -186,6 +186,7 @@ func TestDBConstraints(t *testing.T) {
 		`INSERT INTO sites (id, ordinal, name, kind, latitude_deg, longitude_deg) VALUES ('no-source', 98, 'x', 'k', -89, 0)`,
 		`UPDATE site_series SET frame = 'J2000'`,
 		`UPDATE site_series SET science_status = 'TRUST_ME'`,
+		`UPDATE site_series SET science_status = 'VALIDATED'`,
 		`UPDATE ephemeris_samples SET sun_elevation_deg = 120 WHERE idx = 0`,
 	}
 	for _, q := range bad {
