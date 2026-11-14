@@ -1,0 +1,163 @@
+{
+ "schema": "braspace.benchmark.pgda-illumination.v1",
+ "science_status": "UNVERIFIED",
+ "quantity": "time fraction with Sun above local terrain horizon",
+ "reference": {
+  "product": "PGDA 69 / LOLA EXTRAS AVGVISIB_85S_060M_201608 (IMG, 60 m/px, DEM LDEM_85S_060M)",
+  "url": "http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_85S_060M_201608.IMG",
+  "sha256": "82dadf321dee28f1947c1fed81858d4cf50fe8eb2aa405aae114e8ab21c1efe1",
+  "label_sha256": "33decce957d5d4d9608557d8d969d1e1b94056a159b2563624ade4b528a0c917",
+  "citation": "Mazarico, E., et al. (2011) Icarus 211, 1066-1081, doi:10.1016/j.icarus.2010.10.030",
+  "definition": "fraction of hourly steps over 18.6 yr with any part of solar disc visible"
+ },
+ "ours": {
+  "dem": "LDEM_80S_80M.IMG",
+  "dem_sha256": "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc",
+  "code": "science/lola_horizon.py sample_horizon (PR #86)",
+  "observer_height_m": 2.0,
+  "max_distance_m": 100000,
+  "ray_step_m": 160,
+  "azimuth_step_deg": 2,
+  "sun": "SPICE DE440s, MOON_ME, LT+S, Moon-centred direction",
+  "period": "2000 JAN 01 00:00:00 UTC + 18.6 yr every 2.0 h",
+  "epochs": 81523
+ },
+ "grid": {
+  "step_km": 3.0,
+  "max_rho_km": 140.0,
+  "points_total": 6828,
+  "points_compared": 6828,
+  "sampling": "nearest PGDA 60 m pixel at grid point"
+ },
+ "stats_point_sun_centre": {
+  "n": 6828,
+  "mean_error": -7e-05,
+  "mean_abs_error": 0.01496,
+  "p95_abs_error": 0.04452,
+  "rmse": 0.0271,
+  "max_abs_error": 0.4242,
+  "pearson_r": 0.9822
+ },
+ "stats_any_limb_diagnostic": {
+  "n": 6828,
+  "mean_error": 0.01604,
+  "mean_abs_error": 0.01612,
+  "p95_abs_error": 0.06725,
+  "rmse": 0.03335,
+  "max_abs_error": 0.43871,
+  "pearson_r": 0.9804
+ },
+ "worst10": [
+  {
+   "x_km": 103.0,
+   "y_km": -74.0,
+   "lat": -85.81938,
+   "lon": 125.6952,
+   "pgda": 0.0,
+   "pgda_3x3_range": 0.4391,
+   "ours_centre": 0.4242,
+   "ours_any_limb": 0.43871,
+   "max_horizon_deg": 5.968
+  },
+  {
+   "x_km": 133.0,
+   "y_km": -5.0,
+   "lat": -85.61299,
+   "lon": 92.153,
+   "pgda": 0.0,
+   "pgda_3x3_range": 0.1138,
+   "ours_centre": 0.34263,
+   "ours_any_limb": 0.36012,
+   "max_horizon_deg": 12.664
+  },
+  {
+   "x_km": 91.0,
+   "y_km": -104.0,
+   "lat": -85.44512,
+   "lon": 138.8141,
+   "pgda": 0.09736,
+   "pgda_3x3_range": 0.4377,
+   "ours_centre": 0.40551,
+   "ours_any_limb": 0.42355,
+   "max_horizon_deg": 5.38
+  },
+  {
+   "x_km": -89.0,
+   "y_km": 1.0,
+   "lat": -87.06542,
+   "lon": -89.3563,
+   "pgda": 0.0882,
+   "pgda_3x3_range": 0.3064,
+   "ours_centre": 0.37713,
+   "ours_any_limb": 0.39215,
+   "max_horizon_deg": 17.504
+  },
+  {
+   "x_km": 100.0,
+   "y_km": -44.0,
+   "lat": -86.39829,
+   "lon": 113.7495,
+   "pgda": 0.0,
+   "pgda_3x3_range": 0.2785,
+   "ours_centre": 0.2651,
+   "ours_any_limb": 0.2779,
+   "max_horizon_deg": 8.647
+  },
+  {
+   "x_km": 10.0,
+   "y_km": -17.0,
+   "lat": -89.34958,
+   "lon": 149.5345,
+   "pgda": 0.1346,
+   "pgda_3x3_range": 0.2868,
+   "ours_centre": 0.39902,
+   "ours_any_limb": 0.41998,
+   "max_horizon_deg": 6.604
+  },
+  {
+   "x_km": -47.0,
+   "y_km": -68.0,
+   "lat": -87.2745,
+   "lon": -145.3487,
+   "pgda": 0.00748,
+   "pgda_3x3_range": 0.2828,
+   "ours_centre": 0.26999,
+   "ours_any_limb": 0.2908,
+   "max_horizon_deg": 4.937
+  },
+  {
+   "x_km": -83.0,
+   "y_km": -11.0,
+   "lat": -87.23944,
+   "lon": -97.5494,
+   "pgda": 0.01416,
+   "pgda_3x3_range": 0.3564,
+   "ours_centre": 0.26699,
+   "ours_any_limb": 0.28156,
+   "max_horizon_deg": 10.621
+  },
+  {
+   "x_km": 28.0,
+   "y_km": -8.0,
+   "lat": -89.03969,
+   "lon": 105.9454,
+   "pgda": 0.01356,
+   "pgda_3x3_range": 0.2769,
+   "ours_centre": 0.26178,
+   "ours_any_limb": 0.30469,
+   "max_horizon_deg": 8.273
+  },
+  {
+   "x_km": 19.0,
+   "y_km": -20.0,
+   "lat": -89.09028,
+   "lon": 136.4688,
+   "pgda": 0.10148,
+   "pgda_3x3_range": 0.2503,
+   "ours_centre": 0.33887,
+   "ours_any_limb": 0.35288,
+   "max_horizon_deg": 7.615
+  }
+ ],
+ "runtime_s": 287.9
+}
