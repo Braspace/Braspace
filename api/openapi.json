@@ -1126,7 +1126,6 @@
               "INVALID_CANDIDATES",
               "GRID_UNSUPPORTED",
               "GRID_MISMATCH",
-              "GRID_NOT_ALIGNED",
               "WINDOW_TOO_LONG",
               "INVALID_SCENARIO",
               "GRID_NOT_ALIGNED",
@@ -1134,7 +1133,8 @@
               "LAYER_NOT_PROXIED",
               "LAYER_UNAVAILABLE",
               "NO_SERIES_DATA",
-              "INVALID_STEP"
+              "INVALID_STEP",
+              "REQUEST_CANCELED"
             ]
           }
         },
@@ -1611,7 +1611,8 @@
           "AVAILABLE",
           "NO_SERIES_DATA",
           "OUTSIDE_COVERAGE",
-          "GRID_NOT_ALIGNED"
+          "GRID_NOT_ALIGNED",
+          "OBSERVER_HEIGHT_MISMATCH"
         ]
       },
       "SiteResult": {
@@ -2127,7 +2128,8 @@
             "enum": [
               "OK",
               "BELOW_RESERVE",
-              "DEPLETED_BEFORE_END"
+              "DEPLETED_BEFORE_END",
+              "DEPLETED_DURING_DELAY"
             ]
           }
         },

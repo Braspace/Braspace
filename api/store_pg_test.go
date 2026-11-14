@@ -151,6 +151,15 @@ func TestDBDetectsTamperingAndGaps(t *testing.T) {
 		t.Fatal("verify must fail after tampering")
 	}
 
+	// Catalog fields are not covered by series hashes; verify must still catch them.
+	db = ingested(t)
+	if _, err := db.Exec(ctx, `UPDATE sites SET latitude_deg = -80 WHERE id = 'malapert-massif'`); err != nil {
+		t.Fatal(err)
+	}
+	if rep, _ := verifyReadback(ctx, db, embeddedFS(t), nil); rep.OK || !strings.Contains(strings.Join(rep.Problems, " "), "catalog differs") {
+		t.Fatalf("edited coordinate must fail verify: %+v", rep)
+	}
+
 	db = ingested(t)
 	if _, err := db.Exec(ctx, `DELETE FROM ephemeris_samples WHERE site_id = 'synthetic-demo-b' AND idx = 500`); err != nil {
 		t.Fatal(err)

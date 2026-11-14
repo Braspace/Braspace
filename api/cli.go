@@ -73,9 +73,6 @@ func runCLI(args []string) int {
 		var rep *readbackReport
 		rep, err = verifyReadback(ctx, db, fsys, manifest)
 		out = rep
-		if err == nil && !rep.OK {
-			defer os.Exit(1)
-		}
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s failed: %v\n", cmd, err)
@@ -84,5 +81,8 @@ func runCLI(args []string) int {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	_ = enc.Encode(out)
+	if rep, ok := out.(*readbackReport); ok && !rep.OK {
+		return 1
+	}
 	return 0
 }

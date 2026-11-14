@@ -75,7 +75,9 @@ func consumables(c *crewSpec, start time.Time, hours, delayHours float64) consum
 	}{{"oxygen", "OXYGEN", c.O2StockKg, c.O2KgPerPersonDay}, {"food", "FOOD", c.FoodStockKg, c.FoodKgPerPersonDay}} {
 		rate := float64(c.Size) * r.perPD / 24
 		delayUse := 0.0
+		exhaustedWaiting := false
 		if c.AboardDuringDelay {
+			exhaustedWaiting = rate*delayHours > r.stock
 			delayUse = math.Min(r.stock, rate*delayHours)
 		}
 		stock := r.stock - delayUse
@@ -87,6 +89,14 @@ func consumables(c *crewSpec, start time.Time, hours, delayHours float64) consum
 			AutonomyHours: round6(autonomy), MarginHours: round6(margin), Status: "OK",
 		}
 		switch {
+		case exhaustedWaiting:
+			// Runs out before the window starts: launch time + stock / rate.
+			launch := start.Add(-time.Duration(delayHours * float64(time.Hour)))
+			at := launch.Add(time.Duration(r.stock / rate * float64(time.Hour))).UTC().Format(time.RFC3339)
+			item.DepletionUTC, item.Status = &at, "DEPLETED_DURING_DELAY"
+			res.Risks = append(res.Risks, onboard.Risk{Category: r.label + "_DEPLETION", Severity: "CRITICAL", Measured: round6(r.stock / rate), Allowed: round6(delayHours + hours), Unit: "h",
+				Explanation: fmt.Sprintf("%s runs out %.1f h into the %.0f h delay, before the window starts, at the declared consumption rate.", r.name, r.stock/rate, delayHours)})
+			res.Status = "CRITICAL"
 		case margin < 0:
 			at := start.Add(time.Duration(autonomy * float64(time.Hour))).UTC().Format(time.RFC3339)
 			item.DepletionUTC, item.Status = &at, "DEPLETED_BEFORE_END"
