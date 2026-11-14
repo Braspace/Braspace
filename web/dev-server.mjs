@@ -82,9 +82,26 @@ function proxyAPI(req,res){
  req.on("aborted",()=>upstream.destroy());
  req.pipe(upstream);
 }
+// Examine the raw HTTP target before URL parsing: WHATWG URL removes
+// "/onboard/../" and encoded dot segments, which can accidentally route a
+// rejected static path to the /api/ reverse proxy.
+function hasTraversalSegment(rawUrl){
+ let candidate=rawUrl.split(/[?#]/,1)[0];
+ for(let depth=0;depth<4;depth++){
+  if(/(?:^|[\\/])\.{1,2}(?=[\\/]|$)/.test(candidate))return true;
+  let next;
+  try{next=decodeURIComponent(candidate);}catch{return true;}
+  if(next===candidate)return false;
+  candidate=next;
+ }
+ return /(?:^|[\\/])\.{1,2}(?=[\\/]|$)/.test(candidate);
+}
 export function createServer(){
  const server=http.createServer(async(req,res)=>{
   securityHeaders(res);
+  if(hasTraversalSegment(req.url)){
+   res.writeHead(404);res.end("Not found");return;
+  }
   let parsed;
   try{parsed=new URL(req.url,"http://127.0.0.1");}catch{res.writeHead(400);res.end("invalid URL");return;}
   const pathname=parsed.pathname;
