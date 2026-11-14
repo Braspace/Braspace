@@ -1,0 +1,848 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Computador de bordo BRASPACE</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Prototype. Layout: one column on phones; grids widen at 640px and 900px.
+   Palette: lunar grey, one blue accent, amber for limits. */
+:root {
+  --bg: #f3f1ec; --surface: #ffffff; --ink: #1c1e22; --muted: #5b616b; --line: #d6d2c9;
+  --accent: #1f5f7a; --accent-ink: #ffffff; --sun: #b35c00; --earth: #1f6f8b;
+  --ok: #2d7a46; --warn: #a15c00; --bad: #a3282d; --illus: #efe6d6;
+  --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111316; --surface: #1a1d22; --ink: #ebe9e4; --muted: #9ba2ad; --line: #2e333b;
+    --accent: #6cc3dd; --accent-ink: #0d1013; --sun: #f0a04b; --earth: #6cc3dd;
+    --ok: #6fcf8e; --warn: #f0b15a; --bad: #ff7b80; --illus: #2a2620; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111316; --surface: #1a1d22; --ink: #ebe9e4; --muted: #9ba2ad; --line: #2e333b;
+  --accent: #6cc3dd; --accent-ink: #0d1013; --sun: #f0a04b; --earth: #6cc3dd;
+  --ok: #6fcf8e; --warn: #f0b15a; --bad: #ff7b80; --illus: #2a2620; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font);
+  font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 28px;
+}
+h1 { font-size: 22px; line-height: 1.25; margin: 0; font-weight: 600; text-wrap: balance; }
+h2 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+p { margin: 0; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 16px; }
+.muted { color: var(--muted); font-size: 13px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0; }
+.grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 640px) { .grid.two { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 900px) { .grid.three { grid-template-columns: repeat(3, 1fr); } }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.brand { font-weight: 600; }
+.right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.badge { font-family: var(--mono); font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+nav a {
+  color: var(--ink); text-decoration: none; border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 12px; white-space: nowrap; min-height: 40px; display: inline-flex; align-items: center;
+}
+nav a[aria-current="page"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+label { display: grid; gap: 6px; font-weight: 500; font-size: 14px; min-width: 0; }
+input, select, textarea {
+  font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 12px; min-height: 44px; width: 100%;
+}
+textarea { font-family: var(--mono); font-size: 12px; min-height: 160px; }
+input[aria-invalid="true"] { border-color: var(--bad); }
+.err { color: var(--bad); font-size: 13px; min-height: 1.2em; }
+.fields { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@media (min-width: 640px) { .fields { grid-template-columns: 1fr 1fr; } .full { grid-column: 1 / -1; } }
+.btn {
+  font: inherit; font-weight: 600; color: var(--accent-ink); background: var(--accent);
+  border: 0; border-radius: 8px; padding: 12px 18px; min-height: 44px; cursor: pointer;
+}
+.btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); font-weight: 500; }
+.btn.small { padding: 8px 12px; min-height: 38px; font-size: 14px; }
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg button {
+  font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 12px; min-height: 40px; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin: 6px 0 4px; }
+.bar > span { display: block; height: 100%; background: var(--accent); }
+.strip { display: flex; height: 16px; border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.strip > i { display: block; height: 100%; flex: 1 1 0; min-width: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 13px; margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.illus { background: var(--illus); border-radius: 6px; padding: 2px 8px; font-size: 12px; color: var(--muted); }
+.banner { border-left: 3px solid var(--warn); padding: 8px 12px; background: var(--illus); border-radius: 6px; font-size: 14px; }
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th, .table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.table th:not(:first-child), .table td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+.scroll { overflow-x: auto; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-family: var(--mono); font-size: 12px; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); }
+.chip.blocked { color: var(--bad); border-color: var(--bad); }
+.chip.partial { color: var(--warn); border-color: var(--warn); }
+.stack { display: grid; gap: 6px; }
+.stack p { color: var(--ink); font-size: 14px; }
+.edu { border-left: 3px solid var(--accent); padding: 4px 0 4px 12px; color: var(--ink); font-size: 14px; display: grid; gap: 6px; }
+input[type="range"] { width: 100%; min-height: 32px; accent-color: var(--accent); }
+.hidden-view, [hidden] { display: none !important; }
+.src { color: var(--muted); font-size: 12px; margin-top: 10px; }
+svg text { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+footer { color: var(--muted); font-size: 12px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <span class="brand" data-i18n="brand">BRASPACE · Computador de bordo</span>
+    <div class="right">
+      <span class="badge" data-i18n="badge">dados sintéticos · não validado</span>
+      <button class="btn ghost small" type="button" id="lang-btn">English</button>
+    </div>
+  </div>
+
+  <nav aria-label="Áreas">
+    <a href="#inicio" data-view="inicio" data-i18n="nav_home">Início</a>
+    <a href="#explorar" data-view="explorar" data-i18n="nav_explore">Explorar</a>
+    <a href="#comparar" data-view="comparar" data-i18n="nav_compare">Comparar</a>
+    <a href="#recuperar" data-view="recuperar" data-i18n="nav_recover">Recuperar</a>
+    <a href="#ciencia" data-view="ciencia" data-i18n="nav_science">Ciência e engenharia</a>
+    <a href="#evidencias" data-view="evidencias" data-i18n="nav_evidence">Evidências</a>
+    <a href="#suporte" data-view="suporte" data-i18n="nav_life">Suporte de vida</a>
+  </nav>
+
+  <!-- INÍCIO -->
+  <section id="v-inicio" class="wrap">
+    <div>
+      <h1 data-i18n="home_title">Escolha onde e quando pousar</h1>
+      <p class="muted" style="margin-top:6px" data-i18n="home_note">Os cálculos usam um modelo sintético de exemplo. Não são efemérides da NASA.</p>
+    </div>
+    <form class="card" id="start" novalidate>
+      <div class="fields">
+        <label class="full"><span data-i18n="f_site">Sítio de pouso</span>
+          <select id="site">
+            <option value="A">SYN-SITE-A (exemplo)</option>
+            <option value="B">SYN-SITE-B (exemplo)</option>
+            <option value="C">SYN-SITE-C (exemplo)</option>
+          </select>
+        </label>
+        <label><span data-i18n="f_lat">Latitude (°)</span>
+          <input id="lat" inputmode="decimal" value="-89.5" aria-describedby="lat-e">
+          <span class="err" id="lat-e"></span>
+        </label>
+        <label><span data-i18n="f_lon">Longitude (°)</span>
+          <input id="lon" inputmode="decimal" value="45.0" aria-describedby="lon-e">
+          <span class="err" id="lon-e"></span>
+        </label>
+        <label><span data-i18n="f_when">Data e hora de pouso (UTC)</span>
+          <input id="when" type="datetime-local" value="2026-11-15T12:00">
+        </label>
+        <label><span data-i18n="f_dur">Duração (horas)</span>
+          <input id="dur" inputmode="numeric" value="72" aria-describedby="dur-e">
+          <span class="err" id="dur-e"></span>
+        </label>
+        <div class="full">
+          <p class="muted" style="margin-bottom:6px" data-i18n="f_aud">Público</p>
+          <div class="seg" role="group" aria-label="Público">
+            <button type="button" aria-pressed="true" data-aud="technical" data-i18n="aud_tech">Técnico</button>
+            <button type="button" aria-pressed="false" data-aud="educational" data-i18n="aud_edu">Educativo</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:16px">
+        <button class="btn" type="submit" data-i18n="btn_calc">Calcular cenário</button>
+      </div>
+      <p class="err" id="form-msg" style="margin-top:8px"></p>
+    </form>
+  </section>
+
+  <!-- EXPLORAR -->
+  <section id="v-explorar" class="wrap hidden-view">
+    <h1 data-i18n="ex_title">Explorar o cenário</h1>
+    <div class="grid two">
+      <div class="card">
+        <h2 data-i18n="ex_horizon">Sol e Terra sobre o horizonte</h2>
+        <label><span data-i18n="ex_time">Hora do cenário</span> <span class="mono" id="t-label">—</span>
+          <input type="range" id="t-slider" min="0" max="72" value="0">
+        </label>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn ghost small" type="button" id="play" data-i18n="play">Reproduzir</button>
+        </div>
+        <svg viewBox="0 0 320 170" width="100%" role="img" aria-label="Horizonte do terreno com o Sol e a Terra na hora escolhida" style="margin-top:10px">
+          <line x1="28" y1="85" x2="308" y2="85" stroke="var(--line)" stroke-dasharray="4 4"/>
+          <polyline id="horizon-line" fill="var(--line)" stroke="var(--muted)" stroke-width="1.5" points=""/>
+          <circle id="sun-dot" r="7" fill="var(--sun)" cx="0" cy="0"/>
+          <circle id="earth-dot" r="7" fill="var(--earth)" cx="0" cy="0"/>
+          <text x="28" y="164">0°</text>
+          <text x="290" y="164">360°</text>
+        </svg>
+        <div class="legend">
+          <span><i style="background:var(--sun)"></i><span data-i18n="leg_sun">Sol</span></span>
+          <span><i style="background:var(--earth)"></i><span data-i18n="leg_earth">Terra</span></span>
+        </div>
+        <dl class="kv" style="margin-top:12px">
+          <dt data-i18n="ex_sun_up">Sol acima do horizonte</dt><dd class="mono" id="sun-state">—</dd>
+          <dt data-i18n="ex_earth_up">Terra acima do horizonte</dt><dd class="mono" id="earth-state">—</dd>
+          <dt data-i18n="ex_next_sun">Próxima mudança de luz</dt><dd class="mono" id="k-next-sun">—</dd>
+          <dt data-i18n="ex_next_earth">Próxima mudança de visibilidade da Terra</dt><dd class="mono" id="k-next-earth">—</dd>
+        </dl>
+        <p class="src" data-i18n="src_line">Fonte: modelo sintético · horário UTC · unidades: h, ° e kg</p>
+        <p class="edu" hidden data-edu><span data-i18n="edu1">O horizonte lunar é o relevo do terreno visto do local.</span></p>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="ex_timeline">Linha do tempo</h2>
+        <p class="muted" style="margin-bottom:8px" data-i18n="ex_light">Luz do Sol</p>
+        <div class="strip" id="strip-sun"></div>
+        <p class="muted" style="margin:14px 0 8px" data-i18n="ex_earthvis">Terra visível</p>
+        <div class="strip" id="strip-earth"></div>
+        <div class="legend">
+          <span><i style="background:var(--sun)"></i><span data-i18n="leg_lit">com luz</span></span>
+          <span><i style="background:var(--line)"></i><span data-i18n="leg_dark">sem luz</span></span>
+          <span><i style="background:var(--earth)"></i><span data-i18n="leg_vis">visível</span></span>
+        </div>
+        <dl class="kv" style="margin-top:14px">
+          <dt data-i18n="k_sunlit">Horas com luz</dt><dd class="mono" id="k-sunlit">—</dd>
+          <dt data-i18n="k_dark">Maior escuridão</dt><dd class="mono" id="k-dark">—</dd>
+          <dt data-i18n="k_earth">Horas com a Terra visível</dt><dd class="mono" id="k-earth">—</dd>
+          <dt data-i18n="k_block">Maior bloqueio da Terra</dt><dd class="mono" id="k-block">—</dd>
+        </dl>
+        <p class="muted" style="margin-top:12px" data-i18n="note_rf">Visibilidade geométrica não garante enlace de rádio. O orçamento de RF não está modelado.</p>
+        <button class="btn ghost small" type="button" id="save" style="margin-top:12px" data-i18n="ex_save">Salvar cenário no histórico</button>
+        <p class="muted" id="save-msg" style="margin-top:6px"></p>
+      </div>
+
+      <div class="card span2" style="grid-column: 1 / -1">
+        <h2 data-i18n="ex_map">Mapa polar do sítio</h2>
+        <div class="grid two" style="align-items:center">
+          <svg viewBox="0 0 320 320" width="100%" role="img" aria-label="Mapa polar ampliado do polo sul com os sítios" style="max-width:360px;justify-self:center">
+            <circle cx="160" cy="160" r="150" fill="none" stroke="var(--line)"/>
+            <circle cx="160" cy="160" r="60" fill="none" stroke="var(--line)" stroke-dasharray="3 3"/>
+            <circle cx="160" cy="160" r="120" fill="none" stroke="var(--line)" stroke-dasharray="3 3"/>
+            <circle cx="160" cy="160" r="3" fill="var(--muted)"/>
+            <text x="164" y="154">polo</text>
+            <g id="map-sites"></g>
+          </svg>
+          <div class="stack">
+            <p class="muted" data-i18n="map_note">Projeção polar ampliada, sem escala real. Raio = colatitude × 60 px/°.</p>
+            <div id="map-legend" class="stack"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARAR -->
+  <section id="v-comparar" class="wrap hidden-view">
+    <h1 data-i18n="cmp_title">Comparar sítios</h1>
+    <p class="muted" data-i18n="cmp_note">Mesma data, mesma duração, mesmo modelo.</p>
+    <div class="card scroll"><table class="table" id="cmp-table"></table></div>
+    <p class="src" data-i18n="src_line">Fonte: modelo sintético · horário UTC · unidades: h, ° e kg</p>
+  </section>
+
+  <!-- RECUPERAR -->
+  <section id="v-recuperar" class="wrap hidden-view">
+    <h1 data-i18n="rec_title">Recuperar após atraso</h1>
+    <p class="muted" data-i18n="rec_note">Veja o que muda quando o pouso atrasa, em cada sítio.</p>
+    <div class="card scroll">
+      <h2 data-i18n="rec_table">Sítio escolhido</h2>
+      <table class="table" id="rec-table"></table>
+    </div>
+    <div class="card scroll">
+      <h2 data-i18n="rec_alt">Alternativas por sítio</h2>
+      <table class="table" id="alt-table"></table>
+    </div>
+    <div class="card">
+      <h2 data-i18n="rec_violated">Restrições violadas</h2>
+      <div id="rec-detail" class="stack"></div>
+    </div>
+  </section>
+
+  <!-- CIÊNCIA E ENGENHARIA -->
+  <section id="v-ciencia" class="wrap hidden-view">
+    <h1 data-i18n="sci_title">Ciência e engenharia</h1>
+    <div class="banner" data-i18n="sci_banner">Luz disponível não é potência elétrica gerada. Visibilidade da Terra não é enlace de rádio.</div>
+    <div class="grid three" id="ciencia-cards"></div>
+    <div class="card">
+      <h2 data-i18n="sci_trade">Compromissos</h2>
+      <div class="scroll"><table class="table" id="tradeoff-table"></table></div>
+      <p class="muted" style="margin-top:10px" data-i18n="sci_foot">Limites ilustrativos. Não há ranking universal entre ciência e engenharia.</p>
+    </div>
+    <div class="card">
+      <h2 data-i18n="sens_title">Sensibilidade do modelo</h2>
+      <div class="scroll"><table class="table" id="sens-table"></table></div>
+      <p class="muted" style="margin-top:10px" data-i18n="sens_note">Variação dentro do modelo sintético. Não é incerteza calibrada nem probabilidade.</p>
+    </div>
+  </section>
+
+  <!-- EVIDÊNCIAS -->
+  <section id="v-evidencias" class="wrap hidden-view">
+    <h1 data-i18n="ev_title">Evidências e aprendizado</h1>
+    <div class="grid two">
+      <div class="card stack">
+        <h2 data-i18n="ev_sources">Fontes</h2>
+        <p data-i18n="ev_src_terrain">Terreno: SYNTHETIC-TERRAIN-01 (não é LOLA)</p>
+        <p data-i18n="ev_src_eph">Efeméride: SYNTHETIC-EPH-01 (não é SPICE nem JPL Horizons)</p>
+        <p data-i18n="ev_src_frame">Quadro de referência: MOON_ME</p>
+        <p data-i18n="ev_src_comp">Componente: protótipo de interface, sem motor real</p>
+      </div>
+      <div class="card stack">
+        <h2 data-i18n="ev_lim">Limitações</h2>
+        <p data-i18n="ev_lim1">Nenhuma refração atmosférica é aplicada.</p>
+        <p data-i18n="ev_lim2">Nenhum dado NASA foi carregado ainda.</p>
+        <p data-i18n="ev_lim3">Combustível, alimentação, pressurização e O2 são ilustrativos.</p>
+        <p data-i18n="ev_lim4">Não usar para decisão de missão ou de segurança.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h2 data-i18n="ev_nasa">Fontes oficiais a verificar</h2>
+      <div class="scroll"><table class="table" id="nasa-table"></table></div>
+    </div>
+    <div class="card">
+      <h2 data-i18n="ev_req">Requisitos (estado real, 2026-11-14)</h2>
+      <div class="chips" id="req-chips"></div>
+      <p class="muted" style="margin-top:10px" data-i18n="ev_req_note">Vermelho: bloqueado. Amarelo: parcial. Cinza: pendente. Nenhum requisito está verificado.</p>
+    </div>
+    <div class="card">
+      <h2 data-i18n="ev_hist">Histórico de cenários</h2>
+      <div class="scroll"><table class="table" id="hist-table"></table></div>
+      <p class="muted" id="hist-empty" data-i18n="ev_hist_empty">Nenhum cenário salvo ainda.</p>
+      <div style="margin-top:14px;display:grid;gap:8px">
+        <h2 data-i18n="ev_export">Exportar (copiar JSON)</h2>
+        <textarea id="export" readonly></textarea>
+        <div><button class="btn ghost small" type="button" id="copy" data-i18n="btn_copy">Copiar</button>
+        <span class="muted" id="copy-msg"></span></div>
+      </div>
+    </div>
+    <div class="card stack" data-edu hidden>
+      <h2 data-i18n="ev_edu">Para estudar</h2>
+      <p data-i18n="edu2">Libração faz a Terra oscilar no céu. Este modelo não a calcula.</p>
+      <p data-i18n="edu3">Luz do Sol alimenta células solares; a potência elétrica depende de área, eficiência e perdas.</p>
+    </div>
+  </section>
+
+  <!-- SUPORTE DE VIDA -->
+  <section id="v-suporte" class="wrap hidden-view">
+    <h1 data-i18n="ls_title">Suporte de vida e combustível</h1>
+    <div class="banner" data-i18n="ls_banner">Todos os valores desta área são ilustrativos. Não usar para decisão de segurança.</div>
+    <div class="grid two">
+      <div class="card">
+        <h2><span data-i18n="ls_fuel">Combustível</span> <span class="illus" data-i18n="illus">ilustrativo</span></h2>
+        <dl class="kv" id="fuel-kv"></dl>
+        <div class="bar"><span id="fuel-bar" style="width:0%"></span></div>
+      </div>
+      <div class="card">
+        <h2><span data-i18n="ls_food">Alimentação</span> <span class="illus" data-i18n="illus">ilustrativo</span></h2>
+        <dl class="kv" id="food-kv"></dl>
+      </div>
+      <div class="card">
+        <h2><span data-i18n="ls_press">Pressurização</span> <span class="illus" data-i18n="illus">ilustrativo</span></h2>
+        <dl class="kv" id="press-kv"></dl>
+      </div>
+      <div class="card">
+        <h2><span data-i18n="ls_o2">Oxigênio</span> <span class="illus" data-i18n="illus">ilustrativo</span></h2>
+        <dl class="kv" id="o2-kv"></dl>
+      </div>
+    </div>
+  </section>
+
+  <footer data-i18n="footer">Protótipo com modelo sintético. Nenhum valor desta tela é resultado validado.</footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// ---------- Idiomas ----------
+const I18N = {
+  pt: {
+    brand: "BRASPACE · Computador de bordo", badge: "dados sintéticos · não validado",
+    nav_home: "Início", nav_explore: "Explorar", nav_compare: "Comparar", nav_recover: "Recuperar",
+    nav_science: "Ciência e engenharia", nav_evidence: "Evidências", nav_life: "Suporte de vida",
+    home_title: "Escolha onde e quando pousar",
+    home_note: "Os cálculos usam um modelo sintético de exemplo. Não são efemérides da NASA.",
+    f_site: "Sítio de pouso", f_lat: "Latitude (°)", f_lon: "Longitude (°)",
+    f_when: "Data e hora de pouso (UTC)", f_dur: "Duração (horas)", f_aud: "Público",
+    aud_tech: "Técnico", aud_edu: "Educativo", btn_calc: "Calcular cenário",
+    err_fix: "Corrija os campos destacados.", err_range: "{0} deve estar entre {1} e {2}.",
+    lbl_lat: "Latitude", lbl_lon: "Longitude", lbl_dur: "Duração",
+    custom_warn: "Coordenadas editadas não mudam o cálculo: o modelo usa o sítio escolhido.",
+    ex_title: "Explorar o cenário", ex_horizon: "Sol e Terra sobre o horizonte", ex_time: "Hora do cenário",
+    play: "Reproduzir", pause: "Pausar", ex_sun_up: "Sol acima do horizonte", ex_earth_up: "Terra acima do horizonte",
+    ex_next_sun: "Próxima mudança de luz", ex_next_earth: "Próxima mudança de visibilidade da Terra",
+    yes: "sim", no: "não", none_in_window: "nenhuma no intervalo",
+    ex_timeline: "Linha do tempo", ex_light: "Luz do Sol", ex_earthvis: "Terra visível",
+    leg_sun: "Sol", leg_earth: "Terra", leg_lit: "com luz", leg_dark: "sem luz", leg_vis: "visível",
+    k_sunlit: "Horas com luz", k_dark: "Maior escuridão", k_earth: "Horas com a Terra visível", k_block: "Maior bloqueio da Terra",
+    note_rf: "Visibilidade geométrica não garante enlace de rádio. O orçamento de RF não está modelado.",
+    ex_save: "Salvar cenário no histórico", saved: "Cenário salvo no histórico.",
+    ex_map: "Mapa polar do sítio", map_note: "Projeção polar ampliada, sem escala real. Raio = colatitude × 60 px/°.",
+    src_line: "Fonte: modelo sintético · horário UTC · unidades: h, ° e kg",
+    edu1: "Como ler o gráfico: a curva é o relevo visto do local. Sol ou Terra acima dela são visíveis.",
+    cmp_title: "Comparar sítios", cmp_note: "Mesma data, mesma duração, mesmo modelo.",
+    m_result: "Resultado", m_lat: "Latitude", m_lon: "Longitude",
+    m_sunlit: "Horas com luz", m_dark: "Maior escuridão", m_earth: "Horas com a Terra visível", m_block: "Maior bloqueio da Terra",
+    rec_title: "Recuperar após atraso", rec_note: "Veja o que muda quando o pouso atrasa, em cada sítio.",
+    rec_table: "Sítio escolhido", rec_alt: "Alternativas por sítio", rec_violated: "Restrições violadas",
+    rec_delay: "Atraso", rec_result: "Resultado", rec_dark: "Escuridão máx.", rec_fuel: "Margem de combustível",
+    rec_none: "sem atraso", rec_none_v: "nenhuma restrição violada",
+    res_viable: "viável", res_reduced_margin: "margem reduzida", res_not_viable: "inviável",
+    v_dark: "escuridão de {0} h, acima de {1} h", v_block: "Terra bloqueada por {0} h, acima de {1} h",
+    v_batt: "bateria cai a {0} %", v_fuel: "combustível abaixo da reserva",
+    sci_title: "Ciência e engenharia",
+    sci_banner: "Luz disponível não é potência elétrica gerada. Visibilidade da Terra não é enlace de rádio.",
+    sci_light: "Luz disponível", sci_batt: "Bateria mínima", sci_earth: "Terra visível",
+    sci_light_n: "Não é potência elétrica.", sci_batt_n: "Ilustrativa. Abaixo de {0} % é limite.", sci_earth_n: "Não garante enlace de rádio.",
+    sci_trade: "Compromissos", col_crit: "Critério", col_sit: "Situação", col_note: "Nota",
+    tr1: "Mais luz", tr1_good: "favorece energia", tr1_bad: "limita energia", tr1_n: "Sol mais alto aumenta o tempo com luz.",
+    tr2: "Mais Terra visível", tr2_good: "favorece comunicação", tr2_bad: "limita comunicação", tr2_n: "Não é enlace de rádio.",
+    tr3: "Menor escuridão", tr3_good: "dentro do limite", tr3_bad: "acima do limite", tr3_n: "Escuridão longa exige bateria.",
+    sci_foot: "Limites ilustrativos. Não há ranking universal entre ciência e engenharia.",
+    sens_title: "Sensibilidade do modelo", sens_note: "Variação dentro do modelo sintético. Não é incerteza calibrada nem probabilidade.",
+    sens_case: "Variação", sens_base: "Base", sens_obs: "Altura do observador +0,5 °", sens_dem_c: "DEM mais grosseiro (×1,5)",
+    sens_dem_f: "DEM mais fino (×0,5)", sens_step: "Passo de 2 h",
+    ev_title: "Evidências e aprendizado", ev_sources: "Fontes",
+    ev_src_terrain: "Terreno: SYNTHETIC-TERRAIN-01 (não é LOLA)",
+    ev_src_eph: "Efeméride: SYNTHETIC-EPH-01 (não é SPICE nem JPL Horizons)",
+    ev_src_frame: "Quadro de referência: MOON_ME", ev_src_comp: "Componente: protótipo de interface, sem motor real",
+    ev_lim: "Limitações", ev_lim1: "Nenhuma refração atmosférica é aplicada.", ev_lim2: "Nenhum dado NASA foi carregado ainda.",
+    ev_lim3: "Combustível, alimentação, pressurização e O2 são ilustrativos.", ev_lim4: "Não usar para decisão de missão ou de segurança.",
+    ev_nasa: "Fontes oficiais a verificar", th_source: "Fonte", th_status: "Estado", th_url: "Endereço",
+    st_candidate: "candidata (não baixada)", ev_req: "Requisitos (estado real, 2026-11-14)",
+    ev_req_note: "Vermelho: bloqueado. Amarelo: parcial. Cinza: pendente. Nenhum requisito está verificado.",
+    ev_hist: "Histórico de cenários", ev_hist_empty: "Nenhum cenário salvo ainda.",
+    ev_export: "Exportar (copiar JSON)", btn_copy: "Copiar", copied: "Copiado.", copy_fail: "Selecione o texto e copie manualmente.",
+    ev_edu: "Para estudar", edu2: "Libração faz a Terra oscilar no céu. Este modelo não a calcula.",
+    edu3: "Luz do Sol alimenta células solares; a potência elétrica depende de área, eficiência e perdas.",
+    th_site: "Sítio", th_start: "Início (UTC)", th_dur: "Duração", th_delay: "Atraso", th_res: "Resultado", th_light: "Luz",
+    ls_title: "Suporte de vida e combustível",
+    ls_banner: "Todos os valores desta área são ilustrativos. Não usar para decisão de segurança.",
+    ls_fuel: "Combustível", ls_food: "Alimentação", ls_press: "Pressurização", ls_o2: "Oxigênio", illus: "ilustrativo",
+    ls_rem: "Restante", ls_res: "Reserva mínima", ls_margin: "Margem", ls_people: "Pessoas", ls_cons: "Consumo por pessoa",
+    ls_stock: "Estoque restante", ls_ration: "Racionamento", ls_pres: "Pressão da cabine", ls_range: "Faixa aceita",
+    ls_status: "Status", ls_partial: "Pressão parcial", ls_min: "Mínimo aceito", ls_o2stock: "Estoque restante",
+    st_nominal: "nominal", st_out: "fora da faixa", st_check: "verificar", rat_normal: "normal", rat_reduced: "reduzido",
+    footer: "Protótipo com modelo sintético. Nenhum valor desta tela é resultado validado."
+  },
+  en: {
+    brand: "BRASPACE · Onboard computer", badge: "synthetic data · not validated",
+    nav_home: "Home", nav_explore: "Explore", nav_compare: "Compare", nav_recover: "Recover",
+    nav_science: "Science & engineering", nav_evidence: "Evidence", nav_life: "Life support",
+    home_title: "Choose where and when to land",
+    home_note: "Calculations use a synthetic example model. They are not NASA ephemerides.",
+    f_site: "Landing site", f_lat: "Latitude (°)", f_lon: "Longitude (°)",
+    f_when: "Landing date and time (UTC)", f_dur: "Duration (hours)", f_aud: "Audience",
+    aud_tech: "Technical", aud_edu: "Educational", btn_calc: "Calculate scenario",
+    err_fix: "Fix the highlighted fields.", err_range: "{0} must be between {1} and {2}.",
+    lbl_lat: "Latitude", lbl_lon: "Longitude", lbl_dur: "Duration",
+    custom_warn: "Edited coordinates do not change the calculation: the model uses the chosen site.",
+    ex_title: "Explore the scenario", ex_horizon: "Sun and Earth above the horizon", ex_time: "Scenario time",
+    play: "Play", pause: "Pause", ex_sun_up: "Sun above horizon", ex_earth_up: "Earth above horizon",
+    ex_next_sun: "Next light change", ex_next_earth: "Next Earth visibility change",
+    yes: "yes", no: "no", none_in_window: "none in window",
+    ex_timeline: "Timeline", ex_light: "Sunlight", ex_earthvis: "Earth visible",
+    leg_sun: "Sun", leg_earth: "Earth", leg_lit: "sunlit", leg_dark: "dark", leg_vis: "visible",
+    k_sunlit: "Sunlit hours", k_dark: "Longest darkness", k_earth: "Hours with Earth visible", k_block: "Longest Earth blockage",
+    note_rf: "Geometric visibility does not guarantee a radio link. The RF budget is not modelled.",
+    ex_save: "Save scenario to history", saved: "Scenario saved to history.",
+    ex_map: "Site polar map", map_note: "Enlarged polar projection, not to scale. Radius = colatitude × 60 px/°.",
+    src_line: "Source: synthetic model · UTC time · units: h, ° and kg",
+    edu1: "How to read the chart: the curve is the terrain seen from the site. Sun or Earth above it are visible.",
+    cmp_title: "Compare sites", cmp_note: "Same date, duration and model.",
+    m_result: "Result", m_lat: "Latitude", m_lon: "Longitude",
+    m_sunlit: "Sunlit hours", m_dark: "Longest darkness", m_earth: "Hours with Earth visible", m_block: "Longest Earth blockage",
+    rec_title: "Recover from delay", rec_note: "See what changes when landing is delayed, at each site.",
+    rec_table: "Chosen site", rec_alt: "Alternatives by site", rec_violated: "Violated constraints",
+    rec_delay: "Delay", rec_result: "Result", rec_dark: "Longest darkness", rec_fuel: "Fuel margin",
+    rec_none: "no delay", rec_none_v: "no constraint violated",
+    res_viable: "viable", res_reduced_margin: "reduced margin", res_not_viable: "not viable",
+    v_dark: "darkness of {0} h, above {1} h", v_block: "Earth blocked for {0} h, above {1} h",
+    v_batt: "battery drops to {0}%", v_fuel: "fuel below reserve",
+    sci_title: "Science & engineering",
+    sci_banner: "Available light is not generated electrical power. Earth visibility is not a radio link.",
+    sci_light: "Available light", sci_batt: "Minimum battery", sci_earth: "Earth visible",
+    sci_light_n: "Not electrical power.", sci_batt_n: "Illustrative. Below {0}% is a limit.", sci_earth_n: "Does not guarantee a radio link.",
+    sci_trade: "Trade-offs", col_crit: "Criterion", col_sit: "Situation", col_note: "Note",
+    tr1: "More light", tr1_good: "favours power", tr1_bad: "limits power", tr1_n: "A higher Sun raises sunlit time.",
+    tr2: "More Earth visibility", tr2_good: "favours communication", tr2_bad: "limits communication", tr2_n: "Not a radio link.",
+    tr3: "Less darkness", tr3_good: "within limit", tr3_bad: "above limit", tr3_n: "Long darkness needs battery.",
+    sci_foot: "Illustrative limits. There is no universal ranking between science and engineering.",
+    sens_title: "Model sensitivity", sens_note: "Variation within the synthetic model. Not calibrated uncertainty or probability.",
+    sens_case: "Variation", sens_base: "Baseline", sens_obs: "Observer height +0.5 °", sens_dem_c: "Coarser DEM (×1.5)",
+    sens_dem_f: "Finer DEM (×0.5)", sens_step: "2-hour step",
+    ev_title: "Evidence and learning", ev_sources: "Sources",
+    ev_src_terrain: "Terrain: SYNTHETIC-TERRAIN-01 (not LOLA)",
+    ev_src_eph: "Ephemeris: SYNTHETIC-EPH-01 (not SPICE or JPL Horizons)",
+    ev_src_frame: "Reference frame: MOON_ME", ev_src_comp: "Component: interface prototype, no real engine",
+    ev_lim: "Limitations", ev_lim1: "No atmospheric refraction is applied.", ev_lim2: "No NASA data has been loaded yet.",
+    ev_lim3: "Fuel, food, pressurization and O2 are illustrative.", ev_lim4: "Do not use for mission or safety decisions.",
+    ev_nasa: "Official sources to verify", th_source: "Source", th_status: "Status", th_url: "Address",
+    st_candidate: "candidate (not downloaded)", ev_req: "Requirements (actual status, 2026-11-14)",
+    ev_req_note: "Red: blocked. Yellow: partial. Grey: pending. None is verified.",
+    ev_hist: "Scenario history", ev_hist_empty: "No scenarios saved yet.",
+    ev_export: "Export (copy JSON)", btn_copy: "Copy", copied: "Copied.", copy_fail: "Select the text and copy it manually.",
+    ev_edu: "To learn", edu2: "Libration makes Earth wobble in the sky. This model does not compute it.",
+    edu3: "Sunlight feeds solar cells; electrical power depends on area, efficiency and losses.",
+    th_site: "Site", th_start: "Start (UTC)", th_dur: "Duration", th_delay: "Delay", th_res: "Result", th_light: "Light",
+    ls_title: "Life support and fuel",
+    ls_banner: "All values in this area are illustrative. Do not use for safety decisions.",
+    ls_fuel: "Fuel", ls_food: "Food", ls_press: "Pressurization", ls_o2: "Oxygen", illus: "illustrative",
+    ls_rem: "Remaining", ls_res: "Minimum reserve", ls_margin: "Margin", ls_people: "People", ls_cons: "Use per person",
+    ls_stock: "Stock left", ls_ration: "Rationing", ls_pres: "Cabin pressure", ls_range: "Accepted range",
+    ls_status: "Status", ls_partial: "Partial pressure", ls_min: "Minimum accepted", ls_o2stock: "Stock left",
+    st_nominal: "nominal", st_out: "out of range", st_check: "check", rat_normal: "normal", rat_reduced: "reduced",
+    footer: "Prototype with synthetic model. No value on this screen is a validated result."
+  }
+};
+let lang = "pt";
+function t(k, ...a) {
+  let s = (I18N[lang] && I18N[lang][k]) || I18N.pt[k] || k;
+  a.forEach((v, i) => { s = s.split("{" + i + "}").join(String(v)); });
+  return s;
+}
+function num(x, d = 1) { const s = Number(x).toFixed(d); return lang === "pt" ? s.replace(".", ",") : s; }
+function applyStatic() {
+  document.documentElement.lang = lang === "pt" ? "pt-BR" : "en";
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $("lang-btn").textContent = lang === "pt" ? "English" : "Português";
+  $("play").textContent = state.playing ? t("pause") : t("play");
+  document.querySelectorAll("[data-edu]").forEach(el => { el.hidden = state.audience !== "educational"; });
+}
+
+// ---------- Modelo sintético ----------
+const SITES = {
+  A: { name: "SYN-SITE-A", lat: -89.5, lon: 45.0, rough: 0.0 },
+  B: { name: "SYN-SITE-B", lat: -88.9, lon: -30.2, rough: 1.0 },
+  C: { name: "SYN-SITE-C", lat: -87.6, lon: 120.0, rough: 0.5 }
+};
+const DAY = 24, LUNAR_H = 29.53 * DAY, ORBIT_H = 27.32 * DAY;
+const LIMITS = { darkH: 30, blockH: 24, battery: 20, fuelReserveKg: 150 };
+const state = { site: "A", startMs: Date.UTC(2026, 10, 15, 12), dur: 72, audience: "technical", sims: null, saved: [], playing: null };
+
+function horizonAt(az, site, o = { dh: 0, roughMult: 1 }) {
+  return 1.5 * Math.sin(2 * az * Math.PI / 180) + 1.5 + site.rough * o.roughMult + o.dh;
+}
+function norm(a) { return ((a % 360) + 360) % 360; }
+function bodies(site, t) {
+  return {
+    sunEl: 3 * Math.sin(2 * Math.PI * t / LUNAR_H),
+    sunAz: norm(360 * t / LUNAR_H),
+    earthEl: -1 + 2 * Math.sin(2 * Math.PI * t / ORBIT_H + 1),
+    earthAz: norm(180 * t / ORBIT_H + 90)
+  };
+}
+function simulate(siteKey, dur, delay, opt = {}) {
+  const o = { dh: 0, roughMult: 1, step: 1, ...opt };
+  const site = SITES[siteKey];
+  const hours = [];
+  let battery = 100, minBattery = 100;
+  for (let i = 0; i <= dur; i += o.step) {
+    const b = bodies(site, delay + i);
+    const sunUp = b.sunEl > horizonAt(b.sunAz, site, o);
+    const earthUp = b.earthEl > horizonAt(b.earthAz, site, o);
+    battery = Math.max(0, Math.min(100, battery + (sunUp ? 3 : -2) * o.step));
+    minBattery = Math.min(minBattery, battery);
+    hours.push({ i, ...b, sunUp, earthUp });
+  }
+  const runOf = f => { let best = 0, cur = 0; for (const h of hours) { cur = f(h) ? cur + 1 : 0; best = Math.max(best, cur); } return best * o.step; };
+  const r = {
+    siteKey, dur, delay, hours,
+    sunlitH: hours.filter(h => h.sunUp).length * o.step,
+    earthH: hours.filter(h => h.earthUp).length * o.step,
+    darkH: runOf(h => !h.sunUp),
+    blockH: runOf(h => !h.earthUp),
+    minBattery,
+    fuelRemaining: 450 - 1.2 * dur,
+    foodLeftKg: 500 - 4 * 0.62 * dur / DAY,
+    o2Kg: 64 - 4 * 0.84 * dur / DAY,
+    pressure: 101.3, o2Partial: 21.2
+  };
+  r.fuelMargin = r.fuelRemaining - LIMITS.fuelReserveKg;
+  r.violated = [];
+  if (r.darkH > LIMITS.darkH) r.violated.push(["dark", r.darkH, LIMITS.darkH]);
+  if (r.blockH > LIMITS.blockH) r.violated.push(["block", r.blockH, LIMITS.blockH]);
+  if (r.minBattery < LIMITS.battery) r.violated.push(["batt", Math.round(r.minBattery)]);
+  if (r.fuelMargin < 0) r.violated.push(["fuel"]);
+  r.result = r.violated.length ? "not_viable" : (r.fuelMargin < 50 ? "reduced_margin" : "viable");
+  return r;
+}
+function nextChange(hours, key, from) {
+  for (let j = from + 1; j < hours.length; j++) if (hours[j][key] !== hours[from][key]) return j;
+  return null;
+}
+const fmtUtc = ms => new Date(ms).toISOString().slice(0, 16).replace("T", " ");
+const utcAt = (sim, idx) => fmtUtc(state.startMs + (sim.delay + sim.hours[idx].i) * 3600e3);
+const resLabel = r => t("res_" + r);
+const resColor = { viable: "var(--ok)", reduced_margin: "var(--warn)", not_viable: "var(--bad)" };
+const pill = r => '<span class="pill" style="color:' + resColor[r] + '">' + resLabel(r) + '</span>';
+function violationText(v) {
+  if (v[0] === "dark") return t("v_dark", v[1], v[2]);
+  if (v[0] === "block") return t("v_block", v[1], v[2]);
+  if (v[0] === "batt") return t("v_batt", v[1]);
+  return t("v_fuel");
+}
+
+// ---------- Início ----------
+document.querySelectorAll("[data-aud]").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("[data-aud]").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  state.audience = b.dataset.aud;
+  applyStatic();
+}));
+$("site").addEventListener("change", e => {
+  $("lat").value = SITES[e.target.value].lat; $("lon").value = SITES[e.target.value].lon;
+});
+function checkField(input, errId, min, max, label) {
+  const raw = input.value.trim().replace(",", ".");
+  const n = Number(raw);
+  const ok = raw !== "" && Number.isFinite(n) && n >= min && n <= max;
+  input.setAttribute("aria-invalid", ok ? "false" : "true");
+  $(errId).textContent = ok ? "" : t("err_range", label, min, max);
+  return ok ? n : null;
+}
+$("start").addEventListener("submit", e => {
+  e.preventDefault();
+  const lat = checkField($("lat"), "lat-e", -90, 90, t("lbl_lat"));
+  const lon = checkField($("lon"), "lon-e", -180, 180, t("lbl_lon"));
+  const dur = checkField($("dur"), "dur-e", 1, 336, t("lbl_dur"));
+  if (lat === null || lon === null || dur === null) {
+    $("form-msg").textContent = t("err_fix");
+    const first = document.querySelector('[aria-invalid="true"]'); if (first) first.focus();
+    return;
+  }
+  const site = SITES[$("site").value];
+  const edited = Math.abs(lat - site.lat) > 0.001 || Math.abs(lon - site.lon) > 0.001;
+  $("form-msg").textContent = edited ? t("custom_warn") : "";
+  const when = $("when").value;
+  if (when) state.startMs = Date.parse(when + ":00Z");
+  state.site = $("site").value;
+  state.dur = Math.round(dur);
+  state.sims = { A: simulate("A", state.dur, 0), B: simulate("B", state.dur, 0), C: simulate("C", state.dur, 0) };
+  location.hash = "explorar";
+});
+
+// ---------- Explorar ----------
+function renderExplore() {
+  const sim = state.sims[state.site];
+  const s = $("t-slider");
+  s.max = sim.hours.length - 1;
+  if (+s.value > +s.max) s.value = 0;
+  const idx = +s.value, h = sim.hours[idx], site = SITES[sim.siteKey];
+  $("t-label").textContent = utcAt(sim, idx);
+  const pts = [];
+  for (let a = 0; a <= 360; a += 4) pts.push((28 + a / 360 * 280).toFixed(1) + "," + (85 - horizonAt(a, site) * 20).toFixed(1));
+  $("horizon-line").setAttribute("points", pts.join(" ") + " 308,170 28,170");
+  const xy = (az, el) => [28 + az / 360 * 280, 85 - el * 20];
+  const [sx, sy] = xy(h.sunAz, h.sunEl), [ex, ey] = xy(h.earthAz, h.earthEl);
+  $("sun-dot").setAttribute("cx", sx); $("sun-dot").setAttribute("cy", sy);
+  $("earth-dot").setAttribute("cx", ex); $("earth-dot").setAttribute("cy", ey);
+  $("sun-state").textContent = (h.sunUp ? t("yes") : t("no")) + " · " + num(h.sunEl) + "°";
+  $("earth-state").textContent = (h.earthUp ? t("yes") : t("no")) + " · " + num(h.earthEl) + "°";
+  const ns = nextChange(sim.hours, "sunUp", idx), ne = nextChange(sim.hours, "earthUp", idx);
+  $("k-next-sun").textContent = ns === null ? t("none_in_window") : utcAt(sim, ns);
+  $("k-next-earth").textContent = ne === null ? t("none_in_window") : utcAt(sim, ne);
+  const strip = (id, f, on) => {
+    const el = $(id); el.innerHTML = "";
+    sim.hours.forEach(x => { const c = document.createElement("i"); c.style.background = f(x) ? on : "var(--line)"; el.appendChild(c); });
+  };
+  strip("strip-sun", x => x.sunUp, "var(--sun)");
+  strip("strip-earth", x => x.earthUp, "var(--earth)");
+  $("k-sunlit").textContent = sim.sunlitH + " h";
+  $("k-dark").textContent = sim.darkH + " h";
+  $("k-earth").textContent = sim.earthH + " h";
+  $("k-block").textContent = sim.blockH + " h";
+  renderMap();
+}
+function togglePlay() {
+  const s = $("t-slider");
+  if (state.playing) { clearInterval(state.playing); state.playing = null; $("play").textContent = t("play"); return; }
+  $("play").textContent = t("pause");
+  state.playing = setInterval(() => {
+    if (+s.value >= +s.max) { togglePlay(); return; }
+    s.value = +s.value + 1; renderExplore();
+  }, 400);
+}
+$("play").addEventListener("click", togglePlay);
+$("t-slider").addEventListener("input", renderExplore);
+$("save").addEventListener("click", () => {
+  const sim = state.sims[state.site];
+  const idx = +$("t-slider").value;
+  state.saved.push({
+    site: SITES[sim.siteKey].name, start_utc: fmtUtc(state.startMs), duration_h: sim.dur, delay_h: sim.delay,
+    selected_utc: utcAt(sim, idx), result: sim.result, sunlit_h: sim.sunlitH, dark_h: sim.darkH,
+    earth_visible_h: sim.earthH, earth_blocked_h: sim.blockH, synthetic: true
+  });
+  $("save-msg").textContent = t("saved");
+});
+function renderMap() {
+  const g = $("map-sites"); g.innerHTML = "";
+  const legend = [];
+  Object.keys(SITES).forEach(k => {
+    const s = SITES[k];
+    const colat = s.lat + 90;
+    const r = colat * 60, rad = s.lon * Math.PI / 180;
+    const x = 160 + r * Math.cos(rad), y = 160 + r * Math.sin(rad);
+    const on = k === state.site;
+    g.insertAdjacentHTML("beforeend",
+      '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (on ? 7 : 5) + '" fill="' + (on ? "var(--accent)" : "var(--sun)") + '"/>' +
+      '<text x="' + (x + 9).toFixed(1) + '" y="' + (y + 4).toFixed(1) + '">' + s.name + '</text>');
+    legend.push('<p>' + s.name + ' · lat ' + num(s.lat) + '° · lon ' + num(s.lon) + '°</p>');
+  });
+  $("map-legend").innerHTML = legend.join("");
+}
+
+// ---------- Comparar ----------
+function renderCompare() {
+  const keys = ["A", "B", "C"];
+  const head = "<thead><tr><th>" + t("m_result") + "</th>" + keys.map(k => "<th>" + SITES[k].name + "</th>").join("") + "</tr></thead>";
+  const rows = [
+    [t("m_lat"), keys.map(k => num(SITES[k].lat) + "°")],
+    [t("m_lon"), keys.map(k => num(SITES[k].lon) + "°")],
+    [t("m_sunlit"), keys.map(k => state.sims[k].sunlitH + " h")],
+    [t("m_dark"), keys.map(k => state.sims[k].darkH + " h")],
+    [t("m_earth"), keys.map(k => state.sims[k].earthH + " h")],
+    [t("m_block"), keys.map(k => state.sims[k].blockH + " h")],
+    [t("m_result"), keys.map(k => pill(state.sims[k].result))]
+  ];
+  $("cmp-table").innerHTML = head + "<tbody>" + rows.map(r => "<tr><td>" + r[0] + "</td>" + r[1].map(c => "<td>" + c + "</td>").join("") + "</tr>").join("") + "</tbody>";
+}
+
+// ---------- Recuperar ----------
+const DELAYS = [0, 24, 48, 72];
+function delayLabel(d) { return d ? "+" + d + " h" : t("rec_none"); }
+function renderRecover() {
+  const sims = DELAYS.map(d => simulate(state.site, state.dur, d));
+  $("rec-table").innerHTML = "<thead><tr><th>" + t("rec_delay") + "</th><th>" + t("rec_result") + "</th><th>" + t("rec_dark") + "</th><th>" + t("rec_fuel") + "</th></tr></thead><tbody>" +
+    sims.map((s, k) => "<tr><td>" + delayLabel(DELAYS[k]) + "</td><td>" + pill(s.result) + "</td><td>" + s.darkH + " h</td><td>" + num(s.fuelMargin) + " kg</td></tr>").join("") + "</tbody>";
+  const keys = ["A", "B", "C"];
+  const alt = DELAYS.map(d => [d, keys.map(k => simulate(k, state.dur, d).result)]);
+  $("alt-table").innerHTML = "<thead><tr><th>" + t("rec_delay") + "</th>" + keys.map(k => "<th>" + SITES[k].name + "</th>").join("") + "</tr></thead><tbody>" +
+    alt.map(r => "<tr><td>" + delayLabel(r[0]) + "</td>" + r[1].map(x => "<td>" + pill(x) + "</td>").join("") + "</tr>").join("") + "</tbody>";
+  $("rec-detail").innerHTML = sims.map((s, k) =>
+    "<p><strong>" + delayLabel(DELAYS[k]) + ":</strong> " +
+    (s.violated.length ? s.violated.map(violationText).join("; ") : t("rec_none_v")) + "</p>").join("");
+}
+
+// ---------- Ciência e engenharia ----------
+function renderScience() {
+  const s = state.sims[state.site];
+  const cards = [
+    [t("sci_light"), s.sunlitH + " h", t("sci_light_n")],
+    [t("sci_batt"), Math.round(s.minBattery) + " %", t("sci_batt_n", LIMITS.battery)],
+    [t("sci_earth"), s.earthH + " h", t("sci_earth_n")]
+  ];
+  $("ciencia-cards").innerHTML = cards.map(c => '<div class="card stack"><h2>' + c[0] + '</h2><p class="mono" style="font-size:26px">' + c[1] + '</p><p class="muted">' + c[2] + '</p></div>').join("");
+  const trade = [
+    [t("tr1"), s.sunlitH >= 40 ? t("tr1_good") : t("tr1_bad"), t("tr1_n")],
+    [t("tr2"), s.earthH >= 36 ? t("tr2_good") : t("tr2_bad"), t("tr2_n")],
+    [t("tr3"), s.darkH <= LIMITS.darkH ? t("tr3_good") : t("tr3_bad"), t("tr3_n")]
+  ];
+  $("tradeoff-table").innerHTML = "<thead><tr><th>" + t("col_crit") + "</th><th>" + t("col_sit") + "</th><th>" + t("col_note") + "</th></tr></thead><tbody>" +
+    trade.map(r => "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td><td>" + r[2] + "</td></tr>").join("") + "</tbody>";
+  const variants = [
+    [t("sens_base"), {}],
+    [t("sens_obs"), { dh: 0.5 }],
+    [t("sens_dem_c"), { roughMult: 1.5 }],
+    [t("sens_dem_f"), { roughMult: 0.5 }],
+    [t("sens_step"), { step: 2 }]
+  ];
+  const base = simulate(state.site, state.dur, 0);
+  $("sens-table").innerHTML = "<thead><tr><th>" + t("sens_case") + "</th><th>" + t("m_sunlit") + "</th><th>" + t("m_dark") + "</th><th>" + t("m_earth") + "</th></tr></thead><tbody>" +
+    variants.map(v => {
+      const r = simulate(state.site, state.dur, 0, v[1]);
+      const d = (x, b) => x === b ? x + " h" : x + " h (" + (x - b >= 0 ? "+" : "") + num(x - b, 0) + ")";
+      return "<tr><td>" + v[0] + "</td><td>" + d(r.sunlitH, base.sunlitH) + "</td><td>" + d(r.darkH, base.darkH) + "</td><td>" + d(r.earthH, base.earthH) + "</td></tr>";
+    }).join("") + "</tbody>";
+}
+
+// ---------- Evidências ----------
+const NASA_SRC = [
+  ["LRO / LOLA", "https://pds-geosciences.wustl.edu/missions/lro/lola.htm"],
+  ["Planetary Data System", "https://pds.nasa.gov/"],
+  ["NAIF SPICE", "https://naif.jpl.nasa.gov/naif/"],
+  ["NASA Moon Trek", "https://trek.nasa.gov/moon/"]
+];
+const REQS = [
+  ["R-01", "blocked"], ["R-02", ""], ["R-03", ""], ["R-04", "blocked"], ["R-05", "partial"], ["R-06", "partial"],
+  ["R-07", ""], ["R-08", "blocked"], ["R-09", ""], ["R-10", "blocked"], ["R-11", ""], ["R-12", "blocked"],
+  ["R-13", ""], ["R-14", ""], ["R-15", "blocked"], ["R-16", ""], ["R-17", ""], ["R-18", ""], ["R-19", "blocked"],
+  ["D-01", ""], ["D-02", ""], ["D-03", ""], ["D-04", ""], ["D-05", ""], ["D-06", ""], ["D-07", ""], ["D-08", "partial"], ["D-09", ""]
+];
+function renderEvidence() {
+  $("nasa-table").innerHTML = "<thead><tr><th>" + t("th_source") + "</th><th>" + t("th_status") + "</th><th>" + t("th_url") + "</th></tr></thead><tbody>" +
+    NASA_SRC.map(s => '<tr><td>' + s[0] + '</td><td>' + t("st_candidate") + '</td><td style="text-align:left"><a href="' + s[1] + '" target="_blank" rel="noopener">' + s[1] + '</a></td></tr>').join("") + "</tbody>";
+  $("req-chips").innerHTML = REQS.map(r => '<span class="chip ' + r[1] + '">' + r[0] + '</span>').join("");
+  $("hist-table").innerHTML = state.saved.length ? "<thead><tr><th>" + t("th_site") + "</th><th>" + t("th_start") + "</th><th>" + t("th_dur") + "</th><th>" + t("th_delay") + "</th><th>" + t("th_res") + "</th><th>" + t("th_light") + "</th></tr></thead><tbody>" +
+    state.saved.map(r => "<tr><td>" + r.site + "</td><td>" + r.start_utc + "</td><td>" + r.duration_h + " h</td><td>" + delayLabel(r.delay_h) + "</td><td>" + resLabel(r.result) + "</td><td>" + r.sunlit_h + " h</td></tr>").join("") + "</tbody>" : "";
+  $("hist-empty").hidden = state.saved.length > 0;
+  $("export").value = JSON.stringify({
+    version: "0.1.0", status: "unverified", synthetic: true,
+    scenarios: state.saved,
+    provenance: { terrain: "SYNTHETIC-TERRAIN-01", ephemeris: "SYNTHETIC-EPH-01", frame: "MOON_ME", generated_by: "onboard-prototype-js" }
+  }, null, 2);
+}
+$("copy").addEventListener("click", () => {
+  const ta = $("export");
+  navigator.clipboard.writeText(ta.value)
+    .then(() => { $("copy-msg").textContent = t("copied"); })
+    .catch(() => { ta.select(); $("copy-msg").textContent = t("copy_fail"); });
+});
+
+// ---------- Suporte de vida ----------
+function renderLife() {
+  const s = state.sims[state.site];
+  const fuelPct = Math.max(0, Math.min(100, s.fuelRemaining / 450 * 100));
+  $("fuel-kv").innerHTML = "<dt>" + t("ls_rem") + "</dt><dd class=\"mono\">" + num(s.fuelRemaining) + " kg</dd>" +
+    "<dt>" + t("ls_res") + "</dt><dd class=\"mono\">" + LIMITS.fuelReserveKg + " kg</dd>" +
+    "<dt>" + t("ls_margin") + "</dt><dd class=\"mono\" style=\"color:" + (s.fuelMargin < 0 ? "var(--bad)" : "var(--ok)") + "\">" + num(s.fuelMargin) + " kg</dd>";
+  $("fuel-bar").style.width = fuelPct + "%";
+  $("food-kv").innerHTML = "<dt>" + t("ls_people") + "</dt><dd class=\"mono\">4</dd>" +
+    "<dt>" + t("ls_cons") + "</dt><dd class=\"mono\">" + num(0.62, 2) + " kg/d</dd>" +
+    "<dt>" + t("ls_stock") + "</dt><dd class=\"mono\">" + num(s.foodLeftKg) + " kg</dd>" +
+    "<dt>" + t("ls_ration") + "</dt><dd class=\"mono\">" + (s.foodLeftKg > 100 ? t("rat_normal") : t("rat_reduced")) + "</dd>";
+  const pOk = s.pressure >= 95 && s.pressure <= 105;
+  $("press-kv").innerHTML = "<dt>" + t("ls_pres") + "</dt><dd class=\"mono\">" + num(s.pressure) + " kPa</dd>" +
+    "<dt>" + t("ls_range") + "</dt><dd class=\"mono\">95 a 105 kPa</dd>" +
+    "<dt>" + t("ls_status") + "</dt><dd class=\"mono\">" + (pOk ? t("st_nominal") : t("st_out")) + "</dd>";
+  const oOk = s.o2Partial >= 19 && s.o2Kg > 20;
+  $("o2-kv").innerHTML = "<dt>" + t("ls_partial") + "</dt><dd class=\"mono\">" + num(s.o2Partial) + " kPa</dd>" +
+    "<dt>" + t("ls_min") + "</dt><dd class=\"mono\">19 kPa</dd>" +
+    "<dt>" + t("ls_o2stock") + "</dt><dd class=\"mono\">" + num(s.o2Kg) + " kg</dd>" +
+    "<dt>" + t("ls_status") + "</dt><dd class=\"mono\">" + (oOk ? t("st_nominal") : t("st_check")) + "</dd>";
+}
+
+// ---------- Navegação ----------
+const VIEWS = ["inicio", "explorar", "comparar", "recuperar", "ciencia", "evidencias", "suporte"];
+function route() {
+  const name = (location.hash || "#inicio").slice(1);
+  const view = VIEWS.includes(name) ? name : "inicio";
+  if (view !== "explorar" && state.playing) togglePlay();
+  if (!state.sims && view !== "inicio" && view !== "evidencias") { location.hash = "inicio"; return; }
+  VIEWS.forEach(v => $("v-" + v).classList.toggle("hidden-view", v !== view));
+  document.querySelectorAll("nav a").forEach(a => {
+    if (a.dataset.view === view) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  });
+  applyStatic();
+  if (view === "explorar") renderExplore();
+  if (view === "comparar") renderCompare();
+  if (view === "recuperar") renderRecover();
+  if (view === "ciencia") renderScience();
+  if (view === "evidencias") renderEvidence();
+  if (view === "suporte") renderLife();
+}
+$("lang-btn").addEventListener("click", () => { lang = lang === "pt" ? "en" : "pt"; route(); });
+window.addEventListener("hashchange", route);
+applyStatic();
+route();
+</script>
