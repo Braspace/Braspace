@@ -14,7 +14,24 @@ const staticFiles=new Map([
   ["/styles.css",{name:"styles.css",type:"text/css; charset=utf-8"}],
   ["/app.js",{name:"app.js",type:"text/javascript; charset=utf-8"}],
   ["/moon3d.js",{name:"moon3d.js",type:"text/javascript; charset=utf-8"}],
+  ["/classic.html",{name:"classic.html",type:"text/html; charset=utf-8"}],
+  ["/polar-map.js",{name:"polar-map.js",type:"text/javascript; charset=utf-8"}],
+  ["/polar-map.css",{name:"polar-map.css",type:"text/css; charset=utf-8"}],
 ]);
+// v3 shell: design system (ds/), route views (shell/) and static images (assets/).
+// Fixed prefixes, strict character set, known extensions only.
+const v3Types={".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".woff2":"font/woff2",
+ ".json":"application/json; charset=utf-8",".webp":"image/webp"};
+export function v3File(pathname){
+ const m=/^\/(ds|shell|assets)\/[A-Za-z0-9_\-\/]+\.(js|css|woff2|json|webp)$/.exec(pathname);
+ if(!m||pathname.includes(".."))return null;
+ const ext=pathname.slice(pathname.lastIndexOf("."));
+ if(m[1]==="assets"&&![".json",".webp"].includes(ext))return null;
+ if(m[1]!=="assets"&&[".json",".webp"].includes(ext))return null;
+ const name=path.normalize(pathname.slice(1));
+ if(!name.startsWith(m[1]+path.sep))return null;
+ return {name,type:v3Types[ext]};
+}
 // Polar Lab / Landing Lab: static page, modules and precomputed NASA-derived data.
 // Only fixed prefixes, a strict character set and known extensions are served.
 const labTypes={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",
@@ -45,6 +62,7 @@ export function moonproofFile(pathname){
 const onboardTypes=new Map([
  ["index.html","text/html; charset=utf-8"],
  ["cockpit.html","text/html; charset=utf-8"],
+ ["cockpit.css","text/css; charset=utf-8"],
  ...["app.js","api.js","cockpit.js","config.js","features.js","live.js","model.js","request.js","sim.js"].map(name=>[name,"text/javascript; charset=utf-8"])
 ]);
 export function onboardFile(pathname){
@@ -143,7 +161,7 @@ export function createServer(){
   if(pathname==="/onboard/"||pathname==="/onboard/index.html"||pathname==="/onboard/cockpit.html"){
    res.setHeader("Content-Security-Policy",csp.replace("style-src 'self'","style-src 'self' 'unsafe-inline'"));
   }
-  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname)||studioFile(pathname)||moonproofFile(pathname);
+  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname)||studioFile(pathname)||moonproofFile(pathname)||v3File(pathname);
   if(!file){res.writeHead(404);res.end("Not found");return;}
   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
   try{
