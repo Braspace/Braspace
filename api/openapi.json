@@ -1087,6 +1087,222 @@
           }
         }
       }
+    },
+    "/api/vector/status": {
+      "get": {
+        "summary": "Optional metadata-only vector capability and model configuration; default disabled",
+        "operationId": "getVectorStatus",
+        "responses": {
+          "200": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "available": {
+                      "type": "boolean"
+                    },
+                    "dimension": {
+                      "type": "integer",
+                      "enum": [
+                        384
+                      ]
+                    },
+                    "model_id": {
+                      "type": "string"
+                    },
+                    "purpose": {
+                      "type": "string"
+                    },
+                    "scientifically_validated": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "available",
+                    "dimension",
+                    "model_id",
+                    "purpose",
+                    "scientifically_validated"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vector/search": {
+      "post": {
+        "summary": "Optional cosine-nearest source metadata (NOT lunar physics); 384D client-supplied vector from a pinned model",
+        "operationId": "searchSourceMetadata",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "model_id": {
+                    "type": "string"
+                  },
+                  "vector": {
+                    "type": "array",
+                    "minItems": 384,
+                    "maxItems": 384,
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10
+                  }
+                },
+                "required": [
+                  "model_id",
+                  "vector"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "model_id": {
+                      "type": "string"
+                    },
+                    "dimension": {
+                      "type": "integer",
+                      "enum": [
+                        384
+                      ]
+                    },
+                    "scientifically_validated": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "limitations": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "source_ref": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "source_url": {
+                            "type": "string"
+                          },
+                          "sha256": {
+                            "type": "string"
+                          },
+                          "similarity": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "source_ref",
+                          "title",
+                          "source_url",
+                          "sha256",
+                          "similarity"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "model_id",
+                    "dimension",
+                    "results",
+                    "scientifically_validated",
+                    "limitations"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1134,7 +1350,12 @@
               "LAYER_NOT_PROXIED",
               "LAYER_UNAVAILABLE",
               "NO_SERIES_DATA",
-              "INVALID_STEP"
+              "INVALID_STEP",
+              "VECTOR_UNAVAILABLE",
+              "INVALID_MODEL",
+              "MODEL_MISMATCH",
+              "INVALID_LIMIT",
+              "INVALID_VECTOR"
             ]
           }
         },

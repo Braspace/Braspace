@@ -150,6 +150,7 @@ func routes(binary string) http.Handler {
  if err!=nil { panic(fmt.Errorf("site data: %w",err)) }
  (&missionAPI{store:store,engine:newEngineClient(binary)}).register(mux)
  registerLayers(mux,store)
+ registerVectorAPI(mux) // optional, disabled by default; never changes mission physics
  return mux
 }
 func main() {
