@@ -26,6 +26,95 @@ export function pixelToLatLon(meta, col, row) {
   return { lat: (2 * Math.atan(rho / (2 * R))) / DEG - 90, lon: Math.atan2(x, y) / DEG };
 }
 
+
+function rectIntersectsSegment(r, x1, y1, x2, y2) {
+  const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
+  const minY = Math.min(y1, y2), maxY = Math.max(y1, y2);
+  if (maxX < r.x1 || minX > r.x2 || maxY < r.y1 || minY > r.y2) return false;
+  if (x1 === x2) return x1 >= r.x1 && x1 <= r.x2;
+  if (y1 === y2) return y1 >= r.y1 && y1 <= r.y2;
+  return true;
+}
+
+function rectIntersectsCircle(r, cx, cy, rad, pad = 3) {
+  const nearX = Math.max(r.x1, Math.min(cx, r.x2));
+  const nearY = Math.max(r.y1, Math.min(cy, r.y2));
+  const farX = Math.abs(cx - r.x1) > Math.abs(cx - r.x2) ? r.x1 : r.x2;
+  const farY = Math.abs(cy - r.y1) > Math.abs(cy - r.y2) ? r.y1 : r.y2;
+  const dMin = Math.hypot(nearX - cx, nearY - cy);
+  const dMax = Math.hypot(farX - cx, farY - cy);
+  return dMin <= rad + pad && dMax >= rad - pad;
+}
+
+export function labelBox(name, p, dx, dy, anchor) {
+  const w = Math.max(24, name.length * 12.2 + 8);
+  const x1 = anchor === "start" ? p.col + dx : anchor === "end" ? p.col + dx - w : p.col + dx - w / 2;
+  const x2 = x1 + w;
+  const y1 = p.row + dy - 18;
+  const y2 = p.row + dy + 6;
+  return { x1, y1, x2, y2 };
+}
+
+export function countGraticuleCrossings(box, meta) {
+  const c = latLonToPixel(meta, -90, 0);
+  const padBox = { x1: box.x1 - 4, y1: box.y1 - 4, x2: box.x2 + 4, y2: box.y2 + 4 };
+  let hits = 0;
+  for (const lon of [0, 90, 180, -90]) {
+    const s = latLonToPixel(meta, -89, lon);
+    const e = latLonToPixel(meta, meta.latitude_edge_deg, lon);
+    if (rectIntersectsSegment(padBox, s.col, s.row, e.col, e.row)) hits++;
+  }
+  for (const lat of [-89, -88, -87]) {
+    const r = latLonToPixel(meta, lat, 90).col - c.col;
+    if (rectIntersectsCircle(box, c.col, c.row, r, 3)) hits++;
+  }
+  return hits;
+}
+
+export function chooseLabelPlacement(name, p, meta) {
+  const W = meta.width_px, H = meta.height_px;
+  const preferRight = p.col < W * 0.72;
+  const candidates = preferRight
+    ? [
+        { dx: 11, dy: 4, anchor: "start" },
+        { dx: 11, dy: -14, anchor: "start" },
+        { dx: 11, dy: 24, anchor: "start" },
+        { dx: 11, dy: -26, anchor: "start" },
+        { dx: 11, dy: 32, anchor: "start" },
+        { dx: -11, dy: -14, anchor: "end" },
+        { dx: -11, dy: 24, anchor: "end" },
+        { dx: -11, dy: -26, anchor: "end" },
+        { dx: -11, dy: 32, anchor: "end" },
+        { dx: -11, dy: 4, anchor: "end" },
+        { dx: 0, dy: -16, anchor: "middle" },
+        { dx: 0, dy: 24, anchor: "middle" },
+      ]
+    : [
+        { dx: -11, dy: 4, anchor: "end" },
+        { dx: -11, dy: -18, anchor: "end" },
+        { dx: -24, dy: -18, anchor: "end" },
+        { dx: -11, dy: 24, anchor: "end" },
+        { dx: -11, dy: -26, anchor: "end" },
+        { dx: -11, dy: 32, anchor: "end" },
+        { dx: 11, dy: -18, anchor: "start" },
+        { dx: 24, dy: -18, anchor: "start" },
+        { dx: 11, dy: 24, anchor: "start" },
+        { dx: 11, dy: 4, anchor: "start" },
+        { dx: 0, dy: -18, anchor: "middle" },
+        { dx: 0, dy: 26, anchor: "middle" },
+      ];
+  let best = null;
+  for (const cand of candidates) {
+    const box = labelBox(name, p, cand.dx, cand.dy, cand.anchor);
+    const out = box.x1 < 12 || box.x2 > W - 12 || box.y1 < 12 || box.y2 > H - 12;
+    const hits = countGraticuleCrossings(box, meta);
+    const score = (out ? 100 : 0) + hits;
+    if (score === 0) return { ...cand, box, hits };
+    if (!best || score < best.score) best = { ...cand, box, hits, score };
+  }
+  return best;
+}
+
 function el(name, attrs = {}, text) {
   const n = document.createElementNS(SVG, name);
   for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
@@ -153,9 +242,9 @@ export async function mountPolarMap(container, opts = {}) {
           transform: `translate(${p.col.toFixed(2)} ${p.row.toFixed(2)})`, "data-site-id": site.id });
         g.append(el("title", {}, label));
         g.append(el("circle", { r: 7, class: "pm-site-dot" }));
-        const anchorRight = p.col < W * 0.72;
-        g.append(el("text", { x: anchorRight ? 11 : -11, y: 4, class: "pm-site-label",
-          "text-anchor": anchorRight ? "start" : "end" }, site.name));
+        const place = chooseLabelPlacement(site.name, p, meta);
+        g.append(el("text", { x: place.dx, y: place.dy, class: "pm-site-label",
+          "text-anchor": place.anchor }, site.name));
         const pick = () => { opts.onSelect?.(site); status.textContent = `Selected ${label}`; };
         g.addEventListener("click", pick);
         g.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); pick(); } });
