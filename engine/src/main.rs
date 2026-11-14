@@ -1,6 +1,9 @@
 //! BRASPACE minimal Rust geometric classifier.
 //! This executable DOES NOT derive ephemerides or load NASA LOLA terrain.
 //! Its output always identifies supplied inputs as unverified.
+//! Units: every angle is in degrees (fields end in `_deg`); azimuth in [0, 360), elevation in [-90, 90].
+//! The unit is never inferred from the magnitude and nothing is rescaled: near the lunar poles the Sun's
+//! elevation is a fraction of a degree, so small values are ordinary input (see tests/units_contract.rs).
 use serde::{Deserialize, Serialize};
 use std::io::{self, Read};
 
