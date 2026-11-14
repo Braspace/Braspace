@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {safeID,toUTC,compareRequest,recoverRequest,metricsFor,validationBadge,api} from "../studio/api.js";
+import {safeID,toUTC,compareRequest,recoverRequest,metricsFor,validationBadge,transitionSummary,api} from "../studio/api.js";
 
 test("site ids and UTC are validated; no silent client timezone conversions",()=>{
  assert.equal(safeID("connecting-ridge"),"connecting-ridge");
@@ -46,4 +46,15 @@ test("API path remains same origin, strict JSON, and does not fake unavailable d
  assert.equal(requests[0][0],"/api/sites");
  const bad=async()=>({ok:false,status:503,json:async()=>({code:"ENGINE_UNAVAILABLE"})});
  await assert.rejects(()=>api.sites(bad),/ENGINE_UNAVAILABLE/);
+});
+
+test("next visibility event always includes native-step uncertainty, never an interpolated exact countdown",()=>{
+ const p={sun:{epoch_utc:"2026-11-16T03:00:00Z",hours_from_start:6,resolution_seconds:3600,kind:"sunset"},earth:null,earth_null_reason:"NO_CHANGE_IN_WINDOW"};
+ const sun=transitionSummary(p,"sun","Sun");assert.match(sun.value,/sunset after 6.00 h/);
+ assert.match(sun.note,/preceding 3600 seconds/);
+ const earth=transitionSummary(p,"earth","Earth");
+ assert.equal(earth.value,"Not observed in requested window");
+ assert.match(earth.note,/NO_CHANGE_IN_WINDOW/);
+ const spoof=transitionSummary({sun:{epoch_utc:"someday",hours_from_start:0,resolution_seconds:0,kind:"sunrise"}},"sun","Sun");
+ assert.equal(spoof.value,"No trustworthy transition");
 });
