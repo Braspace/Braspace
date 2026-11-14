@@ -1,0 +1,98 @@
+{
+  "reference": "JPL Horizons API, topocentric AZ-EL quantity 4, airless",
+  "results": [
+    {
+      "site": "mons-mouton-im2",
+      "epochs": [
+        "2027-01-01T00:00Z",
+        "2027-02-03T04:00Z",
+        "2027-03-08T09:00Z",
+        "2027-04-10T13:00Z",
+        "2027-05-13T17:00Z",
+        "2027-06-15T21:00Z",
+        "2027-07-19T02:00Z",
+        "2027-08-21T06:00Z",
+        "2027-09-23T10:00Z",
+        "2027-10-26T14:00Z",
+        "2027-11-28T19:00Z",
+        "2027-12-31T23:00Z"
+      ],
+      "comparisons": [
+        {
+          "body": "sun",
+          "n": 12,
+          "max_abs_az_diff_deg_cos_el": 0.0,
+          "max_abs_el_diff_deg": 0.0
+        },
+        {
+          "body": "earth",
+          "n": 12,
+          "max_abs_az_diff_deg_cos_el": 0.0,
+          "max_abs_el_diff_deg": 3e-05
+        }
+      ]
+    },
+    {
+      "site": "malapert-massif",
+      "epochs": [
+        "2027-01-01T00:00Z",
+        "2027-02-03T04:00Z",
+        "2027-03-08T09:00Z",
+        "2027-04-10T13:00Z",
+        "2027-05-13T17:00Z",
+        "2027-06-15T21:00Z",
+        "2027-07-19T02:00Z",
+        "2027-08-21T06:00Z",
+        "2027-09-23T10:00Z",
+        "2027-10-26T14:00Z",
+        "2027-11-28T19:00Z",
+        "2027-12-31T23:00Z"
+      ],
+      "comparisons": [
+        {
+          "body": "sun",
+          "n": 12,
+          "max_abs_az_diff_deg_cos_el": 0.0,
+          "max_abs_el_diff_deg": 0.0
+        },
+        {
+          "body": "earth",
+          "n": 12,
+          "max_abs_az_diff_deg_cos_el": 0.0,
+          "max_abs_el_diff_deg": 3e-05
+        }
+      ]
+    },
+    {
+      "site": "nobile-rim-1",
+      "epochs": [
+        "2027-01-01T00:00Z",
+        "2027-02-03T04:00Z",
+        "2027-03-08T09:00Z",
+        "2027-04-10T13:00Z",
+        "2027-05-13T17:00Z",
+        "2027-06-15T21:00Z",
+        "2027-07-19T02:00Z",
+        "2027-08-21T06:00Z",
+        "2027-09-23T10:00Z",
+        "2027-10-26T14:00Z",
+        "2027-11-28T19:00Z",
+        "2027-12-31T23:00Z"
+      ],
+      "comparisons": [
+        {
+          "body": "sun",
+          "n": 12,
+          "max_abs_az_diff_deg_cos_el": 0.0,
+          "max_abs_el_diff_deg": 0.0
+        },
+        {
+          "body": "earth",
+          "n": 12,
+          "max_abs_az_diff_deg_cos_el": 0.0,
+          "max_abs_el_diff_deg": 3e-05
+        }
+      ]
+    }
+  ]
+}
