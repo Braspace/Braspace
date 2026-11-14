@@ -59,3 +59,22 @@
 6. @gustavofullstack: decisões, integração, PRs, deploy e submissão (#7, #8, #10, #11, #48).
 
 **Status:** documentação e planejamento. Nenhuma funcionalidade deve ser marcada `DONE` sem readback do código e testes.
+
+## Contribuições adicionais — Super Lua 3D e execução (registradas em 14/11)
+
+Estas propostas complementam os registros anteriores e foram apresentadas pela equipe como itens para organização e implementação.
+
+15. **Gamificação + mapa lunar 3D:** apoiar um globo lunar 3D atrativo, com interações e desafios educativos originais, mas preservando interface limpa e cálculo científico real. Encaminhado à Heloísa (#60) para roteiro/UX e a Gustavo (#54) para implementação.
+16. **Relatórios e dados da missão:** gerar relatório de cenário em HTML imprimível/PDF, incluindo resumo de observação, dados, fontes, alterações após recálculo, riscos classificados, causas, margens e alternativas. Encaminhado ao Gustavo (#58, código) e João Victor (#59, QA e taxonomia de riscos).
+17. **Divisão por especialidade:** Gustavo assume foco prioritário em código, integrações e deploy. Gabriel Freire codifica API; Joel produz ciência/Rust; Gabriel Maccachero lidera pesquisa, URLs e imagens sem obrigação de programar; Heloísa lidera produto, benchmark e UX sem obrigação de programar; João Victor cuida de QA, documentação, evidências e links sem obrigação de programar. Atribuições reais alteradas nas issues #7, #10, #37 e #43. Ver [papéis e handoffs](TEAM_ROLES_AND_HANDOFFS_2026.md).
+18. **Diversificação de fontes de dados:** Google Moon apenas inspiração de UX; LROC QuickMap e NASA Galleries como referências e descoberta; NASA SVS CGI Moon Kit como fonte de texturas autorizadas; LROC PDS/LOLA e JPL SPICE como fontes científicas a verificar antes de integração. É obrigatória a análise de licenças/atribuições por asset, sem scraping de tiles proprietários. Encaminhado a Maccachero (#55, #61) e Gabriel Freire (#57).
+
+### Referências estruturadas
+
+- [Super Moon 3D — arquitetura visual e científica](SUPER_MOON_3D_TECHNICAL_SPEC.md)
+- [Mission Report — HTML/PDF e matriz de risco](MISSION_REPORT_AND_RISK_SPEC.md)
+- [Fonte/asset: direitos Google, NASA e LROC](LUNAR_ASSETS_RIGHTS_AND_SOURCES.md)
+- [Gamificação educativa e cinco áreas](GAMIFIED_LUNAR_UX_AND_HUB.md)
+- [Roadmap de execução](SUPERMOON_DELIVERY_ROADMAP_2026.md)
+
+**Nota:** estes são requisitos e decisões operacionais planejadas; globo 3D, gamificação e relatório em execução ainda não foram comprovados. A autorização do merge PR #45 se refere ao bootstrap Go/Rust com CI, não à conclusão dessas funcionalidades.
