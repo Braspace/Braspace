@@ -1,6 +1,6 @@
 // Optional Go API health/provenance readout. Never substitutes synthetic data
 // for the scientific 2025–2028 lab products when the backend is unavailable.
-import {backendStatus,backendSky,backendVectorAvailability,presentationStatus} from "./backend-bridge.js";
+import {backendStatus,backendSky,backendVectorAvailability,backendOnboardTraining,presentationStatus} from "./backend-bridge.js";
 const button=document.getElementById("api-sync");
 const feedback=document.getElementById("api-feedback");
 async function refresh(){
@@ -30,3 +30,16 @@ async function refresh(){
 }
 button?.addEventListener("click",refresh);
 refresh();
+
+const simButton=document.getElementById("api-simulate");
+const simResult=document.getElementById("api-sim-result");
+simButton?.addEventListener("click",async()=>{
+ simButton.disabled=true;simResult.textContent="Running a SYNTHETIC training example via Go API…";
+ try{
+  const result=await backendOnboardTraining();
+  simResult.textContent="Go onboard: "+result.scienceStatus+" · "+
+   (result.simulationStatus||"unknown")+" · "+result.risks+
+   " modeled risk(s). TRAINING ONLY — not NASA data or flight software.";
+ }catch(e){simResult.textContent="Go onboard training unavailable ("+(e.code||"API error")+"). No mission values inferred.";}
+ finally{simButton.disabled=false;}
+});
