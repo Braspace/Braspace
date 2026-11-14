@@ -74,6 +74,7 @@
     },
     {
       "id": "connecting-ridge",
+        "series_file": "series/connecting-ridge.naif.unverified.json",
       "name": "Connecting Ridge",
       "kind": "artemis_iii_candidate_region",
       "coordinate": {

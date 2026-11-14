@@ -1,0 +1,35 @@
+{
+  "status": "REAL_NASA_LOLA_AND_NAIF_INPUTS_PRELIMINARY",
+  "validated_against_independent_reference": false,
+  "pds_product": "LRO-L-LOLA-4-GDR-V1.0/LDEM_80S_80M.IMG V2.0",
+  "pds_sha256": "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc",
+  "jpl_naif_kernels_sha256": {
+    "naif0012.tls": "678e32bdb5a744117a467cd9601cd6b373f0e9bc9bbde1371d5eee39600a039b",
+    "de440s.bsp": "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2",
+    "moon_pa_de440_200625.bpc": "60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f",
+    "moon_de440_250416.tf": "a47c71e9c9f33796bdafb2c9d69a7ee447b6016ecad80f71cd6f3e479f9cf768"
+  },
+  "kernel_sources": {
+    "naif0012.tls": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls",
+    "de440s.bsp": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
+    "moon_pa_de440_200625.bpc": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/moon_pa_de440_200625.bpc",
+    "moon_de440_250416.tf": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/satellites/moon_de440_250416.tf"
+  },
+  "spice_frame": "MOON_ME_DE440_ME421",
+  "spice_aberration_correction": "NONE (geometric; not light-time-corrected)",
+  "site_position_km": 1739.34973,
+  "site_latitude_deg": -89.4632,
+  "site_longitude_deg": -137.49,
+  "start_utc": "2026-11-15T00:00:00Z",
+  "samples": 72,
+  "step_minutes": 60,
+  "sun_earth_center_not_disc": true,
+  "lola_horizon_independently_validated": false,
+  "nasa_mission_certified": false,
+  "derived_from_workflow_run_id": 43615329546,
+  "derived_from_workflow_head_sha": "2c14394a94086f1897b6fc9ee1473b908f94ab71",
+  "source_artifact_id": 14121574245,
+  "original_series_sha256": "9ae0a79ca8229d23dfed6423f15a49c1b3d8fa9d145a4ff099ce48fa4f2f622f",
+  "original_metadata_sha256": "09e0bf3f5c76bff248d7452d97219d8f1aa798140da27041fdaef67f21350541",
+  "transformation": "Semantic reconstruction of the GitHub Actions JSON artifact; formatting differs, sample and horizon values unchanged."
+}
