@@ -53,7 +53,7 @@ export function mountShell({ screen, context = null, onLang } = {}) {
   function render() {
     const st = getState();
     const brand = document.createElement("a"); brand.className = "mp-brand"; brand.href = hrefTo("index.html");
-    brand.innerHTML = '<span class="mp-logo" aria-hidden="true"></span>'; brand.append(t("brand"));
+    brand.innerHTML = '<svg class="mp-logo" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13.5" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M16 2.5a13.5 13.5 0 0 1 0 27a9 13.5 0 0 0 0-27z" fill="#2EC4A0"/></svg>'; brand.append(t("brand"));
     const nav = document.createElement("nav"); nav.className = "mp-nav"; nav.setAttribute("aria-label", t("nav.main"));
     for (const s of SCREENS) nav.append(pill(t(s.key), { href: hrefTo(s.page), current: s.id === active, cls: s.sim ? "is-sim" : "", ico: s.id }));
     const kits = () => [

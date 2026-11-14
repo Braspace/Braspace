@@ -91,11 +91,46 @@
 .mp-marker[aria-pressed="true"] .mp-marker-label{background:var(--jade);color:var(--jade-text)}
 .mp-help-pop{position:fixed;z-index:30;top:calc(var(--margin) + var(--touch) + 8px);right:var(--margin);width:300px;padding:var(--s2) var(--s3);animation:mp-in var(--t) var(--ease)}
 .mp-help-pop p{margin:var(--s1) 0;display:flex;align-items:center;gap:var(--s1);color:var(--text-2);font-size:13px}
+/* Fidelity audit A/B/Entry (items 5-13, 15), measured against the @lisanogueira canvas. */
+.mp-top{top:22px;height:48px;gap:12px}
+.mp-brand{width:200px;font-weight:800;letter-spacing:-.01em;margin-right:0}
+.mp-nav{flex:1;justify-content:center}
+.mp-glass,.mp-context{border-color:rgba(255,255,255,.10)}
+.mp-nav .mp-pill{font-weight:600;background:rgba(12,15,18,.5);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-color:rgba(255,255,255,.10)}
+.mp-nav .mp-pill[aria-current="page"]{font-weight:700;background:var(--jade)}
+.mp-pill.is-sim{color:#D9C6FA;border-color:rgba(180,140,242,.5)}
+.mp-pill.is-sim[aria-current="page"]{background:var(--sim);color:#160B26}
+.mp-card{box-shadow:0 18px 40px rgba(0,0,0,.45);padding:18px}
+.mp-layer{box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.mp-seal{height:20px;padding:0 7px;border-radius:999px;font:700 10.5px/20px var(--font);letter-spacing:.06em;border:1px solid}
+.mp-seal[data-seal="SIM"]{color:#C9AEF7;border-color:var(--sim);background:repeating-linear-gradient(45deg,rgba(180,140,242,.16) 0 1px,transparent 1px 5px)}
+.mp-seal[data-seal="N/D"]{color:#B7C0C9;background:repeating-linear-gradient(45deg,rgba(128,140,153,.25) 0 1px,transparent 1px 5px)}
+.mp-marker{width:46px;height:46px;margin:-23px 0 0 -23px;border:2px solid #F2F4F5;font-size:15px}
+.mp-marker[aria-pressed="true"]{box-shadow:0 0 0 4px rgba(46,196,160,.35),0 0 0 10px rgba(46,196,160,.12)}
+.mp-marker:not([aria-pressed="true"]) .mp-marker-label{display:none}
+.mp-stat{width:210px;height:210px;background:transparent;border:0;-webkit-backdrop-filter:none;backdrop-filter:none}
+.mp-stat::before{content:"";position:absolute;inset:35px;border-radius:50%;background:rgba(255,255,255,.08);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.12)}
+.mp-stat-core{inset:60.2px}
+.mp-stat-core .mp-num{font-size:28px}
+.mp-sat{width:44px;height:44px;margin:-22px 0 0 -22px}
+.mp-pill.is-white{min-height:46px;font-weight:600;color:#0A0D10}
+.mp-pill.is-white svg{width:18px;height:18px}
+.mp-btn{display:inline-flex;align-items:center;justify-content:center;height:48px;padding:0 22px;border-radius:var(--r-pill);border:0;background:var(--jade);color:var(--jade-text);font:700 15px var(--font);cursor:pointer}
+.mp-btn.is-sim{background:var(--sim);color:#160B26}
+@media (max-width:700px){
+  .mp-top{height:56px;border-radius:28px}
+  .mp-brand{width:auto}
+  .mp-bottomnav{height:68px;border-radius:34px;background:var(--glass)}
+  .mp-bottomnav .mp-pill svg{width:21px;height:21px}
+  .mp-sheet-grip::before{width:40px;height:4px}
+}
+svg.mp-logo{width:32px;height:32px;border:0;border-radius:0;box-shadow:none}
+.mp-brand{font-weight:800}
 /* ===== Y01: shell at the boxes of docs/design/MEDIDAS.md (1440×900, capture A) ===== */
 /* Nav: logo x=29 y=32 · pills 45 px tall, top y=23, gap 9, first pill x=313 · help Ø42 at cx=1336 · BR disc 45 at x=1366. */
 .mp-top{top:23px;left:29px;right:29px;height:45px;gap:9px}
-.mp-brand{position:absolute;left:0;top:9px;height:29px;min-height:0;font-size:22px;gap:8px;margin:0}
-.mp-brand .mp-logo{width:26px;height:26px}
+.mp-brand{position:absolute;left:0;top:7px;height:32px;min-height:0;width:auto;font-size:22px;gap:8px;margin:0}
+
 .mp-nav{position:absolute;left:284px;top:0;gap:9px}
 .mp-top .mp-pill{height:45px;min-height:45px;padding:0 18px 0 16px;gap:8px;font-size:14.5px;background:rgba(10,13,16,.72);border-color:rgba(255,255,255,.12)}
 .mp-top .mp-pill svg{width:18px;height:18px}

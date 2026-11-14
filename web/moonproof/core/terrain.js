@@ -133,11 +133,11 @@ function loadFeatures() {
  *  sites: [{ id, n, name, stereo_x_m, stereo_y_m }]; route: [siteId, ...] dotted line.
  * Returns Promise<{ select(id), zoom(f), redraw(), grid, el }>.
  */
-export async function mountTerrain(container, { sites = [], selected = null, route = [], onSelect, background = "shade87" } = {}) {
+export async function mountTerrain(container, { sites = [], selected = null, route = [], onSelect, labels: showLabels = true, background = "shade87" } = {}) {
   container.classList.add("mp-terrain");
   Object.assign(container.style, { position: "fixed", inset: "0", overflow: "hidden", background: "var(--bg)" });
   const [grid, bgs, features] = await Promise.all([loadRegion(),
-    Promise.all([loadBackground(BACKGROUNDS[background] || BACKGROUNDS.shade87), loadBackground(BACKGROUNDS.shade84)]).catch(() => null), loadFeatures()]);
+    Promise.all([loadBackground(BACKGROUNDS[background] || BACKGROUNDS.shade87), loadBackground(BACKGROUNDS.shade84)]).catch(() => null), showLabels ? loadFeatures() : []]);
   const cv = document.createElement("canvas"); cv.setAttribute("role", "img"); cv.setAttribute("aria-label", t("terrain.label"));
   Object.assign(cv.style, { position: "absolute", inset: "0", width: "100%", height: "100%" });
   const labels = document.createElement("div"); labels.className = "mp-terrain-labels"; labels.setAttribute("aria-hidden", "true");
@@ -148,7 +148,7 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
   const view = { cx: xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0, cy: ys.length ? (Math.min(...ys) + Math.max(...ys)) / 2 : 0,
     span: xs.length ? Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * 1.6 + 30000 : grid.nx * grid.dx };
   container.dataset.features = String(features.length);
-  let sel = selected, free = null, relief = null, reliefKey = "";
+  let lastMpp = 0, sel = selected, free = null, relief = null, reliefKey = "";
   // Extent the view may show: the wider background (84°S) when loaded, else the grid.
   const ext = bgs ? 2 * bgs[1].meta.bounds.square_half_width_m : grid.nx * grid.dx;
   const ox = bgs ? -ext / 2 : grid.x0, oy = bgs ? -ext / 2 : grid.y0;
@@ -175,7 +175,7 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
   function draw() {
     const W = container.clientWidth, H = container.clientHeight, dpr = Math.min(3, devicePixelRatio || 1);
     if (!W || !H) return;
-    const { mpp, sx, sy } = frame(W, H);
+    const { mpp, sx, sy } = frame(W, H); lastMpp = mpp;
     container.dataset.free = [free.l, free.t, free.r, free.b].map(Math.round).join(",");
     const w = Math.round(W * dpr), h = Math.round(H * dpr);
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
@@ -198,7 +198,7 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
     vg.addColorStop(0, "rgba(7,9,12,0)"); vg.addColorStop(1, "rgba(7,9,12,.6)"); g.fillStyle = vg; g.fillRect(0, 0, W, H);
     const toPx = (x, y) => [W / 2 + (x - sx) / mpp, H / 2 - (y - sy) / mpp];
     const pts = route.map(id => sites.find(s => s.id === id)).filter(Boolean).map(s => toPx(s.stereo_x_m, s.stereo_y_m));
-    if (pts.length > 1) { g.setLineDash([1.5, 8]); g.lineCap = "round"; g.lineWidth = 2.6; g.strokeStyle = "rgba(255,255,255,.9)"; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); g.setLineDash([]); }
+    if (pts.length > 1) { g.setLineDash([1, 9]); g.lineCap = "round"; g.lineWidth = 2.4; g.strokeStyle = "#F2F4F5"; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); g.setLineDash([]); }
     layer.replaceChildren(...sites.map(s => {
       const [x, y] = toPx(s.stereo_x_m, s.stereo_y_m);
       const b = document.createElement("button"); b.type = "button"; b.className = "mp-marker"; b.dataset.site = s.id;
@@ -229,7 +229,7 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
   const api = { el: container, grid, view,
     select(id) { sel = id; const s = sites.find(x => x.id === id); if (s) { view.cx = s.stereo_x_m; view.cy = s.stereo_y_m; } draw(); },
     zoom(f) { view.span = Math.min(ext, Math.max(4000, view.span / f)); draw(); }, redraw: draw,
-    get free() { return free; } };
+    get free() { return free; }, get mpp() { return lastMpp; } };
   let pending = 0, lastFree = "";
   const reframe = () => { if (pending) return; pending = requestAnimationFrame(() => { pending = 0;
     const f = JSON.stringify(freeArea(container.clientWidth, container.clientHeight, overlayRects(container)));

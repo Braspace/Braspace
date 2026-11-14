@@ -49,6 +49,26 @@ flowchart LR
 
 ---
 
+## Telas MoonProof (`web/moonproof/`)
+
+Design de @lisanogueira (Heloísa), implementado sobre o core comum (`core/`: tokens, shell, terreno, camadas, i18n, estado). Todo número vem de `web/data/` ou da API; os números ilustrativos do desenho nunca entram no código (`core-no-design-numbers.test.mjs`).
+
+| Página | Tela | Spec do designer |
+|---|---|---|
+| `mission.html` / `explore.html` | A Mission Control, B Explore (+ celular, 390 px) | `designer/A-*`, `B-*`, `M1-mobile-explorar` |
+| `compare.html` | C Compare (+ celular) | `designer/C-*`, `M2-mobile-comparar` |
+| `recover.html` | D Replan | `designer/D-*` |
+| `cockpit.html` | E Cockpit | `designer/E-*` |
+| `landing.html` | F Landing Lab | `designer/F-*` |
+| `debrief.html` | G Debrief | `designer/G-*` |
+| `evidence.html` | H Evidence | `designer/H-*` |
+| `present.html`, `activity.html`, `plan.html` | v3 Kit Aula (apresentar, montar atividade) e Kit Planejamento | `designer/K1-*`, `K2-*`, `K3-*` |
+| `rules.html` | v3 regras de núcleo, camadas e kits | `designer/V3-camadas` |
+
+Sirva com `cd web && node dev-server.mjs` (defina `BRASPACE_WEB_PORT` se a 5173 estiver ocupada) e abra `/moonproof/`.
+
+---
+
 ## Como Rodar Localmente
 
 ### Início Rápido (API + Motor Rust)
@@ -68,16 +88,17 @@ curl -fsS http://127.0.0.1:8080/api/health
 
 ## Como Testar
 
-Todas as suítes conferidas na `main` (`0e646c3c50ad665c34013415809e951e489a3b0f`):
+Todas as suítes abaixo rodaram nativamente na branch `integration/studio-full-20261114` (HEAD `67542db`, 14/11/2026). O `--target test` do Docker não faz parte desta evidência.
 
 | Suíte | Comando | Resultado |
 |---|---|---|
-| **Web (Node test runner)** | `npm --prefix web test` | 74 passaram, 0 falharam |
-| **Computador de Bordo** | `node --test web/onboard/test/*.mjs` | 49 passaram, 0 falharam, 1 pulado |
-| **API Go** | `cd api && go test ./...` | `api` e `api/onboard` passam |
-| **Motor Rust** | `cd engine && cargo test` | 3 unitários + 6 integração passaram |
+| **Web + MoonProof + Computador de Bordo (Node test runner)** | `cd web && node --test tests/*.test.mjs moonproof/tests/*.test.mjs onboard/test/*.mjs` | 264 passaram, 0 falharam, 1 pulado |
+| **Lint web** | `npm --prefix web run lint` | exit 0 |
+| **API Go** | `cd api && go vet ./... && go test -race -count=1 ./...` | `api` e `api/onboard` passam |
+| **Motor Rust** | `cd engine && cargo test --locked --all-targets` | 3 unitários + 6 integração passaram |
 | **Ciência Python** | `python3 -m unittest discover -s science/tests` | 21 testes OK |
 | **Raiz Python** | `python3 -m unittest discover -s tests` | 9 testes OK |
+| **Full stack (web -> Go -> Rust)** | `node scripts/fullstack-e2e.mjs` (com `BRASPACE_E2E_API_BIN`, `BRASPACE_E2E_RUST_BIN`) | PASS (só dados sintéticos) |
 
 Veja [`docs/TESTING.md`](docs/TESTING.md) para detalhes.
 
