@@ -10,9 +10,9 @@
 FROM rust:1.83-alpine AS rustbuilder
 RUN apk add --no-cache musl-dev
 WORKDIR /build/engine
-COPY engine/Cargo.toml ./
+COPY engine/Cargo.toml engine/Cargo.lock ./
 COPY engine/src ./src
-RUN cargo build --release
+RUN cargo build --locked --release
 
 FROM golang:1.26-alpine AS gobuilder
 WORKDIR /build/api
