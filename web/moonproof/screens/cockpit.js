@@ -86,7 +86,7 @@ async function skyTransition(site, atIso) {
   const v = r.ok ? r.data.next_transitions : null; S.sky = { k, v }; return v;
 }
 
-const rulesCard = el("article", "mp-card"), alertCard = el("article", "mp-card mp-alert"), faultCard = el("article", "mp-card");
+const rulesCard = el("article", "mp-card"), alertCard = el("article", "mp-card mp-alert"), faultCard = el("article", "mp-glass");
 const left = $("left"), right = $("right");
 const sheet = $("sheet");
 

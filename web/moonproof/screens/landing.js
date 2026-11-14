@@ -38,26 +38,39 @@ const L = { mode: getState().task === "class" ? "guided" : "guided", cam: "chase
   paused: true, running: false, step: 1, startAlt: null, fuel0: null, viewer: null, ready: false, error: null, saved: null, lastAlert: { level: "ok" } };
 const CAMS = [["chase", "lab.cam.chase"], ["pilot", "lab.cam.descent"], ["orbit", "lab.cam.profile"]];
 const ui = {};
+// Line icons (24 px grid, 1.5 stroke) as in the design. Static markup only, never built from data.
+const ico = (d, size = 18, stroke = "currentColor") => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICO = {
+  back: '<path d="M9 6l6 6-6 6"/>', module: '<path d="M9 4h6l2 7H7z"/><path d="M7 11l-3 8M17 11l3 8M10 11l-1 8M14 11l1 8"/><path d="M2 19h5M17 19h5"/>',
+  cam: '<path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/>', pause: '<path d="M8 5v14M16 5v14"/>', play: '<path d="M8 5l11 7-11 7z"/>',
+  restart: '<path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v5h5"/>', help: '<circle cx="12" cy="9" r="0"/><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17v.5"/>',
+  warn: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/>', fuel: '<path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M3 21h12"/><path d="M14 9h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V8l-3-3"/><path d="M7 7h4"/>',
+  slope: '<path d="M3 20h18L3 8z"/><path d="M8 20a5 5 0 0 0-1.5-3.6"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/>',
+};
 
 // ---------------------------------------------------------------- build static DOM (re-run on language change)
-function seg(items, cur, onPick, label) {
+function seg(items, cur, onPick, label, icon) {
   const w = el("div", "lab-seg"); w.setAttribute("role", "group"); w.setAttribute("aria-label", label);
-  for (const [v, k] of items) { const b = el("button", "", t(k)); b.type = "button"; b.setAttribute("aria-pressed", String(v === cur)); b.onclick = () => onPick(v); w.append(b); }
+  for (const [v, k] of items) { const b = el("button", "", t(k)); if (icon && v === cur) b.insertAdjacentHTML("afterbegin", ico(icon, 14)); b.type = "button"; b.setAttribute("aria-pressed", String(v === cur)); b.onclick = () => onPick(v); w.append(b); }
   return w;
 }
-function round(txt, label, fn) { const b = el("button", "lab-round", txt); b.type = "button"; b.setAttribute("aria-label", label); b.onclick = fn; return b; }
+function round(svg, label, fn) { const b = el("button", "lab-round"); b.innerHTML = svg; b.type = "button"; b.setAttribute("aria-label", label); b.onclick = fn; return b; }
 function build() {
   document.documentElement.lang = lang();
   $("simseal").textContent = t("lab.sim");
-  const back = el("a", "back", "‹ " + t("lab.back")); back.href = hrefTo("compare.html");
+  const back = el("a", "back"); back.innerHTML = ico(ICO.back, 14); back.append(t("lab.back")); back.href = hrefTo("compare.html");
   const s = site();
   const meta = el("span", "meta", `${s.n} · ${s.name}`); meta.title = s.name;
   const sealSim = sealEl("SIM");
-  ui.pause = round(L.paused ? "▶" : "❚❚", L.paused ? t("lab.resume") : t("lab.pause"), togglePause);
-  $("bar").replaceChildren(back, el("b", "ttl", t("lab.title")), meta, sealSim,
+  ui.pause = round(ico(L.paused ? ICO.play : ICO.pause), (L.paused ? t("lab.resume") : t("lab.pause")) + " (P)", togglePause);
+  const ttl = el("b", "ttl"); ttl.innerHTML = ico(ICO.module, 18, "currentColor"); ttl.append(t("lab.title"));
+  // The educational-simulation chip lives inside the bar on desktop; on a phone it stays a fixed strip (the bar's blur would capture it).
+  const chip = innerWidth > 700 ? $("simseal") : (document.body.append($("simseal")), null);
+  $("bar").replaceChildren(back, el("i", "div"), ttl, ...(chip ? [chip] : []), meta, ...(chip ? [] : [sealSim]),
     seg([["guided", "lab.mode.guided"], ["free", "lab.mode.free"]], L.mode, v => { L.mode = v; build(); update(true); }, t("lab.mode")),
-    seg(CAMS, L.cam, v => setCam(v), t("lab.cam")),
-    ui.pause, round("↻", t("lab.restart"), start), round("?", t("lab.help"), openHelp));
+    seg(CAMS, L.cam, v => setCam(v), t("lab.cam"), ICO.cam),
+    ui.pause, round(ico(ICO.restart), t("lab.restart") + " (R)", start), round(ico(ICO.help), t("lab.help"), openHelp));
   // strip: phase + alert
   ui.phase = el("div", "lab-chip"); ui.clock = el("span", "mp-coord");
   ui.alert = el("div", "lab-chip lab-alert"); ui.alert.hidden = true; ui.alert.setAttribute("role", "alert");
@@ -65,22 +78,27 @@ function build() {
   // tapes
   tape("alt", t("lab.alt"), t("lab.alt.unit"));
   tape("vz", t("lab.vz"), t("lab.vz.unit"));
-  ui.vh = el("div", "lab-hz"); $("vz").append(ui.vh);
+  ui.vh = el("div", "lab-hz"); ui.vhL = el("span", "ov", t("lab.vh")); ui.vhV = el("span", "mono"); ui.vh.append(ui.vhL, ui.vhV); $("vz").append(ui.vh);
   // bottom cards
   const card = (cls = "") => el("div", "mp-glass " + cls);
   const terr = card("lab-terrain"); const th = el("h3", "", t("lab.terrain")); ui.terrSeal = sealEl(L.terrSeal || "N/D"); th.append(ui.terrSeal);
-  ui.prof = el("canvas"); ui.prof.width = 260; ui.prof.height = 46; ui.prof.setAttribute("role", "img"); ui.prof.setAttribute("aria-label", t("lab.terrain"));
+  ui.prof = el("canvas"); ui.prof.width = 236; ui.prof.height = 36; ui.prof.setAttribute("role", "img"); ui.prof.setAttribute("aria-label", t("lab.terrain"));
   ui.facts = el("div", "lab-facts"); terr.append(th, ui.prof, ui.facts);
-  const thr = card(); const thh = el("h3", "", t("lab.thrust")); ui.thrV = el("span", "mp-num"); thh.append(ui.thrV);
+  const thr = card("lab-thr"); const thh = el("h3", "", t("lab.thrust")); ui.thrV = el("span", "mp-num"); thh.append(ui.thrV);
   ui.thrTrack = el("div", "lab-bar-track"); ui.thrTrack.setAttribute("role", "slider"); ui.thrTrack.tabIndex = 0; ui.thrTrack.setAttribute("aria-label", t("lab.thrust"));
   ui.thrFill = el("i"); ui.thrBand = el("em"); ui.thrBand.title = t("lab.thrust.band"); ui.thrTrack.append(ui.thrFill, ui.thrBand);
   bindThrustTrack(ui.thrTrack);
   thr.append(thh, ui.thrTrack, el("div", "mp-label", t("lab.thrust.hint")));
-  const fu = card(); const fh = el("h3", "", t("lab.fuel")); ui.fuelV = el("span", "mp-num"); fh.append(ui.fuelV);
+  const fu = card("lab-fuel"); const fh = el("h3"); const fl = el("span", "lab-ic"); fl.innerHTML = ico(ICO.fuel, 14); fl.append(t("lab.fuel")); ui.fuelV = el("span", "mp-num"); fh.append(fl, ui.fuelV);
   ui.fuelTrack = el("div", "lab-bar-track fuel"); ui.fuelFill = el("i"); ui.fuelTrack.append(ui.fuelFill);
   ui.fuelNote = el("div", "mp-label"); fu.append(fh, ui.fuelTrack, ui.fuelNote);
+  // Tilt card: value comes from the simulation (telemetry().tiltDeg, signed by the east component); N/D until a flight runs.
+  const tl = card("lab-tilt"); tl.append(el("h3", "", t("lab.tilt")));
+  tl.insertAdjacentHTML("beforeend", '<svg width="64" height="40" viewBox="0 0 64 40" aria-hidden="true"><line x1="4" y1="22" x2="60" y2="18" stroke="#5E6C7D"/><g id="tiltArrow"><path d="M22 20h20M32 20v-10" stroke="#E8EDF2" stroke-width="2" fill="none"/></g></svg>');
+  ui.tiltArrow = tl.querySelector("#tiltArrow"); ui.tiltV = el("span", "mono", t("nd")); tl.append(ui.tiltV);
   ui.guide = card("lab-guide"); ui.guide.hidden = L.mode !== "guided";
-  $("bottom").replaceChildren(terr, thr, fu, ui.guide);
+  const mid = el("div", "lab-mid"); mid.append(thr, fu, tl);
+  $("bottom").replaceChildren(terr, mid, ui.guide);
   // touch pad
   const T = $("touch"); T.replaceChildren();
   const pad = (keys) => { const d = el("div"); for (const [k, txt, aria] of keys) { const b = el("button", "", txt); b.type = "button"; b.setAttribute("aria-label", aria); holdKey(b, k); d.append(b); } return d; };
@@ -99,11 +117,12 @@ function drawTicks() {
   const vzDown = niceCeil(Math.abs(SCENARIO.vel[2]) * 1.2); ui.vzMin = -vzDown; ui.vzMax = TAPE.up;
   for (const n of [...ui.altRail.querySelectorAll(".tick")]) n.remove();
   for (const n of [...ui.vzRail.querySelectorAll(".tick")]) n.remove();
-  for (let i = 0; i <= TAPE.ticks; i++) { const v = ui.altMax * (1 - i / TAPE.ticks); const k = el("span", "tick", fmt(v)); k.style.top = (i / TAPE.ticks * 100) + "%"; ui.altRail.append(k); }
-  for (let i = 0; i <= TAPE.ticks; i++) { const v = ui.vzMax + (ui.vzMin - ui.vzMax) * i / TAPE.ticks; const k = el("span", "tick", fmt(v)); k.style.top = (i / TAPE.ticks * 100) + "%"; ui.vzRail.append(k); }
-  const lim = el("span", "tick lim", "▸" + fmt(-vehicle.limits.maxVerticalSpeed)); lim.style.top = ((ui.vzMax + vehicle.limits.maxVerticalSpeed) / (ui.vzMax - ui.vzMin) * 100) + "%"; lim.style.left = "-34px"; ui.vzRail.append(lim);
+  for (let i = 0; i <= TAPE.ticks; i++) { const v = ui.altMax * (1 - i / TAPE.ticks); const k = el("span", "tick", fmt(v)); k.style.top = tapePos(i / TAPE.ticks); ui.altRail.append(k); }
+  for (let i = 0; i <= TAPE.ticks; i++) { const v = ui.vzMax + (ui.vzMin - ui.vzMax) * i / TAPE.ticks; const k = el("span", "tick", fmt(v)); k.style.top = tapePos(i / TAPE.ticks); ui.vzRail.append(k); }
 }
-const pctPos = (v, hi, lo) => Math.min(100, Math.max(0, (hi - v) / (hi - lo) * 100)) + "%";
+// Position on a tape: --tp is the inset (0 on a phone, half a marker on desktop) so the end ticks and the marker stay inside the card.
+const tapePos = f => `calc(var(--tp,0px) + (100% - 2 * var(--tp,0px)) * ${Math.min(1, Math.max(0, f))})`;
+const pctPos = (v, hi, lo) => tapePos((hi - v) / (hi - lo));
 
 // ---------------------------------------------------------------- input
 function holdKey(b, k) {
@@ -118,7 +137,7 @@ function bindThrustTrack(tr) {
   tr.addEventListener("pointerup", () => { down = false; }); tr.addEventListener("pointercancel", () => { down = false; });
   tr.addEventListener("keydown", e => { if (e.key === "ArrowRight") L.throttleCmd = Math.min(1, L.throttleCmd + 0.05); if (e.key === "ArrowLeft") L.throttleCmd = Math.max(0, L.throttleCmd - 0.05); });
 }
-const KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "ShiftLeft", "ShiftRight", "ControlLeft", "ControlRight", "KeyW", "KeyS", "KeyA", "KeyD", "KeyQ", "KeyE", "KeyZ", "KeyX", "KeyH", "KeyC", "KeyR", "Space"]);
+const KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "ShiftLeft", "ShiftRight", "ControlLeft", "ControlRight", "KeyW", "KeyS", "KeyA", "KeyD", "KeyQ", "KeyE", "KeyZ", "KeyX", "KeyH", "KeyC", "KeyR", "KeyP", "Space"]);
 function onKey(e, down) {
   if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName || "") || $("help").open) return;
   if (!KEYS.has(e.code)) return;
@@ -129,7 +148,7 @@ function onKey(e, down) {
   if (e.code === "KeyZ") L.throttleCmd = Math.min(1, L.sim.s[6] * g / vehicle.maxThrust);
   if (e.code === "KeyX") L.throttleCmd = 0;
   if (e.code === "KeyH") L.assist = !L.assist;
-  if (e.code === "Space") togglePause();
+  if (e.code === "Space" || e.code === "KeyP") togglePause();
   if (e.code === "KeyR") start();
   if (e.code === "KeyC") setCam(CAMS[(CAMS.findIndex(c => c[0] === L.cam) + 1) % CAMS.length][0]);
 }
@@ -180,8 +199,21 @@ function frame(dt) {
   if (k.ArrowDown || k.KeyS || k.ControlLeft || k.ControlRight || k.thrDown) L.throttleCmd = Math.max(0, L.throttleCmd - rate);
   if (!L.paused) advance(L.sim, control(), dt);
   L.viewer?.updateLander(L.sim, thrustDirection(L.sim.tilt[0], L.sim.tilt[1]));
+  drawGuides();
   update();
   if (L.sim.outcome && L.running) finish();
+}
+// Guided only: dotted jade lines from the module to the edges (and centre) of the target zone, projected with the scene camera
+// (read-only use of Viewer.camera / landerGroup / target; web/lab/scene.js is not touched).
+function drawGuides() {
+  const svg = $("guides"), v = L.viewer;
+  const p3 = (x, y, z) => { const w = new THREE.Vector3(x, y, z); if (w.clone().applyMatrix4(v.camera.matrixWorldInverse).z >= 0) return null; /* behind the camera */ const q = w.project(v.camera); return [(q.x * .5 + .5) * innerWidth, (-q.y * .5 + .5) * innerHeight]; };
+  const m = v?.landerGroup?.position, z = v?.target?.position;
+  if (L.mode !== "guided" || !m || !z || L.sim?.outcome) { svg.hidden = true; return; }
+  const R = ASSUMED.zoneRadiusM, a = p3(m.x, m.y, m.z), l = p3(z.x - R, z.y, z.z), r = p3(z.x + R, z.y, z.z), c = p3(z.x, z.y, z.z);
+  if (!a || !l || !r || !c) { svg.hidden = true; return; }
+  svg.hidden = false; svg.setAttribute("viewBox", `0 0 ${innerWidth} ${innerHeight}`);
+  const [e1, e2] = svg.children; e1.setAttribute("d", `M${a} L${l} M${a} L${r}`); e2.setAttribute("d", `M${a} L${c}`);
 }
 function ctx(tm) { return { vehicle, mass: L.sim.s[6], g }; }
 function update(force) {
@@ -197,19 +229,23 @@ function update(force) {
   ui.phase.replaceChildren(el("span", "mp-label", t("lab.phase")), el("b", "", t("lab.phase." + (L.step - 1))), Object.assign(el("span", "mp-coord"), { textContent: t("lab.clock", { t: String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0") }) }));
   if (al.level !== "ok" && !sim.outcome) {
     ui.alert.hidden = false; ui.alert.dataset.level = al.level;
-    ui.alert.replaceChildren(Object.assign(el("b"), { textContent: t("lab.alert.fast") }), el("span", "", t("lab.alert.detail", { v: fmt(-tm.vz, 1), h: fmt(tm.altitudeAGL) })));
+    const aic = el("span", "lab-ico"); aic.innerHTML = ico(ICO.warn);
+    ui.alert.replaceChildren(aic, Object.assign(el("b"), { textContent: t("lab.alert.fast") }), el("span", "", t("lab.alert.detail", { v: fmt(-tm.vz, 1), h: fmt(tm.altitudeAGL) })));
   } else ui.alert.hidden = true;
   if (al.level !== L.lastAlert.level) { L.lastAlert = al; if (al.level !== "ok") $("live").textContent = t("lab.alert.fast"); }
   // tapes
   const a = tm.altitudeAGL;
   ui.altMark.textContent = fmt(a); ui.altMark.style.top = pctPos(a, ui.altMax, 0);
   const vz = tm.vz; ui.vzMark.textContent = fmt(vz, 1); ui.vzMark.style.top = pctPos(vz, ui.vzMax, ui.vzMin); ui.vzMark.dataset.level = al.level === "ok" ? "" : al.level;
-  ui.vh.textContent = `${t("lab.vh")} ${fmt(tm.hSpeed, 1)} ${t("lab.vh.unit")}`;
+  ui.vhV.textContent = `${fmt(tm.hSpeed, 1)} ${t("lab.vh.unit")}`;
   // thrust / fuel
   ui.thrV.textContent = fmt(L.throttleCmd * 100) + "%"; ui.thrFill.style.width = (L.throttleCmd * 100) + "%";
   ui.thrTrack.setAttribute("aria-valuenow", String(Math.round(L.throttleCmd * 100))); ui.thrTrack.setAttribute("aria-valuemin", "0"); ui.thrTrack.setAttribute("aria-valuemax", "100");
   const rec = recommendedThrottle(tm, c);
-  ui.thrBand.hidden = rec == null; if (rec != null) { ui.thrBand.style.left = Math.max(0, (rec - ASSUMED.bandHalf) * 100) + "%"; ui.thrBand.style.width = Math.min(100, 2 * ASSUMED.bandHalf * 100) + "%"; }
+  ui.thrBand.hidden = rec == null || L.mode !== "guided"; if (rec != null) { ui.thrBand.style.left = Math.max(0, (rec - ASSUMED.bandHalf) * 100) + "%"; ui.thrBand.style.width = Math.min(100, 2 * ASSUMED.bandHalf * 100) + "%"; }
+  const tilt = Number.isFinite(tm.tiltDeg) ? (sim.tilt[0] < 0 ? -1 : 1) * tm.tiltDeg : NaN;
+  ui.tiltV.textContent = Number.isFinite(tilt) ? fmt(tilt) + "°" : t("nd");
+  ui.tiltArrow.setAttribute("transform", `rotate(${Number.isFinite(tilt) ? tilt : 0} 32 20)`);
   const ff = fuelFrac(tm.fuel, L.fuel0); ui.fuelV.textContent = ff == null ? t("nd") : fmt(ff * 100) + "%"; ui.fuelFill.style.width = ((ff ?? 0) * 100) + "%";
   const fs = fuelSeconds(tm, vehicle); ui.fuelNote.textContent = fs == null ? t("nd") : t("lab.fuel.time", { t: fmt(fs) });
   // terrain-at-target facts (LOLA slope, Sun, hazard)
@@ -227,10 +263,11 @@ function renderEmpty() {
 function renderFacts(tm) {
   const n = L.tile.normal(0, 0).slopeDeg;
   const sunUp = L.sky ? L.sky.sunMargin >= 0 : null;
-  const row = (txt, seal) => { const d = el("span", "", txt); if (seal) d.append(" ", sealEl(seal)); return d; };
-  ui.dist = row(t("lab.fromCenter", { n: fmt(tm.targetDistance) }), "SIM"); ui.distEl = ui.dist.firstChild;
-  ui.facts.replaceChildren(row(`${t("lab.slope")} ${fmt(n, 1)}°`, L.terrSeal), row(sunUp == null ? `${t("lab.lit")} ${t("nd")}` : (sunUp ? t("lab.lit") : t("lab.dark")), L.skySeal),
-    row(`${t("lab.hazard")} ${t("nd")}`, "N/D"), ui.dist);
+  const row = (icon, txt, seal, lbl) => { const d = el("span"); d.innerHTML = icon; if (lbl) d.append(Object.assign(el("span", "sr-only"), { textContent: lbl + " " })); d.append(txt); if (seal) d.append(" ", sealEl(seal)); return d; };
+  ui.dist = row(ico(ICO.target, 14), t("lab.fromCenter", { n: fmt(tm.targetDistance) }), "SIM"); ui.distEl = ui.dist.childNodes[1];
+  ui.facts.replaceChildren(row(ico(ICO.slope, 14), `${fmt(n, 1)}°`, L.terrSeal, t("lab.slope")),
+    row(ico(ICO.sun, 14, sunUp ? "#FFD166" : "currentColor"), sunUp == null ? t("nd") : (sunUp ? t("lab.lit") : t("lab.dark")), L.skySeal),
+    row(ico(ICO.warn, 14), t("lab.hazard") + " " + t("nd"), "N/D"), ui.dist);
   ui.facts.lastChild.title = t("lab.hazard.nd");
   ui.terrSeal.replaceWith(ui.terrSeal = sealEl(L.terrSeal));
   ui.facts.children[2].title = t("lab.hazard.nd");
@@ -242,9 +279,9 @@ function drawProfile() {
   for (let i = 0; i <= N; i++) hs.push(tl.height(-span + 2 * span * i / N, 0));
   const ok = hs.filter(Number.isFinite); if (!ok.length) { c.fillStyle = "#808C99"; c.fillText(t("nd"), 4, 24); return; }
   const lo = Math.min(...ok), hi = Math.max(...ok, lo + 1);
-  c.beginPath(); hs.forEach((h, i) => { const x = i / N * W, y = H - 4 - (h - lo) / (hi - lo) * (H - 10); i ? c.lineTo(x, y) : c.moveTo(x, y); });
-  c.strokeStyle = "#9FB3C8"; c.lineWidth = 2; c.stroke();
-  c.fillStyle = "rgba(46,196,160,.25)"; const zw = ASSUMED.zoneRadiusM / span * W; c.fillRect(W / 2 - zw, 0, 2 * zw + 2, H);
+  c.beginPath(); c.moveTo(0, H); hs.forEach((h, i) => { const x = i / N * W, y = H - 4 - (h - lo) / (hi - lo) * (H - 10); c.lineTo(x, y); }); c.lineTo(W, H); c.closePath();
+  c.fillStyle = "#2B3643"; c.fill();
+  c.fillStyle = "rgba(46,196,160,.12)"; const zw = ASSUMED.zoneRadiusM / span * W; c.fillRect(W / 2 - zw, 0, 2 * zw + 2, H);
   c.setLineDash([4, 3]); c.strokeStyle = "#2EC4A0"; c.beginPath(); c.moveTo(W / 2, 0); c.lineTo(W / 2, H); c.stroke(); c.setLineDash([]);
 }
 function renderGuide(tm, bh) {

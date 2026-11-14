@@ -89,3 +89,6 @@
   #sheet-body #card-horizon .ex-actions .mp-pill{min-height:48px;font-size:15px;font-weight:700}
   #sheet-body #card-horizon .ex-actions .is-sim{flex:none;min-width:96px}
 }
+/* Fidelity audit (items 9, 15). */
+@media (min-width:1301px){.ex-left,.ex-right{top:150px}.ex-left{width:300px}.ex-right{width:310px}}
+@media (max-width:700px){.ex-sheet{background:var(--glass);border-radius:30px;bottom:92px;padding:10px 16px 16px}}
