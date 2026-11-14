@@ -14,6 +14,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Data manifest and verifier tests
+        run: python3 -m unittest discover -s tests -v
       - uses: actions/setup-go@v5
         with:
           go-version-file: api/go.mod
