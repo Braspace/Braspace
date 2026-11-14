@@ -41,7 +41,13 @@
     scenarioDelay: body => call("POST", "/api/scenarios/delay", body),
     siteEvaluate: body => call("POST", "/api/onboard/site-evaluate", body),
     // Printable report: returns HTML text, rendered by the caller in a new tab.
-    report: body => call("POST", "/api/onboard/report", body, true)
+    report: body => call("POST", "/api/onboard/report", body, true),
+    // Per-place endpoints (ids are catalog ids, encoded as path segments)
+    site: id => call("GET", "/api/sites/" + encodeURIComponent(id)),
+    media: id => call("GET", "/api/sites/" + encodeURIComponent(id) + "/media"),
+    layers: () => call("GET", "/api/layers"),
+    // Printable report for the place: same input as site-evaluate, HTML text back
+    siteReport: body => call("POST", "/api/onboard/site-report", body, true)
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
