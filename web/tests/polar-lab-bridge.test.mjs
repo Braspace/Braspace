@@ -1,7 +1,7 @@
 import {test,after} from "node:test";
 import assert from "node:assert/strict";
 import {createServer,labFile} from "../dev-server.mjs";
-import {backendStatus,backendSky,backendCompare,presentationStatus} from "../lab/backend-bridge.js";
+import {backendStatus,backendSky,backendCompare,backendVectorAvailability,presentationStatus} from "../lab/backend-bridge.js";
 
 const server=createServer();
 await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
@@ -68,4 +68,19 @@ test("bad sky request, invalid compare and science-label escalation fail closed"
  assert.match(presentationStatus({science_status:"SYNTHETIC",scientifically_validated:true}),/UNVERIFIED/);
  assert.match(presentationStatus({science_status:"VALIDATED"}),/UNVERIFIED/);
  assert.match(presentationStatus({science_status:"VALIDATED",scientifically_validated:true}),/SOURCE-VALIDATED/);
+});
+
+test("pgvector availability is optional and never certifies lunar physics",async()=>{
+ const healthy=await backendVectorAvailability(async ()=>new Response(JSON.stringify({
+  enabled:true,available:true,dimension:384,model_id:"qa-synthetic-384",scientifically_validated:false
+ }),{status:200,headers:{"content-type":"application/json"}}));
+ assert.equal(healthy.available,true);
+ assert.equal(healthy.modelID,"qa-synthetic-384");
+ const disabled=await backendVectorAvailability(async ()=>new Response(JSON.stringify({
+  enabled:false,available:false,dimension:384,model_id:"",scientifically_validated:false
+ }),{status:200,headers:{"content-type":"application/json"}}));
+ assert.equal(disabled.enabled,false);
+ const absent=await backendVectorAvailability(async ()=>new Response(JSON.stringify({code:"NOT_FOUND"}),{status:404}));
+ assert.equal(absent.available,false);
+ assert.equal(absent.enabled,false);
 });
