@@ -16,7 +16,7 @@ test("Mission Studio is reachable through reviewed same-origin paths",async()=>{
  }
 });
 test("design specs and unknown files are never exposed through preview",async()=>{
- for(const url of ["/studio/DESIGNER.mds","/studio/secrets.json","/studio/designer/01-overview.designer.mds","/studio/../../api/main.go","/studio/app.js.backup"]){
+ for(const url of ["/studio/DESIGNER.mds","/studio/secrets.json","/studio/designer/01-overview.designer.mds","/studio/%252e%252e/main.go","/studio/app.js.backup"]){
   const r=await fetch(base+url);assert.equal(r.status,404,url);
  }
  const r=await fetch(base+"/studio/",{method:"POST"});assert.equal(r.status,405);
