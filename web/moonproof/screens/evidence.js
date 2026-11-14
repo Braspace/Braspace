@@ -47,8 +47,10 @@ async function draw() {
   shell.setContext({ site: t("evidence.passport", { s: String(site.n) }), date: t("evidence.computed_at", { d }),
     days: t("evidence.version", { v: version ? version.value : t("nd") }), seal: sealFor(doc.status), online,
     action: { label: t("evidence.download_json"), href: "#" } });
-  // The core prints "<days> dias" in the third slot; here that slot carries the version, so replace the text node.
-  const ctxEl = document.querySelector(".mp-context"); if (ctxEl && ctxEl.childNodes[4]) ctxEl.childNodes[4].textContent = t("evidence.version", { v: version ? version.value : t("nd") });
+  // The core prints "<days> dias" in the last slot of .mp-ctx-text; here that slot carries the version, so replace
+  // that text node (never a positional child of .mp-context: its 5th child is the primary action pill).
+  const ctxText = document.querySelector(".mp-context .mp-ctx-text");
+  if (ctxText && ctxText.lastChild) ctxText.lastChild.textContent = t("evidence.version", { v: version ? version.value : t("nd") });
   const action = document.querySelector(".mp-context .mp-pill.is-primary");
   if (action) { action.removeAttribute("href"); action.setAttribute("role", "button"); action.tabIndex = 0; action.onclick = e => { e.preventDefault(); download(passport); };
     action.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); download(passport); } }; }
