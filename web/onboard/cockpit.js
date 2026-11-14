@@ -104,12 +104,12 @@
     if (fab) fab.setAttribute("aria-busy", "true");
     if ($("calc")) { $("calc").disabled = true; }
     try {
-      const res = await fetch(API_PATH, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req.body) });
-      const text = await res.text();
-      if (!res.ok) { S.apiError = ["API respondeu " + res.status + ": " + text.slice(0, 240)]; S.api = null; setLamp("bad", "API ERRO"); }
-      else { S.api = JSON.parse(text); S.apiError = null; setLamp("ok", "API OK"); }
+      const res = await OnboardApi.evaluate(req.body);
+      if (res.status === 0) throw new Error(res.error);
+      if (!res.ok) { S.apiError = ["API respondeu " + res.status + ": " + res.error]; S.api = null; setLamp("bad", "API ERRO"); }
+      else { S.api = res.data; S.apiError = null; setLamp("ok", "API OK"); }
     } catch (err) {
-      S.api = null; S.apiError = ["Sem conexão com a API (" + err.message + "). Suba dev-server.py e a API Go."];
+      S.api = null; S.apiError = ["Sem conexão com a API (" + err.message + "). Confira BRASPACE_API_BASE (config.js) ou suba dev-server.py e a API Go."];
       setLamp("bad", "API OFF");
     } finally {
       if (fab) fab.setAttribute("aria-busy", "false");
