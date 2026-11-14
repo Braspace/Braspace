@@ -182,39 +182,112 @@
   // ---------- views ----------
   const VIEWS = {};
 
+  // Entry tab: four numbered cards (lugar, janela, energia, público), a live summary on top and
+  // one primary action. Problems are listed next to the top of the page and block CALCULAR.
+  const DEFAULT_POWER = { battery_capacity_wh: 200, initial_charge_wh: 150, reserve_wh: 50, solar_generation_w: 110, load_w: 80, max_comm_blackout_hours: 1 };
+  const POWER_FIELDS = [
+    ["battery_capacity_wh", "Capacidade da bateria", "Wh", "Energia máxima que a bateria guarda."],
+    ["initial_charge_wh", "Carga inicial", "Wh", "Energia da bateria no começo do cenário."],
+    ["reserve_wh", "Reserva mínima", "Wh", "Abaixo deste valor a bateria entra em alerta."],
+    ["solar_generation_w", "Painel com Sol", "W", "Premissa: potência do painel enquanto há luz."],
+    ["load_w", "Carga da nave", "W", "Potência que a nave consome o tempo todo."],
+    ["max_comm_blackout_hours", "Bloqueio máximo da Terra", "h", "Tempo sem contato com a Terra que ainda é aceitável."]
+  ];
+
+  // Problems with the current entry, in plain words. Empty list = ready to calculate.
+  function entryProblems() {
+    const out = [];
+    const count = Math.floor((S.durationH * 60) / S.stepMin);
+    if (!(S.durationH >= 1 && S.durationH <= 720)) out.push("A duração deve ficar entre 1 e 720 h.");
+    if (!(S.stepMin >= 1 && S.stepMin <= 360)) out.push("O passo deve ficar entre 1 e 360 min.");
+    if (S.durationH >= 1 && S.stepMin >= 1 && count > 480) out.push("Muitas amostras (" + count + "). Aumente o passo ou reduza a duração: o máximo é 480.");
+    POWER_FIELDS.forEach(([k, label]) => { const v = S.power[k]; if (!(Number.isFinite(v) && v >= 0)) out.push(label + " precisa ser um número igual ou maior que zero."); });
+    if (Number.isFinite(S.power.reserve_wh) && Number.isFinite(S.power.battery_capacity_wh) && S.power.reserve_wh > S.power.battery_capacity_wh) out.push("A reserva não pode ser maior que a capacidade da bateria.");
+    if (Number.isFinite(S.power.initial_charge_wh) && Number.isFinite(S.power.battery_capacity_wh) && S.power.initial_charge_wh > S.power.battery_capacity_wh) out.push("A carga inicial não pode ser maior que a capacidade.");
+    return out;
+  }
+
+  function entryCard(num, title, hint, children) {
+    return h("section", { class: "panel" },
+      h("h2", { text: num + " · " + title }),
+      h("p", { class: "note", text: hint }),
+      h("div", { style: "margin-top:12px" }, children));
+  }
+
   VIEWS.entrada = () => {
-    const sites = siteOptions().map(o => h("option", { value: o.id, selected: o.id === S.site, disabled: !o.ok }, o.label));
-    const latInvalid = S.lat !== "" && !(Number(S.lat) >= -90 && Number(S.lat) <= 90);
-    const lonInvalid = S.lon !== "" && !(Number(S.lon) >= -180 && Number(S.lon) <= 180);
-    const field = (key, label, type, extra) => h("label", {}, label,
-      h("input", Object.assign({ type: type || "number", value: S.power[key], "data-power": key, oninput: onPower, step: "any" }, extra || {})));
-    return [
-      h("section", { class: "panel" },
-        h("h2", { text: "01 · Entrada do cenário" }),
+    const opts = siteOptions();
+    const cur = opts.find(o => o.id === S.site);
+    const sky = skyData();
+    const skyErr = S.sky[S.site] && S.sky[S.site].status === "erro";
+    const dataStatus = sky ? { k: "ok", t: "série da API" }
+      : (S.skyLoading[S.site] ? { k: "info", t: "carregando série…" }
+      : (skyErr ? { k: "bad", t: "API indisponível" } : { k: "warn", t: "modelo local" }));
+    const problems = entryProblems();
+    const count = Math.floor((S.durationH * 60) / S.stepMin);
+    const placeName = cur ? cur.label.replace(" (sem série)", "").split(" · ").slice(1).join(" · ") : S.site;
+    const change = () => { S.api = null; S.t = 0; renderAlarm(); renderTab(); };
+
+    const summary = h("section", { class: "panel span2" },
+      h("div", { class: "grid four" },
+        h("div", {}, h("div", { class: "label", text: "Lugar" }), h("strong", { text: S.site + " · " + placeName })),
+        h("div", {}, h("div", { class: "label", text: "Início (UTC)" }), h("strong", { class: "num", text: fmt(startMs()) })),
+        h("div", {}, h("div", { class: "label", text: "Duração · passo" }), h("strong", { class: "num", text: S.durationH + " h · " + S.stepMin + " min · " + count + " amostras" })),
+        h("div", {}, h("div", { class: "label", text: "Dados" }), h("span", { class: "chip " + dataStatus.k, text: dataStatus.t }))),
+      problems.length
+        ? h("div", { class: "caution", role: "alert", style: "margin-top:12px" }, problems.map(p => h("div", { text: "• " + p })))
+        : h("p", { class: "note", style: "margin-top:12px", text: "Entrada válida. Pronto para calcular." }));
+
+    const placeCard = entryCard("1", "Lugar", "De onde Sol e Terra são vistos. Só aparecem como disponíveis os lugares com série no servidor.",
+      h("label", {}, "Lugar sintético",
+        h("select", { id: "site", onchange: e => { if (!e.target.selectedOptions[0].disabled) { S.site = e.target.value; change(); } } },
+          opts.map(o => h("option", { value: o.id, selected: o.id === S.site, disabled: !o.ok }, o.label)))));
+
+    const coverage = sky && sky.start_utc && sky.end_utc
+      ? h("p", { class: "note", text: "Cobertura da série deste lugar: " + fmt(Date.parse(sky.start_utc)) + " até " + fmt(Date.parse(sky.end_utc)) + "." })
+      : null;
+    const windowCard = entryCard("2", "Janela", "Quando a missão começa e quanto dura. O passo define a resolução.",
+      h("div", {},
         h("div", { class: "fields" },
-          h("label", {}, "Lugar sintético", h("select", { id: "site", onchange: e => { S.site = e.target.value; S.api = null; renderAlarm(); renderTab(); } }, sites)),
-          h("label", {}, "Data e hora de pouso (UTC)", h("input", { type: "datetime-local", value: S.startLocal, onchange: e => { S.startLocal = e.target.value; S.api = null; renderAlarm(); renderTab(); } })),
-          h("label", {}, "Duração (h, até 720)", h("input", { type: "number", min: "1", max: "720", value: S.durationH, onchange: e => { S.durationH = Number(e.target.value); S.api = null; renderAlarm(); renderTab(); } })),
-          h("label", {}, "Passo (min, 1 a 360)", h("input", { type: "number", min: "1", max: "360", value: S.stepMin, onchange: e => { S.stepMin = Number(e.target.value); S.api = null; renderAlarm(); renderTab(); } }))),
+          h("label", {}, "Início (UTC)",
+            h("input", { type: "datetime-local", value: S.startLocal, onchange: e => { S.startLocal = e.target.value; change(); } })),
+          h("label", {}, "Duração (h, 1 a 720)",
+            h("input", { type: "number", min: "1", max: "720", value: S.durationH, "aria-invalid": S.durationH >= 1 && S.durationH <= 720 ? "false" : "true", onchange: e => { S.durationH = Number(e.target.value); change(); } })),
+          h("label", {}, "Passo (min, 1 a 360)",
+            h("input", { type: "number", min: "1", max: "360", value: S.stepMin, "aria-invalid": S.stepMin >= 1 && S.stepMin <= 360 ? "false" : "true", onchange: e => { S.stepMin = Number(e.target.value); change(); } }))),
+        h("div", { class: "seg", role: "group", "aria-label": "Duração rápida", style: "margin-top:12px" },
+          [[24, "1 dia"], [72, "3 dias"], [168, "1 semana"], [720, "30 dias"]].map(([hh, lab]) =>
+            h("button", { type: "button", "aria-pressed": S.durationH === hh ? "true" : "false", onclick: () => { S.durationH = hh; change(); } }, lab))),
+        coverage,
+        sky && sky.start_utc && Date.parse(sky.start_utc) > startMs()
+          ? h("button", { type: "button", style: "margin-top:10px", onclick: () => { S.startLocal = sky.start_utc.slice(0, 16); S.durationH = Math.min(720, Math.floor((Date.parse(sky.end_utc) - Date.parse(sky.start_utc)) / 3600000)); change(); } }, "USAR A COBERTURA DA SÉRIE")
+          : null));
+
+    const energyCard = entryCard("3", "Energia", "Premissas do modelo, não são dados de hardware real.",
+      h("div", {},
+        h("div", { class: "fields" }, POWER_FIELDS.map(([k, label, unit, help]) =>
+          h("label", {}, label + " (" + unit + ")",
+            h("input", { type: "number", step: "any", value: S.power[k], "data-power": k, "aria-invalid": Number.isFinite(S.power[k]) && S.power[k] >= 0 ? "false" : "true",
+              onchange: e => { onPower(e); renderTab(); } }),
+            h("span", { class: "hint", text: help })))),
         h("div", { class: "row", style: "margin-top:12px" },
-          h("div", { class: "row" },
-            h("button", { type: "button", "aria-pressed": S.audience === "technical", onclick: () => { S.audience = "technical"; renderTab(); } }, "TÉCNICO"),
-            h("button", { type: "button", "aria-pressed": S.audience === "educational", onclick: () => { S.audience = "educational"; renderTab(); } }, "EDUCATIVO")),
-          h("button", { type: "button", id: "calc", class: "go", onclick: calculate }, "CALCULAR")),
-        h("p", { class: "note", text: "TÉCNICO mostra valores e premissas. EDUCATIVO acrescenta explicações em cada painel." }),
-        h("p", { class: "note", text: "CALCULAR envia o cenário à API para energia e riscos. Os demais painéis usam o modelo sintético do navegador." }),
-        edu("Modo educativo: o lugar define o horizonte; a data define onde Sol e Terra estão; a energia depende do que o sol entrega e do que a carga consome.")),
-      h("section", { class: "panel" },
-        h("h2", { text: "Energia do cenário (entrada)" }),
-        h("div", { class: "fields" },
-          field("battery_capacity_wh", "Capacidade da bateria (Wh)"),
-          field("initial_charge_wh", "Carga inicial (Wh)"),
-          field("reserve_wh", "Reserva (Wh)"),
-          field("solar_generation_w", "Solar com Sol (W) · premissa"),
-          field("load_w", "Carga (W)"),
-          field("max_comm_blackout_hours", "Bloqueio máximo da Terra (h)"))),
-      S.apiError ? h("div", { class: "caution", role: "alert" }, S.apiError.map(e => h("div", { text: e }))) : null
-    ];
+          h("span", { class: "dim", text: "Exemplo ilustrativo." }),
+          h("button", { type: "button", onclick: () => { S.power = { ...DEFAULT_POWER }; S.api = null; renderAlarm(); renderTab(); } }, "RESTAURAR EXEMPLO"))));
+
+    const audCard = entryCard("4", "Público", "Muda o nível de explicação dos painéis.",
+      h("div", { class: "seg", role: "group", "aria-label": "Público" },
+        h("button", { type: "button", "aria-pressed": S.audience === "technical" ? "true" : "false", onclick: () => { S.audience = "technical"; renderTab(); } }, "Técnico"),
+        h("button", { type: "button", "aria-pressed": S.audience === "educational" ? "true" : "false", onclick: () => { S.audience = "educational"; renderTab(); } }, "Educativo")),
+      h("p", { class: "hint", style: "margin-top:8px", text: S.audience === "educational" ? "Cada painel traz uma explicação em linguagem simples." : "Mostra valores e premissas, sem explicações extras." }));
+
+    const action = h("section", { class: "panel span2" },
+      h("div", { class: "row" },
+        h("div", {},
+          h("strong", { text: "Calcular cenário" }),
+          h("div", { class: "dim", text: "Envia o cenário à API para energia e riscos. Os demais painéis usam o modelo do navegador." })),
+        h("button", { type: "button", id: "calc", class: "go", disabled: problems.length > 0, onclick: calculate }, "CALCULAR")));
+
+    return [summary, placeCard, windowCard, energyCard, audCard, action,
+      S.apiError ? h("div", { class: "caution span2", role: "alert" }, S.apiError.map(e => h("div", { text: e }))) : null];
   };
   function onPower(e) {
     const k = e.target.dataset.power;
