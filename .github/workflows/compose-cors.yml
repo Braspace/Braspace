@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Static contract regression
-        run: python3 -m unittest tests/test_compose_cors_contract.py -v
+        run: python3 -m unittest discover -s tests -p test_compose_cors_contract.py -v
       - name: Validate Compose environment and real API preflight
         env:
           BRASPACE_PORT: "18199"
