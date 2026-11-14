@@ -39,6 +39,9 @@ jobs:
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/readyz && break; sleep 1; done
           curl --fail-with-body -sS -H 'Content-Type: application/json' --data-binary @../examples/visibility.synthetic.json http://127.0.0.1:8080/v1/visibility > /tmp/result.json
           python3 -c 'import json; r=json.load(open("/tmp/result.json")); assert r["science_status"]=="UNVERIFIED_INPUTS"; assert r["sun_visible"] is True; assert r["earth_visible"] is False'
+          curl -fsS http://127.0.0.1:8080/api/health
+          curl -fsS http://127.0.0.1:8080/api/openapi.json > /dev/null
+          ../examples/mission/replay.sh http://127.0.0.1:8080
       - name: Docker Compose end-to-end smoke
         run: |
           docker compose config
@@ -47,3 +50,54 @@ jobs:
           for i in $(seq 1 50); do if curl -fsS http://127.0.0.1:8080/readyz; then break; fi; sleep 2; done
           curl --fail-with-body -sS -H 'Content-Type: application/json' --data-binary @examples/visibility.synthetic.json http://127.0.0.1:8080/v1/visibility > /tmp/docker-result.json
           python3 -c 'import json; r=json.load(open("/tmp/docker-result.json")); assert r["science_status"]=="UNVERIFIED_INPUTS"'
+      - name: Docker Compose with PostgreSQL
+        run: |
+          export POSTGRES_PASSWORD="$(openssl rand -hex 16)"
+          docker compose down --volumes || true
+          docker compose -f compose.yaml -f compose.db.yaml up --build -d
+          trap 'docker compose -f compose.yaml -f compose.db.yaml logs && docker compose -f compose.yaml -f compose.db.yaml down --volumes' EXIT
+          for i in $(seq 1 60); do if curl -fsS http://127.0.0.1:8080/readyz; then break; fi; sleep 2; done
+          curl -fsS http://127.0.0.1:8080/api/health | python3 -c 'import json,sys; assert json.load(sys.stdin)["data_source"]=="postgres"'
+          ./examples/mission/replay.sh http://127.0.0.1:8080
+
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: braspace
+          POSTGRES_DB: braspace
+          # Throwaway credential for the CI service container only.
+          POSTGRES_PASSWORD: ci-only-throwaway
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U braspace" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgres://braspace:ci-only-throwaway@localhost:5432/braspace?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build Rust engine
+        run: cargo build --manifest-path engine/Cargo.toml
+      - name: Go tests including PostgreSQL integration
+        working-directory: api
+        run: go test -race -count=1 ./...
+      - name: Ingest, verify readback, serve from PostgreSQL
+        working-directory: api
+        env:
+          RUST_ENGINE_BIN: ../engine/target/debug/braspace-lunar-engine
+          DATABASE_URL: postgres://braspace:ci-only-throwaway@localhost:5432/braspace?sslmode=disable
+        run: |
+          go build -o /tmp/braspace-api .
+          /tmp/braspace-api ingest
+          /tmp/braspace-api verify
+          /tmp/braspace-api >/tmp/api-db.log 2>&1 &
+          trap 'kill %1 || true; cat /tmp/api-db.log' EXIT
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/readyz && break; sleep 1; done
+          curl -fsS http://127.0.0.1:8080/api/health | python3 -c 'import json,sys; assert json.load(sys.stdin)["data_source"]=="postgres"'
+          ../examples/mission/replay.sh http://127.0.0.1:8080

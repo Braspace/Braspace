@@ -1,0 +1,172 @@
+{
+  "api_version": "braspace.mission.v1",
+  "limitations": [
+    "Visibility is geometric line of sight to the Sun and Earth centers against the stored terrain horizon; Sun disc width, refraction, eclipses, RF link budget and DSN scheduling are not modelled.",
+    "Durations have a resolution of one series step; windows start and end on grid epochs.",
+    "Results are only as accurate as the stored horizon and ephemeris series; check science_status and provenance per site.",
+    "Constraint thresholds are caller-declared assumptions, not mission requirements."
+  ],
+  "model": {
+    "api_version": "braspace.mission.v1",
+    "analysis_version": "braspace.analysis.v1",
+    "engine_contract": "braspace.visibility.v1"
+  },
+  "request": {
+    "site_ids": [
+      "synthetic-demo-a",
+      "synthetic-demo-b",
+      "malapert-massif"
+    ],
+    "start_utc": "2026-12-01T00:00:00Z",
+    "duration_hours": 72,
+    "include_series": false
+  },
+  "request_sha256": "87bb28c33544ed8349118f57697be29df0f55d3d5744fedb98772560bfe0805f",
+  "results": [
+    {
+      "site": {
+        "id": "synthetic-demo-a",
+        "name": "Synthetic demo site A",
+        "kind": "synthetic_test_fixture",
+        "series_file": "series/synthetic-demo-a.json",
+        "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location.",
+        "series": {
+          "start_utc": "2026-11-01T00:00:00Z",
+          "end_utc": "2027-01-01T00:00:00Z",
+          "step_seconds": 3600,
+          "science_status": "SYNTHETIC",
+          "observer_height_m": 2
+        }
+      },
+      "data_status": "AVAILABLE",
+      "science_status": "SYNTHETIC",
+      "engine_science_status": "UNVERIFIED_INPUTS",
+      "provenance": {
+        "terrain_dataset_id": "SYNTHETIC-HORIZON-NOT-NASA",
+        "ephemeris_id": "SYNTHETIC-EPHEMERIS-NOT-NASA",
+        "frame": "MOON_ME",
+        "generator": "api/cmd/synthseries v1",
+        "note": "Synthetic test fixture. Not NASA data."
+      },
+      "evaluation": {
+        "start_utc": "2026-12-01T00:00:00Z",
+        "end_utc": "2026-12-04T00:00:00Z",
+        "metrics": {
+          "sample_count": 72,
+          "step_hours": 1,
+          "sun_visible_fraction": 0.347222,
+          "earth_visible_fraction": 1,
+          "simultaneous_fraction": 0.347222,
+          "longest_continuous_dark_hours": 47,
+          "longest_continuous_comm_gap_hours": 0,
+          "min_sun_margin_deg": -0.36994,
+          "min_earth_margin_deg": 3.367571,
+          "sun_window_count": 1
+        },
+        "sun_windows": [
+          {
+            "start_utc": "2026-12-02T23:00:00Z",
+            "end_utc": "2026-12-04T00:00:00Z",
+            "duration_hours": 25
+          }
+        ],
+        "earth_windows": [
+          {
+            "start_utc": "2026-12-01T00:00:00Z",
+            "end_utc": "2026-12-04T00:00:00Z",
+            "duration_hours": 72
+          }
+        ],
+        "simultaneous_windows": [
+          {
+            "start_utc": "2026-12-02T23:00:00Z",
+            "end_utc": "2026-12-04T00:00:00Z",
+            "duration_hours": 25
+          }
+        ]
+      }
+    },
+    {
+      "site": {
+        "id": "synthetic-demo-b",
+        "name": "Synthetic demo site B",
+        "kind": "synthetic_test_fixture",
+        "series_file": "series/synthetic-demo-b.json",
+        "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location.",
+        "series": {
+          "start_utc": "2026-11-01T00:00:00Z",
+          "end_utc": "2027-01-01T00:00:00Z",
+          "step_seconds": 3600,
+          "science_status": "SYNTHETIC",
+          "observer_height_m": 2
+        }
+      },
+      "data_status": "AVAILABLE",
+      "science_status": "SYNTHETIC",
+      "engine_science_status": "UNVERIFIED_INPUTS",
+      "provenance": {
+        "terrain_dataset_id": "SYNTHETIC-HORIZON-NOT-NASA",
+        "ephemeris_id": "SYNTHETIC-EPHEMERIS-NOT-NASA",
+        "frame": "MOON_ME",
+        "generator": "api/cmd/synthseries v1",
+        "note": "Synthetic test fixture. Not NASA data."
+      },
+      "evaluation": {
+        "start_utc": "2026-12-01T00:00:00Z",
+        "end_utc": "2026-12-04T00:00:00Z",
+        "metrics": {
+          "sample_count": 72,
+          "step_hours": 1,
+          "sun_visible_fraction": 1,
+          "earth_visible_fraction": 1,
+          "simultaneous_fraction": 1,
+          "longest_continuous_dark_hours": 0,
+          "longest_continuous_comm_gap_hours": 0,
+          "min_sun_margin_deg": 0.641538,
+          "min_earth_margin_deg": 0.167825,
+          "sun_window_count": 1
+        },
+        "sun_windows": [
+          {
+            "start_utc": "2026-12-01T00:00:00Z",
+            "end_utc": "2026-12-04T00:00:00Z",
+            "duration_hours": 72
+          }
+        ],
+        "earth_windows": [
+          {
+            "start_utc": "2026-12-01T00:00:00Z",
+            "end_utc": "2026-12-04T00:00:00Z",
+            "duration_hours": 72
+          }
+        ],
+        "simultaneous_windows": [
+          {
+            "start_utc": "2026-12-01T00:00:00Z",
+            "end_utc": "2026-12-04T00:00:00Z",
+            "duration_hours": 72
+          }
+        ]
+      }
+    },
+    {
+      "site": {
+        "id": "malapert-massif",
+        "name": "Malapert Massif",
+        "kind": "artemis_iii_candidate_region",
+        "coordinate": {
+          "latitude_deg": -85.9948,
+          "longitude_deg": -0.23578,
+          "role": "feature_center",
+          "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+          "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R23",
+          "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
+          "source_accuracy_m": "5-10"
+        }
+      },
+      "data_status": "NO_SERIES_DATA",
+      "reason": "no horizon/ephemeris series has been ingested for this site"
+    }
+  ],
+  "scientifically_validated": false
+}

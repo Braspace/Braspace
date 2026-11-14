@@ -18,6 +18,7 @@ import (
  "os/exec"
  "strings"
  "time"
+ "github.com/Braspace/Braspace/api/onboard"
 )
 
 const maxRequestBytes = 128 << 10
@@ -140,14 +141,21 @@ func routes(binary string) http.Handler {
   }
   writeJSON(w,http.StatusOK,result)
  })
+ mux.Handle("POST /api/onboard/evaluate", onboard.Handler())
+ mux.Handle("POST /api/onboard/report", onboard.ReportHandler())
+ store,err:=loadDefaultStore()
+ if err!=nil { panic(fmt.Errorf("site data: %w",err)) }
+ (&missionAPI{store:store,engine:newEngineClient(binary)}).register(mux)
  return mux
 }
 func main() {
+ if len(os.Args)>1 { os.Exit(runCLI(os.Args[1:])) }
  bin:=os.Getenv("RUST_ENGINE_BIN")
  if bin=="" { bin="./bin/lunar-engine" }
  address:=os.Getenv("LISTEN_ADDR")
  if address=="" { address=":8080" }
- srv:=&http.Server{Addr:address,Handler:routes(bin),ReadHeaderTimeout:5*time.Second}
+ srv:=&http.Server{Addr:address,Handler:withMiddleware(routes(bin)),ReadHeaderTimeout:5*time.Second,
+  ReadTimeout:10*time.Second,WriteTimeout:30*time.Second,IdleTimeout:60*time.Second,MaxHeaderBytes:16<<10}
  log.Printf("BRASPACE API %s; source data NOT validated",address)
  if err:=srv.ListenAndServe(); !errors.Is(err,http.ErrServerClosed) { log.Fatal(fmt.Errorf("listen: %w",err)) }
 }
