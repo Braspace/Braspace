@@ -231,6 +231,7 @@ def main() -> None:
         "height_px": size,
         "meters_per_pixel": px_m,
         "latitude_edge_deg": LAT_EDGE,
+        "display_crop": "circle at latitude_edge_deg; the square image corners reach about 85.6°S and are masked in the component",
         "elevation_m": {
             "min": round(lo, 1), "max": round(hi, 1),
             "scope": "pixels inside the 87°S circle after 2x2 averaging; colour ramp is stretched linearly between these",
@@ -252,6 +253,8 @@ def main() -> None:
             "pds_dataset_id": manifest["dataset"]["pds_dataset_id"],
             "url": manifest["source"]["image_url"],
             "sha256": manifest["verification"]["sha256"],
+            "meters_per_pixel_native": DEM_SCALE_M,
+            "resampling": f"{int(DEM_SCALE_M)} m/px resampled to {px_m:g} m/px by {BLOCK}x{BLOCK} mean",
             "dem_crop_zero_indexed": {"first_col": c0, "first_row": c0, "size": 2 * HALF_DEM},
             "pixel_registration": "pole at zero-indexed pixel centre 3799.5 (label PROJECTION_OFFSET), per DSMAP_POLAR.CAT",
         },

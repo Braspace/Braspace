@@ -57,23 +57,36 @@ export async function mountPolarMap(container, opts = {}) {
   const img = el("image", { href: base + meta.image, x: 0, y: 0, width: W, height: H,
     preserveAspectRatio: "none" });
   img.setAttribute("aria-hidden", "true");
-  svg.append(img);
-
-  // Graticule: latitude circles and four meridians stopping at 89°S like a polar atlas.
-  const grid = el("g", { class: "pm-grid", "aria-hidden": "true" });
+  // Circular crop at the 87°S edge: the square image corners reach 85.6°S
+  // (sides 86.9°S), outside the extent the title states.
   const c = latLonToPixel(meta, -90, 0);
+  const rEdge = latLonToPixel(meta, meta.latitude_edge_deg, 90).col - c.col;
+  const defs = el("defs");
+  const clip = el("clipPath", { id: "pm-clip-87s" });
+  clip.append(el("circle", { cx: c.col, cy: c.row, r: rEdge }));
+  defs.append(clip);
+  img.setAttribute("clip-path", "url(#pm-clip-87s)");
+  svg.append(defs, el("rect", { x: 0, y: 0, width: W, height: H, class: "pm-outside" }), img);
+
+  // Graticule: latitude circles and four meridians from 89°S to the 87°S edge.
+  // Each line is drawn twice (white halo, then black) so it stays visible over
+  // dark low terrain.
+  const grid = el("g", { class: "pm-grid", "aria-hidden": "true" });
+  const halo = el("g", { class: "pm-grid-halo" });
+  const ink = el("g", { class: "pm-grid-ink" });
+  const both = (name, attrs) => { halo.append(el(name, attrs)); ink.append(el(name, attrs)); };
+  const labels = [];
   for (const lat of [-89, -88, -87]) {
     const r = latLonToPixel(meta, lat, 90).col - c.col;
-    grid.append(el("circle", { cx: c.col, cy: c.row, r }));
+    both("circle", { cx: c.col, cy: c.row, r });
     const p = latLonToPixel(meta, lat, 45);
-    grid.append(el("text", { x: p.col + 6, y: p.row - 6, class: "pm-gridlabel" }, `${-lat}°S`));
+    labels.push(el("text", { x: p.col + 6, y: p.row - 6, class: "pm-gridlabel" }, `${-lat}°S`));
   }
-  const edge = W; // long enough to leave the frame
   for (const lon of [0, 90, 180, -90]) {
-    const s = latLonToPixel(meta, -89, lon);
-    const dx = s.col - c.col, dy = s.row - c.row, n = Math.hypot(dx, dy);
-    grid.append(el("line", { x1: s.col, y1: s.row, x2: c.col + (dx / n) * edge, y2: c.row + (dy / n) * edge }));
+    const s = latLonToPixel(meta, -89, lon), e = latLonToPixel(meta, meta.latitude_edge_deg, lon);
+    both("line", { x1: s.col, y1: s.row, x2: e.col, y2: e.row, "data-lon": lon });
   }
+  grid.append(halo, ink, ...labels);
   svg.append(grid);
 
   // 20 km scale bar (true scale at the pole; stereographic scale grows <0.07% by 87°S).
@@ -115,7 +128,7 @@ export async function mountPolarMap(container, opts = {}) {
   const credit = document.createElement("figcaption");
   credit.className = "pm-credit";
   credit.textContent = `Elevation: NASA/GSFC/LOLA (LRO LOLA ${meta.source.product}, sha256 ${meta.source.sha256.slice(0, 12)}…), `
-    + `${meta.meters_per_pixel} m/px, polar stereographic, R = 1737.4 km; heights relative to that sphere. `
+    + `resampled from ${meta.source.meters_per_pixel_native} m/px to ${meta.meters_per_pixel} m/px (2x2 mean), polar stereographic, R = 1737.4 km; heights relative to that sphere. `
     + `Shading uses a synthetic light direction for relief. Rendering: BRASPACE. Colors show elevation only.`;
   const status = document.createElement("p");
   status.className = "pm-status";

@@ -4,6 +4,8 @@
 .pm-frame { position: relative; background: var(--pm-margin); padding: 30px; }
 .pm-svg { display: block; width: 100%; height: auto; border: 6px solid var(--pm-frame); box-sizing: border-box; background: #000; overflow: hidden; }
 .pm-grid circle, .pm-grid line { fill: none; stroke: #000; stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.pm-grid-halo circle, .pm-grid-halo line { stroke: rgba(255,255,255,.8); stroke-width: 4; }
+.pm-outside { fill: #fff; }
 .pm-gridlabel { fill: #000; font-size: 22px; font-weight: 600; paint-order: stroke; stroke: rgba(255,255,255,.75); stroke-width: 3px; }
 .pm-lon { position: absolute; font-weight: 600; font-size: 15px; }
 .pm-lon-top { top: 6px; left: 50%; transform: translateX(-50%); }
@@ -19,10 +21,10 @@
 .pm-site-label { fill: #fff; font-size: 21px; font-weight: 700; paint-order: stroke; stroke: #000; stroke-width: 4px; stroke-linejoin: round; }
 .pm-site:hover .pm-site-dot, .pm-site:focus-visible .pm-site-dot { fill: #ffd34d; r: 10; }
 .pm-site:focus-visible .pm-site-label { fill: #ffd34d; }
-.pm-legend { position: absolute; left: 44px; bottom: 44px; background: rgba(255,255,255,.94); padding: 8px 10px; font-size: 13px; border: 1px solid #999; }
+.pm-legend { position: absolute; left: 38px; bottom: 38px; background: rgba(255,255,255,.94); padding: 5px 7px; font-size: 11px; border: 1px solid #999; }
 .pm-legend-title { font-weight: 700; margin-bottom: 6px; }
 .pm-legend-body { display: flex; gap: 8px; }
-.pm-legend-bar { width: 18px; height: 110px; border: 1px solid #555; }
+.pm-legend-bar { width: 14px; height: 72px; border: 1px solid #555; }
 .pm-legend-ticks { display: flex; flex-direction: column; justify-content: space-between; }
 .pm-credit { font-size: 12px; color: #444; margin-top: 6px; }
 .pm-status { font-size: 12px; color: #444; margin: 2px 0 0; }

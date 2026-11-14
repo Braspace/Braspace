@@ -26,3 +26,11 @@ test("component wording says elevation and credits NASA/GSFC/LOLA",async()=>{
  assert.match(src,/NASA\/GSFC\/LOLA/);
  assert.doesNotMatch(src.replace(/do not show light or Earth visibility/,""),/illuminat|sunlit|visibilit/i);
 });
+test("square corners lie outside 87°S, so the component crops to a circle at the edge",async()=>{
+ const corner=pixelToLatLon(meta,-0.5,-0.5);
+ assert.ok(corner.lat>meta.latitude_edge_deg, `corner ${corner.lat}`);
+ const src=await readFile(new URL("../polar-map.js",import.meta.url),"utf8");
+ assert.match(src,/clipPath/);
+ assert.match(src,/resampled from/);
+ assert.equal(meta.source.meters_per_pixel_native,80);
+});
