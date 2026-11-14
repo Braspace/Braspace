@@ -205,3 +205,6 @@
   .lab-guide .mp-label{font-size:12px}
   .lab-guide .mp-pill{margin-top:0;align-self:flex-start}
 }
+/* UX audit: compact controls in the top bar keep their drawn size but get a 44 px hit area. */
+.lab-bar a.back,.lab-bar button{position:relative}
+.lab-bar a.back::after,.lab-bar button::after{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}

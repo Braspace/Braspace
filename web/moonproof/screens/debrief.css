@@ -71,3 +71,5 @@
 .deb-rules h3,.deb-chart h3{display:flex;justify-content:space-between;align-items:baseline}
 .deb-actions .mp-pill{max-width:min(420px,40vw)}
 .deb-actions .mp-pill:last-child{max-width:min(520px,44vw)}
+/* UX audit: at phone width the "no attempt yet" card sat over the empty right column/sheet; that column hides while it shows. */
+@media (max-width:700px){body:has(.deb-none) .deb-right,body:has(.deb-none) .mp-sheet,body:has(.deb-none) [data-mp-sheet]{display:none}}

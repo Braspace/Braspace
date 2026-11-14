@@ -36,6 +36,9 @@ let bodies = null;
 function placeBodies() {
   const c = markerCentre(); if (!c || !bodies) return;
   const k = narrow() ? 0.5 : 1; const sun = [c[0] - 150 * k, c[1] - 150 * k], earth = [c[0] + 150 * k, c[1] - 170 * k];
+  // Keep the Sun/Earth icon and its label below the top bar and context bar (they used to slide under them).
+  const minY = Math.max(...[".mp-top", ".mp-context"].map(s => document.querySelector(s)?.getBoundingClientRect().bottom || 0)) + 22;
+  sun[1] = Math.max(sun[1], minY); earth[1] = Math.max(earth[1], minY);
   for (const [b, p] of [["sun", sun], ["earth", earth]]) {
     Object.assign(bodies[b].ic.style, { left: p[0] + "px", top: p[1] + "px" });
     Object.assign(bodies[b].tag.style, { left: p[0] + "px", top: p[1] + 24 + "px" });
