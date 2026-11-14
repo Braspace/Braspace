@@ -100,3 +100,8 @@
  .mp-bottomnav::-webkit-scrollbar{display:none}
  .mp-bottomnav .mp-pill{flex:none}
 }
+
+/* Apply the Fibonacci spacing scale to glass overlays, preserving the 44px touch contract. */
+.mp-flow{column-gap:var(--fib-4);row-gap:var(--fib-3)}
+.mp-flow-left,.mp-flow-right{gap:var(--fib-3)}
+.mp-task-grid{gap:var(--fib-4)}
