@@ -53,7 +53,7 @@
     return el;
   }
   const f1 = (v, d) => (typeof v === "number" && Number.isFinite(v)) ? v.toFixed(d === undefined ? 1 : d) : "—";
-  const tag = (s) => h("span", { class: "tag " + s, text: F.LABEL[s] || s });
+  const tag = (s) => h("span", { class: "tag " + s, text: s === "SINT" ? "PROTÓTIPO" : (F.LABEL[s] || s) });
   const startMs = () => Date.parse(S.startLocal + ":00Z");
   const iso = ms => new Date(ms).toISOString().replace(".000Z", "Z");
   const fmt = ms => new Date(ms).toISOString().slice(0, 16).replace("T", " ") + " UTC";
@@ -528,7 +528,7 @@
     const fuelPct = Math.max(0, Math.min(100, life.fuelRemainingKg / 450 * 100));
     return [
       h("section", { class: "panel" },
-        h("h2", { text: "06 · Combustível (ilustrativo)" }),
+        h("h2", { text: "06 · Combustível (protótipo · valor fixo de exemplo)" }),
         h("dl", { class: "readout" },
           h("dt", { text: "restante (kg)" }), h("dd", { text: life.fuelRemainingKg > 0 ? f1(life.fuelRemainingKg) : "ESGOTADO", class: life.fuelRemainingKg > 0 ? "" : "fuelout" }),
           h("dt", { text: "reserva mínima (kg)" }), h("dd", { text: "150.0" }),
@@ -536,14 +536,14 @@
         h("div", { class: "bar " + (life.fuelMarginKg < 0 ? "bad" : ""), style: "margin-top:8px" }, h("span", { style: "width:" + fuelPct + "%" })),
         h("div", { style: "margin-top:8px" }, tag("SINT"), " ", tag("ESQ"), " ", h("span", { class: "dim", text: "consumo 1,2 kg/h · escopo não decidido (#7)" }))),
       h("section", { class: "panel" },
-        h("h2", { text: "Alimentação (ilustrativo)" }),
+        h("h2", { text: "Alimentação (protótipo · valor fixo de exemplo)" }),
         h("dl", { class: "readout" },
           h("dt", { text: "tripulação" }), h("dd", { text: life.people + " pessoas" }),
           h("dt", { text: "estoque restante (kg)" }), h("dd", { text: f1(life.foodLeftKg) }),
           h("dt", { text: "racionamento" }), h("dd", { text: life.foodLeftKg > 100 ? "NORMAL" : "REDUZIDO" })),
         h("div", { style: "margin-top:8px" }, tag("SINT"), " ", h("span", { class: "dim", text: "0,62 kg/pessoa/dia · sem fonte" }))),
       h("section", { class: "panel" },
-        h("h2", { text: "Pressurização e O2 (ilustrativo)" }),
+        h("h2", { text: "Pressurização e O2 (protótipo · valor fixo de exemplo)" }),
         h("dl", { class: "readout" },
           h("dt", { text: "pressão da cabine (kPa)" }), h("dd", { text: f1(life.cabinKpa) + " · faixa 95–105" }),
           h("dt", { text: "pressão parcial O2 (kPa)" }), h("dd", { text: f1(life.o2PartialKpa) + " · mín. 19" }),
@@ -924,7 +924,7 @@
       h("div", { class: "grid two span2" },
         donutCard(sum),
         h("section", { class: "panel" },
-          h("h2", {}, "Combustível (ilustrativo)", h("em", {}, "sem fonte")),
+          h("h2", {}, "Combustível (protótipo · valor fixo de exemplo)", h("em", {}, "sem fonte")),
           h("dl", { class: "readout" },
             h("dt", {}, "restante"), h("dd", { text: life.fuelRemainingKg > 0 ? f1(life.fuelRemainingKg, 0) + " kg" : "esgotado" }),
             h("dt", {}, "margem sobre a reserva"), h("dd", { class: fuelOk ? "" : "fuelout", text: f1(life.fuelMarginKg, 0) + " kg" }),
@@ -1051,7 +1051,7 @@
       h("div", { class: "bar " + (status === "bad" ? "bad" : status === "warn" ? "warn" : ""), style: "margin-top:12px" },
         h("span", { style: "width:" + Math.max(0, Math.min(100, pct)) + "%" })),
       h("p", { class: "note", text: detail }),
-      illustrative ? h("div", { style: "margin-top:8px" }, tag("SINT"), " ", h("span", { class: "dim", text: "valor ilustrativo, sem fonte" })) : null);
+      illustrative ? h("div", { style: "margin-top:8px" }, tag("SINT"), " ", h("span", { class: "dim", text: "PROTÓTIPO · valor fixo de exemplo, sem fonte" })) : null);
   }
 
   VIEWS.vida = () => {
