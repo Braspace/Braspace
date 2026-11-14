@@ -1,0 +1,12 @@
+# OPTIONAL overlay on top of compose.yaml + compose.db.yaml.
+# Usage: docker compose -f compose.yaml -f compose.db.yaml -f compose.vector.yaml up --build
+# Requires manually applying api/db/optional-vector.sql in the database
+# before enabling the API; default PostgreSQL16 remains the recommended release.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+  api:
+    environment:
+      BRASPACE_VECTOR_ENABLED: "${BRASPACE_VECTOR_ENABLED:-0}"
+      BRASPACE_VECTOR_MODEL_ID: "${BRASPACE_VECTOR_MODEL_ID:-}"
+      VECTOR_DATABASE_URL: "postgres://braspace:${POSTGRES_PASSWORD}@db:5432/braspace?sslmode=disable"
