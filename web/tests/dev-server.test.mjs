@@ -12,7 +12,7 @@ const port=server.address().port,base="http://127.0.0.1:"+port;
 after(()=>new Promise(resolve=>server.close(resolve)));
 
 test("homepage is a five-module MoonProof scientific-honesty shell",async()=>{
- const result=await fetch(base+"/"),html=await result.text();
+ const result=await fetch(base+"/classic.html"),html=await result.text();
  assert.equal(result.status,200);
  assert.match(result.headers.get("content-security-policy"),/default-src 'none'/);
  assert.match(html,/NOT NASA/i); // may be satisfied by explicit non-NASA training label
@@ -59,4 +59,14 @@ test("training code explicitly refuses to synthesize NASA source status",async()
  assert.match(app,/site_id:"SYNTHETIC-SOUTH-POLE-TRAINING"/);
  assert.match(moon,/NASA SVS/);
  assert.match(moon,/not terrain science|NOT precision/);
+});
+
+test("v3 home is the task-first shell; design system and views are served; traversal refused",async()=>{
+ const r=await fetch(base+"/"),html=await r.text();
+ assert.equal(r.status,200);
+ assert.match(html,/shell\/app\.js/);assert.match(html,/ds\/tokens\.css/);assert.match(html,/classic\.html/);
+ for(const [route,kind] of [["/shell/app.js","text/javascript"],["/shell/views/escolha.js","text/javascript"],["/ds/router.js","text/javascript"],["/ds/tokens.css","text/css"],["/ds/fonts/Manrope-400-800-latin.woff2","font/woff2"],["/assets/polar-elevation-87s.webp","image/webp"],["/classic.html","text/html"]]){
+  const x=await fetch(base+route);assert.equal(x.status,200,route);assert.ok(x.headers.get("content-type").includes(kind),route);
+ }
+ for(const bad of ["/ds/../dev-server.mjs","/shell/x.webp","/assets/x.js","/ds/%2e%2e/package.json"]){const x=await fetch(base+bad);assert.equal(x.status,404,bad);}
 });

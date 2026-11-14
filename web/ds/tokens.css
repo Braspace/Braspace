@@ -1,0 +1,57 @@
+/* moonproof design tokens (BRASPACE "Telas" kit, v3). Every colour used anywhere in the
+   product must come from a variable below — no loose hex values in components. */
+@font-face { font-family: Manrope; src: url("./fonts/Manrope-400-800-latin.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("./fonts/IBMPlexMono-400-latin.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("./fonts/IBMPlexMono-500-latin.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+
+:root {
+  color-scheme: dark;
+  /* surfaces */
+  --c-bg: #07090C;
+  --c-card: #050607;            /* solid black data cards */
+  --c-card-2: #0E1216;          /* nested surface inside a card */
+  --c-glass: rgba(12, 15, 18, .58);
+  --c-glass-strong: rgba(9, 13, 18, .82);
+  --c-glass-in: rgba(255, 255, 255, .07);
+  --c-line: rgba(255, 255, 255, .10);
+  --c-line-soft: rgba(255, 255, 255, .06);
+  --c-line-strong: rgba(255, 255, 255, .16);
+  --c-scrim: rgba(0, 0, 0, .55);
+  --c-vignette: rgba(5, 6, 8, .6);
+  /* text (contrast on --c-bg: t1 18.6:1 · t2 10.8:1 · t3 6.9:1) */
+  --c-t1: #F2F4F5;
+  --c-t2: #B7C0C9;
+  --c-t3: #8E99A6;
+  --c-ink: #0A0D10;              /* text on white pills */
+  --c-ink-2: #3E4750;            /* secondary text on white pills (7.9:1) */
+  /* brand and action */
+  --c-white: #F2F4F5;
+  --c-jade: #2EC4A0;             /* brand + primary action */
+  --c-jade-ink: #04110D;         /* text on jade (9.5:1) */
+  --c-jade-soft: #7FE6CB;        /* links */
+  --c-jade-ring: rgba(46, 196, 160, .35);
+  --c-focus: #9CF5DC;
+  /* science (never colour alone: always paired with text) */
+  --c-sun: #FFD166;              /* illumination */
+  --c-sun-ink: #1A1400;
+  --c-earth: #4C9BFF;            /* Earth visibility */
+  --c-earth-ink: #021226;
+  --c-sim: #B48CF2;              /* RESERVED for simulation */
+  --c-sim-t: #D9C6FA;
+  --c-sim-wash: rgba(180, 140, 242, .16);
+  --c-real: #D5DEE7;             /* measured/validated outline */
+  --c-unk: #808C99;              /* unknown / not computed hatch */
+  --c-unk-wash: rgba(128, 140, 153, .25);
+  --c-ok: #63C66E;  --c-ok-ink: #04110D;
+  --c-bad: #E5484D; --c-bad-t: #FF7A80; --c-bad-ink: #FFFFFF;   /* "not viable" only */
+  --c-warn: #F29A45; --c-warn-ink: #1A0E02;
+  --c-track: #2A3038;            /* empty bar / dark terrain */
+  --c-disabled: #1B2430; --c-disabled-t: #8794A1;
+  /* shape and rhythm */
+  --r-card: 26px; --r-in: 18px; --r-pill: 999px;
+  --gap: 12px; --edge: 28px;
+  --touch: 44px;                 /* comfortable target (WCAG min 24px) */
+  --font: Manrope, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --blur: blur(22px) saturate(140%);
+}
