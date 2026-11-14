@@ -45,7 +45,12 @@ test("the seal never says validated unless the response says VALIDATED", async (
     assert.equal(/validated/i.test(s.text), false, `status ${st} -> ${s.text}`);
   }
   assert.equal(sealFor(undefined).live, true);
-  assert.equal(/validated/i.test(sealFor({ science_status: "VALIDATED" }).text), true);
+  assert.equal(/validated/i.test(sealFor({ science_status: "VALIDATED" }).text), false);
+  assert.equal(/validated/i.test(sealFor({ science_status: "VALIDATED", scientifically_validated: false }).text), false);
+  assert.equal(/validated/i.test(sealFor({ science_status: "VALIDATED", scientifically_validated: true }).text), false); // missing provenance
+  const attested = { science_status: "VALIDATED", scientifically_validated: true, provenance: {terrain_sha256: "a".repeat(64), ephemeris_id: "NAIF-TEST", frame: "MOON_ME"} };
+  assert.equal(sealFor(attested).cls, "validated");
+  assert.equal(sealFor({...attested, provenance: {...attested.provenance, frame:"J2000"}}).cls,"unverified");
   assert.equal(/validated/i.test(OFFLINE_SEAL.text), false);
   const live = createLive({ base: "http://x", fetchImpl: fakeFetch({ "/api/sites": catalogue, "/api/compare": cmp("UNVERIFIED") }) });
   await live.probe(); assert.equal(/validated/i.test(live.seal.text), false);
@@ -56,6 +61,18 @@ test("compareRow refuses numbers when the API has no data; ids without a pair st
   assert.equal(compareRow({ data_status: "NO_SERIES_DATA" }), null);
   assert.equal(compareRow({ data_status: "OUTSIDE_COVERAGE", evaluation: { metrics: {} } }), null);
   assert.equal(SITE_MAP["mons-mouton-im2"], null);
+});
+
+test("nested VALIDATED can never override false response-level scientific attestation", async () => {
+  const forged = cmp("VALIDATED");
+  forged.scientifically_validated = false;
+  forged.results[0].provenance = {terrain_sha256: "a".repeat(64), ephemeris_id: "NAIF-TEST", frame:"MOON_ME"};
+  const fetcher=fakeFetch({"/api/sites":catalogue,"/api/compare":forged});
+  const live=createLive({base:"http://x",fetchImpl:fetcher}); await live.probe();
+  const r=await live.compare(["connecting-ridge"],"2026-11-15T00:00:00Z",24);
+  assert.equal(r.ok,true);
+  assert.equal(r.seal.cls,"unverified");
+  assert.equal(compareRow(r.data.results[0],r.data.scientifically_validated).seal.cls,"unverified");
 });
 
 test("sky, delay and onboard hit the documented routes with the mapped id", async () => {
