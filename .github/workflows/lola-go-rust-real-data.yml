@@ -3,12 +3,14 @@ on:
   push:
     branches: [feat/lola-southpole-horizon-science-20261114]
     paths:
-      - "api/sitedata/**"
+      - "api/**"
+      - "engine/**"
       - "science/**"
       - ".github/workflows/lola-go-rust-real-data.yml"
   pull_request:
     paths:
-      - "api/sitedata/**"
+      - "api/**"
+      - "engine/**"
       - "science/**"
       - ".github/workflows/lola-go-rust-real-data.yml"
 permissions:
