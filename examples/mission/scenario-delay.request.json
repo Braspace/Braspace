@@ -1,0 +1,10 @@
+{
+  "site_id": "synthetic-demo-a",
+  "start_utc": "2026-12-01T00:00:00Z",
+  "duration_hours": 72,
+  "delays_hours": [24, 48, 72],
+  "constraints": {
+    "max_continuous_dark_hours": 20,
+    "min_earth_fraction": 0.5
+  }
+}
