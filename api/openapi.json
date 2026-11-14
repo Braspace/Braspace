@@ -681,7 +681,7 @@
         },
         "responses": {
           "200": {
-            "description": "Standalone print-friendly HTML (Print \u2192 Save as PDF)",
+            "description": "Standalone print-friendly HTML (Print → Save as PDF)",
             "content": {
               "text/html": {}
             }
@@ -981,6 +981,96 @@
           }
         }
       }
+    },
+    "/api/sites/{id}/sky": {
+      "get": {
+        "summary": "Terrain horizon and Sun/Earth azimuth/elevation for one site (stored series values, read-only, never interpolated)",
+        "operationId": "getSiteSky",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "description": "RFC3339 UTC on the series grid; default is the series start",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "description": "Window length, default 24, max 720",
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 720
+            }
+          },
+          {
+            "name": "step",
+            "in": "query",
+            "required": false,
+            "description": "Seconds between samples; whole multiple of the series step (default: series step). At most 1000 samples are returned.",
+            "schema": {
+              "type": "integer",
+              "minimum": 60
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteSky"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown site (SITE_NOT_FOUND) or site without series (NO_SERIES_DATA)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INVALID_TIME, INVALID_DURATION, INVALID_STEP, GRID_NOT_ALIGNED, OUTSIDE_COVERAGE or WINDOW_TOO_LONG",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ENGINE_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1025,7 +1115,9 @@
               "GRID_NOT_ALIGNED",
               "LAYER_NOT_FOUND",
               "LAYER_NOT_PROXIED",
-              "LAYER_UNAVAILABLE"
+              "LAYER_UNAVAILABLE",
+              "NO_SERIES_DATA",
+              "INVALID_STEP"
             ]
           }
         },
@@ -2634,6 +2726,107 @@
           "provenance"
         ],
         "description": "Caller-supplied inputs; identifiers are not verified."
+      },
+      "SkySample": {
+        "type": "object",
+        "properties": {
+          "epoch_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sun": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "earth": {
+            "$ref": "#/components/schemas/Direction"
+          },
+          "sun_visible": {
+            "type": "boolean"
+          },
+          "earth_visible": {
+            "type": "boolean"
+          },
+          "sun_margin_deg": {
+            "type": "number"
+          },
+          "earth_margin_deg": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "epoch_utc",
+          "sun",
+          "earth",
+          "sun_visible",
+          "earth_visible",
+          "sun_margin_deg",
+          "earth_margin_deg"
+        ]
+      },
+      "SiteSky": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "type": "string"
+          },
+          "site_id": {
+            "type": "string"
+          },
+          "science_status": {
+            "$ref": "#/components/schemas/ScienceStatus"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/SeriesProvenance"
+          },
+          "observer_height_m": {
+            "type": "number"
+          },
+          "start_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "step_seconds": {
+            "type": "integer"
+          },
+          "terrain_horizon": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Direction"
+            }
+          },
+          "samples": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/SkySample"
+            }
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "api_version",
+          "site_id",
+          "science_status",
+          "provenance",
+          "observer_height_m",
+          "start_utc",
+          "end_utc",
+          "step_seconds",
+          "terrain_horizon",
+          "samples",
+          "limitations"
+        ]
       }
     }
   }
