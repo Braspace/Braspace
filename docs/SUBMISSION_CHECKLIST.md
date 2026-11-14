@@ -11,7 +11,8 @@ NASA's event page says submissions close **2026-11-15 at 23:59 local time**. BRA
 
 - [ ] Live public project URL: **NOT YET VERIFIED** (private GitHub repo is NOT a public project)
 - [ ] Anonymous browser check of project URL: **NOT DONE**
-- [ ] Accessible, working demo / max 7-slide public read-only link: **NOT YET VERIFIED**
+- [x] Existing 7-slide **candidate deck located**: https://docs.google.com/presentation/d/1Nnv1C1XU2SQCmnPam1REc5_2Wix_Uo4x3u5Smmk3tLs/edit — Google Drive reports `anyone: reader` permission (2026-11-14). This is not proof of content accuracy or of opening anonymously.
+- [ ] Accessible, working demo / max 7-slide public read-only link independently verified **in an anonymous browser: NOT YET VERIFIED**
 - [ ] Anonymous browser check of demo: **NOT DONE**
 - [ ] 3 exact, documented candidate locations and one real NASA dataset: **NOT DONE**
 - [ ] Reproducible scientific calculation with independent reference: **NOT DONE**

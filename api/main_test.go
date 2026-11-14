@@ -43,5 +43,11 @@ func TestRealProcessContractWithStub(t *testing.T) {
  req:=httptest.NewRequest("POST","/v1/visibility",bytes.NewBufferString(validBody))
  req.Header.Set("Content-Type","application/json")
  rec:=httptest.NewRecorder(); routes(file).ServeHTTP(rec,req)
- if rec.Code!=200 || !strings.Contains(rec.Body.String(),"UNVERIFIED_INPUTS") {t.Fatalf("response: %d %s",rec.Code,rec.Body.String())}
+ if rec.Code!=200 || !strings.Contains(rec.Body.String(),"UNVERIFIED_INPUTS") || !strings.Contains(rec.Body.String(),"\"evidence_passport\"") {t.Fatalf("response: %d %s",rec.Code,rec.Body.String())}
+}
+
+func TestCapabilitiesStateScientificLimits(t *testing.T) {
+ rec:=httptest.NewRecorder()
+ routes("/nonexistent/engine").ServeHTTP(rec,httptest.NewRequest("GET","/v1/capabilities",nil))
+ if rec.Code!=200 || !strings.Contains(rec.Body.String(),"\"scientifically_validated\":false") || !strings.Contains(rec.Body.String(),"\"nasa_lola_loaded\":false") {t.Fatalf("unexpected capabilities: %d %s",rec.Code,rec.Body.String())}
 }

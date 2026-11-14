@@ -17,6 +17,8 @@ curl -fsS -H 'Content-Type: application/json' \
 docker compose down
 ```
 
+The response includes an `evidence_passport` with a SHA-256 of the exact normalized **caller request**, claimed source IDs, and explicit false flags for source verification and scientific validation. This is a reproducibility fingerprint **not a NASA dataset integrity certificate**. `GET /v1/capabilities` publishes exactly which scientific capabilities are not implemented.
+
 Expected from the synthetic test: `science_status=UNVERIFIED_INPUTS`, `sun_visible=true`, `earth_visible=false`. These are checks of the software contract, **not scientific validation**. `GET /healthz` tests HTTP liveness; `GET /readyz` tests presence of an executable Rust engine, not NASA data readiness. No secrets or public service exposure are required; Compose binds to loopback by default.
 
 Local checks (with Go 1.23+ and Rust/Cargo available):

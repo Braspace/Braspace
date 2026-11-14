@@ -3,7 +3,7 @@ Last recorded: 2026-11-14. This is a **proposed technical freeze** for team revi
 
 ## P0 acceptance gates (not marketing claims)
 
-1. Data owner [BS-002/003/038](../issues/2): exactly one NASA LOLA terrain product selected, source URL and SHA-256, units and frame documented; physical file or reproducible download available.
+1. Data owner [BS-002/003/038](https://github.com/Braspace/Braspace/issues/2): exactly one NASA LOLA terrain product selected, source URL and SHA-256, units and frame documented; physical file or reproducible download available.
 2. Rust science [BS-013–016](https://github.com/Braspace/Braspace/issues/13): numeric skyline from real DEM; Sun/Earth angles from real ephemerides; 2 independent reference checks; report worst residual.
 3. API [BS-019–023](https://github.com/Braspace/Braspace/issues/19): typed request-response; NASA provenance correctly passed; no acceptance of synthetic labels as NASA values; bounded runtime.
 4. Integration [BS-008/009](https://github.com/Braspace/Braspace/issues/8): actual Rust binary invoked by Go; self-hosted Compose builds from clean machine; CI + logs attached.

@@ -34,7 +34,7 @@ Client -- POST /v1/visibility ---> Go HTTP API (:8080)
 
 Example: [synthetic request](../examples/visibility.synthetic.json). Angles are degrees (azimuth 0° north / clockwise convention is a caller contract to standardize during science review), elevations in [-90, 90]; horizon samples strictly increasing and periodic across 0/360°. `epoch_utc` is RFC3339 UTC. Frame currently must be `MOON_ME`. Two or more samples allow circular interpolation. A zero margin is treated as mathematically tangent/visible, **not** proof of robust visibility.
 
-Response contains numerical local horizon and clearance margins and three booleans. The classification is only as accurate as the source angles and skyline. Sun disc width, refraction, limb effects, antenna link budget, Earth occultation, DSN scheduling, lunar eclipses, terrain uncertainty and time-series windows are **not modeled**.
+Response contains numerical local horizon and clearance margins and three booleans, plus an **implemented request-level evidence passport** with SHA-256 of the normalized JSON request. This hash does **not** authenticate NASA dataset bytes or ephemeris kernel provenance. `GET /v1/capabilities` explicitly advertises unavailable physics. Full server-signed asset provenance remains a future ADR-0002 requirement. The classification is only as accurate as the source angles and skyline. Sun disc width, refraction, limb effects, antenna link budget, Earth occultation, DSN scheduling, lunar eclipses, terrain uncertainty and time-series windows are **not modeled**.
 
 ## ADR-0002: Source provenance, not artificial confidence
 

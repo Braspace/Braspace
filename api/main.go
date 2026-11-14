@@ -5,6 +5,7 @@ package main
 
 import (
  "bytes"
+ "crypto/sha256"
  "context"
  "encoding/json"
  "errors"
@@ -80,6 +81,17 @@ func routes(binary string) http.Handler {
   }
   writeJSON(w,http.StatusOK,map[string]string{"status":"ready","science_status":"UNVERIFIED_INPUTS"})
  })
+ mux.HandleFunc("GET /v1/capabilities", func(w http.ResponseWriter, r *http.Request) {
+  writeJSON(w,http.StatusOK,map[string]any{
+   "version":"braspace.visibility.v1",
+   "caller_supplied_look_angles":true,
+   "caller_supplied_terrain_horizon":true,
+   "nasa_lola_loaded":false,
+   "naif_spice_loaded":false,
+   "scientifically_validated":false,
+   "maximum_horizon_samples":1440,
+  })
+ })
  mux.HandleFunc("POST /v1/visibility", func(w http.ResponseWriter, r *http.Request) {
   if ct:=r.Header.Get("Content-Type"); !strings.HasPrefix(ct,"application/json") {
    writeJSON(w,http.StatusUnsupportedMediaType,map[string]string{"error":"application/json required"}); return
@@ -111,6 +123,20 @@ func routes(binary string) http.Handler {
   var result map[string]any
   if json.Unmarshal(stdout.Bytes(),&result)!=nil || result["science_status"]!="UNVERIFIED_INPUTS" {
    writeJSON(w,http.StatusBadGateway,map[string]string{"error":"engine returned invalid contract"}); return
+  }
+  // A reproducibility fingerprint of the exact normalized request, NOT of NASA assets.
+  // Caller-supplied source identifiers are always labeled as *claimed*.
+  fingerprint:=sha256.Sum256(normalized)
+  result["evidence_passport"]=map[string]any{
+   "protocol":"braspace.visibility.v1",
+   "request_sha256":fmt.Sprintf("%x",fingerprint),
+   "terrain_dataset_id_claimed":req.Provenance.TerrainDatasetID,
+   "ephemeris_id_claimed":req.Provenance.EphemerisID,
+   "frame_claimed":req.Provenance.Frame,
+   "inputs_supplied_by_caller":true,
+   "nasa_sources_verified":false,
+   "scientific_validation":false,
+   "replay_path":"/v1/visibility",
   }
   writeJSON(w,http.StatusOK,result)
  })

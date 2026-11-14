@@ -1,6 +1,6 @@
 # Competitive source audit — Lunar Landing Site Navigator
 
-**Observed 2026-11-14:** Public repository READMEs inspected through the GitHub connector. These are **maintainers' documented claims**, not independent execution or third-party scientific certification. No competitor code was imported.
+**Observed 2026-11-14:** Public repository READMEs, source trees and representative implementation/test files inspected through the GitHub connector. The implementations were **not executed**. Numerical performance claims are from maintainers, not independently reproduced. No competitor code was imported.
 
 | Public repository | Observed claimed strengths | Limits and opportunities for BRASPACE |
 |---|---|---|
@@ -37,3 +37,13 @@
 ## External upstreams and citation ethics
 
 Do not wholesale copy upstream files or transplant outputs under a new name. If reusing source under an allowed license, preserve original attribution and notices, and isolate independently authored changes. Their README results remain *reported, not verified here*. NASA/JPL reference: https://naif.jpl.nasa.gov/ ; challenge: https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/ .
+
+## Source-level checks (read only; not benchmarked)
+
+- **SIGHTLINE:** [Python terrain horizon](https://github.com/WarRinOP/sightline/blob/main/pipeline/sightline_pipeline/horizon.py) handles great-circle ray casting, a 5 m near-field tile plus 80 m distant DEM and explicit truncation; [TS horizon contract](https://github.com/WarRinOP/sightline/blob/main/packages/engine/src/horizon/horizon.ts) validates per-bin hull lines as a function of mast height. This is deeper than a generic 3D renderer.
+- **PolarWindow:** [horizon.py](https://github.com/MdAhbab/PolarWindow/blob/main/backend/app/core/horizon.py) abstracts the DEM behind a height sampler and warns against near-field interpolation artifacts; [compare_service.py](https://github.com/MdAhbab/PolarWindow/blob/main/backend/app/services/compare_service.py) intentionally reuses the metrics code path and uncertainty-aware ranking.
+- **LUNAR//OPS:** [horizon.py](https://github.com/RootVandal/lunar-ops/blob/main/pipeline/lunarops/horizon.py) uses nested DEM ranges, spherical geometry and records the occluding distance; [Horizons tests](https://github.com/RootVandal/lunar-ops/blob/main/pipeline/tests/test_vs_horizons.py) carry a numerical angular tolerance.
+- **Lunar Horizon:** [Python skyline](https://github.com/localizedprojects/CLPS-MOON-BROWSER/blob/main/pipeline/lunarsp/horizon.py) documents exact spherical geometry and resolution-dependent bias; [on-device horizon](https://github.com/localizedprojects/CLPS-MOON-BROWSER/blob/main/app/lib/core/horizon_compute.dart) marks coarse 400 m DEM computations as approximate.
+- **Singapore Lunar Navigator:** [horizon.ts](https://github.com/daniel27-space/lunar-navigator/blob/main/web/src/lib/horizon.ts) uses spherical great-circle rays and discloses terrain resolution. [Compare.tsx](https://github.com/daniel27-space/lunar-navigator/blob/main/web/src/ui/Compare.tsx) aligns the same metrics across three sites and handles unavailable data and timeline views.
+
+**Engineering consequence for BRASPACE:** a future DEM implementer should test (a) exact spherical geometry, (b) near-field DEM noise, (c) DEM resolution convergence, (d) wraparound azimuth interpolation, (e) frame/epoch agreement, (f) uncertainty-aware comparison consistency between detail and compare. These are independent test requirements, not copied algorithms. The current Rust code implements only item (d) on caller-supplied data.
