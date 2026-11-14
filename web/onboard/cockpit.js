@@ -1338,8 +1338,10 @@
 
   function kvRow(label, value) { return h("tr", {}, h("td", { text: label }), h("td", { class: "n", text: value })); }
   function apiError(res) {
-    return h("div", { class: "caution", role: "alert" }, "API indisponível: " + (res.error || ("HTTP " + res.status)) +
-      ". Suba a API Go (e o Rust engine, se o endpoint pedir) e o dev-server.py.");
+    // status 0 = no connection. Any other status means the API answered and refused: show its text.
+    return h("div", { class: "caution", role: "alert" }, res.status === 0
+      ? "API indisponível: " + (res.error || "sem conexão") + ". Suba a API Go (e o Rust engine, se o endpoint pedir) e o dev-server.py."
+      : "A API respondeu HTTP " + res.status + " e recusou o pedido: " + (res.error || "sem detalhe"));
   }
   function apiPanelFrame(title, note, button, body) {
     return h("section", { class: "panel span2" },
@@ -1383,8 +1385,9 @@
   function comparePanel() {
     const r = S.apiResults.compare;
     const button = callButton("COMPARAR LUGARES (API)", async () => {
-      const ids = (S.sitesApi || []).map(s => s.id);
-      const pick = ids.length ? ids : ["synthetic-demo-a", "synthetic-demo-b", "malapert-massif"];
+      // /api/compare accepts 1 to 3 sites: current site first, then up to two others from the catalog.
+      const ids = (S.sitesApi || []).map(s => s.id).filter(id => id !== S.site);
+      const pick = [S.site].concat(ids.length ? ids : ["synthetic-demo-a", "synthetic-demo-b"].filter(id => id !== S.site)).slice(0, 3);
       S.apiResults.compare = await OnboardApi.compare({ site_ids: pick, start_utc: iso(startMs()), duration_hours: S.durationH, include_series: false });
     });
     let body = h("p", { class: "dim", text: "Ainda não consultado. Compara lugares do catálogo, com dados de série quando existirem." });
@@ -1410,7 +1413,7 @@
     const r = S.apiResults.siteEval;
     const button = callButton("AVALIAR COM SÉRIE (API)", async () => {
       const body = {
-        mission_id: "cockpit-" + S.site, start_utc: iso(startMs()), duration_hours: S.durationH,
+        mission_id: "cockpit-" + S.site, start_utc: iso(startMs()), duration_hours: Math.min(S.durationH, 480), // onboard limit: 480 samples at 1 h
         candidates: [{ id: "planejado", site_id: S.site, delay_hours: 0 }, { id: "atraso-48h", site_id: S.site, delay_hours: 48 }],
         power: {
           battery_capacity_wh: S.power.battery_capacity_wh, initial_charge_wh: S.power.initial_charge_wh,

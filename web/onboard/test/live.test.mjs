@@ -98,3 +98,18 @@ test("cockpit.js uses the shared stepOf/stamp, not tr[1].ms - tr[0].ms", () => {
   assert.doesNotMatch(c, /tr\[1\]\.ms - tr\[0\]\.ms/);
   assert.match(c, /L\.stamp\(track\(0\)/);
 });
+
+// BR62 / issues 123 and 124: two panel buttons got 422 from a healthy API.
+test("compare button sends at most 3 site ids, current site first (issue 124)", () => {
+  const c = src("cockpit.js");
+  assert.match(c, /\.slice\(0, 3\)/);
+  assert.doesNotMatch(c, /const pick = ids\.length \? ids :/);
+});
+test("site-evaluate caps the window at the onboard limit of 480 h (issue 123)", () => {
+  assert.match(src("cockpit.js"), /duration_hours: Math\.min\(S\.durationH, 480\)/);
+});
+test("a 422 from the API is not reported as API down (issues 123/124)", () => {
+  const c = src("cockpit.js");
+  assert.match(c, /res\.status === 0/);
+  assert.match(c, /A API respondeu HTTP/);
+});
