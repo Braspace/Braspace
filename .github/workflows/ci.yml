@@ -1,0 +1,47 @@
+name: Braspace Go Rust Docker integration
+on:
+  push:
+    branches:
+      - "team/**"
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Rust unit tests
+        run: cargo test --manifest-path engine/Cargo.toml
+      - name: Build actual Rust binary
+        run: cargo build --manifest-path engine/Cargo.toml
+      - name: Go unit tests
+        working-directory: api
+        run: go test -race ./...
+      - name: End-to-end Go to actual Rust binary
+        working-directory: api
+        env:
+          RUST_ENGINE_BIN: ../engine/target/debug/braspace-lunar-engine
+        run: |
+          go build -o /tmp/braspace-api .
+          /tmp/braspace-api >/tmp/braspace-api.log 2>&1 &
+          echo $! >/tmp/braspace-api.pid
+          trap 'kill "$(cat /tmp/braspace-api.pid)" || true' EXIT
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/readyz && break; sleep 1; done
+          curl --fail-with-body -sS -H 'Content-Type: application/json' --data-binary @../examples/visibility.synthetic.json http://127.0.0.1:8080/v1/visibility > /tmp/result.json
+          python3 -c 'import json; r=json.load(open("/tmp/result.json")); assert r["science_status"]=="UNVERIFIED_INPUTS"; assert r["sun_visible"] is True; assert r["earth_visible"] is False'
+      - name: Docker Compose end-to-end smoke
+        run: |
+          docker compose config
+          docker compose up --build -d
+          trap 'docker compose logs && docker compose down --volumes' EXIT
+          for i in $(seq 1 50); do if curl -fsS http://127.0.0.1:8080/readyz; then break; fi; sleep 2; done
+          curl --fail-with-body -sS -H 'Content-Type: application/json' --data-binary @examples/visibility.synthetic.json http://127.0.0.1:8080/v1/visibility > /tmp/docker-result.json
+          python3 -c 'import json; r=json.load(open("/tmp/docker-result.json")); assert r["science_status"]=="UNVERIFIED_INPUTS"'
