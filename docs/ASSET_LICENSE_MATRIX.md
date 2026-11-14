@@ -119,6 +119,25 @@ credit text. The registry supplies the exact URL, dimensions, bytes and
 checksum. It is not a scientific result and does not represent polar terrain
 resolution.
 
+## Assets exposed by the API layer catalog (BS-054, #57)
+
+`GET /api/layers` and `GET /api/sites/{id}/media` expose only the entries below.
+Each row keeps the handling decided above.
+
+| Asset | API entry | Status | Handling in the API | Credit |
+| --- | --- | --- | --- | --- |
+| `lroc_color_2k.jpg` (SVS 4720) | layer `lroc-color-2k` | `approved_candidate` | Same-origin copy for the 3D globe: fetched only from the SVS URL, served only if size, type and SHA-256 `f7130a18…` match; visualization only | NASA SVS; Ernie Wright; Noah Petro (NASA/GSFC); LROC WAC Color Mosaic, ASU |
+| `ldem_4.tif` (SVS 4720) | layer `lola-dem-4ppd-render` | `approved_candidate` | Metadata and link only, never served; visualization only | NASA SVS; LRO LOLA |
+| `LDEM_80S_80M.IMG` (PDS `LRO-L-LOLA-4-GDR-V1.0`, V2.0) | layer `lola-ldem-80s-80m` | science source | Metadata and PDS link only; consumed offline by the science pipeline; never served or rendered as imagery. The label states no separate license: keep PDS/NASA/LOLA attribution and check reuse terms before any redistribution | LOLA Science Team, NASA GSFC; PDS Geosciences Node |
+| LROC Featured Image 1276 (M1407524099LR) | media `LROC-1276` | `external_link_only` | Link to the LROC page only; no site association | NASA/GSFC/Arizona State University |
+| LROC Featured Image 1247 (M1348682369LR) | media `LROC-1247` | `external_link_only` | Link only; related to `connecting-ridge` | NASA/GSFC/Arizona State University |
+| LROC Featured Image 1294 (M1432398306LR) | media `LROC-1294` | `external_link_only` | Link only; related to `malapert-massif` | NASA/GSFC/Arizona State University |
+| LROC Featured Image 237 | media `LROC-237` | `external_link_only` | Link only; regional overview, no site association | NASA/GSFC/Arizona State University |
+| LROC Featured Image 1105 | media `LROC-1105` | `external_link_only` | Link only; related to `connecting-ridge` | NASA/GSFC/Arizona State University |
+
+Website Featured Images stay copyrighted LROC content: the API returns links and
+credits, never image bytes or thumbnails (`data/LUNAR_GALLERY.json` thumbnail policy).
+
 ## BS-052 acceptance mapping
 
 - Source manifest: `data/ASSET_REGISTRY.json` contains exact URLs, IDs, bytes,
