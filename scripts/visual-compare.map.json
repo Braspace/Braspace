@@ -1,0 +1,15 @@
+{
+  "_note": "page in web/moonproof/ -> reference file name inside the folder given by --refs (1440x900 crops of the design). References are NOT stored in the repo.",
+  "index.html": "V3-1-entrada-por-tarefa.png",
+  "mission.html": "A-mission-control.png",
+  "explore.html": "B-explorar.png",
+  "compare.html": "C-comparar.png",
+  "recover.html": "D-replanejar.png",
+  "cockpit.html": "E-cockpit.png",
+  "landing.html": "F-landing-lab.png",
+  "debrief.html": "G-debrief.png",
+  "evidence.html": "H-evidencias.png",
+  "plan.html": "V3-4-comparar-kit-planejamento.png",
+  "present.html": "V3-5-kit-aula-apresentar.png",
+  "activity.html": "V3-6-kit-aula-montar-atividade.png"
+}

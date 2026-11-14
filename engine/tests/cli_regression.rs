@@ -102,3 +102,115 @@ fn replay_is_byte_for_byte_deterministic() {
     assert!(a.status.success() && b.status.success());
     assert_eq!(a.stdout, b.stdout);
 }
+
+// ---- BS-013: poles, angle wrap, dimensional units, degeneracies, invalid inputs ----
+
+fn with_sun(az: f64, el: f64) -> Value {
+    let mut req = fixture();
+    req["sun"] = json!({"azimuth_deg": az, "elevation_deg": el});
+    req
+}
+
+#[test]
+fn zenith_and_nadir_poles_are_accepted_and_azimuth_is_irrelevant_there() {
+    // Elevation +-90 deg is the pole of the local sky: azimuth is degenerate.
+    // The classifier must accept both limits and keep the margin arithmetic exact.
+    for az in [0.0, 90.0, 359.999] {
+        let up = evaluate(&with_sun(az, 90.0));
+        assert_eq!(up["sun_visible"], true);
+        let margin = up["sun_margin_deg"].as_f64().unwrap();
+        let horizon = up["sun_horizon_deg"].as_f64().unwrap();
+        assert!((margin - (90.0 - horizon)).abs() < 1e-9);
+        let down = evaluate(&with_sun(az, -90.0));
+        assert_eq!(down["sun_visible"], false);
+    }
+    // Just past either pole is rejected.
+    assert!(!run(with_sun(0.0, 90.000001).to_string().as_bytes()).status.success());
+    assert!(!run(with_sun(0.0, -90.000001).to_string().as_bytes()).status.success());
+}
+
+#[test]
+fn angle_wrap_is_continuous_at_the_0_360_seam() {
+    // Horizon samples at 90 and 270 with elevations 10 and 0: the seam at 0/360
+    // interpolates 0 -> 10 across 180 deg, so az=0 must equal the midpoint, 5.
+    let at_zero = evaluate(&with_sun(0.0, 5.0));
+    let just_below = evaluate(&with_sun(359.999999, 5.0));
+    let h0 = at_zero["sun_horizon_deg"].as_f64().unwrap();
+    let h1 = just_below["sun_horizon_deg"].as_f64().unwrap();
+    assert!((h0 - 5.0).abs() < 1e-9, "horizon at az 0 was {h0}");
+    assert!((h0 - h1).abs() < 1e-6, "seam jump {h0} vs {h1}");
+}
+
+#[test]
+fn units_are_degrees_not_radians() {
+    // 1.0 is one degree, not one radian: a radian-style value must not be rescaled.
+    let out = evaluate(&with_sun(90.0, 1.0));
+    assert_eq!(out["sun_horizon_deg"], 10.0);
+    assert!((out["sun_margin_deg"].as_f64().unwrap() - (1.0 - 10.0)).abs() < 1e-12);
+    assert_eq!(out["sun_visible"], false);
+    // Output fields carry the _deg suffix and are plain numbers.
+    for key in ["sun_horizon_deg", "earth_horizon_deg", "sun_margin_deg", "earth_margin_deg"] {
+        assert!(out[key].is_f64(), "{key} must be a number");
+    }
+}
+
+#[test]
+fn degenerate_flat_horizon_gives_a_constant_horizon_at_any_azimuth() {
+    let mut req = fixture();
+    req["terrain_horizon"] = json!([
+        {"azimuth_deg": 0.0, "elevation_deg": 3.0},
+        {"azimuth_deg": 120.0, "elevation_deg": 3.0},
+        {"azimuth_deg": 240.0, "elevation_deg": 3.0}
+    ]);
+    for az in [0.0, 17.3, 119.9999, 120.0, 301.7, 359.9999] {
+        req["sun"] = json!({"azimuth_deg": az, "elevation_deg": 3.0});
+        let out = evaluate(&req);
+        assert!((out["sun_horizon_deg"].as_f64().unwrap() - 3.0).abs() < 1e-12);
+        assert_eq!(out["sun_visible"], true, "margin 0 counts as visible at az {az}");
+    }
+}
+
+#[test]
+fn horizon_sample_count_limits_are_2_to_1440() {
+    let samples = |n: usize| -> Value {
+        Value::Array((0..n).map(|i| json!({"azimuth_deg": i as f64 * 360.0 / n as f64, "elevation_deg": 0.0})).collect())
+    };
+    let mut req = fixture();
+    req["terrain_horizon"] = samples(1440);
+    assert!(run(req.to_string().as_bytes()).status.success());
+    req["terrain_horizon"] = samples(1441);
+    assert!(!run(req.to_string().as_bytes()).status.success());
+    req["terrain_horizon"] = json!([]);
+    assert!(!run(req.to_string().as_bytes()).status.success());
+}
+
+#[test]
+fn rejects_non_finite_non_numeric_and_unsorted_inputs() {
+    // JSON has no NaN/Infinity literals; the engine must refuse them, strings and nulls.
+    for bad in ["NaN", "Infinity", "-Infinity", "\"10\"", "null"] {
+        let raw = fixture().to_string().replacen("\"elevation_deg\":10.0", &format!("\"elevation_deg\":{bad}"), 1);
+        assert!(!run(raw.as_bytes()).status.success(), "accepted {bad}");
+    }
+    let raw = fixture().to_string().replacen("\"elevation_deg\":10.0", "\"elevation_deg\":1e999", 1);
+    assert!(!run(raw.as_bytes()).status.success(), "accepted 1e999");
+    let mut req = fixture();
+    req["terrain_horizon"] = json!([
+        {"azimuth_deg": 270.0, "elevation_deg": 0.0},
+        {"azimuth_deg": 90.0, "elevation_deg": 10.0}
+    ]);
+    assert!(!run(req.to_string().as_bytes()).status.success(), "unsorted horizon accepted");
+}
+
+#[test]
+fn rejects_empty_or_overlong_site_id_and_empty_provenance() {
+    let mut req = fixture();
+    req["site_id"] = json!("   ");
+    assert!(!run(req.to_string().as_bytes()).status.success());
+    req["site_id"] = json!("x".repeat(81));
+    assert!(!run(req.to_string().as_bytes()).status.success());
+    req["site_id"] = json!("x".repeat(80));
+    assert!(run(req.to_string().as_bytes()).status.success());
+    let mut req = fixture();
+    req["provenance"]["terrain_dataset_id"] = json!("");
+    assert!(!run(req.to_string().as_bytes()).status.success());
+}
