@@ -12,8 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SERIES = ROOT / "api/sitedata/series/connecting-ridge-NAIF-PRELIMINARY.json"
 META = ROOT / "science/evidence/connecting-ridge-NAIF-PRELIMINARY.metadata.json"
 CATALOG = ROOT / "api/sitedata/catalog.json"
-SERIES_SHA = "9ae0a79ca8229d23dfed6423f15a49c1b3d8fa9d145a4ff099ce48fa4f2f622f"
-META_SHA = "09e0bf3f5c76bff248d7452d97219d8f1aa798140da27041fdaef67f21350541"
+SERIES_SHA = "dcfc750d6237a73af29afb4c4c29a6feae4d8c39a6b1a6092032343bb227906a"  # after PR #86 (LT+S)
+META_SHA = "6afbedfbf199af943b39c5b3f6cd0d8506d38aba1d784ace6f309af904c6253a"  # after PR #86 (LT+S)
 LOLA_SHA = "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc"
 KERNEL_SHA = {
     "naif0012.tls": "678e32bdb5a744117a467cd9601cd6b373f0e9bc9bbde1371d5eee39600a039b",
@@ -60,7 +60,7 @@ def validate(series: dict[str, Any], meta: dict[str, Any], catalog: dict[str, An
     for flag in ("validated_against_independent_reference", "lola_horizon_independently_validated", "nasa_mission_certified"):
         require(meta.get(flag) is False, "scientific validation claim not supported: " + flag)
     require(meta.get("sun_earth_center_not_disc") is True, "solar disc caveat missing")
-    require(meta.get("spice_aberration_correction") == "NONE (geometric; not light-time-corrected)", "aberration assumption changed")
+    require(meta.get("spice_aberration_correction") == "LT+S from surface site (spkcpo); Horizons-airless convention", "aberration assumption changed")
     require(meta.get("spice_frame") == "MOON_ME_DE440_ME421", "SPICE frame changed")
     require(meta.get("pds_sha256") == LOLA_SHA, "LOLA digest changed")
     require(meta.get("jpl_naif_kernels_sha256") == KERNEL_SHA, "NAIF kernel digests changed")
@@ -76,7 +76,10 @@ def validate(series: dict[str, Any], meta: dict[str, Any], catalog: dict[str, An
     sites = [s for s in catalog.get("sites", []) if s.get("id") == "connecting-ridge"]
     require(len(sites) == 1, "catalog site missing or duplicate")
     site = sites[0]
-    require(site.get("series_file") == "series/connecting-ridge-NAIF-PRELIMINARY.json", "wrong catalog series association")
+    # Since PR #143 the API serves series/connecting-ridge.json (SHA-pinned in the catalog);
+    # this 72 h NAIF artifact is evidence, not the served series.
+    require(site.get("series_file") == "series/connecting-ridge.json", "wrong catalog series association")
+    require(isinstance(site.get("series_sha256"), str) and len(site["series_sha256"]) == 64, "catalog series not SHA-pinned")
     require(site.get("coordinate", {}).get("role") == "feature_center", "feature center falsely promoted to touchdown")
     require(site["coordinate"]["latitude_deg"] == meta["site_latitude_deg"] and
             site["coordinate"]["longitude_deg"] == meta["site_longitude_deg"], "catalog coordinate mismatch")
@@ -91,8 +94,8 @@ def validate(series: dict[str, Any], meta: dict[str, Any], catalog: dict[str, An
         require(isinstance(item, dict), "malformed sample")
         direction(item.get("sun"))
         direction(item.get("earth"))
-    require(samples[0]["sun"]["elevation_deg"] == 1.389786, "first sample changed")
-    require(samples[-1]["earth"]["elevation_deg"] == 0.020642, "last sample changed")
+    require(samples[0]["sun"]["elevation_deg"] == 1.389712, "first sample changed")
+    require(samples[-1]["earth"]["elevation_deg"] == 0.020623, "last sample changed")
 
 def validate_files() -> None:
     validate(read_pinned(SERIES, SERIES_SHA), read_pinned(META, META_SHA), parse_strict(CATALOG.read_bytes()))
