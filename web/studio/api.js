@@ -47,3 +47,18 @@ export const api={
  compare:(request,fetcher)=>json("/api/compare",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(request)},fetcher),
  recover:(request,fetcher)=>json("/api/scenarios/delay",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(request)},fetcher)
 };
+/** A native-series transition is an interval, not an exact event or a real-time countdown. */
+export function transitionSummary(obj,body,label){
+ const tr=obj?.[body],reason=obj?.[body+"_null_reason"];
+ if(!tr){
+  return {value:"Not observed in requested window",note:typeof reason==="string"&&reason?reason:"No transition available from stored samples."};
+ }
+ const valid=typeof tr.kind==="string"&&/^\d{4}-\d{2}-\d{2}T/.test(tr.epoch_utc||"")&&
+  Number.isFinite(tr.hours_from_start)&&tr.hours_from_start>=0&&Number.isInteger(tr.resolution_seconds)&&tr.resolution_seconds>0;
+ if(!valid)return {value:"No trustworthy transition",note:"API transition contract invalid; numerical time withheld."};
+ return {
+  value:tr.kind.replaceAll("_"," ")+" after "+tr.hours_from_start.toFixed(2)+" h",
+  note:label+" first changed at stored sample "+tr.epoch_utc+
+   ". Actual event is within the preceding "+tr.resolution_seconds+" seconds (native series step)."
+ };
+}
