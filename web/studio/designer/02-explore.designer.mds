@@ -1,0 +1,19 @@
+# 02 — Explore the Pole
+
+**Origem:** requisitos relatados da Heloísa e código existente em web/lab/, não transcrição do artefato Claude.
+
+## Objetivo e componentes
+Lugar, UTC, duração, séries armazenadas, elevação do Sol/Terra, visibilidade e limites.
+
+## API, ação e estados
+GET /api/sites/{id}/sky; NO_SERIES_DATA/OUTSIDE_COVERAGE não renderiza valores.
+Comportamento offline: mostrar indisponibilidade; nunca números inventados nem badge VALIDATED.
+A navegação por teclado, identidade visual consistente, foco visível e layout mobile são obrigatórios.
+
+## Experiências
+- Público/estudante: explicação simples e progressiva.
+- Pesquisador: fonte, unidades, estado, séries e limitações.
+- Educador: exercícios de exploração e justificativas replicáveis.
+
+## Aceitação
+Fluxos e dados verificáveis, estados vazios claros, contato direto com Polaris Lab/Onboard quando aplicável, nenhum risco oculto e revisão humana por @lisanogueira.

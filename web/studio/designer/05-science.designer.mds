@@ -1,0 +1,19 @@
+# 05 — Science & Engineering
+
+**Origem:** requisitos relatados da Heloísa e código existente em web/lab/, não transcrição do artefato Claude.
+
+## Objetivo e componentes
+Separar geometria observacional de orçamento de recursos, RF e suposições sobre o lander.
+
+## API, ação e estados
+Conteúdo de engenharia e link ao computador de bordo existente, sem nova telemetria inventada.
+Comportamento offline: mostrar indisponibilidade; nunca números inventados nem badge VALIDATED.
+A navegação por teclado, identidade visual consistente, foco visível e layout mobile são obrigatórios.
+
+## Experiências
+- Público/estudante: explicação simples e progressiva.
+- Pesquisador: fonte, unidades, estado, séries e limitações.
+- Educador: exercícios de exploração e justificativas replicáveis.
+
+## Aceitação
+Fluxos e dados verificáveis, estados vazios claros, contato direto com Polaris Lab/Onboard quando aplicável, nenhum risco oculto e revisão humana por @lisanogueira.
