@@ -28,3 +28,5 @@ jobs:
         run: npm --prefix web run lint
       - name: Run same-origin server and science-honesty tests
         run: npm --prefix web test
+      - name: Unit regressions for synthetic onboard cockpit (12 tabs, 75 features)
+        run: node --test web/onboard/test/*.mjs
