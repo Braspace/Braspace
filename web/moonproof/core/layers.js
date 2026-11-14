@@ -3,6 +3,14 @@ import { t } from "./i18n.js";
 import { LAYERS } from "./state.js";
 import { sealFor } from "./data.js";
 
+/** Long origin states (PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED) may wrap only after "_": text + <wbr>. */
+export function breakAtUnderscore(v) {
+  if (typeof v !== "string" || !v.includes("_")) return v;
+  const f = document.createDocumentFragment();
+  v.split(/(?<=_)/).forEach((part, i) => { if (i) f.append(document.createElement("wbr")); f.append(part); });
+  return f;
+}
+
 export function sealEl(seal) {
   const s = document.createElement("span");
   s.className = "mp-seal"; s.dataset.seal = seal; s.textContent = seal;
@@ -29,7 +37,7 @@ export function createLayerCard({ id, title, status, answer, why, proof, layer =
   const proofS = document.createElement("section"); proofS.innerHTML = `<h4></h4>`; proofS.firstChild.textContent = t("layer.proof");
   if (Array.isArray(proof)) {
     const tb = document.createElement("table"); tb.className = "mp-proof";
-    for (const [k, v] of proof) { const tr = tb.insertRow(); const th = document.createElement("th"); th.scope = "row"; th.textContent = k; tr.append(th); tr.insertCell().append(v ?? t("nd")); }
+    for (const [k, v] of proof) { const tr = tb.insertRow(); const th = document.createElement("th"); th.scope = "row"; th.textContent = k; tr.append(th); const td = tr.insertCell(); td.append(breakAtUnderscore(v ?? t("nd"))); if (typeof v === "string" && /[A-Z]_[A-Z]/.test(v)) td.classList.add("mp-state"); }
     proofS.append(tb);
   } else if (proof) proofS.append(proof);
   const chips = document.createElement("div"); chips.className = "mp-chips"; chips.setAttribute("role", "group"); chips.setAttribute("aria-label", title);
