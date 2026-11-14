@@ -120,9 +120,18 @@
 @media (max-width:700px){
   .mp-top{height:56px;border-radius:28px}
   .mp-brand{width:auto}
-  .mp-bottomnav{height:68px;border-radius:34px;background:var(--glass)}
+  .mp-bottomnav{height:56px;border-radius:28px;background:var(--glass)}
   .mp-bottomnav .mp-pill svg{width:21px;height:21px}
   .mp-sheet-grip::before{width:40px;height:4px}
 }
 svg.mp-logo{width:32px;height:32px;border:0;border-radius:0;box-shadow:none}
 .mp-brand{font-weight:800}
+/* UX audit (14/11): controls inherit Manrope (selects/buttons fell back to Arial); 44 px hit area
+   for compact chips without changing their drawn size; nothing below 10 px; reduced motion. */
+button,input,select,textarea{font:inherit;color:inherit}
+.mp-chip{position:relative}
+.mp-chip::after{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
+.mp-context select{min-height:40px}
+.mp-entry-skip{padding:0 12px}
+.mp-sat span,.mp-stat small{font-size:max(10px,1em)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}}
