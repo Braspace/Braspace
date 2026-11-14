@@ -1,5 +1,6 @@
 // H · Evidências — "De onde vem cada número?". Everything shown carries its origin; no origin → "—" + N/D.
 import { mountShell } from "../core/shell.js";
+import { holdReady, markReady } from "../core/ready.js";
 import { mountTerrain } from "../core/terrain.js";
 import { loadSites, loadSeries, loadRegion, api, apiBase, sealFor, DATA_BASE } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
@@ -15,6 +16,7 @@ register({ en: { "cockpit.assumed": CK.en["cockpit.assumed"] }, "pt-BR": { "cock
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const shell = mountShell({ screen: "evidence", context: null, onLang: () => draw() });
+holdReady();
 const doc = await loadSites();
 if (!doc.sites.some(s => s.id === getState().site)) setState({ site: doc.sites[0].id });
 // Static facts loaded once.
@@ -117,3 +119,4 @@ function download(passport) {
 }
 onState(() => draw());
 await draw();
+markReady();

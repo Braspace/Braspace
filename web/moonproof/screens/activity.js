@@ -1,4 +1,5 @@
 import { mountShell } from "../core/shell.js";
+import { holdReady, markReady } from "../core/ready.js";
 import { mountTerrain, shadeValue } from "../core/terrain.js";
 import { loadSites, loadRegion, sealFor } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
@@ -100,6 +101,7 @@ register({
 });
 
 // The board has no context bar on this screen: context null hides it (core/shell.js).
+holdReady();
 mountShell({ screen: "compare", context: null, onLang: draw });
 const doc = await loadSites();
 const scenarios = doc.sites.slice(0, 3);
@@ -291,3 +293,4 @@ function draw() {
 
 addEventListener("resize", () => { const f = document.querySelector(".mp-preview-frame"); if (f) paintPreviewTerrain(f); });
 draw();
+markReady();
