@@ -76,3 +76,25 @@ jobs:
         run: npm --prefix web run lint
       - name: Browser-facing server tests
         run: npm --prefix web test
+
+  fullstack-http:
+    name: Real Go-Rust-Web end-to-end mission replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build real Rust executable
+        run: cargo build --manifest-path engine/Cargo.toml --locked
+      - name: Build real Go HTTP API
+        working-directory: api
+        run: go build -o /tmp/braspace-e2e-api .
+      - name: Test same-origin frontend to Go to Rust through mission and reports
+        run: node scripts/fullstack-e2e.mjs
