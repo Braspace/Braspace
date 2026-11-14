@@ -161,10 +161,11 @@
       box.className = "alarm none";
       sum.textContent = S.api ? "SEM ALARMES NESTE CENÁRIO · CÁLCULO SINTÉTICO" : "SEM ALARMES DO MODELO · CALCULE PARA VERIFICAR A ENERGIA";
       box.open = false;
+      box.hidden = false;
     } else {
       box.className = "alarm on";
       sum.replaceChildren(h("span", { class: "count", text: items.length + " ALARME" + (items.length > 1 ? "S" : "") }), h("span", { class: "dim", text: "clique para ver" }));
-      box.open = true;
+      box.open = false;
     }
   }
 
@@ -195,11 +196,6 @@
           h("label", {}, "Data e hora de pouso (UTC)", h("input", { type: "datetime-local", value: S.startLocal, onchange: e => { S.startLocal = e.target.value; S.api = null; renderAlarm(); renderTab(); } })),
           h("label", {}, "Duração (h, até 720)", h("input", { type: "number", min: "1", max: "720", value: S.durationH, onchange: e => { S.durationH = Number(e.target.value); S.api = null; renderAlarm(); renderTab(); } })),
           h("label", {}, "Passo (min, 1 a 360)", h("input", { type: "number", min: "1", max: "360", value: S.stepMin, onchange: e => { S.stepMin = Number(e.target.value); S.api = null; renderAlarm(); renderTab(); } }))),
-        h("div", { class: "fields", style: "margin-top:10px" },
-          h("label", {}, "Latitude personalizada (°)", h("input", { type: "number", value: S.lat, "aria-invalid": latInvalid, oninput: e => { S.lat = e.target.value; renderTab(); } }),
-            h("span", { class: latInvalid ? "hint err" : "hint", text: latInvalid ? "fora de -90 a 90" : "não altera o cálculo: usa o sítio escolhido" })),
-          h("label", {}, "Longitude personalizada (°)", h("input", { type: "number", value: S.lon, "aria-invalid": lonInvalid, oninput: e => { S.lon = e.target.value; renderTab(); } }),
-            h("span", { class: lonInvalid ? "hint err" : "hint", text: lonInvalid ? "fora de -180 a 180" : "não altera o cálculo" }))),
         h("div", { class: "row", style: "margin-top:12px" },
           h("div", { class: "row" },
             h("button", { type: "button", "aria-pressed": S.audience === "technical", onclick: () => { S.audience = "technical"; renderTab(); } }, "TÉCNICO"),
@@ -276,7 +272,7 @@
   }
   function strip(label, tr, pred, color) {
     const box = h("div", { class: "strip", role: "img", "aria-label": label + ": " + tr.filter(pred).length + " de " + tr.length + " amostras" });
-    tr.forEach(s => box.append(h("i", { style: "background:" + (pred(s) ? color : "#1c3240") })));
+    tr.forEach(s => box.append(h("i", { style: "background:" + (pred(s) ? color : "#263241") })));
     return h("div", { style: "margin:8px 0" }, h("div", { class: "dim", text: label }), box);
   }
 
@@ -297,19 +293,19 @@
 
     // grid: elevation every 2°, azimuth every 45°
     for (let e = EMIN; e <= EMAX; e += 2) {
-      box.append(svg("line", { x1: L, x2: W - R, y1: y(e), y2: y(e), stroke: e === 0 ? "#5fd8ff" : "#1c3240", "stroke-opacity": e === 0 ? ".6" : "1", "stroke-dasharray": e === 0 ? "4 4" : "" }));
+      box.append(svg("line", { x1: L, x2: W - R, y1: y(e), y2: y(e), stroke: e === 0 ? "#5fd8ff" : "#263241", "stroke-opacity": e === 0 ? ".6" : "1", "stroke-dasharray": e === 0 ? "4 4" : "" }));
       box.append(svg("text", { x: L - 8, y: y(e) + 4, "text-anchor": "end" }, (e > 0 ? "+" : "") + e + "°"));
     }
     const names = { 0: "N", 45: "NE", 90: "L", 135: "SE", 180: "S", 225: "SO", 270: "O", 315: "NO", 360: "N" };
     for (let a = 0; a <= 360; a += 45) {
-      box.append(svg("line", { x1: x(a), x2: x(a), y1: T, y2: H - B, stroke: "#1c3240" }));
+      box.append(svg("line", { x1: x(a), x2: x(a), y1: T, y2: H - B, stroke: "#263241" }));
       box.append(svg("text", { x: x(a), y: H - B + 16, "text-anchor": "middle" }, names[a] + " " + a + "°"));
     }
 
     // horizon area
     let d = "";
     for (let a = 0; a <= 360; a += 2) d += (a === 0 ? "M" : "L") + x(a).toFixed(1) + "," + y(M.horizonAt(a, site)).toFixed(1) + " ";
-    box.append(svg("path", { d: d + "L" + x(360) + "," + y(EMIN) + " L" + x(0) + "," + y(EMIN) + " Z", fill: "#1c3240", "fill-opacity": ".9", stroke: "#6f8b7c", "stroke-width": "1.5" }));
+    box.append(svg("path", { d: d + "L" + x(360) + "," + y(EMIN) + " L" + x(0) + "," + y(EMIN) + " Z", fill: "#263241", "fill-opacity": ".9", stroke: "#6f8b7c", "stroke-width": "1.5" }));
 
     // whole-window paths as dots (no lines: azimuth wraps at 0/360)
     const stride = Math.max(1, Math.ceil(tr.length / 240));
@@ -323,8 +319,8 @@
     const hs = M.horizonAt(cur.sunAz, site), he = M.horizonAt(cur.earthAz, site);
     box.append(svg("line", { x1: x(cur.sunAz), x2: x(cur.sunAz), y1: y(cur.sunEl), y2: y(hs), stroke: "#ffb020", "stroke-dasharray": "2 2" }));
     box.append(svg("line", { x1: x(cur.earthAz), x2: x(cur.earthAz), y1: y(cur.earthEl), y2: y(he), stroke: "#5fd8ff", "stroke-dasharray": "2 2" }));
-    box.append(svg("circle", { cx: x(cur.sunAz), cy: y(cur.sunEl), r: 6, fill: "#ffb020", stroke: "#0b0e11", "stroke-width": 2 }));
-    box.append(svg("circle", { cx: x(cur.earthAz), cy: y(cur.earthEl), r: 6, fill: "#5fd8ff", stroke: "#0b0e11", "stroke-width": 2 }));
+    box.append(svg("circle", { cx: x(cur.sunAz), cy: y(cur.sunEl), r: 6, fill: "#ffb020", stroke: "#0f1720", "stroke-width": 2 }));
+    box.append(svg("circle", { cx: x(cur.earthAz), cy: y(cur.earthEl), r: 6, fill: "#5fd8ff", stroke: "#0f1720", "stroke-width": 2 }));
     // labels flip to the left of the marker near the right edge, so they stay inside the chart
     const lab = (a, e, text, color) => {
       const nearRight = x(a) > W - R - 60;
@@ -444,7 +440,7 @@
     const x = i => pad + (tl.length <= 1 ? 0 : (i / (tl.length - 1)) * (W - pad * 2));
     const y = v => H - pad - (v / max) * (H - pad * 2);
     const box = svg("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img", "aria-label": "Carga da bateria ao longo do cenário" });
-    box.append(svg("line", { x1: pad, y1: H - pad, x2: W - pad, y2: H - pad, stroke: "#1c3240" }));
+    box.append(svg("line", { x1: pad, y1: H - pad, x2: W - pad, y2: H - pad, stroke: "#263241" }));
     box.append(svg("text", { x: 2, y: pad + 4 }, max.toFixed(0) + " Wh"));
     const color = { NOMINAL: "#6dff9c", SAFE_MODE: "#ffb020", POWER_LOSS: "#ff4d4d" };
     for (let i = 1; i < tl.length; i++) box.append(svg("line", { x1: x(i - 1), y1: y(tl[i - 1].charge_wh), x2: x(i), y2: y(tl[i].charge_wh), stroke: color[tl[i].mode] || "#5fd8ff", "stroke-width": 2 }));
@@ -476,7 +472,7 @@
         h("dl", { class: "readout" },
           h("dt", { text: "pressão da cabine (kPa)" }), h("dd", { text: f1(life.cabinKpa) + " · faixa 95–105" }),
           h("dt", { text: "pressão parcial O2 (kPa)" }), h("dd", { text: f1(life.o2PartialKpa) + " · mín. 19" }),
-          h("dt", { text: "estoque O2 (kg)" }), h("dd", { text: f1(life.o2StockKg) })),
+          h("dt", { text: "estoque O2 (kg)" }), h("dd", { text: life.o2StockKg > 0 ? f1(life.o2StockKg) + " kg" : "ESGOTADO", class: life.o2StockKg > 0 ? "" : "fuelout" })),
         h("div", { style: "margin-top:8px" }, tag("SINT"), " ", h("span", { class: "dim", text: "valores fixos · não usar para segurança" }))),
       h("section", { class: "panel span2" },
         h("div", { class: "caution", text: "Esta área não tem base de dados nem validação. Os valores são constantes para exemplo e não devem ser lidos como condição de vida." }),
@@ -556,7 +552,7 @@
   VIEWS.visual = () => {
     const W = 320, cx = 160, cy = 160, R0 = 150;
     const box = svg("svg", { viewBox: "0 0 320 320", width: "100%", style: "max-width:440px;display:block;margin:0 auto", role: "img", "aria-label": "Mapa polar ampliado com os sítios sintéticos" });
-    [60, 120, R0].forEach(r => box.append(svg("circle", { cx, cy, r, fill: "none", stroke: "#1c3240", "stroke-dasharray": r === R0 ? "" : "3 3" })));
+    [60, 120, R0].forEach(r => box.append(svg("circle", { cx, cy, r, fill: "none", stroke: "#263241", "stroke-dasharray": r === R0 ? "" : "3 3" })));
     box.append(svg("circle", { cx, cy, r: 3, fill: "#6f8b7c" }));
     box.append(svg("text", { x: cx + 6, y: cy - 6 }, "polo sul"));
     Object.entries(M.SITES).forEach(([id, s]) => {
@@ -664,6 +660,19 @@
     ];
   };
 
+  // Status filter: clicking a state keeps only those features in the checklist table.
+  S.statusFilter = null;
+  function visibleFeatures() {
+    return S.statusFilter ? F.FEATURES.filter(x => x.status === S.statusFilter) : F.FEATURES;
+  }
+  function statusFilterBar() {
+    const keys = ["SIM", "PARC", "ESQ", "PEND", "BLOQ"];
+    const all = h("button", { type: "button", "aria-pressed": S.statusFilter === null ? "true" : "false", onclick: () => { S.statusFilter = null; renderTab(); } }, "Todos (" + F.FEATURES.length + ")");
+    return h("div", { class: "seg", role: "group", "aria-label": "Filtrar por estado" }, all,
+      ...keys.map(k => h("button", { type: "button", "aria-pressed": S.statusFilter === k ? "true" : "false", onclick: () => { S.statusFilter = S.statusFilter === k ? null : k; renderTab(); } },
+        F.LABEL[k] + " (" + F.FEATURES.filter(x => x.status === k).length + ")")));
+  }
+
   VIEWS.status = () => {
     const counts = {};
     F.FEATURES.forEach(x => counts[x.status] = (counts[x.status] || 0) + 1);
@@ -689,9 +698,10 @@
         h("p", { class: "note", text: "Limitações (10.5): não é software de voo; não validado; sem refração; sem enlace de rádio; combustível e vida são ilustrativos." })),
       h("section", { class: "panel span2" },
         h("h2", { text: "Checklist completo (75 itens)" }),
+        statusFilterBar(),
         h("div", { class: "scroll" }, h("table", { class: "table" },
           h("thead", {}, h("tr", {}, h("th", { text: "id" }), h("th", { text: "funcionalidade" }), h("th", { text: "estado" }), h("th", { text: "requisito" }), h("th", { text: "issue" }), h("th", { text: "nota" }))),
-          h("tbody", {}, F.FEATURES.map(x => h("tr", {}, h("td", { text: x.id }), h("td", { text: x.title }), h("td", {}, tag(x.status)), h("td", { text: x.req }), h("td", { text: x.issue }), h("td", { text: x.note })))))),
+          h("tbody", {}, visibleFeatures().map(x => h("tr", {}, h("td", { text: x.id }), h("td", { text: x.title }), h("td", {}, tag(x.status)), h("td", { text: x.req }), h("td", { text: x.issue }), h("td", { text: x.note })))))),
         h("p", { class: "note", text: "Idioma inglês (12.6) e declaração de IA (12.8) ainda pendentes." }))
     ];
   };
@@ -703,9 +713,9 @@
     const C = 2 * Math.PI * 70;
     const f = sum.durationH ? sum.sunlitH / sum.durationH : 0;
     const box = svg("svg", { viewBox: "0 0 200 200", width: "100%", style: "max-width:220px;display:block;margin:0 auto", role: "img", "aria-label": "Proporção de horas com luz" });
-    box.append(svg("circle", { cx: 100, cy: 100, r: 70, fill: "none", stroke: "#d9e0e8", "stroke-width": 26 }));
+    box.append(svg("circle", { cx: 100, cy: 100, r: 70, fill: "none", stroke: "#2b3644", "stroke-width": 26 }));
     box.append(svg("circle", { cx: 100, cy: 100, r: 70, fill: "none", stroke: "#e8a317", "stroke-width": 26, "stroke-dasharray": (f * C).toFixed(2) + " " + C.toFixed(2), transform: "rotate(-90 100 100)" }));
-    box.append(svg("text", { x: 100, y: 96, "text-anchor": "middle", style: "font-size:28px;font-weight:600;fill:#1d2733" }, Math.round(f * 100) + "%"));
+    box.append(svg("text", { x: 100, y: 96, "text-anchor": "middle", style: "font-size:28px;font-weight:600;fill:var(--ink)" }, Math.round(f * 100) + "%"));
     box.append(svg("text", { x: 100, y: 118, "text-anchor": "middle" }, "com luz"));
     return h("section", { class: "panel" },
       h("h2", {}, "Luz ao longo da missão", h("em", {}, "horas")),
@@ -726,12 +736,12 @@
     }
     const W = 640, H = 200, pad = 26, bw = (W - pad * 2) / Math.max(1, days.length);
     const box = svg("svg", { viewBox: "0 0 " + W + " " + H, width: "100%", role: "img", "aria-label": "Horas de luz por dia" });
-    for (let g = 0; g <= 24; g += 6) box.append(svg("line", { x1: pad, x2: W - pad, y1: H - pad - (g / 24) * (H - pad * 2), y2: H - pad - (g / 24) * (H - pad * 2), stroke: "#e3e8ee" }));
+    for (let g = 0; g <= 24; g += 6) box.append(svg("line", { x1: pad, x2: W - pad, y1: H - pad - (g / 24) * (H - pad * 2), y2: H - pad - (g / 24) * (H - pad * 2), stroke: "#263241" }));
     days.forEach((d, i) => {
       const x = pad + i * bw + bw * 0.18, w = bw * 0.64;
       const hL = (d.lit / 24) * (H - pad * 2), hD = (d.dark / 24) * (H - pad * 2);
       box.append(svg("rect", { x, y: H - pad - hL, width: w, height: hL, fill: "#e8a317", rx: 2 }));
-      box.append(svg("rect", { x, y: H - pad - hL - hD, width: w, height: hD, fill: "#d9e0e8", rx: 2 }));
+      box.append(svg("rect", { x, y: H - pad - hL - hD, width: w, height: hD, fill: "#2b3644", rx: 2 }));
       if (i % 2 === 0) box.append(svg("text", { x: x + w / 2, y: H - 6, "text-anchor": "middle" }, "d" + (i + 1)));
     });
     return h("section", { class: "panel span2" },
@@ -742,12 +752,12 @@
 
   function polarCard() {
     const box = svg("svg", { viewBox: "0 0 320 320", width: "100%", style: "max-width:300px;display:block;margin:0 auto", role: "img", "aria-label": "Mapa polar com os sítios sintéticos" });
-    [60, 120, 150].forEach(r => box.append(svg("circle", { cx: 160, cy: 160, r, fill: "none", stroke: "#e3e8ee", "stroke-width": 1.5 })));
-    box.append(svg("circle", { cx: 160, cy: 160, r: 3, fill: "#6b7785" }));
+    [60, 120, 150].forEach(r => box.append(svg("circle", { cx: 160, cy: 160, r, fill: "none", stroke: "#263241", "stroke-width": 1.5 })));
+    box.append(svg("circle", { cx: 160, cy: 160, r: 3, fill: "#8fa0b3" }));
     Object.entries(M.SITES).forEach(([id, s]) => {
       const r = (s.lat + 90) * 60, rad = s.lon * Math.PI / 180;
       const x = 160 + r * Math.cos(rad), y = 160 + r * Math.sin(rad), on = id === S.site;
-      box.append(svg("circle", { cx: x, cy: y, r: on ? 8 : 5, fill: on ? "#2c5f8a" : "#e8a317" }));
+      box.append(svg("circle", { cx: x, cy: y, r: on ? 8 : 5, fill: on ? "#5fb3d8" : "#e8a317" }));
       box.append(svg("text", { x: x + 10, y: y + 4, style: on ? "fill:#2c5f8a;font-weight:600" : "" }, s.name));
     });
     return h("section", { class: "panel" },
