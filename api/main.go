@@ -142,6 +142,7 @@ func routes(binary string) http.Handler {
   writeJSON(w,http.StatusOK,result)
  })
  mux.Handle("POST /api/onboard/evaluate", onboard.Handler())
+ mux.Handle("POST /api/onboard/report", onboard.ReportHandler())
  store,err:=loadDefaultStore()
  if err!=nil { panic(fmt.Errorf("site data: %w",err)) }
  (&missionAPI{store:store,engine:newEngineClient(binary)}).register(mux)
