@@ -11,10 +11,15 @@ const views = {
  evidence:["05 / EVIDENCE & LEARN","What do we really know?","The visual Moon uses NASA SVS imagery if available. Real landing conditions require LOLA DEM topography and SPICE direction computations. All current onboard training outputs remain UNVERIFIED_INPUTS; printing the evidence report preserves this warning."]
 };
 function setStatus(text){byId("api-status").textContent=text;}
-function showView(name){
- const v=views[name]||views.explore;
+const viewNames=Object.keys(views);
+function showView(name,moveFocus){
+ if(!views[name])name="explore";
+ const v=views[name];
+ document.querySelectorAll("[data-panel]").forEach(p=>{p.hidden=p.dataset.panel!==name;});
+ state.view=name;
  byId("view-eyebrow").textContent=v[0];byId("view-title").textContent=v[1];byId("view-description").textContent=v[2];
  document.querySelectorAll("[data-view]").forEach(button=>{const yes=button.dataset.view===name;button.classList.toggle("active",yes);if(yes)button.setAttribute("aria-current","page");else button.removeAttribute("aria-current");});
+ if(moveFocus)byId("panel-"+name)?.focus({preventScroll:false});
 }
 function inputNumber(name){const n=Number(byId(name).value);if(!Number.isFinite(n))throw new Error(name+" must be a finite number");return n;}
 function utcDateInput(s){
@@ -87,21 +92,36 @@ function element(tag,className,content){
 function rowText(parent,label,value){
  const p=element("p","");const strong=element("strong","",label+": ");p.append(strong,document.createTextNode(value));parent.append(p);
 }
+// Limit and value come straight from the API risk entry (measured/allowed/unit); nothing is computed here.
+function breachText(risk){
+ const has=v=>v!==undefined&&v!==null&&v!=="";
+ const what=String(risk.category||"constraint").replaceAll("_"," ").toLowerCase();
+ if(has(risk.measured)&&has(risk.allowed)){
+  const relation=Number(risk.measured)>Number(risk.allowed)?"exceeds":Number(risk.measured)<Number(risk.allowed)?"is below":"equals";
+  return what+" — measured "+format(risk.measured," "+(risk.unit||""))+" "+relation+" limit "+format(risk.allowed," "+(risk.unit||""));
+ }
+ return what+" — the API gave no measured/limit values";
+}
 function renderResult(r,computed){
  const choices=Array.isArray(r.options)?r.options:[];
  if(r.science_status!=="UNVERIFIED_INPUTS"){setStatus("Unexpected scientific status. Do not use this result.");return;}
  state.lastResponse=r;
  const first=choices[0];
+ const second=choices[1];
  byId("metric-battery").textContent=first?format(first.metrics?.minimum_charge_wh," Wh"):"—";
  byId("metric-dark").textContent=first?format(first.metrics?.longest_darkness_hours," h"):"—";
  byId("metric-earth").textContent=first?format(first.metrics?.longest_earth_obstruction_hours," h"):"—";
  byId("metric-risks").textContent=String(first?.risks?.length??0);
- byId("result-placeholder").hidden=true;byId("result-content").hidden=false;byId("run-badge").textContent=computed?"COMPUTED FROM STORED SERIES · "+computed.candidates[0].science_status:"TRAINING RESULT · UNVERIFIED";
+ // Say which scenario the four top numbers describe; other scenarios are only quoted from the response.
+ const quote=o=>o.id+": minimum charge "+format(o.metrics?.minimum_charge_wh," Wh")+", Earth obstruction "+format(o.metrics?.longest_earth_obstruction_hours," h")+", "+(o.risks?.length??0)+" risk(s)";
+ byId("scope-text").textContent=first?"Top numbers are for scenario “"+first.id+"” only ("+choices.length+" evaluated). "+choices.slice(1).map(o=>"Not shown above — "+quote(o)+".").join(" "):"Top numbers: none.";
+ byId("initial-state").hidden=true;byId("compare-empty").hidden=true;byId("recover-empty").hidden=true;byId("recover-content").hidden=false;byId("run-badge").textContent=computed?"COMPUTED FROM STORED SERIES · "+computed.candidates[0].science_status:"TRAINING RESULT · UNVERIFIED";
  const cards=byId("scenario-cards");cards.replaceChildren();
  choices.forEach(o=>{
   const card=element("div","scenario-card");
   card.append(element("strong","",o.id));
   rowText(card,"Simulation",o.simulation_status||"UNKNOWN");
+  for(const risk of (o.risks||[]))rowText(card,"Breached",breachText(risk));
   rowText(card,"Final battery",format(o.metrics?.final_charge_wh," Wh"));
   rowText(card,"Earth obstruction",format(o.metrics?.longest_earth_obstruction_hours," h"));
   rowText(card,"Minimum reserve",format(o.metrics?.minimum_charge_wh," Wh"));
@@ -114,7 +134,7 @@ function renderResult(r,computed){
  for(const o of choices){
   for(const risk of (o.risks||[])){
    const div=element("div","risk-entry"),left=element("div","");
-   left.append(element("strong","",o.id+" — "+risk.category),element("p","",risk.explanation||""));
+   left.append(element("strong","",o.id+" — "+risk.category),element("p","",breachText(risk)),element("p","",risk.explanation||""));
    const badge=element("span","",risk.severity);div.append(left,badge);risks.append(div);
   }
   for(const risk of (computed?.candidates.find(c=>c.id===o.id)?.consumables?.risks||[])){
@@ -224,7 +244,8 @@ async function bootGlobe(){
   byId("stage-fallback").querySelector("span").textContent="3D unavailable — lunar image is illustrative.";
  }
 }
-document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.view)));
+document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.view,true)));
+byId("run-top").addEventListener("click",()=>byId("mission-form").requestSubmit());
 byId("mission-form").addEventListener("submit",runTraining);
 byId("site").addEventListener("change",onSiteChange);
 byId("report").addEventListener("click",openReport);
