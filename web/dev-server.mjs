@@ -7,7 +7,9 @@ import {fileURLToPath,pathToFileURL} from "node:url";
 import path from "node:path";
 
 const directory=path.dirname(fileURLToPath(import.meta.url));
-const upstreamHost="127.0.0.1",upstreamPort=Number.parseInt(process.env.BRASPACE_API_PORT||"8080",10);
+const upstreamHost=process.env.BRASPACE_API_HOST||"127.0.0.1";
+if(!["127.0.0.1","localhost","api"].includes(upstreamHost))throw new Error("invalid fixed upstream host");
+const upstreamPort=Number.parseInt(process.env.BRASPACE_API_PORT||"8080",10);
 const staticFiles=new Map([
   ["/",{name:"index.html",type:"text/html; charset=utf-8"}],
   ["/index.html",{name:"index.html",type:"text/html; charset=utf-8"}],
@@ -27,6 +29,17 @@ export function labFile(pathname){
  const name=path.normalize(pathname.slice(1));
  if(!name.startsWith("lab"+path.sep)&&!name.startsWith("data"+path.sep))return null;
  return {name,type:labTypes[ext]};
+}
+// Source-reviewed MoonProof V3 page/core/screen allowlist. Design specs and
+// untrusted resource paths are intentionally not exposed via the HTTP server.
+export function moonproofFile(pathname){
+ if(pathname==="/moonproof/")return {name:"moonproof/index.html",type:labTypes[".html"]};
+ if(!/^\/moonproof\/(?:(?:core|screens)\/)?[A-Za-z0-9_\-]+\.(html|js|css)$/.test(pathname))return null;
+ const ext=pathname.slice(pathname.lastIndexOf("."));
+ const sub=pathname.slice("/moonproof/".length);
+ if(ext===".html"&&sub.includes("/"))return null;
+ if(ext!==".html"&&!sub.includes("/"))return null;
+ return {name:path.normalize(pathname.slice(1)),type:labTypes[ext]};
 }
 // Restrict Onboard Cockpit static access to reviewed HTML and JS files.
 // No arbitrary directory traversal, Python server source or local secrets.
@@ -116,7 +129,7 @@ export function createServer(){
   if(pathname==="/onboard/"||pathname==="/onboard/index.html"||pathname==="/onboard/cockpit.html"){
    res.setHeader("Content-Security-Policy",csp.replace("style-src 'self'","style-src 'self' 'unsafe-inline'"));
   }
-  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname);
+  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname)||moonproofFile(pathname);
   if(!file){res.writeHead(404);res.end("Not found");return;}
   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
   try{
@@ -133,7 +146,9 @@ export function createServer(){
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
  const port=Number.parseInt(process.env.BRASPACE_WEB_PORT||"5173",10);
  if(!(port>1023&&port<65536))throw new Error("invalid local web port");
- createServer().listen(port,"127.0.0.1",()=>{
+ const webHost=process.env.BRASPACE_WEB_HOST||"127.0.0.1";
+ if(!["127.0.0.1","0.0.0.0"].includes(webHost))throw new Error("invalid web host");
+ createServer().listen(port,webHost,()=>{
   process.stdout.write("MoonProof web preview: http://127.0.0.1:"+port+"\n");
   process.stdout.write("Private Go API expected: http://127.0.0.1:8080\n");
  });
