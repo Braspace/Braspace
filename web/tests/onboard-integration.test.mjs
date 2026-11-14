@@ -59,6 +59,11 @@ function requestRawPath(rawPath){
  });
 }
 
+test("query parameters with dot segments do not affect legitimate static routing",async()=>{
+ const response=await fetch(root+"/onboard/cockpit.html?next=../../api/..");
+ assert.equal(response.status,200);
+});
+
 test("raw HTTP traversal cannot escape onboard allowlist into Go API proxy",async()=>{
  for(const target of [
   "/onboard/../api/main.go",
