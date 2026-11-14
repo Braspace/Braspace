@@ -23,7 +23,7 @@ func TestSkyRouteFields(t *testing.T) {
 		Samples         []map[string]any     `json:"samples"`
 	}
 	raw := decode(t, rec)
-	for _, k := range []string{"api_version", "site_id", "science_status", "provenance", "observer_height_m", "terrain_horizon", "samples"} {
+	for _, k := range []string{"api_version", "site_id", "science_status", "scientifically_validated", "provenance", "observer_height_m", "terrain_horizon", "samples"} {
 		if _, ok := raw[k]; !ok {
 			t.Errorf("missing %s", k)
 		}
@@ -130,6 +130,7 @@ func TestSkyNeverValidated(t *testing.T) {
 	h, api := testAPI(t, "ok")
 	for _, id := range []string{"synthetic-demo-a", "synthetic-demo-b"} {
 		rec := do(h, "GET", "/api/sites/"+id+"/sky?hours=2", "")
+		if got := decode(t, rec)["scientifically_validated"]; got != false { t.Errorf("%s: unsafe attestation %v", id, got) }
 		if st := decode(t, rec)["science_status"]; rec.Code != 200 || st == "VALIDATED" || st != api.store.series[id].ScienceStatus {
 			t.Errorf("%s: %d status %v", id, rec.Code, st)
 		}
