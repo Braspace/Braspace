@@ -6,6 +6,7 @@ import { Viewer } from "./scene.js";
 import { TerrainGrid } from "./terrain.js";
 import { SiteSeries, rankSites, HOUR_MS } from "./data.js";
 import { azElToEnu, enuToBody } from "./coords.js";
+import { createLive, compareRow, OFFLINE_SEAL } from "./live.js";
 import { createSim, advance, telemetry, thrustDirection, DEFAULT_VEHICLE, MOON_R_REF } from "./physics.js";
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -54,6 +55,10 @@ const state = {
   lab: { mode: "guided", scenario: null, running: false, paused: false, sim: null, keys: {}, assist: true, timeScale: 1, throttleCmd: 0 },
 };
 let viewer = null;
+// Optional live API (window.BRASPACE_API_BASE). Offline => static precomputed products, unchanged.
+const live = createLive({ base: globalThis.BRASPACE_API_BASE });
+const isoZ = t => new Date(t).toISOString().slice(0, 19) + "Z";
+function showSeal(seal = live.seal) { const el = $("#seal"); if (!el) return; el.textContent = seal.text; el.className = "seal " + seal.cls; el.title = seal.live ? "State comes from the API response (science_status); nothing here is NASA-validated unless it says so." : "Static NASA-derived products shipped with the page; no API reachable."; }
 
 // ------------------------------------------------------------------ data loading
 async function loadIndex() {
@@ -271,6 +276,11 @@ async function renderSunEarth() {
     <p class="small">${wtxt}</p>
     <p class="muted small">Disc centre vs LOLA 80 m horizon (rays to 100 km), observer 2 m above ground. Geometric visibility only — not a power or radio link budget. PRELIMINARY.</p>`;
   drawHorizon($("#horizon"), s, state.t);
+  if (live.online && live.apiId(state.siteId) && live.covers(state.siteId, state.t, 1)) {
+    const r = await live.sky(state.siteId, isoZ(state.t), 1), smp = r.ok && r.data.samples?.[0], box = $("#sunearth");
+    if (smp && box) box.insertAdjacentHTML("beforeend", `<p class="small api"><span class="tag sci">API /sky</span> Sun az ${fmt(smp.sun.azimuth_deg, 1)}° el ${fmt(smp.sun.elevation_deg, 2)}° (${smp.sun_visible ? "visible" : "below horizon"}) · Earth az ${fmt(smp.earth.azimuth_deg, 1)}° el ${fmt(smp.earth.elevation_deg, 2)}° (${smp.earth_visible ? "visible" : "below horizon"}) · <span class="seal ${r.seal.cls}">${esc(r.seal.text)}</span></p>`);
+    showSeal(r.seal);
+  } else showSeal();
 }
 
 function drawHorizon(cv, s, t) {
@@ -300,7 +310,7 @@ function drawHorizon(cv, s, t) {
 async function renderCompare() {
   panel().innerHTML = `<p class="eyebrow">02 / ${esc(tr("compare"))}</p><h2>${esc(tr("compareTitle"))}</h2>
     <p class="lede">Same start time (${iso(state.t)}), same window, all sites. Values come from the hourly SPICE geometry against each site's LOLA horizon.</p>
-    <label for="cw">Window</label><select id="cw"><option value="168">7 days</option><option value="336">14 days</option><option value="672">28 days</option><option value="8760">1 year</option></select>
+    <label for="cw">Window</label><select id="cw"><option value="48">2 days</option><option value="168">7 days</option><option value="336">14 days</option><option value="672">28 days</option><option value="8760">1 year</option></select>
     <div id="ctable" class="tablewrap">Loading all site series…</div>
     <p class="muted small">"Long-term" columns are the NASA PGDA average maps at the site (independent reference over a longer period; Earth counted if any part is visible).</p>`;
   $("#cw").value = String(state.compareH);
@@ -314,11 +324,20 @@ async function fillCompare() {
   const best = k => Math.max(...ok.map(r => r.w[k])), worst = k => Math.min(...ok.map(r => r.w[k]));
   const cell = (r, k, d, hiGood) => { if (r.w.status !== "COMPUTED") return `<td>${esc(tr("notComputed"))}</td>`; const v = r.w[k]; const star = v === (hiGood ? best(k) : worst(k)) ? " best" : ""; return `<td class="num${star}">${fmt(v, d)}</td>`; };
   const el = $("#ctable"); if (!el) return;
+  // Live API: rows for sites the API holds a series for, in batches of 3 (API limit). Others keep static values.
+  const apiRows = new Map(), ids = state.index.sites.map(x => x.id).filter(id => live.online && live.apiId(id) && live.covers(id, state.t, state.compareH));
+  for (let i = 0; i < ids.length; i += 3) {
+    const r = await live.compare(ids.slice(i, i + 3), isoZ(state.t), state.compareH);
+    if (r.ok) r.data.results.forEach(x => { const lab = ids.find(id => live.apiId(id) === x.site.id), row = compareRow(x); if (lab && row) apiRows.set(lab, row); });
+  }
+  const win = (r) => apiRows.has(r.site.id) ? { status: "COMPUTED", ...apiRows.get(r.site.id) } : r.w;
+  rows.forEach(r => { r.src = apiRows.has(r.site.id) ? "API" : "static"; r.w = win(r); });
+  showSeal(apiRows.size ? apiRows.values().next().value.seal : OFFLINE_SEAL);
   el.innerHTML = `<table><caption class="sr">Sun and Earth visibility per site for the selected window</caption>
-    <thead><tr><th scope="col">Site</th><th scope="col">Sun %</th><th scope="col">Earth %</th><th scope="col">Both %</th><th scope="col">Longest dark (h)</th><th scope="col">Longest Earth blackout (h)</th><th scope="col">Long-term Sun % (PGDA)</th><th scope="col">Long-term Earth % (PGDA)</th></tr></thead>
+    <thead><tr><th scope="col">Site</th><th scope="col">Sun %</th><th scope="col">Earth %</th><th scope="col">Both %</th><th scope="col">Longest dark (h)</th><th scope="col">Longest Earth blackout (h)</th><th scope="col">Source</th><th scope="col">Long-term Sun % (PGDA)</th><th scope="col">Long-term Earth % (PGDA)</th></tr></thead>
     <tbody>${rows.map(r => `<tr class="${r.site.id === state.siteId ? "sel" : ""}"><th scope="row"><button class="link" data-site="${r.site.id}">${esc(r.site.name)}</button></th>
       ${cell(r, "sunPct", 0, true)}${cell(r, "earthPct", 0, true)}${cell(r, "bothPct", 0, true)}${cell(r, "longestDarkH", 0, false)}${cell(r, "longestBlackoutH", 0, false)}
-      <td class="num muted">${fmt(r.site.pgda_sun_pct, 0)}</td><td class="num muted">${fmt(r.site.pgda_earth_pct, 0)}</td></tr>`).join("")}</tbody></table>`;
+      <td class="small">${r.src === "API" ? esc(r.w.seal.text) : "offline · precomputed"}</td><td class="num muted">${fmt(r.site.pgda_sun_pct, 0)}</td><td class="num muted">${fmt(r.site.pgda_earth_pct, 0)}</td></tr>`).join("")}</tbody></table>`;
   el.querySelectorAll("[data-site]").forEach(b => b.addEventListener("click", () => { selectSite(b.dataset.site); fillCompare(); if (state.level !== "globe") refreshScene(); }));
 }
 
@@ -328,7 +347,7 @@ async function renderRecover() {
     <p class="lede">Baseline: <strong>${esc(siteById(state.siteId).name)}</strong> at ${iso(state.t)}. Apply a delay, set mission constraints and see which site/date still works — geometry only.</p>
     <div class="grid2">
       <div><label for="rd">Delay</label><select id="rd"><option value="24">+24 h</option><option value="48">+48 h</option><option value="72">+72 h</option><option value="168">+7 days</option><option value="336">+14 days</option></select></div>
-      <div><label for="rw">Surface mission length</label><select id="rw"><option value="168">7 days</option><option value="336">14 days</option><option value="672">28 days</option></select></div>
+      <div><label for="rw">Surface mission length</label><select id="rw"><option value="24">1 day</option><option value="168">7 days</option><option value="336">14 days</option><option value="672">28 days</option></select></div>
       <div><label for="rms">Min. sunlight (%)</label><input id="rms" type="number" min="0" max="100" step="5"></div>
       <div><label for="rmb">Max. Earth blackout (h)</label><input id="rmb" type="number" min="0" max="2000" step="12"></div>
     </div>
@@ -357,9 +376,36 @@ async function fillRecover() {
       <small>${a.w.status === "COMPUTED" ? `both ${fmt(a.w.bothPct, 0)}% · Sun ${fmt(a.w.sunPct, 0)}% · blackout ≤ ${a.w.longestBlackoutH} h` : esc(tr("notComputed"))}${a.violations.length ? " · ⚠ " + a.violations.map(esc).join("; ") : ""}</small></span>
       <button data-fly="${a.site.id}" ${a.w.status !== "COMPUTED" ? "disabled" : ""}>Fly in Landing Lab</button></li>`).join("")}</ol>
     <p class="muted small">Ranking = % of hours with both Sun and Earth above the terrain horizon, after removing options that violate your constraints. It ignores slopes, hazards, thermal limits and payload goals — a teaching aid, not a site certification.</p>`;
+  out.insertAdjacentHTML("beforeend", `<div id="apibox"></div>`);
+  fillRecoverApi(R);
   out.querySelectorAll("[data-fly]").forEach(b => b.addEventListener("click", () => {
     state.lab.scenario = { siteId: b.dataset.fly, t: t2, origin: `Recovered from ${siteById(state.siteId).name} after a +${R.delayH} h delay` };
     state.lab.mode = "recovery"; state.t = t2; selectSite(b.dataset.fly); setView("landing");
+  }));
+}
+
+// Live API extras for Recover: delay replanning (/api/scenarios/delay) and energy (/api/onboard/site-evaluate).
+// Power inputs are the user's own assumptions: blank => no energy request, no invented defaults.
+async function fillRecoverApi(R) {
+  const box = $("#apibox"); if (!box) return;
+  const id = state.siteId;
+  if (!(live.online && live.apiId(id) && live.covers(id, state.t, R.windowH + R.delayH))) { box.innerHTML = `<p class="muted small"><span class="seal offline">offline · precomputed</span> Live replanning needs the API and a series covering this site and window.</p>`; return; }
+  const P = R.power || (R.power = {});
+  const field = (k, l) => `<label>${l}<input data-pw="${k}" type="number" min="0" step="any" value="${P[k] ?? ""}"></label>`;
+  const d = await live.delay(id, isoZ(state.t), R.windowH, [R.delayH], { min_sun_fraction: R.minSun / 100, max_continuous_comm_gap_hours: R.maxBlackout });
+  let html = `<h3>Live API</h3>`;
+  if (d.ok) { const o = d.data.outcome; html += `<div class="card"><strong>/api/scenarios/delay · ${esc(o.status.replace(/_/g, " "))}</strong><p class="small">${esc(o.message)}</p><p class="small"><span class="seal ${d.seal.cls}">${esc(d.seal.text)}</span></p></div>`; showSeal(d.seal); }
+  else html += `<p class="muted small">API request failed (${esc(d.error)}); showing static results only. <span class="seal offline">offline · precomputed</span></p>`;
+  html += `<details><summary>Energy (your assumptions)</summary><div class="grid2">${field("battery_capacity_wh", "Battery Wh")}${field("initial_charge_wh", "Initial Wh")}${field("reserve_wh", "Reserve Wh")}${field("solar_generation_w", "Solar W")}${field("load_w", "Load W")}</div><div id="energy" class="small muted">Fill all five values to run /api/onboard/site-evaluate. No defaults are assumed.</div></details>`;
+  box.innerHTML = html;
+  box.querySelectorAll("[data-pw]").forEach(i => i.addEventListener("change", async () => {
+    P[i.dataset.pw] = i.value === "" ? undefined : Number(i.value);
+    const keys = ["battery_capacity_wh", "initial_charge_wh", "reserve_wh", "solar_generation_w", "load_w"], en = $("#energy");
+    if (!en || keys.some(k => !Number.isFinite(P[k]))) return;
+    const r = await live.onboard(id, isoZ(state.t), R.windowH, Object.fromEntries(keys.map(k => [k, P[k]])), Math.min(R.maxBlackout, R.windowH), R.delayH);
+    if (!r.ok) { en.textContent = `API request failed (${r.error}).`; return; }
+    const c = r.data.candidates[0];
+    en.innerHTML = `${esc(r.data.combined_decision.status.replace(/_/g, " "))}${c.breached_risks.length ? " · breached: " + c.breached_risks.map(esc).join(", ") : ""} · <span class="seal ${r.seal.cls}">${esc(r.seal.text)}</span>`;
   }));
 }
 
@@ -619,6 +665,7 @@ function applyLang() {
 
 // ------------------------------------------------------------------ boot
 async function boot() {
+  await live.probe(); showSeal();
   try { await loadIndex(); } catch (e) {
     $("#panel-body").innerHTML = `<h2>${esc(tr("notComputed"))}</h2><p>Precomputed NASA products could not be loaded (${esc(e.message)}). Nothing is shown rather than inventing values.</p>`; return;
   }
