@@ -102,13 +102,15 @@ jobs:
   docker-e2e:
     name: Release Compose + Go/Rust + browser
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 55
     needs: [web, go-rust, postgres]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Run Dockerfile all-tests gate (Go + Rust + Web + NASA science)
+        run: docker build --target test -t braspace-ci-test:${{ github.sha }} .
       - name: Validate release Docker Compose graph
         run: docker compose -f compose.yaml -f compose.release.yaml config --quiet
       - name: Build and start API and MoonProof web containers
