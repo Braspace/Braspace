@@ -56,7 +56,7 @@ def main():
     import re
     # primeira entrada injetada e n=2 (lm1, 2026-12-01T12:00:00Z, body 399)
     m = re.search(
-        r"lm1\s+2026-12-01T12:00:00Z\s+399\s+[\d.]+\s+[\d.]+\s+([\d.+-]+)\s+[\d.]+\s+[\d.]+\s+([\d.+-]+)",
+        r"lm1\s+2026-12-01T12:00:00Z\s+399\s+-?[\d.]+\s+-?[\d.]+\s+([\d.+-]+)\s+-?[\d.]+\s+-?[\d.]+\s+([\d.+-]+)",
         txt,
     )
     ok = True
