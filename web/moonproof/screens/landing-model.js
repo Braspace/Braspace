@@ -105,6 +105,8 @@ export function verdictKey(a, rules) {
   const others = rules.filter(r => r.id !== "fuel" && r.state === "fail");
   if (others.length) return "warn";
   if (fuel.state === "fail") return "lowfuel";
+  // AUD-10: mechanical touchdown is fine, but a criterion with no data (Sun/Earth/contact) is unknown, not passed.
+  if (rules.some(r => r.state === "nd")) return "partial";
   return "safe";
 }
 

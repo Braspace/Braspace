@@ -202,7 +202,10 @@ function fromHere(s, m) {
   const acts = el("div", "ex-actions");
   const a1 = el("a", "mp-pill is-primary", t("ex.compare")); a1.href = hrefTo("compare.html");
   const a2 = el("a", "mp-pill is-sim", t("ex.land")); a2.href = hrefTo("landing.html");
+  // AUD-02: a free point has no hourly series; Compare/Land would silently use the previous site's. Disable them.
+  if (point) for (const a of [a1, a2]) { a.removeAttribute("href"); a.setAttribute("aria-disabled", "true"); a.classList.add("is-disabled"); a.title = t("ex.point.noseries"); }
   acts.append(a1, a2); c.append(acts);
+  if (point) c.append(el("p", "mp-label", t("ex.point.noseries")));
   return c;
 }
 export function horizonSvg(hz, g) {

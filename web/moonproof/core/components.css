@@ -139,3 +139,10 @@ button,input,select,textarea{font:inherit;color:inherit}
    left secondary text at 2.3:1. Glass is now .72 (4.7:1 worst case); failure text uses a lighter red;
    the FALHA seal's fill passes 4.5:1 with white text. */
 .mp-seal[data-seal="FALHA"]{background:var(--fail-fill);border-color:var(--fail-fill)}
+/* UX audit: a panel marked [data-mp-sheet] that already lives inside a screen's own phone sheet
+   (Mission .mc-panels, Cockpit .mp-sheet, Explore .ex-sheet) must not become a second fixed sheet on top. */
+@media (max-width:700px){
+  :is(.mp-sheet,.mc-panels,.ex-sheet) [data-mp-sheet]{position:static!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;width:auto!important;height:auto!important;max-height:none!important;overflow:visible;background:transparent;border:0;border-radius:0}
+  :is(.mp-sheet,.mc-panels,.ex-sheet) [data-mp-sheet]>.mp-sheet-grip{display:none!important}
+}
+.mp-pill.is-disabled{opacity:.45;pointer-events:none;cursor:not-allowed}
