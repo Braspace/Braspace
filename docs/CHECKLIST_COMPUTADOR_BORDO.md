@@ -9,22 +9,6 @@ Atualizado em 2026-11-14. Legenda de estado:
 
 Requisitos (R-xx, D-xx) e issues seguem `docs/REQUISITOS_RASTREABILIDADE_NINZINHU.md`. Nenhum item está verificado com evidência.
 
-## Alinhamento com os gates científicos (atualizado em 2026-11-14)
-
-Os gates vêm de `docs/SCIENTIFIC_ACCEPTANCE.md`. Até a data acima, **nenhum gate está cumprido**. Os estados "Protótipo" abaixo significam tela com dado sintético, não validação.
-
-| Gate | Situação | Observação |
-|---|---|---|
-| G1 Origem dos dados | Parcial | `LDEM_80S_80M` escolhido e com SHA-256 conferido, na PR #71 (rascunho). Não está em `main` nem foi lido pelo código. |
-| G2 Coordenadas dos sítios | Pendente | Sítios atuais são sintéticos (`SYN-SITE-*`). |
-| G3 Derivação SPICE | Pendente | Kernels identificados; nada carregado. |
-| G4 Horizonte do DEM | Pendente | Horizonte atual é senoide. Método de referência do time: `illumf_c` com DSK ou elipsoide. |
-| G5 Validação | Pendente | Sem comparação com Horizons ou com benchmark. |
-| G6 Derivado | Pendente | Séries de Sol e Terra são sintéticas. |
-| G7 Interface e submissão | Bloqueado | Depende de G1–G6, de links públicos e do CI. |
-
-**Regra de exibição:** toda tela que mostre Sol, Terra, horizonte, luz ou energia deve trazer a etiqueta "SINTÉTICO" e não pode ser lida como resultado científico.
-
 ## 1. Entrada do cenário
 
 | # | Funcionalidade | Estado | Requisito | Issue | Observação |
@@ -52,7 +36,7 @@ Os gates vêm de `docs/SCIENTIFIC_ACCEPTANCE.md`. Até a data acima, **nenhum ga
 | # | Funcionalidade | Estado | Requisito | Issue | Observação |
 |---|---|---|---|---|---|
 | 3.1 | Horizonte do terreno por azimute | Protótipo (matemático) | R-05, R-10 | #14, #16 | Função senoidal, não relevo |
-| 3.2 | Leitura do DEM LOLA (`LDEM_80S_80M.IMG`) | Pendente | R-10 | #2, #14, #20 | Dataset escolhido e com hash conferido (PR #71). Leitura do binário ainda não implementada. Projeção descrita no rótulo; conferir com `gdalinfo` ou com o rótulo. |
+| 3.2 | Leitura do DEM LOLA (GeoTIFF) | Pendente | R-10 | #2, #14, #20 | Projeção a confirmar com `gdalinfo` |
 | 3.3 | Cálculo de horizonte por raio no DEM | Pendente | R-05, R-08 | #14, #16 | Método em `PESQUISA_ALGORITMO.md`, seção 3 |
 | 3.4 | Distância máxima de busca documentada | Pendente | R-10 | #14 | Parâmetro a justificar |
 | 3.5 | Tratamento de pixels interpolados | Pendente | R-10 | #17 | Cerca de 90% dos pixels de 5 m |
