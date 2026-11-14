@@ -140,7 +140,19 @@ type assetCache struct {
 var errAssetUnavailable = errors.New("asset unavailable")
 
 func newAssetCache() *assetCache {
-	return &assetCache{client: &http.Client{Timeout: 15 * time.Second}, data: map[string][]byte{}}
+	// Never follow redirects from the registered NASA asset URL. Go's
+	// default client follows Location headers across hosts and schemes,
+	// bypassing our catalog host allowlist before the checksum is checked.
+	// ErrUseLastResponse returns the original 3xx to get(), which rejects it.
+	return &assetCache{
+		client: &http.Client{
+			Timeout: 15 * time.Second,
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
+		data: map[string][]byte{},
+	}
 }
 
 func (a *assetCache) get(ctx context.Context, l *layer) ([]byte, error) {
