@@ -67,7 +67,7 @@ test("upstream is pinned, credentials stripped, Go status and errors preserved",
     const r = await handleAPI(new Request(origin + "/api/compare", { method: "POST", body: JSON.stringify(body),
       headers: { "Content-Type": "application/json", Authorization: "Bearer t", Cookie: "a=1", Origin: origin, "CF-Connecting-IP": "1.2.3.4" } }));
     assert.equal(calls[0].url, DEFAULT_UPSTREAM + "/api/compare");
-    assert.equal(calls[0].opts.redirect, "error");
+    assert.equal(calls[0].opts.redirect, "manual"); // workerd rejects "error"; 3xx is refused by permittedResponse
     assert.deepEqual(JSON.parse(new TextDecoder().decode(calls[0].opts.body)), body);
     for (const h of ["Authorization", "Cookie", "Origin", "CF-Connecting-IP"]) assert.equal(calls[0].opts.headers.get(h), null);
     assert.equal(r.status, 422); assert.deepEqual(await r.json(), { code: "OUTSIDE_COVERAGE" });

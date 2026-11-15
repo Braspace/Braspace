@@ -126,7 +126,9 @@ export async function handleMoonAPI(request, fetcher = fetch) {
   const timeout=AbortSignal.timeout(route.kind === "asset" ? 120000 : 25000);
   const signal=AbortSignal.any([request.signal,timeout]);
   try {
-    const upstream=await fetcher(target,{method,headers,body,signal,redirect:"error",cache:"no-store"});
+    // workerd rejects redirect:"error" with a TypeError (seen live 15/11: every /api answered 502 API_UNAVAILABLE).
+    // "manual" + permittedResponse() refusing 3xx keeps redirects blocked: one upstream request, never followed.
+    const upstream=await fetcher(target,{method,headers,body,signal,redirect:"manual",cache:"no-store"});
     if (!permittedResponse(upstream,route.kind,method,headers.has("Range"))) { void upstream.body?.cancel().catch(()=>{}); return fail(502,"INVALID_UPSTREAM_RESPONSE"); }
     if(upstream.status>=400&&(upstream.headers.get("content-type")||"").split(";")[0].trim().toLowerCase()==="text/plain")return legacyError(upstream);
     const output=new Headers(security(route.kind === "report" && upstream.ok ? REPORT_CSP : BASIC_CSP));
