@@ -28,3 +28,9 @@ The response always includes `scientifically_validated:false` and limitations; n
 4. Work with Heloísa/JV on a separate, clearly labelled **source search UI** only after the final mission demo and NASA submission gates pass.
 
 References: #107 and completed evaluation #24.
+
+## Audit lineage and quarantine (2026-11-15)
+See `docs/DB_MIGRATION_RUNBOOK.md`: only the current audited ingest manifest is
+searchable; legacy rows are quarantined (never deleted) and reported by
+`state=legacy_unverified` / `legacy_unverified_count`. Request decoding is strict
+(case-sensitive unique keys, no null components, integer limit 1..10).

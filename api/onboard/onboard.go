@@ -16,6 +16,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/Braspace/Braspace/api/internal/jsoncontract"
 )
 
 const (
@@ -264,6 +266,11 @@ func Handler() http.Handler {
 		if err!=nil || len(raw)>MaxRequestBytes {
 			w.WriteHeader(http.StatusRequestEntityTooLarge)
 			_ = json.NewEncoder(w).Encode(map[string]string{"code":"REQUEST_TOO_LARGE","error":"maximum request size exceeded"})
+			return
+		}
+		if err := jsoncontract.Check(raw); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]string{"code": "INVALID_JSON", "error": "invalid JSON document"})
 			return
 		}
 		dec:=json.NewDecoder(strings.NewReader(string(raw)))

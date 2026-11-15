@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
+	"sort"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -68,7 +71,8 @@ func buildProvenanceSeedEntries(fsys fs.FS) ([]vectorSeedEntry, error) {
 		return entries, nil
 	}
 	for _, s := range cat.Sites {
-		if len(s.SeriesSHA) != 64 {
+		// Synthetic fixtures are not NASA sources: never part of the audited index.
+		if len(s.SeriesSHA) != 64 || s.Kind == "synthetic_test_fixture" {
 			continue
 		}
 		entries = append(entries, vectorSeedEntry{
@@ -86,12 +90,35 @@ func ingestVectorMetadata(ctx context.Context, pool *pgxpool.Pool, fsys fs.FS) (
 	if pool == nil {
 		return nil, errors.New("vector database pool is nil")
 	}
-	if _, err := pool.Exec(ctx, optionalVectorSQL); err != nil {
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+	// Serialize concurrent operator runs (schema DDL + manifest swap).
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext('braspace-vector-ingest'))`); err != nil {
+		return nil, err
+	}
+	if _, err := tx.Exec(ctx, optionalVectorSQL); err != nil {
 		return nil, fmt.Errorf("apply optional-vector.sql: %w", err)
 	}
 	entries, err := buildProvenanceSeedEntries(fsys)
 	if err != nil {
 		return nil, err
+	}
+	if len(entries) == 0 {
+		return nil, errors.New("no provenance entries to ingest")
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].SourceRef < entries[j].SourceRef })
+	h := sha256.New()
+	for _, e := range entries {
+		fmt.Fprintf(h, "%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\n", vectorLexicalModelID, e.SourceRef, e.Title, e.SourceURL, e.SHA256, e.Text)
+	}
+	manifest := hex.EncodeToString(h.Sum(nil))
+	if _, err := tx.Exec(ctx, `INSERT INTO source_semantic_ingest_runs(manifest_sha256, model_id, entry_count)
+		VALUES ($1, $2, $3) ON CONFLICT (manifest_sha256) DO UPDATE SET last_applied_at = now()`,
+		manifest, vectorLexicalModelID, len(entries)); err != nil {
+		return nil, fmt.Errorf("record manifest: %w", err)
 	}
 	inserted := 0
 	for _, e := range entries {
@@ -103,26 +130,31 @@ func ingestVectorMetadata(ctx context.Context, pool *pgxpool.Pool, fsys fs.FS) (
 		if err != nil {
 			return nil, fmt.Errorf("literal %s: %w", e.SourceRef, err)
 		}
-		_, err = pool.Exec(ctx, `
-			INSERT INTO source_semantic_index(source_ref, title, source_url, sha256, model_id, embedding)
-			VALUES ($1, $2, $3, $4, $5, $6::vector)
+		_, err = tx.Exec(ctx, `
+			INSERT INTO source_semantic_index(source_ref, title, source_url, sha256, model_id, embedding, ingest_manifest_sha256)
+			VALUES ($1, $2, $3, $4, $5, $6::vector, $7)
 			ON CONFLICT (source_ref) DO UPDATE SET
 				title = EXCLUDED.title,
 				source_url = EXCLUDED.source_url,
 				sha256 = EXCLUDED.sha256,
 				model_id = EXCLUDED.model_id,
 				embedding = EXCLUDED.embedding,
+				ingest_manifest_sha256 = EXCLUDED.ingest_manifest_sha256,
 				updated_at = now()`,
-			e.SourceRef, e.Title, e.SourceURL, e.SHA256, vectorLexicalModelID, lit)
+			e.SourceRef, e.Title, e.SourceURL, e.SHA256, vectorLexicalModelID, lit, manifest)
 		if err != nil {
 			return nil, fmt.Errorf("upsert %s: %w", e.SourceRef, err)
 		}
 		inserted++
 	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
 	return map[string]any{
-		"status":    "ok",
-		"model_id":  vectorLexicalModelID,
-		"dimension": vectorDimensions,
-		"upserted":  inserted,
+		"status":                 "ok",
+		"model_id":               vectorLexicalModelID,
+		"dimension":              vectorDimensions,
+		"upserted":               inserted,
+		"ingest_manifest_sha256": manifest,
 	}, nil
 }
