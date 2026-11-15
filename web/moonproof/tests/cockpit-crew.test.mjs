@@ -20,3 +20,25 @@ test("missing consumables stay null, not zero", () => {
   assert.equal(a.rows[0].autonomyH, 85.7); assert.equal(a.rows[0].marginH, null);
   assert.deepEqual(readCrewAnswer(null).rows, []);
 });
+
+import { sensitivityVariants, readEnergy, loadSaved, saveScenario, savedExport, SAVED_KEY } from "../screens/cockpit-crew.js";
+test("sensitivity varies one input at a time by 20 % and keeps charge <= capacity", () => {
+  const v = sensitivityVariants({ battery_capacity_wh: 20000, initial_charge_wh: 18000, reserve_wh: 4000, solar_generation_w: 1500, load_w: 600 });
+  assert.deepEqual(v.map(x => x.id), ["base", "battery-20", "solar-20", "load+20"]);
+  assert.equal(v[1].power.battery_capacity_wh, 16000); assert.equal(v[1].power.initial_charge_wh, 16000);
+  assert.equal(v[2].power.solar_generation_w, 1200); assert.equal(v[3].power.load_w, 720);
+});
+test("energy readout keeps missing values null", () => {
+  assert.deepEqual(readEnergy({ onboard: { options: [{ end_mode: "POWER_LOSS", metrics: { minimum_charge_wh: 0 } }] } }), { minWh: 0, unservedWh: null, endMode: "POWER_LOSS", status: null });
+  assert.equal(readEnergy(null).minWh, null);
+});
+test("saved scenarios survive a broken store and export as versioned JSON", () => {
+  const mem = new Map(); const st = { getItem: k => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v) };
+  assert.deepEqual(loadSaved(st), []);
+  saveScenario(st, { id: "a", query: "?site=x" }); saveScenario(st, { id: "b", query: "?site=y" }); saveScenario(st, { id: "a", query: "?site=z" });
+  assert.deepEqual(loadSaved(st).map(x => x.id + x.query), ["a?site=z", "b?site=y"]);
+  mem.set(SAVED_KEY, "{not json"); assert.deepEqual(loadSaved(st), []);
+  const broken = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } };
+  assert.deepEqual(loadSaved(broken), []); assert.equal(saveScenario(broken, { id: "c" }).ok, false);
+  const e = savedExport([{ id: "a" }], new Date("2025-01-01T00:00:00Z")); assert.equal(e.schema, "braspace.cockpit-scenarios"); assert.equal(e.version, 1);
+});

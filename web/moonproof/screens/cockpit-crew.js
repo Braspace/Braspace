@@ -32,3 +32,30 @@ export function readCrewAnswer(data) {
   return { decision: data?.combined_decision?.status ?? data?.combined_decision ?? null, status: cons?.status ?? null, rateSource: cons?.rate_source ?? null,
     rows, risks: cons?.risks || [], science: c?.science_status ?? null };
 }
+
+// ---- Sensitivity (legacy onboard "Sensibilidade", now on the real API instead of the synthetic model.js)
+/** One-at-a-time variations of the declared power inputs (±20 %). Pure. */
+export function sensitivityVariants(power) {
+  return [
+    { id: "base", power: { ...power } },
+    { id: "battery-20", power: { ...power, battery_capacity_wh: power.battery_capacity_wh * 0.8, initial_charge_wh: Math.min(power.initial_charge_wh, power.battery_capacity_wh * 0.8) } },
+    { id: "solar-20", power: { ...power, solar_generation_w: power.solar_generation_w * 0.8 } },
+    { id: "load+20", power: { ...power, load_w: power.load_w * 1.2 } },
+  ];
+}
+/** Energy result of the first onboard option; missing values stay null. */
+export function readEnergy(data) {
+  const o = data?.onboard?.options?.[0] || null, m = o?.metrics || {};
+  return { minWh: m.minimum_charge_wh ?? null, unservedWh: m.total_unserved_energy_wh ?? null, endMode: o?.end_mode ?? null, status: o?.simulation_status ?? null };
+}
+
+// ---- Saved scenarios (legacy onboard "Registro"): local to this browser, exportable as versioned JSON.
+export const SAVED_KEY = "braspace.cockpit.saved.v1";
+export function loadSaved(storage) { try { const v = JSON.parse(storage?.getItem(SAVED_KEY) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; } }
+export function saveScenario(storage, entry, max = 20) {
+  const list = [entry, ...loadSaved(storage).filter(x => x.id !== entry.id)].slice(0, max);
+  try { storage?.setItem(SAVED_KEY, JSON.stringify(list)); return { ok: true, list }; } catch { return { ok: false, list }; }
+}
+export function savedExport(list, now = new Date()) {
+  return { schema: "braspace.cockpit-scenarios", version: 1, exported_utc: now.toISOString(), storage: "localStorage (this browser only)", science_status: "SIMULATION", scenarios: list };
+}
