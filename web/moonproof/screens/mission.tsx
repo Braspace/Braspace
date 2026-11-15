@@ -134,7 +134,7 @@ async function draw() {
   // ---- left column
   const tabs = (
     <div class="mc-tabs" role="tablist">{["overview", "notes"].map(k => (
-      <button class="mp-pill" type="button" role="tab" aria-selected={tab === k} aria-pressed={tab === k} onClick={() => { tab = k; draw(); }}>{t("mc." + k)}</button>
+      <button class="mp-pill" type="button" role="tab" aria-selected={tab === k} onClick={() => { tab = k; draw(); }}>{t("mc." + k)}</button>
     ))}</div>
   );
   let body: ComponentChild;

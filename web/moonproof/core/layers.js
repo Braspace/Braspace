@@ -79,10 +79,12 @@ export function createLayerCard({ id, title, status, answer, why, proof, layer =
     return { el, setLayer: l => set(l, false) };
 }
 /** A segmented bar: fractions 0..1 (null = unknown, hatched). */
-export function barEl(fracs, color = "var(--sun)") {
+export function barEl(fracs, color = "var(--sun)", label) {
     const bar = document.createElement("div");
     bar.className = "mp-bar";
     bar.setAttribute("role", "img");
+    // Text alternative (WCAG 1.1.1): the same numbers the bar draws, "—" where unknown.
+    bar.setAttribute("aria-label", (label ? label + ": " : "") + fracs.map(f => f == null ? "—" : Math.round(f * 100) + "%").join(", "));
     for (const f of fracs) {
         const i = document.createElement("i");
         i.style.flex = "1";
