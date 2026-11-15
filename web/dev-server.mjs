@@ -35,6 +35,8 @@ export function labFile(pathname){
 // MoonProof v3 front (web/moonproof/): pages, core and screen modules/styles only.
 export function moonproofFile(pathname){
  if(pathname==="/moonproof/")return {name:"moonproof/index.html",type:labTypes[".html"]};
+ // Clean URLs like the Cloudflare Worker (assets html_handling): /moonproof/cockpit serves cockpit.html. Same allowlist.
+ if(/^\/moonproof\/[A-Za-z0-9_\-]+$/.test(pathname))return moonproofFile(pathname+".html");
  // Self-hosted OFL fonts (CSP font-src 'self'): woff2 only, flat folder.
  if(/^\/moonproof\/fonts\/(?:manrope-latin-(?:400|500|600|700|800)-normal|ibm-plex-mono-latin-(?:400|600)-normal)\.woff2$/.test(pathname))return {name:path.normalize(pathname.slice(1)),type:"font/woff2"};
  // IAU/USGS feature names: one fixed file, no folder is served.
