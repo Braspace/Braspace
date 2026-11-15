@@ -32,7 +32,7 @@ test('exact coverage of all 22 pinned main OpenAPI operations (including paramet
     if(path.endsWith('/sky')) path+='?start=2026-11-15T00%3A00%3A00Z&hours=24&step=60';
     const r=await handleMoonAPI(request(path,options(op.method)),async(url,opts)=>{
       assert.equal(url,upstream+path); assert.equal(opts.method,op.method);
-      assert.equal(opts.redirect,'error'); assert.equal(opts.cache,'no-store');
+      assert.equal(opts.redirect,'manual'); assert.equal(opts.cache,'no-store');
       if(path.endsWith('/report')||path.endsWith('/site-report'))return html();
       if(path.endsWith('/asset'))return new Response(new Uint8Array([1,2,3]),{headers:{'Content-Type':'image/jpeg'}});
       return json();
