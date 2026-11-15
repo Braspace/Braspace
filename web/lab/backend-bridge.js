@@ -1,6 +1,8 @@
 // Typed same-origin bridge for the optional Go/Rust/PostgreSQL API.
 // Geometry from NASA-derived static assets is NEVER silently replaced by
 // synthetic API fixtures; no client-side scientific status promotion.
+import {apiURL} from "../api-base.js";
+import {embedProvenanceText, VECTOR_DIMENSIONS, VECTOR_MODEL_ID} from "../vector-embed.js";
 const sitePattern=/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 const datePattern=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 function validUTC(utc){
@@ -8,7 +10,7 @@ function validUTC(utc){
  return utc;
 }
 async function json(path,options={},fetcher=fetch){
- const response=await fetcher(path,{redirect:"error",signal:AbortSignal.timeout(12000),...options});
+ const response=await fetcher(apiURL(path),{redirect:"error",signal:AbortSignal.timeout(12000),...options});
  const body=await response.json().catch(()=>null);
  if(!response.ok){
   const err=new Error(body?.code||"HTTP_"+response.status);
@@ -49,11 +51,29 @@ export async function backendVectorAvailability(fetcher=fetch){
  // quality or NASA geometry validity from a vector index.
  try{
   const result=await json("/api/vector/status",{},fetcher);
-  if(typeof result.enabled!=="boolean"||typeof result.available!=="boolean"||result.dimension!==384){
+  if(typeof result.enabled!=="boolean"||typeof result.available!=="boolean"||result.dimension!==VECTOR_DIMENSIONS){
    return {enabled:false,available:false,reason:"INVALID_VECTOR_CONTRACT"};
   }
   return {enabled:result.enabled,available:result.available,modelID:result.model_id||"",purpose:"source metadata only"};
  }catch(e){return {enabled:false,available:false,reason:e.code||"NOT_CONFIGURED"};}
+}
+
+export async function backendVectorSearch(query,{limit=5,modelID=VECTOR_MODEL_ID}={},fetcher=fetch){
+ const vector=embedProvenanceText(query);
+ const result=await json("/api/vector/search",{
+  method:"POST",
+  headers:{"content-type":"application/json"},
+  body:JSON.stringify({model_id:modelID,vector,limit})
+ },fetcher);
+ if(!Array.isArray(result.results)||result.scientifically_validated!==false){
+  throw new Error("INVALID_VECTOR_SEARCH_CONTRACT");
+ }
+ return {
+  modelID:result.model_id||modelID,
+  results:result.results,
+  limitations:Array.isArray(result.limitations)?result.limitations:[],
+  scientificallyValidated:false
+ };
 }
 
 export async function backendOnboardTraining(fetcher=fetch){

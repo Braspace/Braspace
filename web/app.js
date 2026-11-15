@@ -9,6 +9,7 @@ if (globalThis.location?.hostname === "braspace.github.io" && !globalThis.BRASPA
   globalThis.BRASPACE_API_BASE = "https://braspace-api.srv1898743.hstgr.cloud";
 }
 const byId = id => document.getElementById(id);
+import {apiURL} from "./api-base.js";
 const fields = ["start","duration","delay","battery","initial","reserve","generation","load","blackout"];
 const state = {sites:[],selected:null,globe:null,lastRequest:null,lastResponse:null,apiReady:false};
 const views = {
@@ -161,7 +162,7 @@ function renderResult(r,computed){
  byId("report").disabled=false;
 }
 async function apiRequest(path,data,asHTML=false){
- const response=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data),cache:"no-store"});
+ const response=await fetch(apiURL(path),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data),cache:"no-store"});
  if(!response.ok){let reason=await response.text();throw new Error("API "+response.status+": "+reason.slice(0,160));}
  return asHTML?response.text():response.json();
 }
@@ -214,7 +215,7 @@ function onSiteChange(){
 async function loadSites(){
  const select=byId("site");
  try{
-  const resp=await fetch("/api/sites",{cache:"no-store"});
+  const resp=await fetch(apiURL("/api/sites"),{cache:"no-store"});
   if(!resp.ok)throw new Error("HTTP "+resp.status);
   const data=await resp.json(),sites=Array.isArray(data.sites)?data.sites:[];
   if(!sites.length)throw new Error("Empty site catalog");
@@ -235,7 +236,7 @@ async function loadSites(){
  }
 }
 async function checkAPI(){
- try{let r=await fetch("/healthz",{cache:"no-store"});if(!r.ok)r=await fetch("/api/health",{cache:"no-store"});if(!r.ok)throw new Error("API unavailable");
+ try{let r=await fetch(apiURL("/healthz"),{cache:"no-store"});if(!r.ok)r=await fetch(apiURL("/api/health"),{cache:"no-store"});if(!r.ok)throw new Error("API unavailable");
  setStatus("Go API reachable. Inputs remain synthetic until science data are validated.");state.apiReady=true;
  }catch{setStatus("Go API not connected; launch backend and serve the web app from the same origin.");state.apiReady=false;}
 }

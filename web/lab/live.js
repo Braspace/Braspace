@@ -31,7 +31,7 @@ const trim = b => String(b || "").replace(/\/+$/, "");
 
 export function createLive({ base, fetchImpl = globalThis.fetch?.bind(globalThis), timeoutMs = 4000 } = {}) {
   const root = trim(base);
-  const api = { enabled: Boolean(root && fetchImpl), online: false, sites: new Map(), seal: OFFLINE_SEAL };
+  const api = { enabled: Boolean(typeof base === "string" && fetchImpl), online: false, sites: new Map(), seal: OFFLINE_SEAL };
   async function call(path, body) {
     if (!api.enabled) throw new Error("API disabled");
     const ctl = typeof AbortController === "function" ? new AbortController() : null;

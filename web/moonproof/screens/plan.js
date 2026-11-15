@@ -176,7 +176,7 @@ if (rulesDraft.night !== getState().night || rulesDraft.blackout !== getState().
 // Plan version = deployment commit (config.js) or /api/health; absent → "—" + N/D. Same source as the Evidence screen.
 const [health, cfg] = await Promise.all([
   api("/api/health", { timeoutMs: 3000 }),
-  fetch(((window.BRASPACE_API_BASE) || "") + "/config.js", { cache: "no-store" }).then((r) => (r.ok ? r.text() : "")).catch(() => "")
+  fetch(new URL("../../config.js", import.meta.url), { cache: "no-store" }).then((r) => (r.ok ? r.text() : "")).catch(() => "")
 ]);
 const version = pickVersion({ configCommit: parseConfigCommit(cfg), health: health.ok ? health.data : null });
 

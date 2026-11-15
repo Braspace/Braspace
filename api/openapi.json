@@ -975,22 +975,51 @@
             }
           },
           "422": {
-            "description": "Invalid inputs (null or incomplete look angles are rejected, never read as zero)"
-          },
-          "502": {
-            "description": "Engine failed, timed out or returned an invalid contract. Body: {\"error\": string} (no code field).",
+            "description": "Invalid inputs (INVALID_VISIBILITY_INPUT); null or incomplete look angles and horizon samples are rejected, never read as zero",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Engine failed or returned an invalid contract (ENGINE_ERROR)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Engine unavailable (ENGINE_UNAVAILABLE)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Engine deadline exceeded (ENGINE_TIMEOUT)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "499": {
+            "description": "Client canceled request (REQUEST_CANCELED)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -1356,7 +1385,8 @@
               "INVALID_MODEL",
               "MODEL_MISMATCH",
               "INVALID_LIMIT",
-              "INVALID_VECTOR"
+              "INVALID_VECTOR",
+              "INVALID_VISIBILITY_INPUT"
             ]
           }
         },

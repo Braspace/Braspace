@@ -40,7 +40,14 @@ export function mapApiMetrics(m, scienceStatus, src, sha = null) {
 }
 
 const cache = new Map();
-const once = (key, fn) => { if (!cache.has(key)) cache.set(key, fn()); return cache.get(key); };
+// Keep only in-flight requests; a transient error must not be cached forever.
+const once = (key, fn) => {
+ if (!cache.has(key)) {
+  const pending=Promise.resolve().then(fn).finally(()=>{if(cache.get(key)===pending)cache.delete(key);});
+  cache.set(key,pending);
+ }
+ return cache.get(key);
+};
 
 /** POST /api/compare for one site. {online, metrics|null}. */
 export function apiCompareMetrics(siteId, startIso, hours) {

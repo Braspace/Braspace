@@ -2,7 +2,7 @@
 import { mountShell } from "../core/shell.js";
 import { holdReady, markReady } from "../core/ready.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, loadSeries, loadRegion, api, apiBase, sealFor, DATA_BASE } from "../core/data.js";
+import { loadSites, loadSeries, loadRegion, api, sealFor, DATA_BASE } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState } from "../core/state.js";
@@ -10,6 +10,7 @@ import { TEXTS } from "./evidence-texts.js";
 import { TEXTS as CK } from "./cockpit-texts.js";
 import { REGISTRY } from "./evidence-registry.js";
 import { sourceRows, trustRows, buildPassport, pickVersion, parseConfigCommit, registryChip, SECTIONS, TRUST_BLOCKS } from "./evidence-model.js";
+import { backendVectorSearch } from "../../lab/backend-bridge.js";
 
 register(TEXTS);
 register({ en: { "cockpit.assumed": CK.en["cockpit.assumed"] }, "pt-BR": { "cockpit.assumed": CK["pt-BR"]["cockpit.assumed"] } });
@@ -23,7 +24,7 @@ if (!doc.sites.some(s => s.id === getState().site)) setState({ site: doc.sites[0
 const [ready, health, caps, layers, apiSites, vector] = await Promise.all([api("/readyz", { timeoutMs: 3000 }), api("/api/health", { timeoutMs: 3000 }), api("/v1/capabilities", { timeoutMs: 3000 }), api("/api/layers", { timeoutMs: 3000 }), api("/api/sites", { timeoutMs: 3000 }), api("/api/vector/status", { timeoutMs: 3000 })]);
 const online = ready.ok;
 let configCommit = null;
-try { const r = await fetch(apiBase() + "/config.js", { cache: "no-store" }); if (r.ok) configCommit = parseConfigCommit(await r.text()); } catch { /* no config.js here */ }
+try { const r = await fetch(new URL("../../config.js", import.meta.url), { cache: "no-store" }); if (r.ok) configCommit = parseConfigCommit(await r.text()); } catch { /* no config.js here */ }
 const version = pickVersion({ configCommit, health: health.ok ? health.data : null });
 const region = await fetch(DATA_BASE + "region/south_pole_400m.json").then(r => r.ok ? r.json() : null).catch(() => null);
 await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: id => setState({ site: id }) });
@@ -113,9 +114,33 @@ async function draw() {
   else {
     const n = Array.isArray(apiSites.data?.sites) ? apiSites.data.sites.length : null, h = health.ok ? health.data : {};
     const st = h.series_science_statuses ? Object.entries(h.series_science_statuses).map(([k, v]) => `${v} ${k}`).join(" · ") : t("nd");
-    const vec = vector.ok ? (vector.data?.enabled ? t("evidence.sync.vecOn") : t("evidence.sync.vecOff")) : t("evidence.sync.vecNa");
+    const vec = vector.ok ? (vector.data?.enabled && vector.data?.available ? t("evidence.sync.vecOn") : t("evidence.sync.vecOff")) : t("evidence.sync.vecNa");
     for (const [k, v] of [["evidence.sync.sites", n == null ? t("nd") : String(n)], ["evidence.sync.series", `${h.sites_with_series ?? t("nd")} (${st})`], ["evidence.sync.local", String(doc.sites.length)], ["evidence.sync.vector", vec]]) {
       const p = el("p", "mp-label"); p.append(el("b", null, t(k) + ": "), v); sync.append(p); }
+    if (vector.ok && vector.data?.enabled && vector.data?.available) {
+      const form = el("form", "mp-vec-form");
+      const inp = Object.assign(el("input", "mp-vec-input"), { type: "search", placeholder: "LOLA DEM, SPICE, Malapert...", ariaLabel: t("evidence.sync.vector") });
+      const btn = Object.assign(el("button", "mp-pill"), { type: "submit", textContent: "Buscar" });
+      const out = el("div", "mp-vec-results");
+      form.append(inp, btn);
+      form.onsubmit = async (ev) => {
+        ev.preventDefault();
+        const q = inp.value.trim();
+        if (!q) return;
+        out.replaceChildren(el("p", "mp-label", "…"));
+        try {
+          const res = await backendVectorSearch(q, { limit: 4, modelID: vector.data.model_id });
+          if (!res.results.length) { out.replaceChildren(el("p", "mp-label", t("nd"))); return; }
+          out.replaceChildren(...res.results.map(hit => {
+            const p = el("p", "mp-label");
+            const a = Object.assign(el("a"), { href: hit.source_url, target: "_blank", rel: "noopener", textContent: hit.title });
+            p.append(a, ` · sim ${(hit.similarity * 100).toFixed(0)}% · SHA ${hit.sha256.slice(0, 10)}…`);
+            return p;
+          }));
+        } catch (err) { out.replaceChildren(el("p", "mp-label", err.message || t("evidence.sync.vecNa"))); }
+      };
+      sync.append(form, out);
+    }
   }
   $("sources").append(sync);
   // trust

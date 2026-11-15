@@ -26,8 +26,9 @@ function loadApp(){
   createTextNode:t=>({text:t}),
   querySelectorAll:sel=>sel==="[data-panel]"?panels:sel==="[data-view]"?buttons:[]};
  // Strip the top-level boot lines (listeners, await) and the import; keep every function.
- const src=app.split("\ndocument.querySelectorAll(\"[data-view]\").forEach(b=>b.addEventListener")[0];
- const ctx=vm.createContext({document,console,Number,Math,Date,String,Array,Object,Error,Intl,fetch:()=>{throw new Error("no network in tests")},Promise,JSON,URL,Blob:class{},setTimeout});
+ const src=app.split("\ndocument.querySelectorAll(\"[data-view]\").forEach(b=>b.addEventListener")[0]
+  .replace(/^\s*import\s+[^;]+;\s*$/gm,"");
+ const ctx=vm.createContext({document,console,Number,Math,Date,String,Array,Object,Error,Intl,fetch:()=>{throw new Error("no network in tests")},Promise,JSON,URL,Blob:class{},setTimeout,apiURL:p=>p});
  vm.runInContext(src+"\n;globalThis.__t={showView,renderResult,breachText,state};",ctx);
  return {t:ctx.__t,ids,panels};
 }

@@ -2,6 +2,7 @@
 // Scientific geometry: precomputed from NASA LOLA + JPL/NAIF SPICE (see Evidence view).
 // Educational flight simulation: hypothetical vehicle, deterministic physics (physics.js).
 
+import { apiBase } from "../api-base.js";
 import { Viewer } from "./scene.js";
 import { TerrainGrid } from "./terrain.js";
 import { SiteSeries, rankSites, HOUR_MS, parseEntryHash } from "./data.js";
@@ -56,7 +57,7 @@ const state = {
 };
 let viewer = null;
 // Optional live API (window.BRASPACE_API_BASE). Offline => static precomputed products, unchanged.
-const live = createLive({ base: globalThis.BRASPACE_API_BASE });
+const live = createLive({ base: apiBase() });
 const isoZ = t => new Date(t).toISOString().slice(0, 19) + "Z";
 function showSeal(seal = live.seal) { const el = $("#seal"); if (!el) return; el.textContent = seal.text; el.className = "seal " + seal.cls; el.title = seal.live ? "State comes from the API response (science_status); nothing here is NASA-validated unless it says so." : "Static NASA-derived products shipped with the page; no API reachable."; }
 

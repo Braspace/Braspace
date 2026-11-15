@@ -3,6 +3,7 @@
 import { h, badge, num, layerCard } from "../../ds/components.js";
 import { buildHash } from "../../ds/router.js";
 import { loadSites } from "../data.js";
+import { backendVectorAvailability, backendVectorSearch } from "../../lab/backend-bridge.js";
 
 const getJSON = url => fetch(url).then(r => (r.ok ? r.json() : null), () => null);
 const short = n => n.replace(/\s*\(.*\)$/, "");
@@ -10,9 +11,10 @@ const link = (url, text) => (url ? h("a", { href: url, rel: "noopener", target: 
 
 export async function render(outlet, ctx) {
   const data = await loadSites();
-  const [pgda, hor, meta] = await Promise.all([
+  const [pgda, hor, meta, vecStatus] = await Promise.all([
     getJSON("./data/validation/validation_pgda.json"), getJSON("./data/validation/validation_horizons.json"),
-    getJSON("./data/" + data.sites[0].series + ".json")]);
+    getJSON("./data/" + data.sites[0].series + ".json"),
+    backendVectorAvailability()]);
   const prov = meta && meta.provenance;
 
   const legend = h("section", { class: "solid card" }, h("h2", { class: "h-card", text: "Como ler os selos" }),
@@ -56,7 +58,36 @@ export async function render(outlet, ctx) {
       h("li", { text: "Sem recomendação de voo. A NASA não endossa esta ferramenta." })),
     h("p", {}, h("a", { class: "chipg", href: buildHash("/bordo/status", { site: ctx.site }), text: "Status do painel de bordo →" })));
 
+  const vecResults = h("div", { class: "stack small" });
+  const vecInput = h("input", { type: "search", placeholder: "Ex.: LOLA DEM, SPICE, Malapert", "aria-label": "Buscar metadados de fontes" });
+  const vecBtn = h("button", { type: "submit", class: "chipg", text: "Buscar fontes" });
+  const vecForm = h("form", { class: "row" }, vecInput, vecBtn);
+  vecForm.addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const q = vecInput.value.trim();
+    if (!q) return;
+    vecResults.replaceChildren(h("p", { class: "t2", text: "Consultando pgvector…" }));
+    try {
+      const res = await backendVectorSearch(q, { limit: 4, modelID: vecStatus.modelID });
+      if (!res.results.length) {
+        vecResults.replaceChildren(h("p", { class: "t2", text: "Nenhuma fonte encontrada." }));
+        return;
+      }
+      vecResults.replaceChildren(...res.results.map(hit => h("p", { class: "small" },
+        link(hit.source_url, hit.title),
+        document.createTextNode(` · ${(hit.similarity * 100).toFixed(0)}% · SHA ${hit.sha256.slice(0, 12)}…`))));
+    } catch (err) {
+      vecResults.replaceChildren(h("p", { class: "t2", text: err.message || "Busca indisponível." }));
+    }
+  });
+  const vecCard = h("section", { class: "solid card" },
+    h("h2", { class: "h-card", text: "Busca semântica de fontes (pgvector)" }),
+    h("p", { class: "t2", text: vecStatus.enabled && vecStatus.available
+      ? `Índice ativo (${vecStatus.modelID || "384d"}) — somente metadados de proveniência, nunca física lunar.`
+      : `Índice semântico ${vecStatus.enabled ? "indisponível" : "desativado"} no servidor (${vecStatus.reason || "offline"}).` }),
+    ...(vecStatus.enabled && vecStatus.available ? [vecForm, vecResults] : []));
+
   outlet.append(h("div", { class: "ev stack" },
     h("div", { class: "page-head" }, h("div", {}, h("p", { class: "lbl-s", text: "Evidências" }), h("h1", { "data-route-title": "", text: "Fontes e limitações" }))),
-    legend, h("div", { class: "cards2" }, pgdaCard, horCard), sources, limits));
+    legend, h("div", { class: "cards2" }, pgdaCard, horCard), vecCard, sources, limits));
 }

@@ -7,7 +7,8 @@
   "use strict";
 
   function base() {
-    const b = (typeof window !== "undefined" && window.BRASPACE_API_BASE) || (root && root.BRASPACE_API_BASE) || "";
+    const b = (typeof window !== "undefined" && window.BRASPACE_API_BASE) || (root && root.BRASPACE_API_BASE) ||
+      (root?.location?.hostname === "braspace.github.io" ? "https://braspace-api.srv1898743.hstgr.cloud" : "");
     return String(b).replace(/\/+$/, "");
   }
 

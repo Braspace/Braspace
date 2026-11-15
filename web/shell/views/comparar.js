@@ -2,6 +2,7 @@
 // Values: LOLA + SPICE hourly series over the same window for every site (EST). Battery: N/D (not computed).
 import { h, badge, layerCard, setLevel, num } from "../../ds/components.js";
 import { buildHash } from "../../ds/router.js";
+import { compareLive } from "../live-compare.js";
 import { windowMetrics } from "../data.js";
 import { evaluate, rulesFromQuery, METRICS, bestIndex } from "../compare.js";
 import { scenario, contextBar, pickedSites, seriesFor, seriesProof, hourStrip, LETTERS, setQuery } from "./common.js";
@@ -17,8 +18,10 @@ export async function loadComparison(ctx) {
     id: site.id, name: site.name, site, series,
     w: series ? windowMetrics(series, sc.t0, sc.hours) : { status: "NOT_COMPUTED", reason: error },
   }));
+  const live = await compareLive(sites.map(s=>s.id), sc.t0, sc.hours);
+  if(live) for(const entry of entries) entry.w=live.get(entry.id);
   const rules = rulesFromQuery(ctx.query);
-  return { sc, entries, rules, result: evaluate(entries, rules) };
+  return { sc, entries, rules, live: Boolean(live), result: evaluate(entries, rules) };
 }
 
 export const fmtMetric = (v, unit) => (unit === "%" ? num(v, 0, "%") : num(v, 0, " h"));
@@ -32,7 +35,7 @@ export function sitePickers(ctx, sc, entries) {
 }
 
 export async function render(outlet, ctx) {
-  const { sc, entries, rules, result } = await loadComparison(ctx);
+  const { sc, entries, rules, result, live } = await loadComparison(ctx);
   const { rows, best, closest } = result;
   const letterOf = id => LETTERS[rows.findIndex(r => r.id === id)];
 
@@ -51,7 +54,7 @@ export async function render(outlet, ctx) {
     answer: answerText,
     why: "Só geometria: Sol, Terra e noite a partir do relevo LOLA e das efemérides SPICE. As regras são premissas do protótipo, editáveis na comparação técnica. Energia e bateria não entram (N/D).",
     proof: [["Regras", "Maior noite ≤ " + rules.maxNightH + " h · Maior perda da Terra ≤ " + rules.maxEarthLossH + " h · Sol visível ≥ " + rules.minSunPct + "%"],
-      ["Desempate", "mais horas com Sol e Terra juntos"], ...seriesProof(entries[0] && entries[0].series, sc)],
+      ["Desempate", "mais horas com Sol e Terra juntos"], ["Origem das métricas", live ? "Go API · POST /api/compare" : "Série estática versionada"], ...(live ? [["SHA da requisição", entries[0]?.w.request_sha256 || "N/D"]] : []), ...seriesProof(entries[0] && entries[0].series, sc)],
   });
 
   const scen = h("div", { class: "scen" }, rows.map((r, i) => h("a", {
@@ -86,7 +89,7 @@ export async function render(outlet, ctx) {
     proof: [["Status", "não calculado"], ["Por quê", "sem modelo de energia validado para séries reais"]],
   }));
 
-  const strips = h("section", { class: "solid card" }, h("h2", { class: "h-card", text: "Sol hora a hora na janela" }),
+  const strips = h("section", { class: "solid card" }, h("h2", { class: "h-card", text: "Sol hora a hora na janela · série estática" }),
     h("div", { class: "stripes" }, rows.map((r, i) => h("div", { class: "s" }, h("span", { text: LETTERS[i] }),
       r.series ? hourStrip(r.series, sc.t0, sc.hours, "sun") : h("span", { class: "t3", text: "N/D" })))),
     h("p", { class: "t3 small row" }, h("i", { class: "sw sw-sun", "aria-hidden": "true" }), "Sol visível", h("i", { class: "sw sw-none", "aria-hidden": "true" }), "Sol abaixo do relevo"));
@@ -94,7 +97,7 @@ export async function render(outlet, ctx) {
   const all = h("div", { class: "cards2" }, ...metricCards);
   const openAll = h("button", { type: "button", class: "btnG", onclick: () => outlet.querySelectorAll(".l3").forEach(c => setLevel(c, 2)) }, "Abrir tudo em Prova");
 
-  outlet.append(head, sitePickers(ctx, sc, entries),
+  outlet.append(head, h("p", {class:"t3 small",role:"status",text: live ? "API Go ao vivo · métricas preliminares" : "API indisponível para esta janela · métricas da série estática versionada"}), sitePickers(ctx, sc, entries),
     h("div", { class: "split" },
       h("div", { class: "stack" }, answer, scen, strips,
         h("div", { class: "row wrap" }, h("a", { class: "btnA", href: buildHash("/comparar/tecnico", ctx.query), text: "Comparação técnica →" }), openAll)),
