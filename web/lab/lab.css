@@ -138,6 +138,7 @@ body.reduced * { transition: none !important; animation: none !important; }
   .grid3 { grid-template-columns: 1fr; }
   .foot { flex-direction: column; height: auto; padding: 8px 16px; white-space: normal; }
   .legend { max-width: 60%; }
+  .badge { left: 12px; right: 12px; } .crumbs { top: 72px; } /* phone: the badge wraps to 2 lines; the crumbs go below it, not behind */
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 

@@ -187,7 +187,9 @@ export class Viewer {
       let visible = p.z < 1 && Math.abs(p.x) < 1.1 && Math.abs(p.y) < 1.1;
       if (visible && l.normal) visible = l.normal.dot(this.camera.position.clone().sub(l.position)) > 0;
       l.el.style.display = visible ? "" : "none";
-      if (visible) l.el.style.transform = `translate(${(p.x * 0.5 + 0.5) * w}px, ${(-p.y * 0.5 + 0.5) * h}px)`;
+      if (visible) { // keep the whole name on the stage (phone: names were cut at the right edge)
+        const lw = l.w || (l.w = l.el.offsetWidth) || 0, x = Math.max(4, Math.min((p.x * 0.5 + 0.5) * w, w - lw - 12));
+        l.el.style.transform = `translate(${x}px, ${(-p.y * 0.5 + 0.5) * h}px)`; }
     }
   }
 
