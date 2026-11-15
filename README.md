@@ -6,7 +6,9 @@ BRASPACE / MoonProof is an educational and engineering prototype for evaluating 
 
 ---
 
-## Cockpit-only canonical entry — release candidate (2026-11-15)
+## Cockpit-only canonical entry — integrated in main, production SHA must be verified (2026-11-15)
+
+**GitHub integration checkpoint, not a production claim:** PR #411 (nine panel controller + cockpit entry), #426 (desktop 75% density) and #452 (first-visit tour) are merged into `main`. The Moon-only immersive overlay may occlude the **Restore panels** control on working WebGL hardware; a focused CSS layer fix and genuine-pointer Chromium regression are proposed in [Moon-only pointer gate](docs/agents/COCKPIT_MOON_ONLY_POINTER_GATE_20261115.md). Gate on exact SHA/EXO-X1 and recheck the deployed Worker before claiming the UI is live.
 
 The product owner has explicitly selected **one primary Cockpit** at `/moonproof/`, with Joel's shared 3D south-pole Moon, the existing Preact/Three.js Artemis demonstration and nine independently collapsible telemetry cards (included in this combined candidate). The former Explore / Teach / Plan task chooser is preserved at `/moonproof/tasks.html` and its deep links continue to work; no other scientific, landing or evidence modules have been deleted. The entry adapter preserves URL query parameters and fragments and does not instantiate a second 3D renderer.
 
