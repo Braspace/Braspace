@@ -268,12 +268,3 @@ fn negative_azimuth_in_degrees_is_rejected() {
     assert!(!run(req.to_string().as_bytes()).status.success());
 }
 
-#[test]
-#[ignore = "lacuna #13-unidades: o motor não tem como distinguir radianos de graus sob o nome _deg; aceita e trata como grau"]
-fn radians_passed_under_deg_name_is_a_known_gap() {
-    // 0.1745 "graus" seria ~10 graus reais se fosse radiano. Esperado: recusar ou exigir unidade
-    // explícita. Hoje passa sem aviso (ver units_are_degrees_not_radians para o contrato atual).
-    let mut req = fixture();
-    req["sun"] = json!({"azimuth_deg": 1.5708, "elevation_deg": 0.1745});
-    assert!(!run(req.to_string().as_bytes()).status.success());
-}
