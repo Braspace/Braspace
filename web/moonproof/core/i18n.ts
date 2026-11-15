@@ -38,7 +38,7 @@ export const dict: Texts = {
     "proof.step": "Step", "proof.window": "Window", "proof.source": "Sources", "proof.src.compare": "Live API (comparison)", "proof.status": "State", "proof.sha": "Series SHA-256",
     "proof.loading": "loading…", "proof.error": "Data could not be loaded: {msg}",
     "terrain.label": "Shaded relief of the lunar south pole from NASA LOLA (400 m)",
-    "terrain.marker": "Site {n}: {name}",
+    "terrain.marker": "{n} {name} (site)",
   },
   "pt-BR": {
     "brand": "moonproof",
@@ -73,7 +73,7 @@ export const dict: Texts = {
     "proof.step": "Passo", "proof.window": "Janela", "proof.source": "Fontes", "proof.src.compare": "API ao vivo (comparação)", "proof.status": "Estado", "proof.sha": "SHA-256 da série",
     "proof.loading": "carregando…", "proof.error": "Não foi possível carregar o dado: {msg}",
     "terrain.label": "Relevo sombreado do polo sul da Lua a partir do LOLA da NASA (400 m)",
-    "terrain.marker": "Local {n}: {name}",
+    "terrain.marker": "{n} {name} (local)",
   },
 };
 

@@ -7,7 +7,7 @@
 .mp-pill.is-round svg{width:20px;height:20px}
 .mp-pill.is-round{width:var(--touch);padding:0;font-size:18px}
 .mp-pill:hover{border-color:rgba(255,255,255,.32)}
-.mp-pill[aria-current="page"],.mp-pill[aria-pressed="true"],.mp-pill.is-primary{background:var(--jade);color:var(--jade-text);border-color:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
+.mp-pill[aria-current="page"],.mp-pill[aria-pressed="true"],.mp-pill[role="tab"][aria-selected="true"],.mp-pill.is-primary{background:var(--jade);color:var(--jade-text);border-color:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
 .mp-pill.is-white{background:var(--pill);color:var(--pill-text);border-color:transparent}
 /* Landing Lab: lilac OUTLINE only; filled only when it is the current screen. */
 .mp-pill.is-sim{border-color:var(--sim);color:var(--sim)}

@@ -83,7 +83,7 @@ export function mountShell({ screen, context = null, onLang, kit = null }: Shell
       pill(t("nav.class"), { cls: "mp-kit" + (kit === "class" ? " is-kit-on" : ""), pressed: st.task === "class", onClick: () => { setState({ task: st.task === "class" ? null : "class" }); render(); } }),
       pill(t("nav.plan"), { cls: "mp-kit" + (kit === "plan" ? " is-kit-on" : ""), pressed: st.task === "plan", onClick: () => { setState({ task: st.task === "plan" ? null : "plan" }); render(); } }),
       helpPill(),
-      pill(t("nav.lang.short"), { cls: "is-round mp-lang", label: t("nav.lang"), onClick: () => { const l = lang() === "en" ? "pt-BR" : "en"; setState({ lang: l }); setLang(l); render(); apply(); onLang && onLang(l); } }),
+      pill(t("nav.lang.short"), { cls: "is-round mp-lang", label: `${t("nav.lang.short")} · ${t("nav.lang")}`, onClick: () => { const l = lang() === "en" ? "pt-BR" : "en"; setState({ lang: l }); setLang(l); render(); apply(); onLang && onLang(l); } }),
     );
     top.replaceChildren(brand, nav, right);
     bottom.setAttribute("aria-label", t("nav.main"));
