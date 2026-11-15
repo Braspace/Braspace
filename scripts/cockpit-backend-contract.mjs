@@ -17,7 +17,7 @@ const ORIGIN = process.env.BRASPACE_COCKPIT_ORIGIN || "";
 const VALID_SCIENCE = new Set(["PRELIMINARY", "SYNTHETIC", "UNVERIFIED_INPUTS", "SIMULATION", "ESTIMATED"]);
 const results = [];
 
-/** Same contract as web/moonproof/core/data.ts api(): {ok, status, data|error}, never throws. */
+/** Preserve HTTP diagnostics for these checks and the cockpit APIResult error fields for runScenario. */
 async function call(path, { method = "GET", body, as = "json", timeoutMs = 30000 } = {}) {
   const headers = { Accept: as === "text" ? "text/html" : "application/json" };
   if (body !== undefined) headers["Content-Type"] = "application/json";
@@ -29,7 +29,8 @@ async function call(path, { method = "GET", body, as = "json", timeoutMs = 30000
     const raw = await r.text();
     let data = raw;
     if (as !== "text" && type.includes("json")) { try { data = JSON.parse(raw); } catch { data = null; } }
-    return { ok: r.ok, status: r.status, type, data, ms: Date.now() - t0, error: r.ok ? undefined : (data?.error?.code || data?.code || r.status), headers: r.headers };
+    const code = typeof data?.code === "string" ? data.code : null;
+    return { ok: r.ok, status: r.status, httpStatus: r.status, offline: !r.ok && r.status >= 500, code, type, data, ms: Date.now() - t0, error: r.ok ? undefined : (data?.error?.code || code || String(r.status)), headers: r.headers };
   } catch (e) { return { ok: false, offline: true, status: 0, error: String(e?.message || e), ms: Date.now() - t0 }; }
 }
 
@@ -149,6 +150,16 @@ await check("site-evaluate: duration over limit → 4xx JSON (not 500)", async (
 await check("site-evaluate: negative battery → 4xx JSON", async () => {
   const r = await call("/api/onboard/site-evaluate", { method: "POST", body: siteEvaluateBody({ siteId: ref?.id || "malapert-massif", startIso: ref?.series.start_utc, hours: 24, power: { ...power, battery_capacity_wh: -1 }, maxBlackoutH: 24 }) });
   assert.ok(r.status >= 400 && r.status < 500, `status ${r.status}`); return `${r.status} ${r.error}`;
+});
+await check("site-evaluate: omitted load_w → 400 INVALID_JSON, not an assumed zero", async () => {
+  const body = siteEvaluateBody({ siteId: ref?.id || "malapert-massif", startIso: ref?.series.start_utc || "2026-12-01T00:00:00Z", hours: 24, power: { ...power }, maxBlackoutH: 24 });
+  delete body.power.load_w;
+  const r = await call("/api/onboard/site-evaluate", { method: "POST", body });
+  assert.equal(r.status, 400); assert.equal(r.code, "INVALID_JSON");
+});
+if (ref) await check(`${ref.id}: sky 0.5 h off grid → 422 GRID_NOT_ALIGNED, never rounded`, async () => {
+  const r = await call(`/api/sites/${encodeURIComponent(ref.id)}/sky?start=${encodeURIComponent(ref.series.start_utc)}&hours=0.5`);
+  assert.equal(r.status, 422); assert.equal(r.code, "GRID_NOT_ALIGNED");
 });
 await check("evaluate: samples with a non-boolean → 4xx JSON", async () => {
   const b = evaluateBody({ siteId: "synthetic-demo-a", startIso: "2026-12-01T00:00:00Z", power, maxBlackoutH: 24, samples: [{ sun_visible: true, earth_visible: true }] });
