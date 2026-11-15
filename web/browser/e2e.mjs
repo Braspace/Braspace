@@ -57,7 +57,9 @@ try{
  const onboardResponse=await desktop.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});
  assert(onboardResponse?.status()===200,"onboard cockpit HTTP");
  const tabs=desktop.locator("nav.tabs button[data-tab]");
- assert(await tabs.count()===13,"onboard cockpit missing required tabs");
+ const tabIds=await tabs.evaluateAll(els=>els.map(el=>el.dataset.tab));
+ const requiredTabs=["visao","entrada","geometria","horizonte","janelas","navegacao","energia","vida","replan","visual","sens","historico","lanc","status"];
+ assert(tabIds.length===requiredTabs.length&&requiredTabs.every(id=>tabIds.includes(id)),"onboard cockpit missing required tabs: "+tabIds.join(","));
  await desktop.waitForFunction(()=>{
   const text=document.querySelector("#badges")?.textContent||"";
   return text.includes("UNVERIFIED_INPUTS")&&text.includes("No flight recommendation");

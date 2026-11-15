@@ -4,7 +4,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
-const mod=await import(process.env.BRASPACE_WORKER_UNDER_TEST?pathToFileURL(resolve(process.env.BRASPACE_WORKER_UNDER_TEST)).href:new URL('./moonproof-worker.mjs',import.meta.url).href);
+const mod=await import(process.env.BRASPACE_WORKER_UNDER_TEST?pathToFileURL(resolve(process.env.BRASPACE_WORKER_UNDER_TEST)).href:new URL('./moonproof-proxy.mjs',import.meta.url).href);
 const handle=mod.handleAPI;
 const origin='https://braspace-moonproof.example.workers.dev';
 const req=(path,opts)=>new Request(origin+path,opts);

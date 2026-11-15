@@ -1,7 +1,7 @@
 # Example config for the MoonProof Worker (static web/ + same-origin API proxy).
 # Copy to wrangler.toml in this directory and set `name` to the Worker that serves
 # https://braspace-moonproof.<account>.workers.dev. No secrets are needed: the upstream
-# API origin is pinned in moonproof-worker.mjs.
+# API origin is pinned in moonproof-proxy.mjs.
 name = "braspace-moonproof"
 main = "moonproof-worker.mjs"
 compatibility_date = "2026-11-01"

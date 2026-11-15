@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import worker, { ROUTES, KIND_TYPES, DEFAULT_UPSTREAM, handleAPI, handleMoonAPI } from "./moonproof-worker.mjs";
+import worker, { ROUTES, KIND_TYPES, DEFAULT_UPSTREAM, handleAPI, handleMoonAPI } from "./moonproof-proxy.mjs";
 
 const spec = (()=>{try {return JSON.parse(readFileSync(process.env.BRASPACE_OPENAPI_SPEC || new URL("../../api/openapi.json", import.meta.url),"utf8"));} catch (e){if(process.env.BRASPACE_OPENAPI_SPEC || e.code!=="ENOENT")throw e;return JSON.parse(readFileSync(new URL("./openapi-operations.json",import.meta.url),"utf8"));}})();
 
@@ -67,7 +67,7 @@ test("upstream is pinned, credentials stripped, Go status and errors preserved",
     const r = await handleAPI(new Request(origin + "/api/compare", { method: "POST", body: JSON.stringify(body),
       headers: { "Content-Type": "application/json", Authorization: "Bearer t", Cookie: "a=1", Origin: origin, "CF-Connecting-IP": "1.2.3.4" } }));
     assert.equal(calls[0].url, DEFAULT_UPSTREAM + "/api/compare");
-    assert.equal(calls[0].opts.redirect, "manual"); // workerd rejects "error"; 3xx is refused by permittedResponse
+    assert.equal(calls[0].opts.redirect, "manual");
     assert.deepEqual(JSON.parse(new TextDecoder().decode(calls[0].opts.body)), body);
     for (const h of ["Authorization", "Cookie", "Origin", "CF-Connecting-IP"]) assert.equal(calls[0].opts.headers.get(h), null);
     assert.equal(r.status, 422); assert.deepEqual(await r.json(), { code: "OUTSIDE_COVERAGE" });

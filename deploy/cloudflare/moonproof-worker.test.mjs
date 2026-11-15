@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import worker,{handleMoonAPI,routes} from './moonproof-worker.mjs';
+import worker,{handleMoonAPI,routes} from './moonproof-proxy.mjs';
 
 const base='https://moonproof.example.test';
 const upstream='https://braspace-api.srv1898743.hstgr.cloud';

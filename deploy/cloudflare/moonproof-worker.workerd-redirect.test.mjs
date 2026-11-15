@@ -5,7 +5,7 @@
 // so the existing suites passed. This stub reproduces the workerd rule.
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {handleAPI} from "./moonproof-worker.mjs";
+import {handleAPI} from "./moonproof-proxy.mjs";
 
 function workerdFetch(respond) {
   return async (url, init = {}) => {

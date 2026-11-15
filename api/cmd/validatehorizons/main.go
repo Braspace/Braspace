@@ -1,5 +1,5 @@
 // Command validatehorizons is an independent check: it compares SPICE Sun/Earth azimuth-elevation from
-// three_site_pipeline.py output against JPL Horizons topocentric AZ-EL (quantity 4) for the same lunar
+// threesitepipeline output against JPL Horizons topocentric AZ-EL (quantity 4) for the same lunar
 // site and UTC epochs. Go port of science/validate_vs_horizons.py (same stdout and report bytes).
 //
 // Horizons is queried over its public API; nothing is downloaded except text.
