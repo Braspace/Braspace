@@ -86,6 +86,8 @@ COPY scripts/ ./scripts/
 COPY science/ ./science/
 COPY data/ ./data/
 COPY web/ ./web/
+# science/tests/test_render_polar_map.py checks the archived polar map product (454f719).
+COPY archive/web-legacy/assets/ ./archive/web-legacy/assets/
 COPY api/db/ ./api/db/
 COPY compose.yaml ./
 COPY api/sitedata/ ./api/sitedata/
