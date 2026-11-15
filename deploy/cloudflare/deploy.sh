@@ -18,4 +18,12 @@ cfg="$root/web/config.js"; bak=$(mktemp); cp "$cfg" "$bak"
 trap 'cp -f "$bak" "$cfg"; rm -f "$bak"' EXIT
 printf 'const BRASPACE_COMMIT = "%s";\n' "$sha" >> "$cfg"
 npx -y wrangler@4 deploy --message "main $short${note:+ ($note)}"
-echo "deployed $sha; rollback: npx wrangler rollback ${prev:-<previous version id>}"
+# Post-deploy smoke: a new version can take a moment to serve everywhere (seen 15/11: brief /api 404s).
+origin=${MOONPROOF_ORIGIN:-https://braspace-moonproof.almeida-me.workers.dev}
+ok=0
+for i in $(seq 1 30); do
+  if curl -fsS --max-time 10 "$origin/api/health" >/dev/null 2>&1 && curl -fsS --max-time 10 "$origin/config.js" 2>/dev/null | grep -q "$sha"; then ok=1; break; fi
+  sleep 4
+done
+[ "$ok" = 1 ] || { echo "deploy.sh: smoke FAILED: $origin/api/health or config.js ($short) not served after 2 min; rollback: npx wrangler rollback ${prev:-<previous version id>}" >&2; exit 2; }
+echo "deployed $sha; smoke ok ($origin/api/health 200, config.js $short); rollback: npx wrangler rollback ${prev:-<previous version id>}"
