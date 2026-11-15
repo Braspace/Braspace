@@ -2,6 +2,7 @@
 import { t, setLang, pickLang, apply, lang } from "./i18n.js";
 import { getState, setState, hrefTo, LAYERS } from "./state.js";
 import { sealEl } from "./layers.js";
+import { icon as svgIcon, ICON_NAMES } from "./icons.js";
 
 export const SCREENS = [
   { id: "explore", page: "explore.html", key: "nav.explore" },
@@ -18,17 +19,10 @@ const ALIAS = { mission: "explore" };
 /** Which nav pill is current for a page's screen id ("" = none). */
 export function currentNav(screen) { const id = ALIAS[screen] || screen; return SCREENS.some(s => s.id === id) ? id : ""; }
 
-// Line icons (24 px grid, 1.7 stroke) as in the design's nav pills.
-const P = {
-  explore: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>',
-  compare: '<path d="M5 20V9M12 20V4M19 20v-7"/>',
-  recover: '<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4M12 8v4l3 2"/>',
-  cockpit: '<path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/>',
-  evidence: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>',
-  debrief: '<path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/>',
-  landing: '<path d="M12 3l3 7H9z"/><path d="M9 10l-3 9M15 10l3 9M7 19h3M14 19h3"/>',
-};
-const icon = id => P[id] ? `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[id]}</svg>` : "";
+// Nav icons come from the shared set (core/icons.js); debrief has no shared icon yet.
+const ICON_OF = { explore: "explore", compare: "compare", recover: "replan", cockpit: "cockpit", evidence: "evidence", landing: "lab" };
+const LOCAL = { debrief: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>' };
+const icon = id => { const n = ICON_OF[id] || id; return ICON_NAMES.includes(n) ? svgIcon(n) : (LOCAL[id] || ""); };
 
 function pill(text, { href, current, cls = "", onClick, pressed, ico, label } = {}) {
   const el = document.createElement(href ? "a" : "button");
@@ -54,6 +48,19 @@ export function mountShell({ screen, context = null, onLang } = {}) {
   const ctx = document.createElement("div"); ctx.className = "mp-context"; ctx.setAttribute("role", "status");
   const bottom = document.createElement("nav"); bottom.className = "mp-bottomnav";
   document.body.prepend(top, ctx); document.body.append(bottom);
+  // Landmarks: every screen gets one <main> region and one <h1> (visually hidden: the design shows no
+  // page title on map screens). Elements are not moved, so core/terrain.js "body > *" framing still works.
+  if (!document.querySelector("main,[role=main]")) {
+    const m = ["#terrain", "#left", "#bottom", "#panel"].map(s => document.querySelector(s)).find(Boolean);
+    if (m) m.setAttribute("role", "main");
+  }
+  if (!document.querySelector("h1")) {
+    const h = document.createElement("h1"); h.className = "sr-only"; h.dataset.mpTitle = "";
+    h.textContent = String(document.title || "moonproof").replace(/^moonproof\s*·\s*/i, ""); document.body.append(h);
+    // A screen that renders its own <h1> later (Evidence, Class kit) keeps only its own.
+    if (globalThis.MutationObserver) { const mo = new MutationObserver(() => { if (document.querySelectorAll("h1").length > 1) { h.remove(); mo.disconnect(); } });
+      mo.observe(document.body, { childList: true, subtree: true }); }
+  }
   let cur = context;
   const active = currentNav(screen);
   function render() {
@@ -98,7 +105,7 @@ export function mountShell({ screen, context = null, onLang } = {}) {
 
 /** "?" — legend of the seals (each seal's meaning comes from i18n, nothing invented). */
 function helpPill() {
-  const b = pill("?", { cls: "is-round mp-help" }); b.setAttribute("aria-label", t("nav.help")); b.setAttribute("aria-expanded", "false");
+  const b = pill("", { cls: "is-round mp-help", ico: "help" }); b.setAttribute("aria-label", t("nav.help")); b.setAttribute("aria-expanded", "false");
   b.onclick = () => {
     let pop = document.getElementById("mp-help"); const open = !pop;
     if (pop) pop.remove();

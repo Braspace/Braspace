@@ -46,10 +46,12 @@ try{
  await desktop.locator("#tabs button[data-view='compare']").click();
  await desktop.locator("#tabs button[data-view='recover']").click();
  await desktop.locator("#tabs button[data-view='evidence']").click();
- assert((await desktop.locator("#panel-body").innerText()).length>60,"evidence panel is empty");
+ // The panel first shows a "Loading provenance…" placeholder and fills in asynchronously: wait for the real content.
+ await desktop.waitForFunction(()=>{const ev=document.querySelector("#ev");return !!ev&&!ev.textContent.includes("Loading provenance")&&ev.textContent.trim().length>200;},null,{timeout:30000});
+ assert((await desktop.locator("#panel-body").innerText()).length>260,"evidence panel is empty");
  await desktop.screenshot({path:path.join(out,"polar-lab-desktop.png"),fullPage:true});
  await desktop.getByRole("link",{name:"Mission computer"}).click();
- assert(desktop.url().endsWith("/index.html"),"classic UI navigation failed");
+ assert(desktop.url().endsWith("/classic.html"),"classic UI navigation failed");
  assert((await desktop.locator("body").innerText()).includes("UNVERIFIED INPUTS"),"classic scientific disclaimer absent");
  await desktop.screenshot({path:path.join(out,"moonproof-classic-desktop.png"),fullPage:true});
  const onboardResponse=await desktop.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});
@@ -109,7 +111,9 @@ try{
  const mobileResponse=await mobile.goto(base+"/lab.html",{waitUntil:"domcontentloaded",timeout:30000});
  assert(mobileResponse?.status()===200,"mobile lab status");
  await mobile.locator("#tabs button[data-view='evidence']").click();
- assert((await mobile.locator("#panel-body").innerText()).length>60,"mobile evidence empty");
+ // Same as desktop: wait for the provenance to load instead of racing the "Loading provenance…" placeholder.
+ await mobile.waitForFunction(()=>{const ev=document.querySelector("#ev");return !!ev&&!ev.textContent.includes("Loading provenance")&&ev.textContent.trim().length>200;},null,{timeout:30000});
+ assert((await mobile.locator("#panel-body").innerText()).length>260,"mobile evidence empty");
  await mobile.screenshot({path:path.join(out,"polar-lab-mobile.png"),fullPage:true});
  const overflow=await mobile.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
  assert(overflow.width<=overflow.viewport+4,"mobile horizontal overflow: "+JSON.stringify(overflow));

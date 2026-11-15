@@ -24,7 +24,7 @@
 .mc-table th{text-align:left;font-weight:600;color:var(--text-2);padding:5px 0;font-size:13px}
 .mc-table td,.mc-table thead th{text-align:right;font-weight:800;padding:5px 0 5px 13px;width:56px}
 .mc-table td+td{color:var(--text-2);font-weight:600}
-.mc-table td.is-worse{color:var(--fail)}.mc-table td.is-worse::after{content:"\00a0✕";font-size:10px}
+.mc-table td.is-worse{color:var(--fail-text)}.mc-table td.is-worse::after{content:"\00a0✕";font-size:10px}
 .mc-now-big{font-size:34px;margin:8px 0 0}
 .mc-compass{align-self:flex-end;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,#4C9BFF 0 52%,#1d3f73 53% 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;flex:none}
 .mc-compass small{font-size:10px;font-weight:700;letter-spacing:.08em}.mc-compass b{font-size:20px}
@@ -80,7 +80,7 @@
 /* Fidelity audit (items 9, 12, 14). */
 @media (min-width:1301px){.mc-left,.mc-right{top:150px}.mc-right{width:300px}}
 .mc-earth .mp-stat-core{background:rgba(255,255,255,.14)}
-.mc-dock{bottom:28px}
+@media (min-width:701px){.mc-dock{bottom:28px}}
 .mc-sel{height:48px;font:700 15px var(--font)}
 /* Design A: two 210px stat circles overflow the 330px column (row margin -8 -20 -8 -24).
    The column scrolls, so it is widened by transparent padding instead of clipping them. */
@@ -97,6 +97,80 @@
   .mc-circles .mp-sat span{font-size:8.5px}
 }
 .mc-vs{display:block;width:100%;max-width:none!important;margin-top:10px}
-/* UX audit: on phones the zoom/site dock sat on top of the sheet; it goes under the context bar. */
-@media (max-width:700px){.mc-dock{top:128px;bottom:auto;right:12px;left:auto;transform:none}}
 .mc-circles .mp-sat span{font-size:10px}
+/* UX audit: .mc-right also carries [data-mp-sheet], so the core turned it into a second fixed sheet on top
+   of .mc-panels (the numbers card covered the stat circles). Inside the Mission sheet it stays in flow. */
+@media (max-width:700px){
+  .mc-panels [data-mp-sheet]{position:static!important;left:auto!important;right:auto!important;bottom:auto!important;top:auto!important;width:auto!important;height:auto!important;max-height:none!important;overflow:visible;background:transparent;border:0;border-radius:0}
+  .mc-panels [data-mp-sheet]>.mp-sheet-grip{display:none!important}
+  .mc-circles{overflow:hidden}
+}
+@media (max-width:700px){
+  .mc-dock{top:134px;bottom:auto;right:12px;left:auto;transform:none}
+  .mc-circles{display:grid;grid-template-columns:1fr 1fr;margin:0;gap:0;justify-items:center;padding:4px 0}
+  .mc-circles .mp-stat{width:118px;height:118px;margin:26px 0!important}
+  .mc-circles .mp-stat::before{inset:0}
+  .mc-circles .mp-stat-core{inset:16px}
+  .mc-circles .mp-stat-core .mp-num{font-size:22px}
+}
+/* Geometry pass against the Main board (1440x900). Desktop-wide rules first, then the 1301+ column grid. */
+.mc-num-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mc-num-head h3{margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em;min-width:0}
+.mc-numbers select.mc-win{min-height:26px;height:26px;width:87px;max-width:none;padding:0 10px;font-size:12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--line);flex:none}
+.mc-num-sub{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.mc-numbers h4{margin:0;color:var(--text-2)}
+.mc-num-sub h4 strong{color:#fff;font-size:15px;font-weight:700}.mc-num-sub h4 span{color:var(--jade);font-size:12.5px;font-weight:600}
+.mc-numbers select.mc-vs{width:auto;max-width:96px;min-height:24px;height:24px;margin:0;padding:0 4px;border:0;background:transparent;color:var(--text-2);font-size:12px;appearance:auto}
+.mc-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.mc-table th{font-size:15px;color:var(--text)}
+.mc-table tbody th,.mc-table tbody td{height:37px;padding-top:0;padding-bottom:0}
+.mc-table td{font-size:18px}.mc-table td+td{font-size:15px}
+.mc-prov{display:flex;align-items:center;gap:8px;margin:14px 0 0;min-width:0}
+.mc-prov span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mc-now{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px}
+.mc-now-head{display:flex;align-items:center;gap:8px}.mc-now-head h3{margin:0}
+.mc-now-big{font-size:28px;line-height:1.1;margin:2px 0 0}
+.mc-now-sub{margin:0}
+.mc-now-ico{width:62px;height:62px;border-radius:50%;border:2px dashed var(--sun);color:var(--sun);display:grid;place-items:center;flex:none}
+@media (min-width:701px){
+  /* Tabs: visual 30px, touch area 46px through ::after. */
+  .mc-tabs{gap:6px}
+  .mc-tabs .mp-pill{position:relative;min-height:30px;height:30px;padding:0 12px;font-size:13.5px;font-weight:600}
+  .mc-tabs .mp-pill::after{content:"";position:absolute;inset:-8px -3px}
+  .mc-hint{padding:0 16px;height:36px;display:flex;align-items:center;font-size:12.5px;white-space:nowrap}
+  .mc-dock{gap:16px}
+  .mc-sel{width:172px;max-width:172px}
+}
+@media (min-width:1301px){
+  .mc-left{gap:12px}
+  .mp-pill.is-white.mc-battery{width:fit-content;max-width:100%;height:40px;min-height:40px;padding:0 14px;font-size:12.5px;white-space:nowrap;line-height:1}
+  .mc-left .mp-layer-answer{font-size:15px;line-height:1.3}
+  .mc-circles{margin:-8px -70px -8px -24px}
+  /* The 142px halo is the element itself (border + glass), so its box is measurable; satellites sit on it. */
+  .mc-circles .mp-stat{width:142px;height:142px;margin:34px!important;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+  .mc-circles .mp-stat::before{display:none}
+  .mc-circles .mp-stat-core{inset:25px}
+  .mc-right{width:342px;gap:19px}
+  .mc-numbers{padding:20px}
+  .mc-now{padding:18px 20px}
+  .mc-compass{width:100px;height:100px;margin:12px 92px 0 0;background:var(--earth);color:#04101f;box-shadow:0 0 0 7px rgba(76,155,255,.28)}
+  .mc-compass small{font-size:11px}.mc-compass b{font-size:24px;line-height:1}
+}
+.mc-compass{width:100px;height:100px}
+@media (min-width:1301px){
+  /* Context bar CTA: 30px visual, 46px touch area. */
+  .mp-context>a.mp-pill{position:relative;min-height:30px;height:30px;padding:0 16px;font-size:13px}
+  .mp-context>a.mp-pill::after{content:"";position:absolute;inset:-8px -3px}
+}
+/* 701-1300: the 124px circles plus the core 31px margins overflowed the 270px column (satellites overlapped, Earth clipped).
+   Two cells of 150px = 300px: halo 96px + 27px margin each side. */
+@media (min-width:701px) and (max-width:1300px){
+  .mc-left{width:300px}
+  .mc-circles{gap:0;padding:0}
+  .mc-circles .mp-stat{width:96px;height:96px;margin:27px!important;flex:none}
+  .mc-circles .mp-stat::before{inset:0}
+  .mc-circles .mp-stat-core{inset:18px}
+  .mc-circles .mp-stat-core .mp-num{font-size:16px}.mc-circles .mp-stat-core small{font-size:9px}
+  .mc-circles .mp-sat{width:40px;height:40px;margin:-20px 0 0 -20px}
+  .mc-circles .mp-sat b{font-size:10.5px}.mc-circles .mp-sat span{font-size:8px}
+}

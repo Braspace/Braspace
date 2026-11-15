@@ -9,7 +9,7 @@ import { createLayerCard, sealEl } from "../core/layers.js";
 import { t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { southStereoInverse, southStereoForward } from "../../lab/coords.js";
-import { coordText, parseCoord, pxToStereo, stereoToPx, pgdaAt, rampColor, rampCss, horizonPoints, elRange, fmtVal } from "./mission-calc.js";
+import { coordText, parseCoord, pgdaAt, rampColor, rampCss, horizonPoints, elRange, fmtVal } from "./mission-calc.js";
 import "./mission-i18n.js";
 
 const DAY = 24, $ = id => document.getElementById(id);
@@ -69,25 +69,29 @@ async function paint() {
   const W = tc.clientWidth, H = tc.clientHeight, dpr = devicePixelRatio || 1;
   overlay.width = W * dpr; overlay.height = H * dpr;
   const g = overlay.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-  const src = await layerImage(layer), v = terrain.view, mpp = v.span / Math.min(W, H);
-  const [x0, y0] = stereoToPx(grid.x0, grid.y0 + (grid.ny - 1) * grid.dx, v, W, H);
-  g.imageSmoothingEnabled = false; g.drawImage(src, x0, y0, grid.nx * grid.dx / mpp, grid.ny * grid.dx / mpp);
-  if (point) { const [px, py] = stereoToPx(point.x, point.y, v, W, H); pin.hidden = false; pin.style.left = px + "px"; pin.style.top = py + "px"; } else pin.hidden = true;
+  // Same projection as the relief under it (core/terrain.js), so the layer lines up with the craters.
+  const src = await layerImage(layer), mpp = terrain.mpp || terrain.view.span / Math.min(W, H);
+  const [x0, y0] = terrain.toPx(grid.x0, grid.y0 + (grid.ny - 1) * grid.dx), w = grid.nx * grid.dx / mpp, h = grid.ny * grid.dx / mpp;
+  g.imageSmoothingEnabled = false; g.drawImage(src, x0, y0, w, h);
+  // Soft edge where the data ends (the layer only covers its grid; no data is invented past it).
+  g.globalCompositeOperation = "destination-out"; const f = Math.min(48, w / 6, h / 6);
+  for (const [ax, ay, bx, by, rx, ry, rw, rh] of [[x0, 0, x0 + f, 0, x0, y0, f, h], [x0 + w, 0, x0 + w - f, 0, x0 + w - f, y0, f, h], [0, y0, 0, y0 + f, x0, y0, w, f], [0, y0 + h, 0, y0 + h - f, x0, y0 + h - f, w, f]]) {
+    const gr = g.createLinearGradient(ax, ay, bx, by); gr.addColorStop(0, "rgba(0,0,0,1)"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(rx, ry, rw, rh); }
+  g.globalCompositeOperation = "source-over";
+  if (point) { const [px, py] = terrain.toPx(point.x, point.y); pin.hidden = false; pin.style.left = px + "px"; pin.style.top = py + "px"; } else pin.hidden = true;
 }
 
 // ---- free area framing: chosen site/point between the side panels
 function frame() {
   const s = site(), tx = point ? point.x : s.stereo_x_m, ty = point ? point.y : s.stereo_y_m;
   if (!point) terrain.select(s.id);
-  const W = innerWidth, Hh = innerHeight, mpp = terrain.view.span / Math.min(W, Hh);
-  if (W > 700) { const L = $("left").getBoundingClientRect().right, R = $("right").getBoundingClientRect().left; terrain.view.cx = tx - ((L + R) / 2 - W / 2) * mpp; terrain.view.cy = ty; }
-  else { terrain.view.cx = tx; terrain.view.cy = ty; } // phone: core/terrain.js already centres the point in the free area above the sheet
+  terrain.view.cx = tx; terrain.view.cy = ty; // core/terrain.js centres it in the free area between the panels
   terrain.redraw(); paint();
 }
 const site = () => doc.sites.find(s => s.id === getState().site);
 
 overlay.addEventListener("click", e => {
-  const r = tc.getBoundingClientRect(), [x, y] = pxToStereo(e.clientX - r.left, e.clientY - r.top, terrain.view, r.width, r.height);
+  const r = tc.getBoundingClientRect(), [x, y] = terrain.fromPx(e.clientX - r.left, e.clientY - r.top);
   if (!grid.contains(x, y)) return; const { lat, lon } = southStereoInverse(x, y); point = { x, y, lat, lon }; draw();
 });
 
@@ -141,12 +145,13 @@ function legend() {
     sc.append(el("span", null, fmtVal(min, fmtNum, nd(), d)), el("span", null, fmtVal(max, fmtNum, nd(), d))); c.append(sc); }
   c.append(el("p", "mp-label", t(L.legend)));
   const src = L.id === "altitude" || L.id === "slope" ? `${grid.h.source} · ${grid.h.method}` : L.id === "natural" ? "NASA SVS 4720 · lroc_color_2k.jpg" : grid.h.layers["pgda_" + L.id].product + " · " + grid.h.layers["pgda_" + L.id].resolution_m + " m";
-  c.append(el("p", "mp-label ex-src", src));
+  // The provenance stays one tap away (the design legend is a compact card).
+  const dt = el("details", "ex-srcbox"); dt.append(el("summary", "mp-label", t("proof.source")), el("p", "mp-label ex-src", src)); c.append(dt);
   return c;
 }
 
 function drawRight(s, m) {
-  const right = $("right"); right.replaceChildren(card(s, m), fromHere(s, m));
+  const right = $("right"); right.replaceChildren(card(s, m), fromHere(s, m, DESK_HORIZON));
   $("sheet-body").replaceChildren(card(s, m, true), fromHere(s, m));
 }
 
@@ -164,7 +169,8 @@ function card(s, m, mobile) {
   const height = point ? sourced(point.outside ? null : grid.height(X, Y), { unit: "m", status: doc.status }) : sourced(s.site_height_m, { unit: "m", status: doc.status });
   const sl = sourced(point?.outside ? null : grid.normal(X, Y).slopeDeg, { unit: "°", status: "ESTIMATE" });
   const v = (x, d = 0, u = "") => fmtVal(x, fmtNum, nd(), d, u);
-  const lt = el("h4", "mp-label"); lt.append(t("ex.light") + " · ", el("span", "ex-jade", t("ctx.days", { n: fmtNum(hours() / DAY) })));
+  const lt = el("h4", "mp-label"); // AUD-03: a free point only has the PGDA long-term mean, not the selected mission window.
+  lt.append(t("ex.light") + " · ", el("span", "ex-jade", point ? t("ex.pgdaLong") : t("ctx.days", { n: fmtNum(hours() / DAY) })));
   c.append(lt);
   if (point) c.append(rows([[t("ex.pgdaSun"), v(ps, 0, "%"), ps == null ? "N/D" : sealFor(doc.status)], [t("ex.pgdaEarth"), v(pe, 0, "%"), pe == null ? "N/D" : sealFor(doc.status)], [t("ex.night"), nd(), "N/D"]]));
   else c.append(rows([[t("ex.sunVis"), v(m.sunPct.value, 0, "%"), m.sunPct.seal], [t("ex.earthVis"), v(m.earthPct.value, 0, "%"), m.earthPct.seal], [t("ex.night"), v(m.longestDarkH.value, 0, "\u00a0h"), m.longestDarkH.seal]]));
@@ -181,7 +187,8 @@ function card(s, m, mobile) {
   return c;
 }
 
-function fromHere(s, m) {
+const DESK_HORIZON = [310, 70]; // desktop card: the chart is a 310 x 88 strip (70 + 18 for the N/E/S/W labels)
+function fromHere(s, m, size = []) {
   const g = point ? null : m.series.at(m.t0), hz = point ? null : m.series.horizon;
   const status = point ? null : doc.status;
   let answer, why;
@@ -189,7 +196,7 @@ function fromHere(s, m) {
   else {
     const fmtM = x => t(x >= 0 ? "ex.above" : "ex.below", { n: fmtVal(Math.abs(x), fmtNum, nd(), 1, "°") });
     answer = t("ex.from.ans", { s: fmtM(g.sunMargin), e: fmtM(g.earthMargin) });
-    why = horizonSvg(hz, g);
+    why = horizonSvg(hz, g, ...size);
   }
   const c = createLayerCard({ id: "card-horizon", title: t("ex.from"), status: status || "NO_DATA", answer, why: why || undefined,
     layer: getState().layer === "answer" ? "why" : getState().layer, onLayer: l => setState({ layer: l }),
@@ -198,11 +205,14 @@ function fromHere(s, m) {
   const acts = el("div", "ex-actions");
   const a1 = el("a", "mp-pill is-primary", t("ex.compare")); a1.href = hrefTo("compare.html");
   const a2 = el("a", "mp-pill is-sim", t("ex.land")); a2.href = hrefTo("landing.html");
+  // AUD-02: a free point has no hourly series; Compare/Land would silently use the previous site's. Disable them.
+  if (point) for (const a of [a1, a2]) { a.removeAttribute("href"); a.setAttribute("aria-disabled", "true"); a.classList.add("is-disabled"); a.title = t("ex.point.noseries"); }
   acts.append(a1, a2); c.append(acts);
+  if (point) c.append(el("p", "mp-label", t("ex.point.noseries")));
   return c;
 }
-export function horizonSvg(hz, g) {
-  const W = 320, Hh = 110, r = elRange(hz, [g.sunEl, g.earthEl]);
+export function horizonSvg(hz, g, W = 320, Hh = 110) {
+  const r = elRange(hz, [g.sunEl, g.earthEl]);
   const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
   svg.setAttribute("viewBox", `0 0 ${W} ${Hh + 18}`); svg.setAttribute("class", "ex-horizon"); svg.setAttribute("role", "img");
   const mk = (tag, at) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(at)) e.setAttribute(k, v); svg.append(e); return e; };
@@ -217,26 +227,27 @@ export function horizonSvg(hz, g) {
 
 function dock(s) {
   const d = $("dock"), i = doc.sites.indexOf(s), n = doc.sites.length;
-  const btn = (txt, label, fn) => { const b = el("button", "mp-pill", txt); b.type = "button"; b.setAttribute("aria-label", label); b.onclick = fn; return b; };
+  const btn = (txt, label, fn) => { const b = el("button", "mp-pill ex-round", txt); b.type = "button"; b.setAttribute("aria-label", label); b.onclick = fn; return b; };
   const sel = el("select", "mp-pill is-primary ex-sel"); sel.setAttribute("aria-label", t("ctx.site"));
   for (const x of doc.sites) sel.append(new Option(`${t("ctx.site")} ${x.n} · ${x.name}`, x.id, false, x.id === s.id));
   sel.onchange = () => { point = null; setState({ site: sel.value }); };
   const go = id => { point = null; setState({ site: id }); };
+  // Coordinates pill: shows the selected site/point and is also the "type a coordinate" field (Enter creates the point).
+  const px = point ? point : s;
   const form = el("form", "ex-coord"); const lab = el("label", "sr-only", t("ex.coord")); const inp = el("input", "mp-coord"); inp.id = "coord"; lab.htmlFor = "coord";
-  inp.placeholder = t("ex.coord.ph"); inp.value = point ? `${fmtNum(point.lat, 3)}; ${fmtNum(((point.lon % 360) + 360) % 360, 3)}` : "";
-  const sub = el("button", "mp-pill", t("ex.go")); sub.type = "submit";
-  form.append(lab, inp, sub);
+  inp.placeholder = t("ex.coord.ph"); inp.title = t("ex.coord.ph"); inp.value = coordText(px.lat, px.lon, fmtNum, nd()); inp.setAttribute("enterkeyhint", "go"); inp.autocomplete = "off";
+  inp.onfocus = () => inp.select();
+  form.append(lab, inp);
   form.onsubmit = e => { e.preventDefault(); const c = parseCoord(inp.value.replace(/;/g, " ").replace(/(\d),(\d)/g, "$1.$2")); if (!c) { inp.setCustomValidity(t("ex.coord.bad")); inp.reportValidity(); return; } inp.setCustomValidity(""); pointAt(c.lat, c.lon); draw(); };
   const row = el("div", "ex-dock-row");
-  row.append(btn("‹", t("mc.prev"), () => go(doc.sites[(i + n - 1) % n].id)), sel, btn("›", t("mc.next"), () => go(doc.sites[(i + 1) % n].id)),
-    btn("−", t("mc.zout"), () => { terrain.zoom(0.7); frame(); }), btn("+", t("mc.zin"), () => { terrain.zoom(1.4); frame(); }), form);
-  // Scale bar (a round length that fits ~90 px at the current zoom) and the readout of the selected point.
+  // Scale bar: a round length that fits ~70 px at the current zoom.
   const nice = m => { const p = 10 ** Math.floor(Math.log10(m)); return [1, 2, 5, 10].map(k => k * p).filter(v => v <= m).pop(); };
-  const mpp = terrain.mpp, len = mpp ? nice(mpp * 90) : 0, info = el("div", "ex-dock-row ex-readout");
+  const mpp = terrain.mpp, len = mpp ? nice(mpp * 70) : 0;
   if (len) { const sc = el("span", "mp-pill ex-scalebar"); const bar = el("i"); bar.style.width = Math.round(len / mpp) + "px";
-    sc.append(bar, len >= 1000 ? `${fmtNum(len / 1000)} km` : `${fmtNum(len)} m`); info.append(sc); }
-  const px = point ? point : s; info.append(el("span", "mp-pill mp-coord ex-readout-xy", coordText(px.lat, px.lon, fmtNum, nd())));
-  d.replaceChildren(el("p", "mc-hint", t("ex.tap")), row, info);
+    sc.append(bar, len >= 1000 ? `${fmtNum(len / 1000)} km` : `${fmtNum(len)} m`); row.append(sc); }
+  row.append(btn("‹", t("mc.prev"), () => go(doc.sites[(i + n - 1) % n].id)), btn("›", t("mc.next"), () => go(doc.sites[(i + 1) % n].id)), sel,
+    btn("−", t("mc.zout"), () => { terrain.zoom(0.7); frame(); }), btn("+", t("mc.zin"), () => { terrain.zoom(1.4); frame(); }), form);
+  d.replaceChildren(el("p", "mc-hint", t("ex.tap")), row);
 }
 function chips() {
   const c = $("chips"); c.replaceChildren();

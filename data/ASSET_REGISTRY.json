@@ -34,7 +34,10 @@
       "file_url": "https://svs.gsfc.nasa.gov/vis/a010000/a014900/a014959/moon_small.glb",
       "file_id": "moon_small.glb",
       "format": "glTF 2.0 binary (GLB), single textured sphere mesh, color map only, no topography",
-      "dimensions_px": {"width": 4096, "height": 4096},
+      "dimensions_px": {
+        "width": 4096,
+        "height": 4096
+      },
       "bytes": 13799876,
       "sha256": "12d3b0bb7fe214903f51447d1bc61710f442e92a11c703fcaca6d4e7ff8e67d4",
       "author_credit": "NASA's Goddard Space Flight Center; NASA SVS 14959 (producer Dan Gallagher); made with LRO imagery; color source CGI Moon Kit (SVS 4720)",
@@ -315,6 +318,78 @@
       "redistribution_status": "review_required",
       "scientific_role": "NOT_APPLICABLE_AT_POLE: covers latitudes within +/-60 deg only",
       "review_note": "Proof: the USGS page abstract says 'covering latitudes within ±60°' and the PGDA page https://pgda.gsfc.nasa.gov/products/54 says 'Global maps (for latitudes between 60 deg South and 60 deg North)'. Do not use for the south pole."
+    },
+    {
+      "asset_id": "braspace-terrain-shade-87s",
+      "category": "project_derived_terrain_background",
+      "source_page": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm",
+      "file_url": "web/moonproof/assets/terrain-shade-87s.webp",
+      "file_id": "terrain-shade-87s.webp",
+      "format": "WEBP",
+      "dimensions_px": {
+        "width": 1178,
+        "height": 1178
+      },
+      "bytes": 90106,
+      "sha256": "43fef36738628d83a03450e786e7c676b7e597539930b02005bfdfbf4457378d",
+      "author_credit": "Elevation: NASA/GSFC/LOLA (LRO LOLA LDEM_80S_80M). Rendering: BRASPACE (science/render_terrain_backgrounds.py).",
+      "allowed_use": "Project-derived render of public NASA PDS data; credit NASA/GSFC/LOLA.",
+      "redistribution_status": "project_derived_from_nasa_pds",
+      "scientific_role": "visualization_only",
+      "review_note": "Source LDEM_80S_80M.IMG SHA-256 e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc checked against data/manifest.json before rendering. Shading light is synthetic, not a real illumination state. PRELIMINARY; not AI-generated."
+    },
+    {
+      "asset_id": "braspace-terrain-shade-84s",
+      "category": "project_derived_terrain_background",
+      "source_page": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm",
+      "file_url": "web/moonproof/assets/terrain-shade-84s.webp",
+      "file_id": "terrain-shade-84s.webp",
+      "format": "WEBP",
+      "dimensions_px": {
+        "width": 944,
+        "height": 944
+      },
+      "bytes": 80972,
+      "sha256": "8cf3eae7b2edd61cf06d95eca040aabe76a6cef3b85936ccb76fb53a5f1bf4e9",
+      "author_credit": "Elevation: NASA/GSFC/LOLA (LRO LOLA LDEM_80S_80M). Rendering: BRASPACE (science/render_terrain_backgrounds.py).",
+      "allowed_use": "Project-derived render of public NASA PDS data; credit NASA/GSFC/LOLA.",
+      "redistribution_status": "project_derived_from_nasa_pds",
+      "scientific_role": "visualization_only",
+      "review_note": "Source LDEM_80S_80M.IMG SHA-256 e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc checked against data/manifest.json before rendering. Shading light is synthetic, not a real illumination state. PRELIMINARY; not AI-generated."
+    },
+    {
+      "asset_id": "braspace-terrain-altitude-87s",
+      "category": "project_derived_terrain_background",
+      "source_page": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm",
+      "file_url": "web/moonproof/assets/terrain-altitude-87s.webp",
+      "file_id": "terrain-altitude-87s.webp",
+      "format": "WEBP",
+      "dimensions_px": {
+        "width": 1178,
+        "height": 1178
+      },
+      "bytes": 74544,
+      "sha256": "1e09edb121a2b6f5de0a0985844c7e8e85dada75f0f2afe805b73a5a6a9a7a6a",
+      "author_credit": "Elevation: NASA/GSFC/LOLA (LRO LOLA LDEM_80S_80M). Rendering: BRASPACE (science/render_terrain_backgrounds.py).",
+      "allowed_use": "Project-derived render of public NASA PDS data; credit NASA/GSFC/LOLA.",
+      "redistribution_status": "project_derived_from_nasa_pds",
+      "scientific_role": "visualization_only",
+      "review_note": "Source LDEM_80S_80M.IMG SHA-256 e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc checked against data/manifest.json before rendering. Shading light is synthetic, not a real illumination state. PRELIMINARY; not AI-generated."
+    },
+    {
+      "asset_id": "iau-usgs-moon-nomenclature-south-pole",
+      "category": "polar_feature_names",
+      "source_page": "https://planetarynames.wr.usgs.gov/",
+      "file_url": "web/moonproof/data/features.json",
+      "file_id": "features.json",
+      "format": "JSON",
+      "bytes": 5852,
+      "sha256": "126d1918965a73e0379ede8b650afa2295a13e48fce7c47c0ef7e4bdcd584309",
+      "author_credit": "IAU Gazetteer of Planetary Nomenclature, USGS Astrogeology Science Center. Source file MOON_nomenclature_center_pts.zip (metadata pubdate 2012-10-02, public domain), accessed 2026-11-14 UTC.",
+      "allowed_use": "Official names and centre coordinates (east-positive) used as map labels only; each feature carries its USGS Feature URL.",
+      "redistribution_status": "public_domain_source_cited",
+      "scientific_role": "labels_only",
+      "review_note": "35 features at centre latitude <= -84 (Crater and Mons; Lacus and Satellite Feature excluded). Names and coordinates as published; no physical value derived. Not independently validated by BRASPACE."
     }
   ]
 }

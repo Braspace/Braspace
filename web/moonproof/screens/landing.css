@@ -18,7 +18,7 @@
 .lab-chip{pointer-events:auto;display:inline-flex;gap:10px;align-items:center;padding:8px 16px;border-radius:999px;background:var(--glass);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--line)}
 .lab-chip .mp-coord{font-weight:700}
 .lab-alert{position:absolute;left:50%;transform:translateX(-50%);border-color:#F0A04B}
-.lab-alert[data-level=crit]{border-color:var(--fail)}
+.lab-alert[data-level=crit]{border-color:var(--fail-text)}
 .lab-alert b::before{content:"▲ "}
 .lab-alert[data-level=crit] b::before{content:"✕ "}
 .lab-alert[hidden]{display:none}
@@ -30,7 +30,7 @@
 .lab-tape .tick.lim{color:#F0A04B;font-weight:800}
 .lab-tape .mark{position:absolute;left:50%;transform:translate(-50%,-50%);min-width:64px;padding:2px 8px;border-radius:12px;background:var(--card);border:1.5px solid var(--real);font:800 18px var(--mono);text-align:center;font-variant-numeric:tabular-nums;z-index:2}
 .lab-tape .mark[data-level=warn]{border-color:#F0A04B;color:#F0A04B}
-.lab-tape .mark[data-level=crit]{border-color:var(--fail);color:var(--fail)}
+.lab-tape .mark[data-level=crit]{border-color:var(--fail-text);color:var(--fail-text)}
 .lab-tape .unit{font-size:11px;color:var(--text-2);text-align:center;margin-top:6px;text-shadow:0 0 6px #000;max-width:96px}
 .lab-hz{margin-top:8px;font:700 13px var(--mono);text-shadow:0 0 6px #000;white-space:nowrap;align-self:flex-end}
 .lab-vz{align-items:flex-end}.lab-vz .rail{align-self:flex-end}
@@ -208,3 +208,8 @@
 /* UX audit: compact controls in the top bar keep their drawn size but get a 44 px hit area. */
 .lab-bar a.back,.lab-bar button{position:relative}
 .lab-bar a.back::after,.lab-bar button::after{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
+.lab-lang{font:700 12.5px var(--font);letter-spacing:.04em}
+/* UX audit: the centred thrust/fuel/tilt row ran 56 px under the Guided card (right:140, 300 wide).
+   The row now ends 16 px left of that card; in Free mode the card is hidden and the row stays put. */
+@media (min-width:701px){.lab-mid{left:auto;right:calc(140px + 300px + 16px);transform:none}}
+@media (min-width:701px) and (max-width:1180px){.lab-thr{width:240px}.lab-fuel{width:170px}}

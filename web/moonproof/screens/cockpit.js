@@ -56,7 +56,7 @@ function buildBodies() {
   document.body.append(svg);
 }
 buildBodies();
-addEventListener("resize", () => { frame(); });
+addEventListener("resize", () => { frame(); lightDraw(); });
 
 async function compute() {
   const st = getState(), site = doc.sites.find(s => s.id === st.site), key = [st.site, st.start, hoursOf(), S.fault, st.battery].join("|");
@@ -89,7 +89,7 @@ async function skyTransition(site, atIso) {
   const v = r.ok ? r.data.next_transitions : null; S.sky = { k, v }; return v;
 }
 
-const rulesCard = el("article", "mp-card"), alertCard = el("article", "mp-card mp-alert"), faultCard = el("article", "mp-glass");
+const rulesCard = el("article", "mp-card mp-rules"), alertCard = el("article", "mp-card mp-alert"), faultCard = el("article", "mp-glass");
 const left = $("left"), right = $("right");
 const sheet = $("sheet");
 
@@ -110,14 +110,14 @@ async function draw() {
   const seal = "SIM";
 
   shell.setContext({ site: t("cockpit.simulated_operation", { site: `${site.n} · ${site.name}` }),
-    date: `${t("cockpit.day_time", { n: clock.day, h: clock.hhmm })} UTC`, days: fmtNum(H / 24), seal, online, action: { label: t("cockpit.onboard"), href: "../onboard/" } });
+    date: `${t("cockpit.day_time", { n: clock.day, h: clock.hhmm })} UTC`, days: fmtNum(H / 24), seal, online, ...(narrow() ? { action: { label: t("cockpit.onboard"), href: "../onboard/" } } : {}) }); // desktop has the bottom-left link; the phone hides it
   const ctxEl = document.querySelector(".mp-context");
   if (ctxEl) { const chip = el("span", "mp-sim-chip", t("cockpit.sim_label")); ctxEl.append(el("span", "mp-label", t("cockpit.profile")), chip); }
 
   const title = el("p", "mp-ck-title", t("cockpit.how_now"));
   const stat = statCircle({ value: charge == null ? t("nd") : fmtNum(100 * charge / cap) + "%", label: t("cockpit.battery"), seal: charge == null ? "N/D" : seal,
     satellites: [{ value: hh(nightH), label: t("cockpit.next_night") }, { value: hh(auto), label: t("cockpit.endurance") },
-      { value: fmtNum(st.battery) + "%", label: t("cockpit.floor") }, { value: hh(margin, 0, true), label: t("cockpit.margin") }] });
+      { value: hh(margin, 0, true), label: t("cockpit.margin") }, { value: fmtNum(st.battery) + "%", label: t("cockpit.floor") }] });
   const vis = (body, nx, elev) => { const d = el("div", "mp-vis"); d.dataset.body = body; d.dataset.vis = nx?.visible ? "yes" : "no";
     const lab = el("span"); lab.append(el("span", "dot"), t(body === "sun" ? "cockpit.sun_visible" : "cockpit.earth_visible"));
     const val = el("b", null, elev == null ? t("nd") : t(nx?.visible ? "cockpit.yes_angle" : "cockpit.sun_no", { n: fmtNum(elev, 1) })); d.append(lab, val); return d; };
@@ -169,7 +169,9 @@ async function draw() {
     const nn = nightH; const tip = nn == null ? null : el("p", null, t(setting ? "cockpit.sunset_tip" : "cockpit.alert_tip_rise", { n: fmtNum(nn) }));
     const src = el("p", "mp-label", t(fromApi ? "cockpit.alert_src_api" : "cockpit.alert_src_series"));
     const ok = el("button", "mp-pill is-white", t("cockpit.got_it")); ok.type = "button"; ok.onclick = () => { S.dismissed = key; draw(); };
-    alertCard.replaceChildren(h3, ...(tip ? [tip] : []), src, ok);
+    const act = el("div", "mp-alert-act"); act.append(ok, src);
+    const body = el("div", "mp-alert-body"); body.append(h3, ...(tip ? [tip] : []), act);
+    alertCard.replaceChildren(el("span", "mp-alert-ic"), body);
   }
   // faults
   const fh = el("div", "mp-head"); fh.append(el("h3", null, t("cockpit.test_problem")), sealSpan("SIM"));
@@ -177,7 +179,7 @@ async function draw() {
   for (const f of Object.values(FAULTS)) { const b = el("button", "mp-pill", t(f.key, { n: f.n })); b.type = "button"; b.dataset.fault = f.id; b.setAttribute("aria-pressed", String(S.fault === f.id));
     b.onclick = () => { S.fault = S.fault === f.id ? null : f.id; draw(); }; fb.append(b); }
   const note = el("p", "mp-ck-note", run?.ok ? "" : t(run?.offline ? "cockpit.offline" : "cockpit.route.none"));
-  faultCard.replaceChildren(fh, fb, note);
+  fb.append(note); faultCard.replaceChildren(fh, fb);
   right.replaceChildren(rulesCard, alertCard, faultCard);
 
   // map tags
@@ -185,7 +187,7 @@ async function draw() {
   const tagEarth = L.f.fault?.noEarth ? t("cockpit.problem_no_antenna") : earthNext?.inHours != null ? t(earthNext.visible ? "cockpit.earth_gone_in" : "cockpit.earth_back_in", { t: fmtDuration(earthNext.inHours) }) : t("nd");
   bodies.sun.tag.textContent = tagSun; bodies.earth.tag.textContent = tagEarth; placeBodies();
   // player
-  const rg = $("range"); rg.max = String(H); rg.value = String(th); rg.setAttribute("aria-valuetext", clock.text);
+  const rg = $("range"); rg.max = String(H); rg.value = String(th); rg.style.setProperty("--p", H ? th / H : 0); rg.setAttribute("aria-valuetext", clock.text);
   $("time").textContent = clock.text; $("end").textContent = "D" + fmtNum(H / 24);
   $("play").textContent = S.playing ? "⏸" : "▶"; $("play").setAttribute("aria-label", t(S.playing ? "cockpit.pause" : "cockpit.play"));
   $("restart").setAttribute("aria-label", t("cockpit.restart")); $("speed").setAttribute("aria-label", t("cockpit.speed")); rg.setAttribute("aria-label", t("cockpit.time"));

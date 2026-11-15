@@ -60,3 +60,8 @@ footer{border-color:#30413e}
    surfaces when a long exercise scrolls below the fold. */
 #lesson{position:relative;isolation:isolate;z-index:1;scroll-margin-top:24px}
 #lesson .actions button{position:relative;z-index:2;min-height:44px;touch-action:manipulation}
+/* CI #229: grid items default to min-width:auto, so the horizontally scrollable screen nav (and the
+   seal row) widened the single column to ~1130 px on phones; mobile Chrome then zoomed the page out
+   and the page header ended up over the "Reveal answer" button. Let the column shrink to the viewport. */
+.workspace>*{min-width:0}
+.sidebar nav{max-width:100%}
