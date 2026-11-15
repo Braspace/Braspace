@@ -11,7 +11,7 @@ Every number below is copied from a committed file; the command to reproduce it 
 | V1 | Sun and Earth azimuth/elevation seen from a lunar site | SPICE (`science/spice_lunar_angles.py`, `spkcpo`, apparent LT+S, frame `MOON_ME_DE440_ME421`) | JPL Horizons API, topocentric AZ-EL (quantity 4), airless, `CENTER='coord@301'` | `science/results/validation_horizons.json` |
 | V2 | Fraction of time the Sun / Earth is above the terrain horizon | `science/three_site_pipeline.py` on LOLA `LDEM_80S_80M` | NASA GSFC PGDA `AVGVISIB_75S_120M_201608` (+`_EARTH`), Mazarico et al. 2011, *Icarus* 211:1066 | `science/results/validation_pgda.json` |
 
-Reproduce V1: `python3 science/validate_vs_horizons.py <site_json>... --samples 12 --output <file>` (needs network access to the Horizons API).
+Reproduce V1: `go -C api run ./cmd/validatehorizons -samples 12 -output <file> <site_json>...` (paths relative to `api/`) (needs network access to the Horizons API).
 Reproduce V2: see `docs/LANDING_LAB.md` §2 (the NASA inputs, about 350 MB, stay outside git).
 Unit tests that need no download: `python3 -m unittest discover -s science/tests`, `cargo test --manifest-path engine/Cargo.toml`, `go test ./...` in `api/`.
 

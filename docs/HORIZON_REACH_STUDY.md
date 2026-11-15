@@ -78,5 +78,5 @@ series, the results tables) come from the 100 km horizon. For those two sites:
   difference (+3.55 pp) is under the 5 pp tolerance.
 
 **Not done here:** the series were not regenerated. That means raising the limit in `lola_horizon.py`, re-running
-`three_site_pipeline.py`, `build_web_assets.py` and `export_api_series.py`, and updating every pinned SHA-256, table and
+`three_site_pipeline.py`, `build_web_assets.py` and `go run ./cmd/exportapiseries` (api/), and updating every pinned SHA-256, table and
 test that carries the old values. It is the correct fix and it is a team decision, the day before the deadline.
