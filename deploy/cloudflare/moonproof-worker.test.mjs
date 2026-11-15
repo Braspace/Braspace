@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import worker, { ROUTES, DEFAULT_UPSTREAM, handleAPI, handleMoonAPI } from "./moonproof-worker.mjs";
+import worker, { ROUTES, KIND_TYPES, DEFAULT_UPSTREAM, handleAPI, handleMoonAPI } from "./moonproof-worker.mjs";
 
 const origin = "https://braspace-moonproof.example.workers.dev";
 const assets = { ASSETS: { fetch: () => new Response("static") } };
@@ -17,6 +17,17 @@ test("allowlist mirrors api/openapi.json exactly (no drift either way)", () => {
   const fromSpec = Object.entries(spec.paths).flatMap(([p, ops]) =>
     Object.keys(ops).filter((m) => ["get", "post", "put", "patch", "delete"].includes(m)).map((m) => `${m.toUpperCase()} ${p}`)).sort();
   assert.deepEqual(ROUTES.map(([m, p]) => `${m} ${p}`).sort(), fromSpec);
+});
+
+test("every success media type the OpenAPI declares is allowed for that route", () => {
+  const spec = JSON.parse(readFileSync(new URL("../../api/openapi.json", import.meta.url), "utf8"));
+  for (const [method, path, kind] of ROUTES) {
+    const op = spec.paths[path][method.toLowerCase()];
+    for (const [code, r] of Object.entries(op.responses || {})) {
+      if (!/^2/.test(code)) continue;
+      for (const ct of Object.keys(r.content || {})) assert.ok(KIND_TYPES[kind].includes(ct), `${method} ${path} ${code} ${ct} not allowed for kind ${kind}`);
+    }
+  }
 });
 
 test("non-API paths fall through to ASSETS untouched", async () => {
@@ -80,6 +91,28 @@ test("non-JSON upstream is rejected except for layer assets", async () => {
   await withFetch(() => new Response(new Uint8Array([137, 80]), { headers: { "Content-Type": "image/png" } }), async () => {
     const r = await handleAPI(new Request(origin + "/api/layers/lola-80m/asset"));
     assert.equal(r.status, 200); assert.equal(r.headers.get("content-type"), "image/png");
+  });
+});
+
+test("text/plain upstream errors keep their status as structured JSON (missing route stays 404)", async () => {
+  await withFetch(() => new Response("404 page not found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } }), async () => {
+    const r = await handleAPI(new Request(origin + "/api/onboard/navigation", { method: "POST", body: "{}", headers: { "Content-Type": "application/json" } }));
+    assert.equal(r.status, 404);
+    assert.deepEqual(await r.json(), { code: "UPSTREAM_ROUTE_NOT_FOUND", error: "404 page not found", upstream_status: 404 });
+  });
+  await withFetch(() => new Response("invalid mission scenario", { status: 422, headers: { "Content-Type": "text/plain" } }), async () => {
+    const r = await handleAPI(new Request(origin + "/api/onboard/report", { method: "POST", body: "{}", headers: { "Content-Type": "application/json" } }));
+    assert.equal(r.status, 422); assert.equal((await r.json()).code, "UPSTREAM_ERROR");
+  });
+  await withFetch(() => new Response("ok", { status: 200, headers: { "Content-Type": "text/plain" } }), async () => {
+    assert.equal((await handleAPI(new Request(origin + "/api/health"))).status, 502); // a non-JSON 200 is never a success
+  });
+});
+
+test("HTML reports pass through with the upstream CSP", async () => {
+  await withFetch(() => new Response("<h1>r</h1>", { headers: { "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": "default-src 'none'" } }), async () => {
+    const r = await handleAPI(new Request(origin + "/api/onboard/report", { method: "POST", body: "{}", headers: { "Content-Type": "application/json" } }));
+    assert.equal(r.status, 200); assert.equal(r.headers.get("content-security-policy"), "default-src 'none'");
   });
 });
 

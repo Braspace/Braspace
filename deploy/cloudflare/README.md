@@ -25,7 +25,8 @@ Guarantees (covered by `moonproof-worker.test.mjs`):
 - Upstream pinned; `redirect: "error"`; no Cookie, Authorization, Origin or client-IP headers forwarded.
 - POST bodies: `application/json` only, ≤ 128 KiB (Go's bound), must be a JSON object; no query string.
 - Go status codes and error bodies pass through unchanged (a 422 stays a 422).
-- Non-JSON upstream → 502 `INVALID_UPSTREAM_RESPONSE` (except `/api/layers/{id}/asset`, which may be an image).
+- Per-route success media types mirror the OpenAPI (`image/jpeg`, `model/gltf-binary` for layer assets; `text/html` reports keep the upstream CSP). Anything else on a 2xx → 502 `INVALID_UPSTREAM_RESPONSE`.
+- `text/plain` upstream errors keep their status as JSON (`UPSTREAM_ROUTE_NOT_FOUND` for 404, else `UPSTREAM_ERROR`).
 - Network failure → 502 `API_UNAVAILABLE`; timeout (24 s) → 504 `API_TIMEOUT`. Never a fake success.
 - Unknown API path → 404 `ROUTE_NOT_FOUND`; wrong method → 405 with `Allow`; no CORS headers emitted.
 

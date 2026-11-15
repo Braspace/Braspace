@@ -13,7 +13,7 @@ const QUERY_LIMIT = 2048;
 const TIMEOUT_MS = 24000;
 const SEG = "[A-Za-z0-9][A-Za-z0-9._-]{0,127}"; // {id} path parameter
 
-// [method, path template, response kind]. "json" = application/json only; "asset" = JSON or image/binary.
+// [method, path template, response kind]. Kinds list the success media types api/openapi.json declares.
 export const ROUTES = [
   ["GET", "/api/health", "json"],
   ["GET", "/api/sites", "json"],
@@ -33,8 +33,8 @@ export const ROUTES = [
   ["POST", "/api/onboard/evaluate", "json"],
   ["POST", "/api/onboard/site-evaluate", "json"],
   ["POST", "/api/onboard/navigation", "json"],
-  ["POST", "/api/onboard/report", "json"],
-  ["POST", "/api/onboard/site-report", "json"],
+  ["POST", "/api/onboard/report", "report"],
+  ["POST", "/api/onboard/site-report", "report"],
   ["POST", "/api/vector/search", "json"],
   ["POST", "/v1/visibility", "json"],
 ];
@@ -81,7 +81,13 @@ async function readBoundedJSON(request) {
   return { body: JSON.stringify(data) };
 }
 
-const ASSET_TYPES = /^(?:application\/json|image\/(?:png|jpeg|webp|avif)|application\/octet-stream)\b/i;
+/** Media types each kind may return on success (mirrors the OpenAPI response content; see the drift test). */
+export const KIND_TYPES = {
+  json: ["application/json"],
+  asset: ["application/json", "image/jpeg", "image/png", "image/webp", "model/gltf-binary"],
+  report: ["application/json", "text/html"],
+};
+const mediaType = (ct) => ct.split(";")[0].trim().toLowerCase();
 
 /**
  * Proxies one API request. Returns null when the path is not an API path, so the existing
@@ -102,7 +108,7 @@ export async function handleAPI(request) {
   if (url.search.length > QUERY_LIMIT) return error(414, "QUERY_TOO_LONG");
   if (route.method === "POST" && url.search) return error(400, "QUERY_NOT_SUPPORTED");
 
-  const headers = new Headers({ Accept: route.kind === "asset" ? "application/json, image/*" : "application/json" });
+  const headers = new Headers({ Accept: KIND_TYPES[route.kind].join(", ") });
   let body;
   if (route.method === "POST") {
     const r = await readBoundedJSON(request);
@@ -119,10 +125,19 @@ export async function handleAPI(request) {
     return e?.name === "TimeoutError" ? error(504, "API_TIMEOUT") : error(502, "API_UNAVAILABLE");
   }
   const type = upstream.headers.get("content-type") || "";
-  const okType = route.kind === "asset" ? ASSET_TYPES.test(type) : /^application\/json\b/i.test(type);
-  if (!okType) return error(502, "INVALID_UPSTREAM_RESPONSE");
+  if (!KIND_TYPES[route.kind].includes(mediaType(type))) {
+    // Go's mux and a few handlers answer errors as text/plain (e.g. "404 page not found" when the
+    // deployed API lacks a route). Keep the real status; never turn it into a success or a vague 502.
+    if (upstream.status >= 400) {
+      const text = (await upstream.text()).slice(0, 200).trim();
+      return Response.json({ code: upstream.status === 404 ? "UPSTREAM_ROUTE_NOT_FOUND" : "UPSTREAM_ERROR", error: text || "upstream error", upstream_status: upstream.status },
+        { status: upstream.status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
+    }
+    return error(502, "INVALID_UPSTREAM_RESPONSE");
+  }
   const out = new Headers({ "Content-Type": type, "X-Content-Type-Options": "nosniff", "Cache-Control": upstream.headers.get("cache-control") || "no-store" });
-  for (const h of ["etag", "last-modified", "retry-after", "vary"]) { const v = upstream.headers.get(h); if (v) out.set(h, v); }
+  // The Go API's CSP (default-src 'none') must travel with HTML reports served from this origin.
+  for (const h of ["etag", "last-modified", "retry-after", "vary", "content-security-policy", "content-disposition"]) { const v = upstream.headers.get(h); if (v) out.set(h, v); }
   return new Response(request.method === "HEAD" ? null : upstream.body, { status: upstream.status, headers: out });
 }
 
