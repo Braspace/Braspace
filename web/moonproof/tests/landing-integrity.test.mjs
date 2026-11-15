@@ -6,7 +6,7 @@ import { dict, register } from "../core/i18n.js";
 import { TEXTS } from "../screens/landing-texts.js";
 
 const read = f => readFile(new URL("../" + f, import.meta.url), "utf8");
-const FILES = ["landing.html", "debrief.html", "screens/landing.js", "screens/debrief.js", "screens/landing-model.js", "screens/landing-texts.js", "screens/landing.css", "screens/debrief.css"];
+const FILES = ["landing.html", "debrief.html", "screens/landing.js", "screens/debrief.tsx", "screens/landing-model.js", "screens/landing-texts.js", "screens/landing.css", "screens/debrief.css"];
 const DESIGN = ["142", "−4,8", "-4,8", "SR-02", "SR-01", "38 m", "3,2°", "a41c9e2", "Missão 05", "Mission 05", "tentativa 3", "58%", "34%", "41 s", "22 s", "600 m", "moonproof.app", "20 m/px"];
 
 test("rule 1/3: no number or id from the design sheet in F and G code", async () => {
@@ -38,11 +38,11 @@ test("rule 5: assumed limits are labelled", () => {
   assert.match(TEXTS.en["deb.rules.note"], /assumed limit/); assert.match(TEXTS["pt-BR"]["deb.rules.note"], /assumed limit/); assert.match(TEXTS.en["lab.why.body"], /assumed limit/);
 });
 test("rule 6: no invented domain; G links stay relative and carry the scenario", async () => {
-  const s = await read("screens/debrief.js");
+  const s = await read("screens/debrief.tsx");
   assert.ok(!/https?:\/\//.test(s)); assert.match(s, /hrefTo\("landing\.html"\)/); assert.match(s, /hrefTo\("explore\.html"/);
 });
 test("no attempt: G says so, shows N/D and links to F", async () => {
-  const s = await read("screens/debrief.js");
+  const s = await read("screens/debrief.tsx");
   assert.match(s, /if \(!A\) return none\(\)/); assert.match(s, /deb\.none\.go/); assert.match(s, /sealEl\("N\/D"\)/);
   assert.equal(TEXTS["pt-BR"]["deb.none.title"], "Nenhuma tentativa para mostrar");
 });
