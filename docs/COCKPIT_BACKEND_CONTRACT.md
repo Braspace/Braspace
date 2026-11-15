@@ -63,14 +63,14 @@ Error envelope: every 4xx is JSON with a stable `error.code` (`SITE_NOT_FOUND`, 
 ## Invariants checked
 
 ; **all 16 now have stored series**:
-   14 source-derived `PRELIMINARY` real-region series and 2 explicitly labelled `SYNTHETIC` demonstrations.
-   Every stored series carries an hourly window (`step_seconds=3600`) and `series_sha256`.
-   This is verified by production `GET /api/health` and nine newly added `GET /api/sites/{id}` metadata responses
-   on 2026-11-15, **not** by independently rehashing the binaries or scientific validation.
+   14 source-derived `PRELIMINARY` regional series and 2 explicitly labelled `SYNTHETIC` demonstrations.
+   Each stored series carries an hourly window (`step_seconds=3600`) and `series_sha256`.
+   This coverage was reported from production `GET /api/health` and nine new `GET /api/sites/{id}`
+   metadata responses on 2026-11-15; this is **not** independent byte rehashing or scientific validation.
 2. Sites with stored series compute **server side** (`route: "site"`). The `evaluate` (`route: "eval"`)
-   fallback is retained for explicit missing-series/error fixtures and should not be used to invent observational
-   values for any of the 16 catalog sites. Both routes must return a charge trace of `hours + 1` finite
-   points inside `[0, capacity]` when successful.
+   fallback remains for explicitly missing-series/error fixtures and must not fabricate observational
+   values for any of the 16 catalogue sites. Successful calls return a charge trace of `hours + 1` finite
+   points within `[0, capacity]`.
 3. Determinism: the same body gives the same `inputs_sha256` and timeline; changing `load_w` changes the fingerprint.
 4. Physics sanity: less battery cannot raise the minimum charge.
 5. Negatives: unknown site 404, duration over the limit 422, negative battery 422, non-boolean sample 4xx — all JSON, never 5xx.
@@ -101,7 +101,7 @@ without `BRASPACE_GIT_SHA` reports `unknown`).
 | production API `braspace-api.srv1898743.hstgr.cloud` (Origin Pages) | `62bf446` | 49/49 PASS |
 | production Worker `braspace-moonproof.almeida-me.workers.dev` (same origin) | `62bf446` | 49/49 PASS |
 
-Observed values worth knowing (engineering, not flight): with the cockpit's H1 profile, 14 days starting 30 days
+Historical observation on build `62bf446` (engineering, not flight): with the cockpit's H1 profile, 14 days starting 30 days
 after the series start, `malapert-massif`, `nobile-rim-1`, `mons-mouton-im2` and both synthetic sites reach 0 Wh at
 some hour; `peak-near-shackleton` keeps 18 000 Wh. Sites without series fall back to browser booleans and show
-15 200 Wh minimum: that number is a property of the browser's declared pattern, not of the site.
+15 200 Wh minimum in the older no-series fallback: that number was a property of the browser's declared pattern, not of the site. The 16/16 coverage update above supersedes the old 7/16 catalogue state.
