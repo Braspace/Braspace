@@ -133,7 +133,7 @@ const $ = (id: string) => document.getElementById(id) as HTMLElement;
 
 // location.href keeps the scenario (site, start, rules…) and the activity switches ride on the query string.
 function shareUrl() {
-  const u = new URL(location.href);
+  const u = new URL(hrefTo("present.html"), location.href);
   u.searchParams.set("layer", cfg.openLayer);
   u.searchParams.set("allowSite", cfg.allowSite ? "1" : "0");
   u.searchParams.set("allowDate", cfg.allowDate ? "1" : "0");
@@ -197,7 +197,7 @@ function draw() {
   paint(<>
     <div><span class="mp-act-kicker">{t("act.kit")}</span><h1 class="mp-act-h1">{t("act.title")}</h1></div>
     {steps.map(([n, title, sub]) => (
-      <button class={`mp-step-item ${n < cfg.step ? "is-done" : n === cfg.step ? "is-active" : ""}`} data-step={n} data-focus={`step${n}`} type="button" aria-current={n === cfg.step ? "step" : undefined} onClick={() => { cfg.step = n; draw(); }}>
+      <button class={`mp-step-item ${n < cfg.step ? "is-done" : n === cfg.step ? "is-active" : ""}`} data-step={n} data-focus={`step${n}`} type="button" aria-current={n === cfg.step ? "step" : undefined} onClick={() => { cfg.step = n; draw(); setTimeout(() => document.getElementById(({ 1: "act-preview", 2: "act-controls", 3: "btn-present", 4: "act-share" } as Record<number, string>)[n])?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 0); }}>
         <span class="mp-step-num">{n < cfg.step ? "✓" : n}</span>
         <span class="mp-step-txt"><strong>{title}</strong><span>{sub}</span></span>
       </button>
@@ -261,6 +261,7 @@ function draw() {
         <button class={`mp-switch ${cfg[k] ? "is-on" : ""}`} data-toggle={k} data-focus={`sw-${k}`} type="button" role="switch" aria-checked={cfg[k]} onClick={() => { cfg[k] = !cfg[k]; draw(); }}></button>
       </label>
     ))}
+    <p class="mp-act-suggest">{t("act.suggest")}</p>
     <div class="mp-teacher-notes">
       <strong>{t("act.notesTitle").split(" · ")[0]}<span class="mp-muted">{" · " + (t("act.notesTitle").split(" · ")[1] ?? "")}</span></strong>
       <p>{t("act.notesBody")}</p>
@@ -281,10 +282,13 @@ function draw() {
     <div class="mp-chip-row mp-share-btns">
       <button id="btn-copy" class="mp-btn-outline" data-focus="copy" type="button" onClick={async (e: MouseEvent) => {
         const btn = e.currentTarget as HTMLElement;
-        try { await navigator.clipboard?.writeText(url); } catch {}
-        btn.textContent = t("act.copied");
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+          await navigator.clipboard.writeText(url);
+          btn.textContent = t("act.copied");
+        } catch { btn.textContent = t("act.copyError"); }
       }}>{t("act.copy")}</button>
-      <a class="mp-btn-jade" id="btn-present" href={hrefTo("present.html")}><PresentIcon />{t("act.present")}</a>
+      <a class="mp-btn-jade" id="btn-present" href={url}><PresentIcon />{t("act.present")}</a>
     </div>
   </>, $("act-share"));
 
