@@ -12,6 +12,7 @@
 // background are visual choices; no landing metric is computed here. See data/moonhd/manifest.json.
 // @ts-ignore TS2307: vendored three.js 0.181.0 (web/vendor/three), no local types
 import { OrbitControls } from "../vendor/three/addons/controls/OrbitControls.js";
+import { sunCaveat } from "../moonproof/core/data.js";
 import { decodeEphemeris, indexAt, timeAt, pointsAt, bodyDirection, toGlobeScene, signedLon, elevationAtSouthPole, decodeOrientation, orientationAt, decodeSiteSeries, siteSkyAt } from "./ephemeris.js";
 import { R_REF, latLonToStereo, CAP_LAT } from "./polar-math.js";
 import { THREE, R_KM, CAP_MATRIX, fetchJSON, fetchBinary, textureLoader, globeGeometry, createMoon, createCap, setPolarFrame, createStars } from "./scene.js";
@@ -36,6 +37,7 @@ const TEXT = {
         siteSun: "Sun centre now", siteEarth: "Earth centre now", above: "above the terrain by", below: "below the terrain by",
         siteLoading: "Loading the site series…", siteFailed: "The site series could not be loaded.", siteGo: "Fly to this site", close: "Close",
         siteCap: "Sun figures here are an upper bound: the NASA PGDA map gives {pgda} % and the horizon behind this series stops at 100 km.",
+        siteReachCap: "The 100 km series likely overstates sunlight and understates the longest darkness. A preliminary 200 km study gives {sun200} % Sun-centre visibility and {dark200} h longest darkness. Not independently validated.",
         mSun: "Sun above terrain", mEarth: "Earth above terrain", mBoth: "Both at once", mDark: "Longest darkness", mBlackout: "Longest Earth blackout",
         siteStatus: "PRELIMINARY · team series",
         siteNote: "Team series, hourly, 2025 to 2028: LOLA horizon traced to 100 km, centres of the Sun and Earth from SPICE. Not independently validated. It is a separate computation from the shadows drawn here.",
@@ -57,6 +59,7 @@ const TEXT = {
         siteSun: "Centro do Sol agora", siteEarth: "Centro da Terra agora", above: "acima do relevo por", below: "abaixo do relevo por",
         siteLoading: "Carregando a série do local…", siteFailed: "Não foi possível carregar a série do local.", siteGo: "Voar até este local", close: "Fechar",
         siteCap: "Os números de Sol aqui são um teto: o mapa PGDA da NASA dá {pgda} % e o horizonte desta série para em 100 km.",
+        siteReachCap: "A série de 100 km provavelmente superestima o Sol e subestima a maior escuridão. Um estudo preliminar com 200 km aponta {sun200} % de visibilidade do centro do Sol e {dark200} h de maior escuridão. Sem validação independente.",
         mSun: "Sol acima do relevo", mEarth: "Terra acima do relevo", mBoth: "Os dois juntos", mDark: "Maior escuridão", mBlackout: "Maior bloqueio da Terra",
         siteStatus: "PRELIMINAR · série do time",
         siteNote: "Série do time, hora a hora, de 2025 a 2028: horizonte do LOLA traçado até 100 km, centros do Sol e da Terra pelo SPICE. Sem validação independente. É um cálculo separado das sombras desenhadas aqui.",
@@ -251,14 +254,17 @@ async function main() {
         $("site-go").textContent = t("siteGo");
         $("site-close").setAttribute("aria-label", t("close"));
         const pct = (v) => (Number.isFinite(v) ? v.toFixed(1) + " %" : "–"), hours = (v) => (Number.isFinite(v) ? v.toFixed(0) + " h" : "–");
-        // Same rule as moonproof/core/data.js sunCaveat: more sunlight than NASA PGDA by over 5 points means "at most".
-        const capped = Number.isFinite(site.pgda_sun_pct) && m.mean_solar_disc_visible_pct - site.pgda_sun_pct > 5;
+        // Share the MoonProof caveat: PGDA discrepancy or the recorded 100 km horizon reach study.
+        const caveat = sunCaveat(site), capped = !!caveat;
         $("site-caveat").hidden = !capped;
-        if (capped)
-            $("site-caveat").textContent = t("siteCap").replace("{pgda}", site.pgda_sun_pct.toFixed(1));
+        if (caveat)
+            $("site-caveat").textContent = caveat.reach
+                ? t("siteReachCap").replace("{sun200}", caveat.reach.sun200.toFixed(2)).replace("{dark200}", caveat.reach.dark200.toFixed(0))
+                : t("siteCap").replace("{pgda}", caveat.pgda.toFixed(1));
         const sunPct = (v) => (capped && Number.isFinite(v) ? "≤ " : "") + pct(v);
+        const darkHours = (v) => (caveat?.reach && Number.isFinite(v) ? "≥ " : "") + hours(v);
         fillRows($("site-metrics"), [[t("mSun"), sunPct(m.sun_center_visible_pct)], [t("mEarth"), pct(m.earth_center_visible_pct)],
-            [t("mBoth"), sunPct(m.sun_and_earth_visible_pct)], [t("mDark"), hours(m.longest_darkness_h)], [t("mBlackout"), hours(m.longest_earth_blackout_h)]]);
+            [t("mBoth"), sunPct(m.sun_and_earth_visible_pct)], [t("mDark"), darkHours(m.longest_darkness_h)], [t("mBlackout"), hours(m.longest_earth_blackout_h)]]);
         if (!series) {
             fillRows($("site-now"), [[failed ? t("siteFailed") : t("siteLoading"), ""]]);
             return;

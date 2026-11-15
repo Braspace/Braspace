@@ -131,8 +131,10 @@ export function mountShell({ screen, context = null, onLang, kit = null } = { sc
             const chip = document.createElement("span");
             chip.className = "mp-caveat";
             chip.tabIndex = 0;
-            chip.textContent = t("ctx.sunCap");
-            chip.title = t("ctx.sunCapWhy", { ours: caveat.ours.toFixed(1), pgda: caveat.pgda.toFixed(1), diff: caveat.diff.toFixed(1) });
+            chip.textContent = t(caveat.reach ? "ctx.reachCap" : "ctx.sunCap");
+            chip.title = caveat.reach
+                ? t("ctx.reachCapWhy", { sun100: caveat.reach.sun100, sun200: caveat.reach.sun200, dark100: caveat.reach.dark100, dark200: caveat.reach.dark200 })
+                : t("ctx.sunCapWhy", { ours: caveat.ours.toFixed(1), pgda: caveat.pgda.toFixed(1), diff: caveat.diff.toFixed(1) });
             chip.setAttribute("aria-label", chip.textContent + ". " + chip.title);
             parts.push(chip);
         }
