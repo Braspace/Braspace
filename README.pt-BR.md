@@ -24,6 +24,11 @@ Verificado em produção em **2026-11-15** (frontend `9dab20c`, Worker `ec490d15
 
 > **Honestidade científica:** `/readyz` retorna `"science_status": "UNVERIFIED_INPUTS"` e `/v1/capabilities` retorna `"scientifically_validated": false`. As séries são `PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED`.
 
+
+## Verificação da versão do Worker (PR draft #424 — não publicado)
+
+Os scripts de smoke exigem uma declaração **executável e idêntica** a `const BRASPACE_COMMIT = "<SHA de 40 hex>";` no `/config.js` servido, em vez de uma substring que possa aparecer em comentários ou em versões diferentes. O uso de `grep -Fxq` corresponde à linha exata gerada por `deploy/cloudflare/deploy.sh`. O teste `deploy/cloudflare/build-stamp.test.mjs` cobre declaração válida, comentários enganosos, sufixos e SHA incorreto. Fixture isolada Node 22: 3/3 PASS. A correção **não** passou ainda pelo gate completo CI/EXO-X1 e não houve merge/deploy. As séries científicas, Go/Rust e PostgreSQL/pgvector não foram modificados.
+
 ## Dado Real vs. Simulação
 
 | Fonte NASA / Externa | Produto no Repositório | Estado | Observações |
