@@ -13,7 +13,8 @@ test("the rule is data-driven: only sites over the PGDA tolerance are flagged, a
   assert.deepEqual(flagged, ["peak-near-shackleton"]);
   const c = sunCaveat(sites.find(s => s.id === "peak-near-shackleton"));
   assert.equal(c.kind, "SUN_UPPER_BOUND");
-  assert.ok(Math.abs(c.diff - (c.ours - c.pgda)) < 1e-12 && c.diff > 8.9 && c.diff < 9.1, "difference " + c.diff);
+  // 80.43 - 71.9 = 8.53 after the solar-disc fix (9.0 with the inverted fraction); still the only site over 5 pp.
+  assert.ok(Math.abs(c.diff - (c.ours - c.pgda)) < 1e-12 && c.diff > 8.4 && c.diff < 8.7, "difference " + c.diff);
   assert.ok(Object.isFrozen(c));
 });
 
