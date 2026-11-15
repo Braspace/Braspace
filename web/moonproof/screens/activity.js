@@ -126,7 +126,7 @@ function paint(vnode, host) { mount(null, host); host.replaceChildren(); mount(v
 const $ = (id) => document.getElementById(id);
 // location.href keeps the scenario (site, start, rules…) and the activity switches ride on the query string.
 function shareUrl() {
-    const u = new URL(location.href);
+    const u = new URL(hrefTo("present.html"), location.href);
     u.searchParams.set("layer", cfg.openLayer);
     u.searchParams.set("allowSite", cfg.allowSite ? "1" : "0");
     u.searchParams.set("allowDate", cfg.allowDate ? "1" : "0");
@@ -205,7 +205,7 @@ function draw() {
         h("div", null,
             h("span", { class: "mp-act-kicker" }, t("act.kit")),
             h("h1", { class: "mp-act-h1" }, t("act.title"))),
-        steps.map(([n, title, sub]) => (h("button", { class: `mp-step-item ${n < cfg.step ? "is-done" : n === cfg.step ? "is-active" : ""}`, "data-step": n, "data-focus": `step${n}`, type: "button", "aria-current": n === cfg.step ? "step" : undefined, onClick: () => { cfg.step = n; draw(); } },
+        steps.map(([n, title, sub]) => (h("button", { class: `mp-step-item ${n < cfg.step ? "is-done" : n === cfg.step ? "is-active" : ""}`, "data-step": n, "data-focus": `step${n}`, type: "button", "aria-current": n === cfg.step ? "step" : undefined, onClick: () => { cfg.step = n; draw(); setTimeout(() => document.getElementById(({ 1: "act-preview", 2: "act-controls", 3: "btn-present", 4: "act-share" })[n])?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 0); } },
             h("span", { class: "mp-step-num" }, n < cfg.step ? "✓" : n),
             h("span", { class: "mp-step-txt" },
                 h("strong", null, title),
@@ -258,6 +258,7 @@ function draw() {
                 h("span", null, t(label)),
                 h("small", null, t(sub, vars))),
             h("button", { class: `mp-switch ${cfg[k] ? "is-on" : ""}`, "data-toggle": k, "data-focus": `sw-${k}`, type: "button", role: "switch", "aria-checked": cfg[k], onClick: () => { cfg[k] = !cfg[k]; draw(); } })))),
+        h("p", { class: "mp-act-suggest" }, t("act.suggest")),
         h("div", { class: "mp-teacher-notes" },
             h("strong", null,
                 t("act.notesTitle").split(" · ")[0],
@@ -282,12 +283,16 @@ function draw() {
             h("button", { id: "btn-copy", class: "mp-btn-outline", "data-focus": "copy", type: "button", onClick: async (e) => {
                     const btn = e.currentTarget;
                     try {
-                        await navigator.clipboard?.writeText(url);
+                        if (!navigator.clipboard?.writeText)
+                            throw new Error("Clipboard unavailable");
+                        await navigator.clipboard.writeText(url);
+                        btn.textContent = t("act.copied");
                     }
-                    catch { }
-                    btn.textContent = t("act.copied");
+                    catch {
+                        btn.textContent = t("act.copyError");
+                    }
                 } }, t("act.copy")),
-            h("a", { class: "mp-btn-jade", id: "btn-present", href: hrefTo("present.html") },
+            h("a", { class: "mp-btn-jade", id: "btn-present", href: url },
                 h(PresentIcon, null),
                 t("act.present")))), $("act-share"));
     if (focusKey)
