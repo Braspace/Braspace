@@ -1,0 +1,99 @@
+name: NASA LOLA NAIF Go Rust live integration
+on:
+  push:
+    branches: [feat/lola-southpole-horizon-science-20261114]
+    paths:
+      - "api/**"
+      - "engine/**"
+      - "science/**"
+      - ".github/workflows/lola-go-rust-real-data.yml"
+  pull_request:
+    paths:
+      - "api/**"
+      - "engine/**"
+      - "science/**"
+      - ".github/workflows/lola-go-rust-real-data.yml"
+permissions:
+  contents: read
+jobs:
+  integration:
+    name: Real NASA-derived series through Go and Rust
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build real Rust engine and Go API
+        run: |
+          set -euo pipefail
+          cargo build --locked --release --manifest-path engine/Cargo.toml
+          (cd api && go build -o "$RUNNER_TEMP/braspace-api" .)
+      - name: Start private loopback API
+        run: |
+          set -euo pipefail
+          RUST_ENGINE_BIN="$GITHUB_WORKSPACE/engine/target/release/braspace-lunar-engine" LISTEN_ADDR=127.0.0.1:8080 "$RUNNER_TEMP/braspace-api" > "$RUNNER_TEMP/braspace-api.log" 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/api/health > "$RUNNER_TEMP/health.json"; then break; fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/health.json"
+      - name: Confirm NASA source-derived series availability and scientific status
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -sS http://127.0.0.1:8080/api/sites/connecting-ridge > "$RUNNER_TEMP/site.json"
+          python3 - <<'PY'
+          import json,os
+          j=json.load(open(os.environ['RUNNER_TEMP']+'/site.json'))
+          s=j['site']
+          assert s['id']=='connecting-ridge'
+          assert s["series"]["science_status"]=="PRELIMINARY"
+          assert s['series']['step_seconds']==3600
+          assert s['series']['observer_height_m']==2
+          print('REAL NASA series loaded in Go store; UNVERIFIED scientific status')
+          PY
+      - name: Compute 72h visibility using Go API and actual Rust engine
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -sS http://127.0.0.1:8080/api/compare -H 'Content-Type: application/json' --data-binary '{"site_ids":["connecting-ridge"],"start_utc":"2026-11-15T00:00:00Z","duration_hours":72,"include_series":false}' > "$RUNNER_TEMP/visibility.json"
+          python3 - <<'PY'
+          import json,os
+          d=json.load(open(os.environ['RUNNER_TEMP']+'/visibility.json'))
+          s=d['results'][0]
+          m=s['evaluation']['metrics']
+          assert s['site']['id']=='connecting-ridge'
+          assert s["science_status"]=="PRELIMINARY"
+          assert s['engine_science_status']=='UNVERIFIED_INPUTS'
+          assert m['sample_count']==72
+          assert m['sun_visible_fraction']==1.0
+          assert m['earth_visible_fraction']==0.0
+          assert m['longest_continuous_dark_hours']==0
+          assert m['longest_continuous_comm_gap_hours']==72
+          print('ACTUAL Go/Rust result: 72h geometric Sun visible; Earth below LOLA terrain horizon for all 72h (half-pixel registration fixed); PRELIMINARY UNVERIFIED')
+          print('No RF or solar-power modelling/validated NASA mission claim')
+          PY
+      - name: Compute onboard educational energy risk from the same source series
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -sS http://127.0.0.1:8080/api/onboard/site-evaluate -H 'Content-Type: application/json' --data-binary '{"mission_id":"source-backed-review-only","start_utc":"2026-11-15T00:00:00Z","duration_hours":12,"candidates":[{"id":"lola-naif-preliminary","site_id":"connecting-ridge","delay_hours":0}],"power":{"battery_capacity_wh":200,"initial_charge_wh":160,"reserve_wh":40,"solar_generation_w":50,"load_w":30},"max_comm_blackout_hours":6}' > "$RUNNER_TEMP/onboard.json"
+          python3 - <<'PY'
+          import json,os
+          d=json.load(open(os.environ['RUNNER_TEMP']+'/onboard.json'))
+          assert d['scientifically_validated'] is False
+          assert d["candidates"][0]["science_status"]=="PRELIMINARY"
+          assert d['onboard']['science_status']=='UNVERIFIED_INPUTS'
+          assert d['onboard']['no_flight_recommendation'] is True
+          print('Onboard resource calculation consumed preliminary NASA source-derived series; NOT flight recommendation')
+          PY
+      - name: Preserve source-annotated derived evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: connecting-ridge-go-rust-onboard-preliminary
+          path: |
+            ${{ runner.temp }}/site.json
+            ${{ runner.temp }}/visibility.json
+            ${{ runner.temp }}/onboard.json
+          retention-days: 14
+          if-no-files-found: error

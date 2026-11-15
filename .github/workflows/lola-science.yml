@@ -1,0 +1,28 @@
+name: LOLA south-pole science prototype
+on:
+  push:
+    branches:
+      - feat/lola-southpole-horizon-science-20261114
+    paths:
+      - "science/**"
+      - ".github/workflows/lola-science.yml"
+  pull_request:
+    paths:
+      - "science/**"
+      - ".github/workflows/lola-science.yml"
+permissions:
+  contents: read
+jobs:
+  model:
+    name: terrain-horizon-projection-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Syntax check
+        run: python -m py_compile science/lola_horizon.py
+      - name: Test projection, geometry and failure modes
+        run: python -m unittest discover -s science/tests -v
