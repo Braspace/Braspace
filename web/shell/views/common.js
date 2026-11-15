@@ -19,9 +19,15 @@ export async function scenario(ctx) {
   return { data, site, t0, days, hours: days * 24 };
 }
 
-/** Sites picked for comparison (?a=&b=&c=), defaulting to the first three real sites. */
+/** Sites picked for comparison (?a=&b=&c=). Without ?a=, the site the user came from (?site=) is slot A;
+ *  empty slots take the next catalog sites not already picked, so the selection is never silently dropped. */
 export function pickedSites(data, query) {
-  const ids = LETTERS.map((L, i) => query[L.toLowerCase()] || (data.sites[i] && data.sites[i].id));
+  const known = id => data.sites.some(s => s.id === id);
+  const given = LETTERS.map(L => query[L.toLowerCase()]);
+  if (!given[0] && known(query.site)) given[0] = query.site;
+  const used = new Set(given.filter(known));
+  const spare = data.sites.map(s => s.id).filter(id => !used.has(id));
+  const ids = given.map(id => (id ? id : spare.shift()));
   return ids.map(id => data.sites.find(s => s.id === id)).filter(Boolean);
 }
 

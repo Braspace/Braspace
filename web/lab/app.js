@@ -4,7 +4,7 @@
 
 import { Viewer } from "./scene.js";
 import { TerrainGrid } from "./terrain.js";
-import { SiteSeries, rankSites, HOUR_MS } from "./data.js";
+import { SiteSeries, rankSites, HOUR_MS, scenarioFromHash } from "./data.js";
 import { azElToEnu, enuToBody } from "./coords.js";
 import { createLive, compareRow, OFFLINE_SEAL } from "./live.js";
 import { createSim, advance, telemetry, thrustDirection, DEFAULT_VEHICLE, MOON_R_REF } from "./physics.js";
@@ -70,6 +70,10 @@ async function loadIndex() {
   state.windowEnd = state.windowStart + (w.hours - 1) * HOUR_MS;
   const now = Math.floor(Date.now() / HOUR_MS) * HOUR_MS;
   state.t = now >= state.windowStart && now <= state.windowEnd ? now : state.windowStart;
+  const handed = scenarioFromHash(location.hash, state.index.sites.map(s => s.id), state.windowStart, state.windowEnd);
+  if (handed.siteId) state.siteId = handed.siteId;
+  if (handed.t !== null) state.t = handed.t;
+  if (handed.rejected.length) status("Scenario from the link not applied: " + handed.rejected.join(", ") + ". Showing the defaults instead.");
 }
 const siteById = id => state.index.sites.find(s => s.id === id);
 function series(id) {

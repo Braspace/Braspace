@@ -138,3 +138,22 @@ export function rankSites(entries, t0, hours, { minSunPct = 0, maxBlackoutH = In
     return { site, w, violations, score: w.bothPct - (violations.length ? 1000 : 0) };
   }).sort((a, b) => b.score - a.score);
 }
+
+/**
+ * Scenario handed over in the lab URL hash (#site=<id>&t=<YYYY-MM-DD | ISO hour>), e.g. from the shell's
+ * "Terreno 3D". Unknown site or a time outside the computed series is rejected (named), never guessed.
+ * Returns { siteId|null, t|null (ms, whole hour), rejected: string[] }.
+ */
+export function scenarioFromHash(hash, siteIds, start, end) {
+  const q = new URLSearchParams(String(hash || "").replace(/^#/, ""));
+  const out = { siteId: null, t: null, rejected: [] };
+  const site = q.get("site");
+  if (site) { if (siteIds.includes(site)) out.siteId = site; else out.rejected.push("site " + site); }
+  const raw = q.get("t");
+  if (raw) {
+    const t = Date.parse(raw.length === 10 ? raw + "T00:00Z" : raw.length <= 16 ? raw + "Z" : raw);
+    if (Number.isFinite(t) && t >= start && t <= end) out.t = Math.floor(t / HOUR_MS) * HOUR_MS;
+    else out.rejected.push("time " + raw);
+  }
+  return out;
+}

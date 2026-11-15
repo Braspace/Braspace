@@ -30,6 +30,9 @@ const view = (name) => async (outlet, ctx) => {
   await mod.render(outlet, ctx);
 };
 
+/** Scenario handed to the Polar Lab: same site and window start (t) as the shell view. */
+const labHash = q => { const p = new URLSearchParams(); if (q.site) p.set("site", q.site); if (q.t) p.set("t", q.t); if (q.d) p.set("d", q.d); const s = p.toString(); return s ? "#" + s : ""; };
+
 const routes = [
   { path: "/", title: "Escolha", render: view("escolha") },
   { path: "/explorar", title: "Explorar o polo sul", render: view("explorar") },
@@ -40,7 +43,7 @@ const routes = [
   { path: "/evidencias", title: "Fontes e limitações", render: view("evidencias") },
   // Board and 3D lab live on their own pages; replace() keeps the back button working (no redirect loop).
   { path: "/bordo", prefix: true, title: "Painel de bordo", external: ctx => location.replace(bordoURL("onboard/cockpit.html", ctx.parts, ctx.query)) },
-  { path: "/terreno", title: "Terreno 3D", external: ctx => location.replace("lab.html" + (ctx.site ? "#site=" + encodeURIComponent(ctx.site) : "")) },
+  { path: "/terreno", title: "Terreno 3D", external: ctx => location.replace("lab.html" + labHash(ctx.query)) },
   { path: "*", notFound: true, title: "Página não encontrada", render: (outlet) => {
     outlet.append(h("section", { class: "glass card" }, h("h1", { class: "title-l", "data-route-title": "", text: "Página não encontrada" }),
       h("p", { class: "t2", text: "Este endereço não existe nesta versão." }), h("a", { class: "btnA", href: "#/", text: "Voltar para a escolha" })));
