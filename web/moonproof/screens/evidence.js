@@ -13,7 +13,6 @@ import { TEXTS } from "./evidence-texts.js";
 import { TEXTS as CK } from "./cockpit-texts.js";
 import { REGISTRY } from "./evidence-registry.js";
 import { sourceRows, trustRows, buildPassport, pickVersion, parseConfigCommit, SECTIONS, TRUST_BLOCKS } from "./evidence-model.js";
-// @ts-ignore TS7016
 import { backendVectorSearch } from "../../lab/backend-bridge.js";
 register(TEXTS);
 register({ en: { "cockpit.assumed": CK.en["cockpit.assumed"] }, "pt-BR": { "cockpit.assumed": CK["pt-BR"]["cockpit.assumed"] } });

@@ -203,7 +203,7 @@ test("site card reads the team series as stored: layout, horizon interpolation a
 
 test("viewer source parses and declares its limits in both languages",async()=>{
  for(const name of ["app.js","ephemeris.js","polar-math.js"])execFileSync(process.execPath,["--check",path.join(root,"moon-hd",name)]);
- const app=await readFile(path.join(root,"moon-hd/app.js"),"utf8"),html=await readFile(path.join(root,"moon-hd.html"),"utf8");
+ const app=await readFile(path.join(root,"moon-hd/app.ts"),"utf8"),html=await readFile(path.join(root,"moon-hd.html"),"utf8");
  for(const phrase of ["NOT VALIDATED","NÃO VALIDADO","not endorsed by NASA","Shadows are cast only by terrain inside that cap","This is not how the Moon is lit at this time","shapes and shadows are not at true scale"])assert.ok(app.includes(phrase),phrase);
  assert.ok(html.includes("Not a NASA product; not endorsed by NASA."));
  for(const id of ["color","light","relief","markers","exposure","time","site-card","site-go","site-close"])assert.ok(html.includes(`id="${id}"`),id);

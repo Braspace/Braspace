@@ -19,7 +19,6 @@ import { TEXTS } from "./evidence-texts.js";
 import { TEXTS as CK } from "./cockpit-texts.js";
 import { REGISTRY } from "./evidence-registry.js";
 import { sourceRows, trustRows, buildPassport, pickVersion, parseConfigCommit, registryChip, SECTIONS, TRUST_BLOCKS } from "./evidence-model.js";
-// @ts-ignore TS7016
 import { backendVectorSearch } from "../../lab/backend-bridge.js";
 
 register(TEXTS);

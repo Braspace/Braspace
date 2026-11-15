@@ -37,8 +37,8 @@ test("beacons are outside GLB relief while preserving radial site direction",()=
 });
 
 test("live GLB swap uses baked-color renderer, refuses missing maps and lifts pins",()=>{
-  const src=readFileSync(new URL("../moon3d.js",import.meta.url),"utf8");
-  assert.match(src,/gltf\.scene\.traverse\(object=>/);
+  const src=readFileSync(new URL("../moon3d.ts",import.meta.url),"utf8");
+  assert.match(src,/gltf\.scene\.traverse\(\(object(?:: \w+)?\)=>/);
   assert.match(src,/bakedNASAColorMaterial\(THREE,material\)/);
   assert.match(src,/if\(texturedMeshes===0\)throw/);
   assert.match(src,/for\(const pin of markers\.children\)pin\.position\.setLength\(visualMarkerRadius\(true\)\)/);
