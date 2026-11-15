@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { polarSiteCoordinates, siteReliefHeight, clampDistance } from '../screens/cockpit-3d.js';
+import { polarSiteCoordinates, siteReliefHeight, clampDistance, siteChoices, visibleMarker } from '../screens/cockpit-3d.js';
 import { latLonToStereo, makeGrid } from '../../moon-hd/polar-math.js';
 
 test('site anchors prefer registered stereo metres, use Joel polar conversion only if needed', () => {
@@ -33,4 +33,28 @@ test('camera zoom is bounded; both cockpit and landing use the same ship model',
   const screen = readFileSync(new URL('../screens/cockpit.tsx', import.meta.url), 'utf8');
   const terrain = readFileSync(new URL('../core/terrain.ts', import.meta.url), 'utf8');
   assert.match(screen, /hdRelief: false/); assert.match(terrain, /if \(hdRelief && !RELIEF_2D\)/);
+});
+
+test('site choices retain all catalogue sites including map-only locations, without duplicate or blank IDs', () => {
+  assert.deepEqual(siteChoices([{id:'shackleton',name:'Shackleton',n:1},{id:'map-only',lat:12,lon:20},{id:'shackleton',name:'Duplicate'},{id:''}]), [
+    {id:'shackleton',label:'1 · Shackleton'},{id:'map-only',label:'map-only'}
+  ]);
+  const cockpit = readFileSync(new URL('../screens/cockpit-3d.tsx', import.meta.url), 'utf8');
+  assert.match(cockpit, /<select class="mp-cockpit-3d-site"/);
+  assert.match(cockpit, /onChange=\{e => selectSite\(e.currentTarget.value\)\}/);
+  assert.match(cockpit, /handle.select\(id\); options.onSelect\(id\)/);
+  assert.match(cockpit, /<details class="mp-cockpit-3d-camera"/);
+});
+
+test('only full visible marker hit areas are interactive; side panels, menus and off-screen markers are excluded', () => {
+  const viewport={left:0,right:320,top:0,bottom:844};
+  const marker={left:100,right:144,top:300,bottom:344};
+  assert.equal(visibleMarker(marker,viewport,[]),true);
+  assert.equal(visibleMarker(marker,viewport,[{left:0,right:104,top:200,bottom:500}]),false);
+  assert.equal(visibleMarker(marker,viewport,[{left:144,right:300,top:200,bottom:500}]),true);
+  assert.equal(visibleMarker({...marker,left:-1},viewport,[]),false);
+  assert.equal(visibleMarker({...marker,bottom:850},viewport,[]),false);
+  const cockpit = readFileSync(new URL('../screens/cockpit-3d.tsx', import.meta.url), 'utf8');
+  assert.match(cockpit, /attributeFilter: \["data-ck-hidden"\]/);
+  assert.match(cockpit, /if \(focused\) ui.querySelector<HTMLSelectElement>\("\.mp-cockpit-3d-site"\)\?\.focus\(\)/);
 });
