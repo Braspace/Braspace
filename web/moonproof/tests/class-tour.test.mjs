@@ -17,6 +17,11 @@ test("each mode has five short user-facing steps and a separate completion key",
  }
  assert.notEqual(tourStorageKey("class"),tourStorageKey("explore"));
 });
+test("present mode has on-demand, non-interrupting help for the quiz",()=>{
+ assert.equal(TOUR_STEPS.present.length,4);
+ assert.ok(TOUR_STEPS.present.every(step=>step.targets.length && step.pt && step.en));
+ assert.notEqual(tourStorageKey("present"),tourStorageKey("class"));
+});
 test("tour supports dismiss, reopen, per-mode storage, animation and reduced motion",async()=>{
  const s=await read("../screens/tour.js"),css=await read("../screens/tour.css");
  for(const feature of ["localStorage.setItem","localStorage.getItem","mp-tour-close","mp-tour-skip","mp-tour-next","mp-tour-prev","aria-modal","Escape","Tab","mp-tour-help","resize","scroll"]) assert.ok(s.includes(feature),feature);
@@ -25,7 +30,7 @@ test("tour supports dismiss, reopen, per-mode storage, animation and reduced mot
  assert.match(css,/@keyframes mpTourIn/);
 });
 test("Explore and Activity load their own optional shared tutorial",async()=>{
- for(const [file,mode] of [["explore.html","explore"],["activity.html","class"]]){
+ for(const [file,mode] of [["explore.html","explore"],["activity.html","class"],["present.html","present"]]){
    const html=await read("../"+file);
    assert.ok(html.includes('src="screens/tour.js" data-moon-tour="'+mode+'"'));
    assert.ok(html.includes('href="screens/tour.css"'));
