@@ -14,7 +14,7 @@ GitHub Actions está parado por cobrança da organização. Rodar `scripts/ci-lo
 1. Gerar backup do banco antes de trocar: `backup/pre-<IMAGEM>-<AAAAMMDD-HHMMSS>.dump`.
 2. Trocar a variável `IMAGEM` para a nova imagem e subir o serviço na harness.
 3. Conferir `/healthz` e `/readyz`, e a lista de GET em `API_MATRIX.csv`.
-4. Rollback: `IMAGEM=<imagem anterior>` e subir de novo. Imagem atual: `62bf446e386d`. Anterior citada: `20882693109b`.
+4. Rollback: `IMAGEM=<imagem anterior>` e subir de novo. Imagem atual: `ad83cfe7517c-sha` (15/11 15:53Z). Anteriores: `ad83cfe7517c`, `62bf446e386d`, `20882693109b`. Construir sempre com `BRASPACE_GIT_SHA` e validar com `BRASPACE_EXPECT_COMMIT` (ver `docs/COCKPIT_BACKEND_CONTRACT.md`).
 
 ## Deploy do Worker
 
@@ -28,7 +28,7 @@ Após publicar, conferir a borda com o mesmo curl da matriz (`API_MATRIX.csv`).
 ## Rollbacks
 
 - Worker: `2361697f` (só assets) ou `fb7a8e7b`.
-- Backend: `IMAGEM=20882693109b`, com restauração do dump se houver migração.
+- Backend: `IMAGEM=ad83cfe7517c` (mesmo código) ou `IMAGEM=62bf446e386d`, com restauração do dump se houver migração.
 
 ## Coordenação entre sessões
 
