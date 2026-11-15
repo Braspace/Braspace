@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { evaluateQuestion, gradeChoice, unavailableQuizMetric } from "../screens/quiz-grading.js";
 const m = (night, earth) => ({longestDarkH:{value:night},longestBlackoutH:{value:earth}});
 const limits = { night:60, blackout:72 };
@@ -59,4 +60,13 @@ test("an unavailable per-scenario lookup remains inconclusive without losing oth
  assert.equal(gradeChoice("A",out),"correct");
  assert.equal(gradeChoice("B",out),"unknown");
  assert.equal(gradeChoice("C",out),"incorrect");
+});
+
+test("projector isolates failed API/series requests by scenario, not whole page",()=>{
+ const ts=readFileSync(new URL("../screens/present.tsx",import.meta.url),"utf8");
+ const js=readFileSync(new URL("../screens/present.js",import.meta.url),"utf8");
+ for(const src of [ts,js]) {
+   assert.ok(src.includes("chosenWindows.map((w) => apiWindowMetrics(doc, w.site, w.start, w.hours || 336).catch(() => unavailableQuizMetric()))"));
+   assert.ok(src.includes("markReady();"));
+ }
 });
