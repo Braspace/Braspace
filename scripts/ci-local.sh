@@ -107,7 +107,12 @@ browser_qa() {
   kill $ap 2>/dev/null; return $rc
 }
 
-step "cloudflare worker same-origin API proxy contract (node --test)" node --test deploy/cloudflare/*.test.mjs || finish
+worker_contract() {
+  # The harness host has no node: run the Worker contract suite in the same pinned image as the smoke.
+  if command -v node >/dev/null 2>&1; then node --test deploy/cloudflare/*.test.mjs
+  else docker run --rm -v "$PWD:/src:ro" -w /src node:22.23.5-alpine sh -c 'node --test deploy/cloudflare/*.test.mjs'; fi
+}
+step "cloudflare worker same-origin API proxy contract (node --test)" worker_contract || finish
 step "docker build --target test (go vet+race, rust, web, science)" build_tests || finish
 step "build release image (needs test)" build_rel || finish
 step "build go test image" build_go_img || finish
