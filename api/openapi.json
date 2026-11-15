@@ -1159,7 +1159,7 @@
             "name": "hours",
             "in": "query",
             "required": false,
-            "description": "Window length, default 24, max 720",
+            "description": "Window length in hours, default 24, max 720. Must be a whole multiple of the series step, otherwise 422 GRID_NOT_ALIGNED; it is never rounded.",
             "schema": {
               "type": "number",
               "exclusiveMinimum": 0,
