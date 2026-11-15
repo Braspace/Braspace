@@ -79,7 +79,10 @@ function fakeCall(log, timeline) {
     if (p !== "/api/onboard/site-evaluate") return { ok: false, offline: false, error: "HTTP 404" };
     const errs = check("SiteOnboardRequest", o.body);
     if (errs.length) return { ok: false, offline: false, error: "HTTP 422 " + errs.join("; ") };
-    return { ok: true, data: { onboard: { science_status: "SYNTHETIC", inputs_sha256: "x", options: [{ timeline: timeline.map(c => ({ charge_wh: c })) }] } } };
+    // The actual API returns a complete hourly trace; a truncated reply must not
+    // be accepted as a successful evaluation of a longer mission.
+    const complete = Array.from({length: o.body.duration_hours}, (_, i) => timeline[i % timeline.length]);
+    return { ok: true, data: { onboard: { science_status: "SYNTHETIC", inputs_sha256: "x", options: [{ timeline: complete.map(c => ({ charge_wh: c })) }] } } };
   };
 }
 test("AUD-05: site-evaluate gets the full envelope; the battery margin is derived from the declared profile and the floor rule", async () => {

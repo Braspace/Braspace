@@ -66,9 +66,15 @@ test("duration above 30 days is rejected", () => {
   assert.equal(r.ok, false);
 });
 
-test("more than 480 samples is rejected", () => {
-  const c = { ...base, step_minutes: 1, samples: new Array(481).fill({ sun_visible: false, earth_visible: false }) };
+test("more than 720 samples is rejected", () => {
+  const c = { ...base, step_minutes: 1, samples: new Array(721).fill({ sun_visible: false, earth_visible: false }) };
   assert.equal(Req.buildRequest("demo", [c]).ok, false);
+});
+
+test("a full 30-day hourly window (720 samples) is accepted, not cut to 480", () => {
+  const c = { ...base, step_minutes: 60, max_comm_blackout_hours: 1, samples: new Array(720).fill({ sun_visible: true, earth_visible: true }) };
+  const r = Req.buildRequest("demo", [c]);
+  assert.equal(r.ok, true, JSON.stringify(r.errors));
 });
 
 test("blackout limit above scenario duration is rejected", () => {

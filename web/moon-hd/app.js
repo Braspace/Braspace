@@ -14,6 +14,8 @@
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/controls/OrbitControls.js/+esm";
 import { decodeEphemeris, indexAt, timeAt, pointsAt, bodyDirection, toGlobeScene, signedLon, elevationAtSouthPole, decodeOrientation, orientationAt, decodeSiteSeries, siteSkyAt } from "./ephemeris.js";
 import { R_REF, latLonToStereo, CAP_LAT } from "./polar-math.js";
+// @ts-ignore TS7016: JS module without types
+import { detectWebGL, problemModel } from "./fallback.js";
 import { THREE, R_KM, CAP_MATRIX, fetchJSON, fetchBinary, textureLoader, globeGeometry, createMoon, createCap, setPolarFrame, createStars } from "./scene.js";
 const DATA = "./data/moonhd/";
 const $ = (id) => document.getElementById(id);
@@ -67,11 +69,28 @@ let lang = params.get("lang") === "pt" ? "pt" : "en";
 const t = (key) => TEXT[lang][key] ?? TEXT.en[key] ?? key;
 // ---------------------------------------------------------------- renderer
 const canvas = $("view");
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
+// Created inside main(), after WebGL is detected: with no GPU the page shows a clear problem state instead of loading forever.
+let renderer = null, loadTexture = null, loopFn = null;
 const small = window.matchMedia("(max-width: 720px)").matches;
-const loadTexture = textureLoader(renderer, DATA);
+function startRenderer() {
+    const noGl = (cause) => Object.assign(new Error("WebGL unavailable: " + (cause?.message || cause)), { kind: "nowebgl" });
+    const probe = detectWebGL(() => document.createElement("canvas"));
+    if (!probe.ok)
+        throw noGl(probe.reason);
+    try {
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+    }
+    catch (e) {
+        throw noGl(e);
+    }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    loadTexture = textureLoader(renderer, DATA);
+    // A lost context is not fatal: tell the user, stop drawing, resume when the browser gives it back (THREE restores its own state).
+    canvas.addEventListener("webglcontextlost", e => { e.preventDefault(); renderer.setAnimationLoop(null); showProblem("lost"); });
+    canvas.addEventListener("webglcontextrestored", () => { clearProblem(); if (loopFn)
+        renderer.setAnimationLoop(loopFn); });
+}
 // ---------------------------------------------------------------- labels
 const labelLayer = $("labels");
 function makeLabel(text, kind) {
@@ -113,6 +132,7 @@ const obstacles = () => [".top", ".views", ".readout", ".site-card", ".panel", "
     .filter(e => e && !e.hidden).map(e => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; });
 // ---------------------------------------------------------------- app
 async function main() {
+    startRenderer();
     const manifest = await fetchJSON(DATA + "manifest.json");
     const [ephBuffer, orientationBuffer, catalog, gazetteer, colorTex, normalTex, heightTex, starTex, earthTex] = await Promise.all([
         fetchBinary(DATA + manifest.ephemeris.file, manifest.ephemeris.count * 8),
@@ -455,7 +475,7 @@ async function main() {
     // ---- loop
     const toCamera = new THREE.Vector3(), right = new THREE.Vector3(), upCam = new THREE.Vector3(), back = new THREE.Vector3();
     let last = performance.now();
-    renderer.setAnimationLoop((now) => {
+    loopFn = (now) => {
         const dt = Math.min(0.1, (now - last) / 1000);
         last = now;
         if (playing) {
@@ -503,7 +523,8 @@ async function main() {
                 visible = !(mode === "globe" && camera.position.dot(l.position) / distance / l.position.length() > 0.999);
             placeLabel(l, camera, visible);
         }
-    });
+    };
+    renderer.setAnimationLoop(loopFn);
     applyTime();
     // First view: from the sunlit side, looking up from the south so the polar region is in frame.
     globe.camera.position.copy(sunDir).multiplyScalar(0.75).add(earthDir.clone().multiplyScalar(0.45)).setY(-0.62).normalize().multiplyScalar(small ? 6.4 : 4.6);
@@ -514,13 +535,44 @@ async function main() {
     $("loading").classList.add("done");
     // Sharper colour on capable screens, after the first frame is already up.
     if (!small && renderer.capabilities.maxTextureSize >= 8192 && manifest.files["color_8k.jpg"])
-        loadTexture("color_8k.jpg", true).then(tex => { globeUniforms.colorMap.value.dispose(); globeUniforms.colorMap.value = tex; }).catch(() => { });
+        loadTexture("color_8k.jpg", true).then((tex) => { globeUniforms.colorMap.value.dispose(); globeUniforms.colorMap.value = tex; }).catch(() => { });
+}
+// The overlay is the one status element: a problem turns it into role="alert" with a way out, never a spinner.
+function showProblem(kind) {
+    const m = problemModel(kind, lang), box = $("loading");
+    clearProblem(false);
+    box.classList.remove("done");
+    box.classList.add("error");
+    box.setAttribute("role", m.role);
+    box.firstElementChild.textContent = m.message;
+    const extras = document.createElement("div");
+    extras.className = "problem-actions";
+    if (m.link) {
+        const a = document.createElement("a");
+        a.href = m.link.href;
+        a.textContent = m.link.text;
+        extras.append(a);
+    }
+    if (m.retry) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = m.retry;
+        b.addEventListener("click", () => location.reload());
+        extras.append(b);
+    }
+    if (extras.childElementCount)
+        box.append(extras);
+}
+function clearProblem(hide = true) {
+    const box = $("loading");
+    box.querySelector(".problem-actions")?.remove();
+    box.classList.remove("error");
+    box.setAttribute("role", "status");
+    if (hide)
+        box.classList.add("done");
 }
 function fail(error) {
     console.error(error);
-    const box = $("loading");
-    box.classList.remove("done");
-    box.classList.add("error");
-    box.firstElementChild.textContent = t("failed");
+    showProblem(error?.kind === "nowebgl" ? "nowebgl" : "failed");
 }
 main().catch(fail);

@@ -70,7 +70,7 @@ export function resolveRoute<R extends RouteDef>(routes: R[], path: string): { r
 /** URL of the cockpit page for a board route (keeps ?site=). */
 export function bordoURL(base: string, parts: string[], query: Record<string, string | undefined>): string {
   const slug = parts[1] && BORDO_SECTIONS[parts[1]] ? parts[1] : "";
-  return base + buildHash("/bordo" + (slug ? "/" + slug : ""), { site: query.site });
+  return base + buildHash("/bordo" + (slug ? "/" + slug : ""), { site: query.site, t: query.t, d: query.d });
 }
 
 declare global { interface Window { MoonproofRouter?: unknown; } }
@@ -91,11 +91,23 @@ export function loadLastRoute(): string | null { try { return localStorage.getIt
 export function startRouter({ routes, outlet, appName = "moonproof", onAfter }: {
   routes: RouteDef[]; outlet: HTMLElement; appName?: string; onAfter?: (ctx: RouteCtx, route: RouteDef) => void;
 }) {
-  let current: string | null = null;
+  let gen = 0; // navigation generation: only the newest navigation may touch the DOM or call onAfter
+  let routeHash = "#/"; // last real route hash, restored after an in-page anchor (skip link)
   const go = (path: string, query: Record<string, string | null | undefined> = {}) => { location.hash = buildHash(path, query); };
   async function handle() {
     const legacy = legacyRedirect(location.hash);
     if (legacy) { location.replace(legacy); return; }
+    // In-page anchor (skip link "#view"): not a route. Focus the target and put the route hash back.
+    const raw = location.hash;
+    if (raw && !raw.startsWith("#/")) {
+      let id = raw.slice(1); try { id = decodeURIComponent(id); } catch { /* keep raw id */ }
+      const target = document.getElementById(id);
+      if (target) {
+        target.setAttribute("tabindex", "-1"); target.focus();
+        history.replaceState(null, "", routeHash);
+        return;
+      }
+    }
     const { path, parts, query } = parseHash(location.hash || "#/");
     const { route, rest } = resolveRoute(routes, path);
     if (!route) return;
@@ -104,12 +116,16 @@ export function startRouter({ routes, outlet, appName = "moonproof", onAfter }: 
       go: (p, q) => go(p, { site: query.site, ...q }),
       setSite: (id: string) => { const q = { ...query, site: id }; history.replaceState(null, "", buildHash(path, q)); return q; },
     };
+    const mine = ++gen;
+    routeHash = location.hash || "#/";
     if (route.external) { route.external(ctx); return; }
-    current = path;
+    // Views render into a private stage so a slow, superseded render can never write into the live outlet.
+    const stage = document.createElement("div");
     outlet.replaceChildren();
     outlet.setAttribute("aria-busy", "true");
-    try { await route.render?.(outlet, ctx); } finally { outlet.removeAttribute("aria-busy"); }
-    if (current !== path) return; // a newer navigation happened while rendering
+    try { await route.render?.(stage, ctx); } finally { if (mine === gen) outlet.removeAttribute("aria-busy"); }
+    if (mine !== gen) { stage.replaceChildren(); return; } // a newer navigation happened while rendering: drop this view
+    outlet.replaceChildren(...stage.childNodes);
     document.title = (typeof route.title === "function" ? route.title(ctx) : route.title) + " · " + appName;
     const h1 = outlet.querySelector("[data-route-title]") || outlet.querySelector("h1");
     if (h1) { h1.setAttribute("tabindex", "-1"); (h1 as HTMLElement).focus({ preventScroll: false }); }

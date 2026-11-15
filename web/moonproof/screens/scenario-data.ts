@@ -17,9 +17,9 @@ interface ApiMetricsBlock {
   earth_visible_fraction?: unknown; simultaneous_fraction?: unknown;
 }
 interface CompareResponse { results?: { data_status?: string; science_status?: string; evaluation?: { metrics?: ApiMetricsBlock }; site?: { series_sha256?: string } }[]; }
-interface DelayOption { kind?: string; site_id?: string; distance_km?: number; data_status?: string; admissible?: boolean; reason?: string; science_status?: string; delay_hours?: number; metrics?: ApiMetricsBlock }
+interface DelayOption { kind?: string; site_id?: string; distance_km?: number; data_status?: string; admissible?: boolean; reason?: string; science_status?: string; delay_hours?: number; start_utc?: string; metrics?: ApiMetricsBlock }
 interface DelayResponse { options?: DelayOption[]; }
-export interface Nearby { siteId: string | undefined; km: number | null; available: boolean; admissible: boolean | null; reason: string | undefined; status: string | null; }
+export interface Nearby { siteId: string | undefined; km: number | null; startUtc: string | null; delayH: number | null; available: boolean; admissible: boolean | null; reason: string | undefined; status: string | null; }
 
 export async function loadAll(doc: Pick<SitesDoc, "sites">): Promise<Map<string, SiteSeriesLike>> {
   const m = new Map<string, SiteSeriesLike>();
@@ -86,9 +86,11 @@ export function apiDelayMetrics({ siteId, startIso, hours, delayH, rules }: { si
     if (!r.ok) return { online: !r.offline, base: null, delayed: null, nearby: [] };
     const pick = (o: DelayOption | undefined) => (o && o.data_status === "AVAILABLE" && o.metrics ? mapApiMetrics(o.metrics, o.science_status, "POST /api/scenarios/delay") : null);
     const opts = r.data?.options || [];
-    // Nearby catalog sites the API evaluated at the delayed start (from the Polar Lab / onboard replan, now in v3).
+    // The API evaluates nearby alternatives at their own stated date (currently the original start).
     const nearby: Nearby[] = opts.filter(o => o.kind === "nearby_site").map(o => ({ siteId: o.site_id, km: o.distance_km ?? null,
-      available: o.data_status === "AVAILABLE", admissible: o.data_status === "AVAILABLE" ? !!o.admissible : null, reason: o.reason || o.data_status, status: o.science_status || null }));
+      startUtc: typeof o.start_utc === "string" && Number.isFinite(Date.parse(o.start_utc)) ? o.start_utc : null,
+      delayH: typeof o.delay_hours === "number" && Number.isFinite(o.delay_hours) ? o.delay_hours : null,
+      available: o.data_status === "AVAILABLE", admissible: o.data_status === "AVAILABLE" && typeof o.admissible === "boolean" ? o.admissible : null, reason: o.reason || o.data_status, status: o.science_status || null }));
     return { online: true, base: pick(opts.find(o => o.kind === "baseline")), delayed: pick(opts.find(o => o.kind === "delay" && o.delay_hours === delayH)), nearby };
   });
 }

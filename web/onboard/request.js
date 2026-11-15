@@ -5,7 +5,7 @@
 (function (root) {
     "use strict";
     const MAX_CANDIDATES = 8;
-    const MAX_SAMPLES = 480;
+    const MAX_SAMPLES = 720;
     const MAX_DURATION_MIN = 43200; // 30 days
     const MAX_VALUE = 1e8;
     function finite(v) { return typeof v === "number" && Number.isFinite(v); }

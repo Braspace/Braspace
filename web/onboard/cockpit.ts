@@ -44,8 +44,15 @@ type AppState = {
     api: null,            // last successful response
     apiError: null,
     saved: [],
-    sens: null
+    sens: null,
+    realSite: null,       // id of a real place asked for by the link (it has no browser model)
+    fallback: null        // { why }: the real place has no series, so the synthetic place below is shown instead (said on every panel)
   };
+  const FALLBACK_SITE = "synthetic-demo-a";
+  const SITE_ID = /^[a-z0-9][a-z0-9._-]{0,80}$/i;
+  const siteName = () => (M.SITES[S.site] && M.SITES[S.site].name) || S.site;
+  // The site the URL must name: the one that was asked for, even while a synthetic stand-in is on screen.
+  const urlSite = () => (S.fallback && S.realSite) || S.site;
 
   // ---------- helpers ----------
   // Returns Dyn: callers read form-control props (value, checked, disabled) off the nodes they build.
@@ -91,12 +98,17 @@ type AppState = {
     const life = M.lifeSupport(S.durationH);
     const live = liveNow();
     if (live) {
-      const stepMin = Math.round((live.stepH || 1) * 60);
-      const t0 = Date.parse(live.points[0].epoch_utc);
-      const tr = live.points.map((p: Dyn, i: Dyn) => ({ i, ms: Date.parse(p.epoch_utc), tH: Date.parse(p.epoch_utc) / 3600e3, src: "api",
+      // Every number of every card comes from this one windowed track, so hours, longest block and run times agree.
+      const stepMin = live.win.stepMin;
+      const tr: Dyn = live.points.map((p: Dyn, i: Dyn) => ({ i, ms: Date.parse(p.epoch_utc), tH: Date.parse(p.epoch_utc) / 3600e3, src: "api",
         sun_visible: p.sun_visible, earth_visible: p.earth_visible, sun_margin: p.sun_margin_deg, earth_margin: p.earth_margin_deg }));
-      tr.stepMin = stepMin; tr.t0 = t0;
-      return { tr, sum: L.summaryFromMetrics(live.metrics), life, viol: M.violations(L.summaryFromMetrics(live.metrics)!, null), src: "api", live };
+      tr.stepMin = stepMin; tr.t0 = tr[0].ms;
+      const sum = M.summary(tr, stepMin);
+      // apiSum: the API's own headline metrics, kept to cross-check the windowed numbers, never shown as a second value.
+      return { tr, sum, apiSum: L.summaryFromMetrics(live.metrics), life, viol: M.violations(sum, null), src: "api", live };
+    }
+    if (!M.SITES[S.site]) {   // a real place whose series has not arrived: there is no browser model for it, so no numbers
+      return { tr: [] as Dyn, sum: { sunlitH: 0, earthH: 0, darkH: 0, blockH: 0, durationH: 0 }, life, viol: [] as Dyn[], src: "none", live: null };
     }
     const tr = L.stamp(track(0), startMs(), S.stepMin);
     const sum = M.summary(tr, S.stepMin);
@@ -104,22 +116,28 @@ type AppState = {
   }
   function liveNow() {
     const k = seriesKey();
-    return S.series && S.series.key === k && S.series.points ? { points: S.series.points, metrics: S.series.metrics, science_status: S.series.science_status, engine_science_status: S.series.engine_science_status, stepH: S.series.stepH } : null;
+    if (!(S.series && S.series.key === k && S.series.points)) return null;
+    const win = L.fitSeries(S.series.points, startMs(), S.durationH, S.stepMin);   // [start, start + duration) at the parameter step
+    if (!win.points.length) return null;
+    return { points: win.points, win, metrics: S.series.metrics, science_status: S.series.science_status, engine_science_status: S.series.engine_science_status, stepH: win.stepMin / 60 };
   }
   // A small seal glued to the value it describes.
   function seal(src: Dyn, info?: Dyn) { return h("span", { class: "tag " + (src === "api" ? "SIM" : src === "nosource" ? "PARC" : "SINT"), text: L.seal(src, info) }); }
   function sealOf(sc: Dyn) { return sc.src === "api" ? seal("api", sc.live) : seal("local"); }
 
   // ---------- API ----------
-  function buildApiRequest(delays: Dyn) {
-    const cands = delays.map((d: Dyn) => {
-      const tr = track(d);
+  function buildApiRequest(delays: Dyn): Dyn {
+    // A real place has no browser model: its energy request uses the samples of its own API series, no delay variants.
+    const live = M.SITES[S.site] ? null : liveNow();
+    if (!M.SITES[S.site] && !live) return { ok: false, errors: ["Este lugar real ainda não tem série da API: a energia não pode ser calculada."] };
+    const cands = (live ? [0] : delays).map((d: Dyn) => {
+      const tr: Dyn[] = live ? live.points : track(d);
       return {
         id: "atraso-" + d + "h",
         site_id: S.site,
-        start_utc: iso(startMs() + d * 3600e3),
+        start_utc: live ? live.points[0].epoch_utc : iso(startMs() + d * 3600e3),
         source_claim: "SYNTHETIC-NOT-NASA",
-        step_minutes: S.stepMin,
+        step_minutes: live ? live.win.stepMin : S.stepMin,
         max_comm_blackout_hours: S.power.max_comm_blackout_hours,
         power: {
           battery_capacity_wh: S.power.battery_capacity_wh,
@@ -240,7 +258,7 @@ type AppState = {
     const count = Math.floor((S.durationH * 60) / S.stepMin);
     if (!(S.durationH >= 1 && S.durationH <= 720)) out.push("A duração deve ficar entre 1 e 720 h.");
     if (!(S.stepMin >= 1 && S.stepMin <= 360)) out.push("O passo deve ficar entre 1 e 360 min.");
-    if (S.durationH >= 1 && S.stepMin >= 1 && count > 480) out.push("Muitas amostras (" + count + "). Aumente o passo ou reduza a duração: o máximo é 480.");
+    if (S.durationH >= 1 && S.stepMin >= 1 && count > 720) out.push("Muitas amostras (" + count + "). Aumente o passo ou reduza a duração: o máximo é 720.");
     POWER_FIELDS.forEach(([k, label]) => { const v = S.power[k]; if (!(Number.isFinite(v) && v >= 0)) out.push(label + " precisa ser um número igual ou maior que zero."); });
     if (Number.isFinite(S.power.reserve_wh) && Number.isFinite(S.power.battery_capacity_wh) && S.power.reserve_wh > S.power.battery_capacity_wh) out.push("A reserva não pode ser maior que a capacidade da bateria.");
     if (Number.isFinite(S.power.initial_charge_wh) && Number.isFinite(S.power.battery_capacity_wh) && S.power.initial_charge_wh > S.power.battery_capacity_wh) out.push("A carga inicial não pode ser maior que a capacidade.");
@@ -280,7 +298,7 @@ type AppState = {
 
     const placeCard = entryCard("1", "Lugar", "De onde Sol e Terra são vistos. Só aparecem como disponíveis os lugares com série no servidor.",
       h("label", {}, "Lugar sintético",
-        h("select", { id: "site", onchange: (e: Dyn) => { if (!e.target.selectedOptions[0].disabled) { S.site = e.target.value; change(); } } },
+        h("select", { id: "site", onchange: (e: Dyn) => { if (!e.target.selectedOptions[0].disabled) setSite(e.target.value); } },
           opts.map(o => h("option", { value: o.id, selected: o.id === S.site, disabled: !o.ok }, o.label)))));
 
     const coverage = sky && sky.start_utc && sky.end_utc
@@ -417,7 +435,7 @@ type AppState = {
     if (live) {
       const skyBy = sky ? new Map<string, LiveSkySample>(sky.samples.map((x: LiveSkySample): [string, LiveSkySample] => [x.epoch_utc, x])) : null;
       const site = M.SITES[S.site] || { rough: 0 };
-      return live.points.map((p: Dyn, i: Dyn) => {
+      return live.points.map((p: Dyn, i: Dyn): Dyn => {
         const ms = Date.parse(p.epoch_utc), b = M.bodiesAt(ms / 3600e3), sk = skyBy && skyBy.get(p.epoch_utc);
         if (sk) return { i, ms, src: "api", angles: "api", sunAz: sk.sun.azimuth_deg, sunEl: sk.sun.elevation_deg, earthAz: sk.earth.azimuth_deg, earthEl: sk.earth.elevation_deg,
           sun_visible: p.sun_visible, earth_visible: p.earth_visible, sun_margin: p.sun_margin_deg, earth_margin: p.earth_margin_deg };
@@ -462,6 +480,12 @@ type AppState = {
       reachable: r.status !== 0, httpStatus: r.status };
     if (!lv) S.series.points = null;
     S.loadingKey = null;
+    // A real place from the link has no browser model. Without its series the board shows the synthetic place,
+    // and says so on every panel (provenanceNotes); the URL keeps naming the real place.
+    if (!S.series.points && S.realSite && S.site === S.realSite && !M.SITES[S.site]) {
+      S.fallback = { why: !S.series.reachable ? "a API não respondeu" : "a API respondeu " + S.series.status };
+      S.site = FALLBACK_SITE; S.api = null; S.t = 0;
+    }
     renderBadges(); renderAlarm(); renderTab();
   }
   function ensureLive() {
@@ -605,50 +629,41 @@ type AppState = {
 
   // Windows view: a summary, a timeline bar of light and Earth visibility over the whole
   // scenario, and one table listing each window with its duration. Geometric visibility only.
-  function runsOf(tr: Dyn, key: Dyn, want: Dyn) {
-    const runs: [number, number][] = [];
-    let start: number | null = null;
-    tr.forEach((s: Dyn, i: Dyn) => {
-      const on = !!s[key] === want;
-      if (on && start === null) start = i;
-      if (!on && start !== null) { runs.push([start, i - 1]); start = null; }
-    });
-    if (start !== null) runs.push([start, tr.length - 1]);
-    return runs;
-  }
+  const runsOf = L.runsOf;   // shared with the tests: one definition of a window
 
   VIEWS.janelas = () => {
     const { tr, sum } = scenario();
     if (!tr.length) return [noDataState("04 · Janelas de luz e de Terra")];
-    const step = S.stepMin;
+    const step = stepOf(tr);   // the same step the other panels read (Geometria, Visão geral)
     const total = Math.max(1, tr.length);
     const sunRuns = runsOf(tr, "sun_visible", true);
     const earthRuns = runsOf(tr, "earth_visible", true);
-    const blockRuns = runsOf(tr, "earth_visible", false);
-    const at = (i: Dyn) => fmt(startMs() + i * step * 60e3);
-    const hours = (a: Dyn, b: Dyn) => f1((b - a + 1) * step / 60);
+    // Times come from the samples themselves; a window is [start, end): end is the first instant after its last sample.
+    const span = ([a, b]: [number, number]) => L.runSpan(tr, [a, b], step);
+    const at = (i: Dyn) => fmt(tr[i].ms);
+    const endAt = (i: Dyn) => fmt(tr[i].ms + step * 60e3);
+    const hours = (a: Dyn, b: Dyn) => f1(span([a, b]).hours);
     const pct = (i: Dyn) => (i / total * 100).toFixed(3) + "%";
     const width = (a: Dyn, b: Dyn) => ((b - a + 1) / total * 100).toFixed(3) + "%";
 
-    const longestBlock = blockRuns.reduce((m, [a, b]) => Math.max(m, (b - a + 1) * step / 60), 0);
     const summary = h("section", { class: "panel span2" },
       h("div", { class: "grid four" },
         h("div", {}, h("div", { class: "label", text: "Janelas de Terra visível" }), h("strong", { class: "num", text: String(earthRuns.length) })),
         h("div", {}, h("div", { class: "label", text: "Janelas com luz" }), h("strong", { class: "num", text: String(sunRuns.length) })),
-        h("div", {}, h("div", { class: "label", text: "Maior bloqueio da Terra" }), h("strong", { class: "num", text: f1(longestBlock) + " h" })),
+        h("div", {}, h("div", { class: "label", text: "Maior bloqueio da Terra" }), h("strong", { class: "num", text: f1(sum.blockH) + " h" })),
         h("div", {}, h("div", { class: "label", text: "Horas com Terra visível" }), h("strong", { class: "num", text: f1(sum.earthH) + " h de " + f1(sum.durationH) + " h" }))));
 
     // Timeline: two rows over the whole scenario, placed by sample index.
     const bar = (runs: Dyn, color: Dyn, label: Dyn) => h("div", { class: "tl-row" },
       h("span", { class: "tl-label", text: label }),
       h("div", { class: "tl-track", role: "img", "aria-label": label + ": " + runs.length + " janela(s)" },
-        runs.map(([a, b]: number[]) => h("span", { class: "tl-seg", title: at(a) + " até " + at(b), style: "left:" + pct(a) + ";width:" + width(a, b) + ";background:" + color }))));
+        runs.map(([a, b]: number[]) => h("span", { class: "tl-seg", title: at(a) + " até " + endAt(b) + " (fim exclusivo)", style: "left:" + pct(a) + ";width:" + width(a, b) + ";background:" + color }))));
     const timeline = h("section", { class: "panel span2" },
       h("h2", { text: "Linha do tempo da janela" }),
       h("div", { class: "tl" },
         bar(sunRuns, "var(--amber)", "Luz"),
         bar(earthRuns, "var(--green)", "Terra visível")),
-      h("div", { class: "tl-axis dim" }, h("span", { text: at(0) }), h("span", { text: at(tr.length - 1) })),
+      h("div", { class: "tl-axis dim" }, h("span", { text: at(0) }), h("span", { text: endAt(tr.length - 1) + " (exclusivo)" })),
       h("p", { class: "note", text: "Cada faixa mostra uma janela. Passe o cursor sobre uma faixa para ver o início e o fim." }),
       S.audience === "educational" ? edu("Luz e Terra visível são medidas separadamente: a nave pode ter Sol e ainda não ver a Terra, ou o contrário.") : null);
 
@@ -656,8 +671,8 @@ type AppState = {
     const table = rows.length === 0
       ? h("p", { class: "note", text: "Nenhuma janela no intervalo." })
       : h("div", { class: "scroll" }, h("table", { class: "table" },
-          h("thead", {}, h("tr", {}, h("th", { text: "tipo" }), h("th", { text: "início (UTC)" }), h("th", { text: "fim (UTC)" }), h("th", { class: "n", text: "horas" }))),
-          h("tbody", {}, rows.slice(0, 200).map(([k, a, b]) => h("tr", {}, h("td", { text: k }), h("td", { text: at(a) }), h("td", { text: at(b) }), h("td", { class: "n", text: hours(a, b) }))))));
+          h("thead", {}, h("tr", {}, h("th", { text: "tipo" }), h("th", { text: "início (UTC)" }), h("th", { text: "fim (UTC, exclusivo)" }), h("th", { class: "n", text: "horas" }))),
+          h("tbody", {}, rows.slice(0, 200).map(([k, a, b]) => h("tr", {}, h("td", { text: k }), h("td", { text: at(a) }), h("td", { text: endAt(b) }), h("td", { class: "n", text: hours(a, b) }))))));
     const list = h("section", { class: "panel span2" },
       h("h2", { text: "Janelas por tipo" }),
       table,
@@ -889,7 +904,7 @@ type AppState = {
     return h("div", { class: "site-legend" }, Object.entries(M.SITES).map(([id, s]) => {
       const on = id === S.site;
       return h("button", { type: "button", class: "site-chip", "aria-pressed": on ? "true" : "false",
-        onclick: () => { S.site = id; S.api = null; renderAlarm(); renderTab(); } },
+        onclick: () => setSite(id) },
         h("span", { class: "dot", style: "background:" + (on ? TK.earth : TK.sun) }),
         h("strong", { text: s.name }),
         h("span", { class: "dim num", text: "lat " + s.lat.toFixed(2) + "° · lon " + s.lon.toFixed(2) + "° · " + (s.lat + 90).toFixed(2) + "° do polo" }));
@@ -953,7 +968,7 @@ type AppState = {
     const { sum } = sc1;
     const opt = apiOption(0);
     const record = {
-      site: M.SITES[S.site].name, start_utc: iso(startMs()), duration_h: S.durationH, step_min: S.stepMin,
+      site: siteName(), start_utc: iso(startMs()), duration_h: S.durationH, step_min: S.stepMin,
       sunlit_h: sum.sunlitH, dark_h: sum.darkH, earth_visible_h: sum.earthH, earth_blocked_h: sum.blockH,
       battery_min_wh: opt ? opt.metrics.minimum_charge_wh : null, api_status: opt ? opt.simulation_status : "NAO_CALCULADO",
       synthetic: sc1.src !== "api", source: sc1.src === "api" ? "api:" + (sc1.live.science_status || "?") : "browser-model SYNTHETIC"
@@ -1110,6 +1125,7 @@ type AppState = {
     if (S.delay && S.delay.key === key && S.delay.rows && S.delay.rows.length) {
       return { src: "api", status: S.delay.rows[0].science_status, rows: S.delay.rows.map((r: Dyn) => ({ d: r.delay_hours, v: r.admissible ? "VIAVEL" : "NAO_VIAVEL", darkH: r.darkH, blockH: r.blockH, why: r.breached, cons: r.consumables })) };
     }
+    if (!M.SITES[S.site]) return { src: "none", rows: [] };   // real place: no browser model, so no stand-in numbers
     return { src: "local", rows: REPLAN_DELAYS.map(d => {
       const sum = M.summary(track(d), S.stepMin);
       return { d, v: M.verdict(M.violations(sum, null), undefined), darkH: sum.darkH, blockH: sum.blockH, why: M.violations(sum, null).map(x => x.text) };
@@ -1123,7 +1139,8 @@ type AppState = {
       h("div", { class: "scroll" }, h("table", { class: "table" },
         h("thead", {}, h("tr", {}, h("th", { text: "atraso" }), h("th", { text: "resultado" }), h("th", { class: "n", text: "escuro" }), h("th", { class: "n", text: "Terra bloqueada" }))),
         h("tbody", {}, rows))),
-      h("div", {}, dr.src === "api" ? seal("api", { science_status: dr.status }) : seal("local")),
+      dr.src === "none" ? h("p", { class: "note", text: "A API de atraso ainda não respondeu para este lugar real e não há modelo do navegador para ele: sem números." }) : null,
+      h("div", {}, dr.src === "api" ? seal("api", { science_status: dr.status }) : dr.src === "none" ? seal("nosource") : seal("local")),
       h("p", { class: "note", text: "Limites declarados no pedido (escuridão ≤ " + M.LIMITS.darkH + " h, Terra ≥ 50%), não requisitos de missão." }));
   }
 
@@ -1141,7 +1158,7 @@ type AppState = {
     return [
       h("div", { class: "title span2" },
         h("div", {}, h("h1", { text: "Visão geral da missão" }),
-          h("p", { text: M.SITES[S.site].name + " · início " + fmt(startMs()) + " · " + S.durationH + " h" }), h("p", { class: "dim" }, sealOf(sc), " ", sc.src === "api" ? h("span", { class: "dim", text: "engine: " + (sc.live.engine_science_status || "—") }) : null))),
+          h("p", { text: siteName() + " · início " + fmt(startMs()) + " · " + S.durationH + " h" }), h("p", { class: "dim" }, sealOf(sc), " ", sc.src === "api" ? h("span", { class: "dim", text: "engine: " + (sc.live.engine_science_status || "n/d") }) : null))),
       h("div", { class: "grid four span2" },
         kpi("Horas com luz", f1(sum.sunlitH, 0), " h", f1(sum.sunlitH / Math.max(1, sum.durationH) * 100, 0) + "% do período", "flat", SL()),
         kpi("Maior escuridão", f1(sum.darkH, 0), " h", sum.darkH > M.LIMITS.darkH ? "acima do limite de " + M.LIMITS.darkH + " h" : "dentro do limite", sum.darkH > M.LIMITS.darkH ? "down" : "up", SL()),
@@ -1620,14 +1637,18 @@ type AppState = {
       } else if (S.onboardMax && S.onboardMax < S.durationH && res.ok) {
         res.windowNote = "Limite da API: " + S.onboardMax + " h; a avaliação cobre só as primeiras " + S.onboardMax + " h de " + S.durationH + " h.";
       }
+      // Never a silent cut: the evaluated horizon is recorded and printed next to the result, with its UTC end.
+      if (res.ok) res.coverage = { hours: body.duration_hours, of: S.durationH, startMs: startMs(), endMs: startMs() + body.duration_hours * 3600e3 };
       S.apiResults.siteEval = res;
     });
-    let body = h("p", { class: "dim", text: "Ainda não consultado. Só lugares com série ingerida (synthetic-demo-a e -b) são aceitos." });
+    let body = h("p", { class: "dim", text: "Ainda não consultado. Só lugares com série ingerida (synthetic-demo-a e -b) são aceitos." + (S.onboardMax ? " Limite da API: " + S.onboardMax + " h por consulta (WINDOW_TOO_LONG acima disso)." : "") });
     if (r && !r.ok) body = apiError(r);
     if (r && r.ok) {
       const c0 = (r.data.candidates || [])[0] || {};
+      const cov = r.coverage, partial = cov && cov.hours < cov.of;
       body = h("div", {}, r.windowNote ? h("p", { class: "caution", role: "status", id: "window-note", text: r.windowNote }) : null, h("dl", { class: "readout" },
-        h("dt", { text: "decisão combinada" }), h("dd", { text: decisionText(r.data.combined_decision) }),
+        h("dt", { text: "horizonte avaliado" }), h("dd", { id: "energy-horizon", text: cov ? cov.hours + " h de " + cov.of + " h · " + fmt(cov.startMs) + " até " + fmt(cov.endMs) + " (fim exclusivo)" + (partial ? " · PARCIAL" : "") : "N/D" }),
+        h("dt", { text: "decisão combinada" }), h("dd", { text: decisionText(r.data.combined_decision) + (partial ? " (só nas primeiras " + cov.hours + " h)" : "") }),
         h("dt", { text: "simulador de energia (estado)" }), h("dd", { text: r.data.onboard ? (r.data.onboard.decision || r.data.onboard.simulation_status || "—") : "—" }),
         h("dt", { text: "ciência do primeiro candidato" }), h("dd", { text: c0.science_status || "—" }),
         h("dt", { text: "riscos quebrados (primeiro candidato)" }), h("dd", { text: (c0.breached_risks || []).length ? String(c0.breached_risks.length) : "nenhum" })));
@@ -1914,11 +1935,11 @@ type AppState = {
   function siteOptions() {
     const api = S.sitesApi || [];
     const byId = Object.fromEntries(api.map((s: Dyn) => [s.id, s]));
-    const ids = [...new Set([...Object.keys(M.SITES), ...api.map((s: Dyn) => s.id)])];
+    const ids = [...new Set([...Object.keys(M.SITES), ...api.map((s: Dyn) => s.id), S.site])];   // S.site: a real place from the link must stay selectable
     return ids.map(id => {
       const a = byId[id], local = M.SITES[id];
       const name = (local && local.name) || (a && a.name) || id;
-      const ok = !!(a && a.series) && !!local;
+      const ok = (!!(a && a.series) && !!local) || (!local && id === S.site);
       return { id, ok, label: id + " · " + name + (ok ? "" : " (sem série)") };
     });
   }
@@ -1936,13 +1957,43 @@ type AppState = {
   }
 
   // ---------- rendering ----------
+  // Tabs that only exist in the browser model (synthetic places). A real place gets an explicit "no model" panel.
+  const LOCAL_ONLY = new Set(["horizonte", "replan", "sens"]);
+  // Notes that stay above EVERY tab (renderTab replaces the children, so they are rebuilt each time, never added once):
+  // the real place that was asked for and is not shown, the SIM seal that goes with that, and step or coverage differences.
+  function provenanceNotes() {
+    const out = [];
+    if (S.fallback && S.realSite) {
+      out.push(h("div", { class: "caution span2", role: "status", id: "provenance-note" },
+        h("span", { class: "tag SIM", text: "SIM" }), " ",
+        "O local real \"" + S.realSite + "\" não tem série na API (" + S.fallback.why + "). Os números abaixo NÃO são desse local: são do modelo sintético do lugar " + S.site + ", só para exemplo. ",
+        h("a", { href: "../index.html" + (RT ? RT.buildHash("/explorar", { site: S.realSite }) : "#/explorar") }, "Abrir em Explorar com dados LOLA + SPICE")));
+    } else if (S.realSite && S.site === S.realSite && !liveNow()) {
+      out.push(h("div", { class: "note span2", role: "status", id: "provenance-note" }, "Local real \"" + S.realSite + "\": buscando a série na API. Não há modelo do navegador para ele, então não há números até a série chegar."));
+    }
+    const live = liveNow();
+    if (live && live.win.note) out.push(h("div", { class: "note span2", role: "status", id: "window-step-note" }, live.win.note));
+    return out;
+  }
+  function viewNodes() {
+    ensureLive();
+    let body;
+    if (!M.SITES[S.site] && S.tab !== "entrada" && (LOCAL_ONLY.has(S.tab) || !liveNow())) {
+      body = LOCAL_ONLY.has(S.tab) && liveNow()
+        ? [h("section", { class: "panel span2" }, h("h2", { text: TAB_TITLE[S.tab] }), h("div", { class: "empty" },
+            h("strong", { text: "Este painel só existe no modelo sintético do navegador." }),
+            h("span", { text: "O local real \"" + S.site + "\" não tem modelo local, e o painel não inventa números para ele. Veja Visão geral, Geometria, Janelas e Energia, que usam a série da API." })))]
+        : [noDataState(TAB_TITLE[S.tab] || S.tab)];
+    } else body = VIEWS[S.tab]();
+    return [...provenanceNotes(), ...body];
+  }
   function renderTab() {
     const box = $("views");
     const top = $("top-site");
     if (top && top.value !== S.site) top.value = S.site;
     let nodes;
     try {
-      nodes = VIEWS[S.tab]();
+      nodes = viewNodes();
     } catch (err: Dyn) {
       // Show the failure in the panel instead of a blank page, so it can be reported.
       nodes = [h("div", { class: "caution", role: "alert" }, "Erro ao montar esta aba: " + (err && err.message ? err.message : err))];
@@ -2012,11 +2063,28 @@ type AppState = {
     if (parts[0] !== "bordo") return null;
     return RT.BORDO_SECTIONS[parts[1] || ""] || null;
   }
-  function tabHash(name: Dyn) {
-    const site = routeQuery().site;
-    if (!RT) return "#" + name;
-    const slug = RT.BORDO_SLUG[name];
-    return RT.buildHash("/bordo" + (slug && name !== "visao" ? "/" + slug : ""), { site });
+  // The hash always names the site that is on screen (or the real one that was asked for), never the one the page was opened with.
+  function tabHash(name: Dyn) { return L.boardHash(RT, name, urlSite()); }
+  // Switch place from any control: model state, URL and the "real place" notes all follow it.
+  function setSite(id: string) {
+    S.site = id; S.realSite = M.SITES[id] ? null : id; S.fallback = null;
+    S.api = null; S.t = 0;
+    syncUrl(); renderAlarm(); renderTab();
+  }
+  // Put the current place in the address bar without adding a history entry, and rebuild the links that carry it.
+  function syncUrl() {
+    if (!RT) return;
+    try { history.replaceState(null, "", tabHash(S.tab)); } catch { /* history unavailable */ }
+    renderTopnav();
+  }
+  // Back/forward or an edited hash: take the site from the URL too, not only the tab.
+  function followRoute() {
+    const q = routeQuery();
+    if (q.site && q.site !== urlSite() && SITE_ID.test(q.site)) {
+      S.site = q.site; S.realSite = M.SITES[q.site] ? null : q.site; S.fallback = null; S.api = null; S.t = 0; renderAlarm();
+    }
+    const t = tabFromHash();
+    if (t) selectTab(t, true); else renderTab();
   }
   function selectTab(name: Dyn, moveFocus?: Dyn) {
     S.tab = name;
@@ -2028,7 +2096,7 @@ type AppState = {
   }
   function renderTopnav() {
     const nav = $("topnav"); if (!nav || !RT) return;
-    const site = routeQuery().site;
+    const site = urlSite();
     const link = (path: Dyn, label: Dyn, cls?: Dyn) => h("a", { class: "navp" + (cls ? " " + cls : ""), href: "../index.html" + RT.buildHash(path, { site }) }, label);
     nav.replaceChildren(h("a", { class: "navp home", href: "../index.html#/", "aria-label": "moonproof · voltar para a escolha de tarefa" }, "◐ moonproof"), link("/explorar", "Explorar"), link("/comparar", "Comparar"),
       h("a", { class: "navp", href: tabHash("visao"), "aria-current": "page" }, "Painel de bordo"),
@@ -2050,13 +2118,12 @@ type AppState = {
       history.pushState(null, "", tabHash(b.dataset.tab));
       selectTab(b.dataset.tab, true);
     }));
-    window.addEventListener("hashchange", () => { const t = tabFromHash(); if (t) selectTab(t, true); });
-    window.addEventListener("popstate", () => { const t = tabFromHash(); if (t) selectTab(t, true); });
+    window.addEventListener("hashchange", followRoute);
+    window.addEventListener("popstate", followRoute);
     const initial = tabFromHash();
     if (initial) S.tab = initial;
     const q = routeQuery();
-    if (q.site && M.SITES[q.site]) S.site = q.site;
-    else if (q.site) S.realSite = q.site; // a real site came from the shell: say so instead of computing it here
+    if (q.site && SITE_ID.test(q.site)) { S.site = q.site; if (!M.SITES[q.site]) S.realSite = q.site; }   // a real place: its series decides (see loadSeries), no silent swap
     tickClock(); setInterval(tickClock, 1000);
     renderBadges();
     renderTopnav();
@@ -2075,16 +2142,11 @@ type AppState = {
         const v = e.target.value;
         if (v.startsWith("real:")) { location.href = "../index.html" + (RT ? RT.buildHash("/explorar", { site: v.slice(5) }) : "#/explorar"); return; }
         if (e.target.selectedOptions[0].disabled) return;
-        S.site = v; S.api = null; renderAlarm(); renderTab();
+        setSite(v);
       });
     }
     renderAlarm();
     selectTab(S.tab, false);
-    if (S.realSite) {
-      const v = $("views");
-      v.prepend(h("div", { class: "caution span2", role: "status" }, "O local real \"" + S.realSite + "\" não é modelado pelo painel de bordo (modelo sintético). ",
-        h("a", { href: "../index.html" + (RT ? RT.buildHash("/explorar", { site: S.realSite }) : "#/explorar") }, "Abrir em Explorar com dados LOLA + SPICE")));
-    }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();

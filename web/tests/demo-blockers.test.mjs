@@ -4,6 +4,7 @@ import {readFile} from "node:fs/promises";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import vm from "node:vm";
+import {apiURL} from "../api-base.js";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const app=await readFile(path.join(root,"app.js"),"utf-8");

@@ -7,7 +7,7 @@
 
 ## What actually exists in this PR
 
-- Strongly typed `POST /api/onboard/evaluate` endpoint with strict JSON parsing, maximum body size 128 KiB, 1–8 candidate scenarios, 1–480 samples per scenario and up to 30 days of each supplied observation series.
+- Strongly typed `POST /api/onboard/evaluate` endpoint with strict JSON parsing, maximum body size 128 KiB, 1–8 candidate scenarios, 1–720 samples per scenario and up to 30 days of each supplied observation series.
 - Caller-supplied discrete visibility samples `sun_visible` and `earth_visible` at a chosen time step. **No lunar ephemeris is created** by this endpoint; missing visibility fields cause errors rather than being treated as dark or invisible.
 - Lander scenario assumptions (battery Wh, initial Wh, safety reserve Wh, solar generation W **when visible**, load W, tolerated geometric Earth obstruction h).
 - Deterministic Wh simulation with battery capacity clipping, lost-load energy in Wh, minimum charge, longest darkness and longest geometric Earth obstruction, UTC time series snapshots and state labels `NOMINAL`, `SAFE_MODE`, `POWER_LOSS`.

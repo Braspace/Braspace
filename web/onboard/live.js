@@ -168,7 +168,63 @@
             one("Terra", nt.earth, nt.earth_null_reason, { earth_rise: "Terra nasce", earth_set: "Terra se põe" })
         ];
     }
-    const api = { parseApiError, limitFromMessage, refusalText, pickSites, transitionRows, stepOf, stamp, SEAL_LOCAL, SEAL_NOSRC, isNum, num, seal, liveFromCompare, summaryFromMetrics, delayRow, horizonFromSky, skyFromResponse, badges };
+    // ---- One window for every card (FE-03) ----
+    // The scenario window is the half-open UTC interval [startMs, startMs + durationH h). Every panel reads its
+    // samples from fitSeries(), so hours, longest block, run times and step cannot disagree between panels.
+    // The API series has its own step (1 h today) and ignores the "step" parameter: when the parameter is a
+    // whole multiple of the series step the series is decimated to it, otherwise the series step is kept and the
+    // difference is said in `note` (never silently).
+    function fitSeries(points, startMs, durationH, stepMin) {
+        const endMs = startMs + durationH * 3600e3;
+        const all = Array.isArray(points) ? points : [];
+        const inWin = all.filter(p => { const t = Date.parse(p.epoch_utc); return t >= startMs && t < endMs; });
+        const raw = inWin.length > 1 ? Math.round((Date.parse(inWin[1].epoch_utc) - Date.parse(inWin[0].epoch_utc)) / 60000) : stepMin;
+        let step = raw, k = 1;
+        const notes = [];
+        if (raw > 0 && stepMin > raw && stepMin % raw === 0) {
+            k = stepMin / raw;
+            step = stepMin;
+            notes.push("A série da API tem passo de " + raw + " min; foi reamostrada para o passo do parâmetro (" + stepMin + " min), uma amostra a cada " + k + ".");
+        }
+        else if (raw !== stepMin) {
+            notes.push("A série da API tem passo de " + raw + " min e o parâmetro pede " + stepMin + " min, que não é múltiplo dele: os painéis usam " + raw + " min.");
+        }
+        const pts = inWin.filter((_, i) => i % k === 0);
+        const coveredH = pts.length * step / 60;
+        if (pts.length && coveredH + 1e-9 < durationH)
+            notes.push("A série cobre " + coveredH + " h dos " + durationH + " h pedidos.");
+        return { points: pts, stepMin: step, seriesStepMin: raw, startMs, endMs, coveredH, outside: all.length - inWin.length, note: notes.length ? notes.join(" ") : null };
+    }
+    // Runs of consecutive samples whose flag equals `want`, as [firstIndex, lastIndex].
+    function runsOf(tr, key, want) {
+        const runs = [];
+        let start = null;
+        tr.forEach((s, i) => {
+            const on = !!s[key] === want;
+            if (on && start === null)
+                start = i;
+            if (!on && start !== null) {
+                runs.push([start, i - 1]);
+                start = null;
+            }
+        });
+        if (start !== null)
+            runs.push([start, tr.length - 1]);
+        return runs;
+    }
+    // A run as a half-open UTC interval and its length. end = start of the sample after the run.
+    function runSpan(tr, run, stepMin) {
+        const startMs = tr[run[0]].ms, endMs = tr[run[1]].ms + stepMin * 60e3;
+        return { startMs, endMs, hours: (endMs - startMs) / 3600e3 };
+    }
+    // Pure router helper: hash of a board tab, always carrying the site that is on screen.
+    function boardHash(RT, name, site) {
+        if (!RT)
+            return "#" + name;
+        const slug = RT.BORDO_SLUG[name];
+        return RT.buildHash("/bordo" + (slug && name !== "visao" ? "/" + slug : ""), { site });
+    }
+    const api = { fitSeries, runsOf, runSpan, boardHash, parseApiError, limitFromMessage, refusalText, pickSites, transitionRows, stepOf, stamp, SEAL_LOCAL, SEAL_NOSRC, isNum, num, seal, liveFromCompare, summaryFromMetrics, delayRow, horizonFromSky, skyFromResponse, badges };
     if (typeof module !== "undefined" && module.exports)
         module.exports = api;
     root.OnboardLive = api;

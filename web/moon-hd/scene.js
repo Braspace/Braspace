@@ -8,10 +8,10 @@ import { R_REF, makeGrid, CAP_LAT, ALTITUDE_RANGE } from "./polar-math.js";
 export { THREE };
 export const R_KM = R_REF / 1000;
 // ---------------------------------------------------------------- loading
-export const fetchJSON = async (url) => { const res = await fetch(url); if (!res.ok)
+export const fetchJSON = async (url) => { const res = await fetch(url, { signal: AbortSignal.timeout(30e3) }); if (!res.ok)
     throw new Error(url + " " + res.status); return res.json(); };
 export async function fetchBinary(url, byteLength) {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(180e3) }); // a stalled network must leave the loading state (FE-05)
     if (!res.ok)
         throw new Error(url + " " + res.status);
     const buffer = await res.arrayBuffer();

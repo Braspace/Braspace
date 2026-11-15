@@ -52,3 +52,22 @@ test("backendVectorAvailability and backendVectorSearch enforce contract and fai
   });
   await assert.rejects(() => backendVectorSearch("LOLA DEM", {}, unavailable));
 });
+
+test("lexical bridge rejects a different requested embedding model without network access", async () => {
+  let calls = 0;
+  const unexpectedFetch = async () => { calls++; throw new Error("unexpected vector request"); };
+  await assert.rejects(
+    () => backendVectorSearch("LOLA DEM", { modelID: "sentence-transformers/all-MiniLM-L6-v2" }, unexpectedFetch),
+    { code: "MODEL_MISMATCH" }
+  );
+  assert.equal(calls, 0, "lexical embeddings must not be relabelled as trained-model embeddings");
+});
+
+test("lexical bridge rejects response vectors attributed to another embedding model", async () => {
+  const wrongModel = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ model_id: "sentence-transformers/all-MiniLM-L6-v2", dimension: 384, scientifically_validated: false, results: [] })
+  });
+  await assert.rejects(() => backendVectorSearch("LOLA DEM", {}, wrongModel), /INVALID_VECTOR_SEARCH_CONTRACT/);
+});

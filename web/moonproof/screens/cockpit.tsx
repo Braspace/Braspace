@@ -10,19 +10,20 @@ import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import type { Site } from "../core/data.js";
 import type { Layer, ScenarioState } from "../core/state.js";
-import type { Power, Fault, RunResult, ApiCall, Sample } from "./cockpit-model.js";
+import type { Power, Fault, RunResult, ApiCall, Sample, SeriesMargins } from "./cockpit-model.js";
 import { TEXTS } from "./cockpit-texts.js";
 import { CREW_DEFAULT, POWER_FIELDS, CREW_FIELDS, crewRequest, readCrewAnswer, validateInputs, sensitivityVariants, readEnergy, loadSaved, saveScenario, savedExport } from "./cockpit-crew.js";
-import { siteEvaluateBody, FAULTS, H1_PROFILE, SPEEDS, HOUR_MS, applyFault, runScenario, nextChange, dailyFractions, autonomyHours, fmtDuration,
+import { FAULTS, H1_PROFILE, SPEEDS, HOUR_MS, applyFault, visibilityWindow, runScenario, nextChange, dailyFractions, autonomyHours, fmtDuration,
   clockLabel, hourIndex, evaluateRules, rulesMet, longestRun, countRises } from "./cockpit-model.js";
 
 register(TEXTS);
 const $ = <T extends HTMLElement = HTMLElement>(id: string): T => document.getElementById(id) as T;
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string | null, text?: string | null): HTMLElementTagNameMap[K] => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+let drawPending: Promise<void> | null = null, redraw = false;
 const shell = mountShell({ screen: "cockpit", context: null, onLang: () => draw() });
 const doc = await loadSites();
 if (!doc.sites.some(s => s.id === getState().site)) setState({ site: doc.sites[0].id });
-const online = await apiOnline();
+let online = await apiOnline();
 const terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id: string) => setState({ site: id }) });
 const narrow = () => matchMedia("(max-width:700px)").matches;
 const hoursOf = () => getState().hours || 14 * 24;
@@ -31,11 +32,15 @@ type Metrics = Awaited<ReturnType<typeof windowMetrics>>;
 type Transitions = { sun?: { hours_from_start: number; kind: string } | null } | null;
 type Series = Metrics["series"] & { s: { sunEl: ArrayLike<number>; earthEl: ArrayLike<number> } };
 interface Light { m: Metrics; i0: number; samples: Sample[]; power: Power; f: ReturnType<typeof applyFault>; startIso: string; series: Series;
-  longestDarkH: number | null; longestBlackoutH: number | null; sunrises: number | null; }
-type Run = RunResult | { ok: false; offline: true; route: "none"; error?: undefined; sha?: undefined; status?: undefined; trace?: undefined };
-interface Scn { t: number; playing: boolean; speed: number; fault: string | null; run: Run | null; light: Light | null; siteKey: string; dismissed: string | null;
-  sky: { k: string; v: Transitions } | null; noSiteRoute: Set<string>; reportReq?: ReturnType<typeof siteEvaluateBody>; }
-const S: Scn = { t: 0, playing: false, speed: SPEEDS[1], fault: null, run: null, light: null, siteKey: "", dismissed: null, sky: null, noSiteRoute: new Set() };
+  longestDarkH: number | null; longestBlackoutH: number | null; sunrises: number | null; antennaOverride: boolean; }
+type Run = RunResult;
+type Report = { path: string; body: unknown };
+/** The site-evaluate request body, as returned in a successful "site" run's report. */
+type SiteReq = { start_utc: string; duration_hours: number; max_comm_blackout_hours: number; candidates: { site_id: string; delay_hours: number }[] };
+interface Scn { t: number; playing: boolean; speed: number; fault: string | null; run: Run | null; light: Light | null; siteKey: string; lastRunAt: number; dismissed: string | null;
+  sky: { k: string; v: Transitions } | null; report: Report | null; }
+const S: Scn = { t: 0, playing: false, speed: SPEEDS[1], fault: null, run: null, light: null, siteKey: "", lastRunAt: 0, dismissed: null, sky: null, report: null };
+const scenarioKey = () => { const st = getState(); return [st.site, st.start, hoursOf(), S.fault, st.battery, st.blackout].join("|"); };
 
 /** Frame the chosen site inside the free area of the map (centre on desktop, upper part above the sheet on mobile). */
 function frame() {
@@ -86,43 +91,48 @@ buildBodies();
 addEventListener("resize", () => { frame(); lightDraw(); });
 
 async function compute() {
-  const st = getState(), site = (doc.sites.find(s => s.id === st.site) as Site), key = [st.site, st.start, hoursOf(), S.fault, st.battery].join("|");
-  if (key === S.siteKey) return; S.siteKey = key;
-  const m = await windowMetrics(doc, site, st.start, hoursOf());
-  const series = m.series, i0 = Math.ceil((m.t0 - series.start) / HOUR_MS);
+  const st = getState(), site = (doc.sites.find(s => s.id === st.site) as Site), key = scenarioKey(), H = hoursOf(), fault = S.fault;
+  if (key === S.siteKey && (S.run?.ok || Date.now() - S.lastRunAt < 5000)) return;
+  S.report = null; $<HTMLButtonElement>("report").disabled = true;
+  const baseWindow = await windowMetrics(doc, site, st.start, H);
   const base = { power: { ...H1_PROFILE }, samples: [], delayH: 0 };
-  const win = (off: number, n: number) => Array.from({ length: Math.max(0, Math.min(n, series.count - i0 - off)) }, (_, h) => ({ sun_visible: series.sunMargin[i0 + off + h] >= 0, earth_visible: series.earthMargin[i0 + off + h] >= 0 }));
-  const f = applyFault(S.fault, { ...base, samples: win(0, hoursOf()) });
-  const samples = win(f.delayH, hoursOf()).map(x => f.fault?.noEarth ? { ...x, earth_visible: false } : x);
+  const f = applyFault(fault, base), startIso = new Date(baseWindow.t0 + f.delayH * HOUR_MS).toISOString();
+  const m = f.delayH ? await windowMetrics(doc, site, startIso, H) : baseWindow;
+  const series = m.series, i0 = (m.t0 - series.start) / HOUR_MS;
+  const samples = visibilityWindow(series as unknown as SeriesMargins, i0, H).map(x => f.fault?.noEarth ? { ...x, earth_visible: false } : x);
   const power = { ...f.power, reserve_wh: f.power.battery_capacity_wh * st.battery / 100 };
-  const startIso = new Date(m.t0 + f.delayH * HOUR_MS).toISOString();
-  let run: Run;
-  if (!online) run = { ok: false, offline: true, route: "none" };
-  else {
-    const call = ((p: string, o?: { method?: string; body?: unknown }) => (p === "/api/onboard/site-evaluate" && S.noSiteRoute.has(st.site as string)) ? Promise.resolve({ ok: false, error: "cached DATA_NOT_AVAILABLE" }) : api(p, o)) as unknown as ApiCall;
-    S.reportReq = siteEvaluateBody({ siteId: st.site as string, startIso: new Date(m.t0).toISOString(), hours: hoursOf(), power, maxBlackoutH: Math.min(st.blackout, hoursOf()), delayH: f.delayH });
-    run = await runScenario(call, { siteId: st.site as string, startIso: new Date(m.t0).toISOString(), hours: hoursOf(), power, maxBlackoutH: Math.min(st.blackout, hoursOf()), samples, delayH: f.delayH });
-    if (run.route === "eval") S.noSiteRoute.add(st.site as string);
-    if (run.route === "site") (run as { samples?: unknown }).samples = null;
-  }
-  S.light = { m, i0, samples, power, f, startIso, series: series as Series,
+  const run = await runScenario(api as unknown as ApiCall, { siteId: st.site as string, startIso: new Date(baseWindow.t0).toISOString(), hours: H, power,
+    maxBlackoutH: Math.min(st.blackout, H), samples, delayH: f.delayH, samplesOverride: Boolean(f.fault?.noEarth) });
+  // Do not commit a response belonging to a superseded scenario.
+  if (scenarioKey() !== key) { redraw = true; return; }
+  if (run.ok) online = true; else if (run.offline) online = false;
+  S.light = { m, i0, samples, power, f, startIso, series: series as Series, antennaOverride: Boolean(f.fault?.noEarth),
     longestDarkH: samples.length ? longestRun(samples, "sun_visible", false) : null,
     longestBlackoutH: samples.length ? longestRun(samples, "earth_visible", false) : null, sunrises: samples.length ? countRises(samples) : null };
-  S.run = run; S.t = Math.min(S.t, hoursOf());
+  S.run = run; S.report = run.ok ? run.report : null; S.siteKey = key; S.lastRunAt = Date.now(); S.t = Math.min(S.t, H);
 }
 
 async function skyTransition(site: Site, atIso: string): Promise<Transitions> {
   const k = site.id + atIso; if (S.sky?.k === k) return S.sky.v;
   const r = await api(`/api/sites/${encodeURIComponent(site.id)}/sky?start=${encodeURIComponent(atIso)}&hours=240`, { timeoutMs: 3000 });
-  const v = r.ok ? (r.data as { next_transitions: Transitions }).next_transitions : null; S.sky = { k, v }; return v;
+  const v = r.ok ? (r.data as { next_transitions: Transitions }).next_transitions : null; if (r.ok) S.sky = { k, v }; return v;
 }
 
 const rulesCard = el("article", "mp-card mp-rules"), alertCard = el("article", "mp-card mp-alert"), faultCard = el("article", "mp-glass");
 const left = $("left"), right = $("right");
 const sheet = $("sheet");
 
-async function draw() {
+// All render requests are coalesced, so a slow API result cannot mix a previous
+// site's inputs, geometry, trace or printable report with a new selection.
+async function draw(): Promise<void> {
+  redraw = true;
+  if (scenarioKey() !== S.siteKey) { S.report = null; $<HTMLButtonElement>("report").disabled = true; }
+  if (!drawPending) drawPending = (async () => { while (redraw) { redraw = false; await drawOnce(); } })().finally(() => { drawPending = null; });
+  return drawPending;
+}
+async function drawOnce() {
   await compute();
+  if (!S.light || scenarioKey() !== S.siteKey) { redraw = true; return; }
   const th = hourIndex(S.t, hoursOf()); // series and API trace are hourly: read them at a whole hour, keep S.t continuous
   const st = getState(), site = (doc.sites.find(s => s.id === st.site) as Site), L = S.light as Light, run = S.run, series = L.series, H = hoursOf();
   const i = L.i0 + th, trace = run?.ok ? run.trace : null, cap = L.power.battery_capacity_wh;
@@ -134,7 +144,7 @@ async function draw() {
   const auto = autonomyHours(charge as number, floorWh, L.power.load_w);
   const margin = auto != null && nightH != null ? auto - nightH : null;
   const hh = (v: number | null | undefined, d = 0, sign = false) => v == null ? t("nd") : (sign && v > 0 ? "+" : "") + fmtNum(v, d) + "h";
-  const clock = clockLabel(L.m.t0 + L.f.delayH * HOUR_MS, th);
+  const clock = clockLabel(L.m.t0, th);
   const seal = "SIM";
 
   shell.setContext({ site: t("cockpit.simulated_operation", { site: `${site.n} · ${site.name}` }),
@@ -185,8 +195,9 @@ async function draw() {
     return row; }), Object.assign(el("a", "mp-link", t("cockpit.where_rules")), { href: hrefTo("evidence.html") }));
 
   // alert: next sunset from the API's next_transitions when it has the site's series, else from the stored series
-  const at = new Date(L.m.t0 + L.f.delayH * HOUR_MS + th * HOUR_MS).toISOString();
+  const at = new Date(L.m.t0 + th * HOUR_MS).toISOString();
   let apiTr = online ? await skyTransition(site, at) : null;
+  if (scenarioKey() !== S.siteKey) { redraw = true; return; }
   const apiSun = apiTr?.sun || null;
   const fromApi = !!apiSun && Number.isFinite(apiSun.hours_from_start);
   const inH = fromApi ? apiSun.hours_from_start : sunNext?.inHours, setting = fromApi ? apiSun.kind === "sunset" : sunNext?.visible;
@@ -221,7 +232,7 @@ async function draw() {
   $("restart").setAttribute("aria-label", t("cockpit.restart")); $("speed").setAttribute("aria-label", t("cockpit.speed")); rg.setAttribute("aria-label", t("cockpit.time"));
   $("onboard").textContent = t("cockpit.onboard"); $<HTMLAnchorElement>("onboard").href = "../onboard/";
   // Printable site report from the onboard computer API (was only in the legacy onboard panel).
-  const rep = $<HTMLButtonElement>("report"); rep.textContent = t("cockpit.report"); rep.disabled = !S.reportReq; rep.title = S.reportReq ? t("cockpit.report.hint") : t("cockpit.report.offline");
+  const rep = $<HTMLButtonElement>("report"); rep.textContent = t("cockpit.report"); rep.disabled = !S.report; rep.title = S.report ? t("cockpit.report.hint", { path: S.report.path }) : t("cockpit.report.offline");
   $("handle").setAttribute("aria-label", t("cockpit.sheet"));
 }
 function sealSpan(s: string) { const e = el("span", "mp-seal", s); e.dataset.seal = s; e.title = t("seal." + s); return e; }
@@ -248,12 +259,25 @@ onState((s: ScenarioState) => { if (s.site !== last) { last = s.site; S.t = 0; S
 frame(); await draw(); frame();
 (globalThis as unknown as Record<string, unknown>).__cockpit = S;
 
-// Opens the API's printable HTML report for the current scenario (POST /api/onboard/site-report).
-document.getElementById("report")?.addEventListener("click", async e => {
-  const b = e.currentTarget as HTMLButtonElement; if (!S.reportReq) return;
-  b.disabled = true; const r = await api("/api/onboard/site-report", { method: "POST", body: S.reportReq, as: "text", timeoutMs: 15000 }); b.disabled = false;
-  if (!r.ok) { b.title = t("cockpit.report.fail", { e: r.error }); b.textContent = t("cockpit.report.failShort"); return; }
-  window.open(URL.createObjectURL(new Blob([r.data as string], { type: "text/html" })), "_blank", "noopener");
+// The report uses the exact successful simulation request AND that route's matching
+// report API. Reserve the popup during user activation; use a download fallback if
+// the browser blocks it. A new scenario invalidates the pending report.
+async function openReport(b: HTMLButtonElement, report: Report | null | undefined, stillCurrent: () => boolean) {
+  if (!report || !stillCurrent()) { b.disabled = true; return; }
+  let popup: Window | null = null;
+  try { popup = window.open("about:blank", "_blank"); if (popup) popup.opener = null; } catch { /* use download fallback */ }
+  b.disabled = true;
+  const r = await api(report.path, { method: "POST", body: report.body, as: "text", timeoutMs: 15000 });
+  if (!stillCurrent()) { popup?.close(); return; }
+  b.disabled = false;
+  if (!r.ok) { popup?.close(); b.title = t("cockpit.report.fail", { e: r.error }); b.textContent = t("cockpit.report.failShort"); return; }
+  const url = URL.createObjectURL(new Blob([r.data as string], { type: "text/html" }));
+  if (popup && !popup.closed) popup.location.replace(url);
+  else Object.assign(document.createElement("a"), { href: url, download: "braspace-mission-report.html" }).click();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+document.getElementById("report")?.addEventListener("click", e => {
+  const report = S.report; return openReport(e.currentTarget as HTMLButtonElement, report, () => S.report === report);
 });
 
 // Crew, consumables and power (legacy onboard "Entrada" + "Vida", now on the real API). Built once so typed values survive redraws.
@@ -275,19 +299,27 @@ function crewCard() {
   const bSens = document.createElement("button"); bSens.type = "button"; bSens.className = "mp-pill"; bSens.textContent = t("crew.sens");
   const bSave = document.createElement("button"); bSave.type = "button"; bSave.className = "mp-pill"; bSave.textContent = t("crew.save");
   const bExp = document.createElement("button"); bExp.type = "button"; bExp.className = "mp-pill"; bExp.textContent = t("crew.export");
-  tools.append(bSens, bSave, bExp);
+  const bReport = document.createElement("button"); bReport.type = "button"; bReport.className = "mp-pill"; bReport.textContent = t("crew.report"); bReport.disabled = true;
+  tools.append(bSens, bSave, bExp, bReport);
   const sens = document.createElement("div"); sens.className = "ck-crew-out"; sens.setAttribute("aria-live", "polite");
   const saved = document.createElement("ul"); saved.className = "ck-saved";
   const savedMsg = document.createElement("p"); savedMsg.className = "mp-label"; savedMsg.setAttribute("aria-live", "polite");
   c.append(form, out, tools, sens, savedMsg, saved, src);
   const store = (() => { try { return globalThis.localStorage; } catch { return null; } })();
-  const readForm = () => { const v = (k: string) => Number(elems[k].value);
+  let crewReport: { base: SiteReq; report: Report } | null = null;
+  const readForm = () => { const v = (k: string) => elems[k].value.trim() === "" ? NaN : Number(elems[k].value);
     return { power: Object.fromEntries(POWER_FIELDS.map(k => [k, v(k)])), crew: { ...CREW_DEFAULT, ...Object.fromEntries(CREW_FIELDS.map(k => [k, v(k)])) } }; };
+  const siteReq = (): SiteReq | null => S.report?.path === "/api/onboard/site-report" ? S.report.body as SiteReq : null;
+  const clearCrewReport = () => { crewReport = null; bReport.disabled = true; };
+  form.addEventListener("input", clearCrewReport);
+  onState(clearCrewReport);
+  bReport.onclick = () => { const selected = crewReport; return openReport(bReport, selected?.report, () => crewReport === selected && siteReq() === selected?.base); };
   const fill = (e: { power?: Record<string, number>; crew?: Record<string, number> }) => { for (const k of POWER_FIELDS) if (e.power?.[k] != null) elems[k].value = String(e.power[k]); for (const k of CREW_FIELDS) if (e.crew?.[k] != null) elems[k].value = String(e.crew[k]); };
   const listSaved = () => { saved.replaceChildren(...loadSaved(store).map(e => { const li = document.createElement("li"); const b = document.createElement("button"); b.type = "button"; b.className = "mp-link";
-    b.textContent = e.label; b.onclick = () => { fill(e); if (e.query && e.query !== location.search) location.search = e.query; }; li.append(b); return li; })); };
+    b.textContent = e.label; b.onclick = () => { fill(e); clearCrewReport(); if (e.query && e.query !== location.search) location.search = e.query; }; li.append(b); return li; })); };
   listSaved();
-  bSave.onclick = () => { const { power, crew } = readForm(), now = new Date(), q = S.reportReq;
+  bSave.onclick = () => { const { power, crew } = readForm(), now = new Date(), q = siteReq();
+    if (!validateInputs(power, crew).ok) { savedMsg.textContent = t("crew.invalid"); return; }
     const label = `${q ? q.candidates[0].site_id : t("nd")} · ${q ? (q.start_utc as string).slice(0, 10) : ""} · ${now.toISOString().slice(0, 16).replace("T", " ")} UTC`;
     const r = saveScenario(store, { id: now.toISOString(), label, query: location.search, power, crew });
     savedMsg.textContent = r.ok ? t("crew.saved") : t("crew.saveFail"); listSaved(); };
@@ -296,14 +328,15 @@ function crewCard() {
   bSens.onclick = async () => {
     const { power, crew } = readForm(), chk = validateInputs(power, crew);
     if (!chk.ok) { sens.textContent = t("crew.invalid"); return; }
-    if (!S.reportReq) { sens.textContent = t("cockpit.report.offline"); return; }
-    const q = S.reportReq; bSens.disabled = true; sens.textContent = t("crew.wait");
+    const q = siteReq(); if (!q) { sens.textContent = t("crew.siteRouteOnly"); return; }
+    bSens.disabled = true; sens.textContent = t("crew.wait");
     const rows = [];
     for (const v of sensitivityVariants(power)) {
       const r = await api("/api/onboard/site-evaluate", { method: "POST", body: crewRequest({ siteId: q.candidates[0].site_id, startIso: q.start_utc, hours: q.duration_hours, maxBlackoutH: q.max_comm_blackout_hours, delayH: q.candidates[0].delay_hours, power: v.power, crew }), timeoutMs: 15000 });
       rows.push({ id: v.id, e: r.ok ? readEnergy(r.data) : null, err: r.ok ? null : r.error });
     }
     bSens.disabled = false;
+    if (siteReq() !== q || JSON.stringify(readForm()) !== JSON.stringify({ power, crew })) { sens.textContent = t("crew.stale"); return; }
     const tb = document.createElement("table"); tb.className = "ck-crew-table"; const hr = tb.createTHead().insertRow();
     for (const h of ["crew.s.case", "crew.s.min", "crew.s.unserved", "crew.s.end"]) { const th = document.createElement("th"); th.textContent = t(h); hr.append(th); }
     for (const r of rows) { const tr = tb.insertRow(); const wh = (x: number | null | undefined) => x == null ? t("nd") : fmtNum(x, 0) + " Wh";
@@ -311,20 +344,23 @@ function crewCard() {
     sens.replaceChildren(sealEl("SIM"), tb);
   };
   form.onsubmit = async e => {
-    e.preventDefault(); const v = (k: string) => Number(elems[k].value);
-    const power = Object.fromEntries(POWER_FIELDS.map(k => [k, v(k)])), crew = { ...CREW_DEFAULT, ...Object.fromEntries(CREW_FIELDS.map(k => [k, v(k)])) };
+    e.preventDefault(); clearCrewReport(); const { power, crew } = readForm();
     const chk = validateInputs(power, crew); for (const el of form.querySelectorAll("input")) el.setAttribute("aria-invalid", String(chk.errors.includes(el.name)));
     if (!chk.ok) { out.textContent = t("crew.invalid"); return; }
-    if (!S.reportReq) { out.textContent = t("cockpit.report.offline"); return; }
-    const q = S.reportReq; go.disabled = true; out.textContent = t("crew.wait");
-    const r = await api("/api/onboard/site-evaluate", { method: "POST", body: crewRequest({ siteId: q.candidates[0].site_id, startIso: q.start_utc, hours: q.duration_hours, maxBlackoutH: q.max_comm_blackout_hours, delayH: q.candidates[0].delay_hours, power, crew }), timeoutMs: 15000 });
+    const q = siteReq(); if (!q) { out.textContent = t("crew.siteRouteOnly"); return; }
+    go.disabled = true; out.textContent = t("crew.wait");
+    const request = crewRequest({ siteId: q.candidates[0].site_id, startIso: q.start_utc, hours: q.duration_hours, maxBlackoutH: q.max_comm_blackout_hours, delayH: q.candidates[0].delay_hours, power, crew });
+    const r = await api("/api/onboard/site-evaluate", { method: "POST", body: request, timeoutMs: 15000 });
     go.disabled = false;
+    if (siteReq() !== q || JSON.stringify(readForm()) !== JSON.stringify({ power, crew })) { out.textContent = t("crew.stale"); return; }
     if (!r.ok) { out.textContent = t("cockpit.report.fail", { e: r.error }); return; }
     const a = readCrewAnswer(r.data), tb = document.createElement("table"); tb.className = "ck-crew-table";
+    if (!a.rows.length || !a.decision) { out.textContent = t("cockpit.report.fail", { e: "INVALID_API_CONTRACT" }); return; }
     const hr = tb.createTHead().insertRow(); for (const h of ["crew.h.res", "crew.h.aut", "crew.h.mar", "crew.h.st"]) { const th = document.createElement("th"); th.textContent = t(h); hr.append(th); }
     for (const row of a.rows) { const tr = tb.insertRow(); for (const x of [t("crew.res." + row.resource), row.autonomyH == null ? t("nd") : fmtNum(row.autonomyH, 0) + " h", row.marginH == null ? t("nd") : fmtNum(row.marginH, 0) + " h", row.status || t("nd")]) tr.insertCell().textContent = x; }
     const d = document.createElement("p"); d.className = "mp-label"; d.textContent = t("crew.decision", { d: a.decision || t("nd") });
     const seal = sealEl("SIM"); out.replaceChildren(seal, tb, d);
+    crewReport = { base: q, report: { path: "/api/onboard/site-report", body: request } }; bReport.disabled = false;
   };
   return c;
 }

@@ -6,7 +6,7 @@ import { num } from "../../ds/components.js";
 import { buildHash } from "../../ds/router.js";
 import { Badge, LayerCard, mount } from "../../ds/ui.js";
 import { windowMetrics, hourlyRows } from "../data.js";
-import { scenario, ContextBar, regionMap, seriesFor, seriesProof, pct, hrs, fmtDate, HourStrip, download, setQuery } from "./common.js";
+import { scenarioQuery, scenario, ContextBar, regionMap, seriesFor, seriesProof, pct, hrs, fmtDate, HourStrip, download, setQuery } from "./common.js";
 const G = "est"; // global badge of this page (see the provenance strip)
 export async function render(outlet, ctx) {
     const sc = await scenario(ctx);
@@ -72,5 +72,5 @@ export async function render(outlet, ctx) {
                         h("span", { class: "big" }, num(sc.site.site_height_m, 0, " m")),
                         "acima da esfera de refer\u00EAncia (1.737,4 km)."), why: "Altura do relevo LOLA no ponto do cat\u00E1logo. Declividade e rugosidade aparecem no Terreno 3D.", proof: [["Coordenadas", num(sc.site.lat, 2, "°") + ", " + num(sc.site.lon, 2, "°")],
                         ["Fonte do ponto", sc.site.source_url ? h("a", { href: sc.site.source_url, rel: "noopener", target: "_blank" }, sc.site.source) : sc.site.source],
-                        ["Nota", sc.data.raw.note], ["3D", h("a", { href: buildHash("/terreno", { site: sc.site.id }) }, "Abrir no Terreno 3D")]] })))));
+                        ["Nota", sc.data.raw.note], ["3D", h("a", { href: buildHash("/terreno", scenarioQuery(sc)) }, "Abrir no Terreno 3D")]] })))));
 }

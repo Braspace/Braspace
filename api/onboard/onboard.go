@@ -16,13 +16,14 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"github.com/Braspace/Braspace/api/internal/jsoncontract"
 )
 
 const (
 	Version = "braspace.onboard-simulator.v1"
 	MaxRequestBytes = 128 << 10
 	MaxCandidates = 8
-	MaxSamples = 480
+	MaxSamples = 720
 )
 
 type Power struct {
@@ -129,7 +130,7 @@ func validate(req Request) error {
 			return fmt.Errorf("candidate %s: start_utc must be RFC3339 in supported range", c.ID)
 		}
 		if c.StepMinutes < 1 || c.StepMinutes > 360 || len(c.Samples) < 1 || len(c.Samples) > MaxSamples || c.StepMinutes * len(c.Samples) > 43200 {
-			return fmt.Errorf("candidate %s: use 1..480 samples, 1..360 min step, <= 30-day duration", c.ID)
+			return fmt.Errorf("candidate %s: use 1..720 samples, 1..360 min step, <= 30-day duration", c.ID)
 		}
 		for i, s := range c.Samples {
 			if s.SunVisible == nil || s.EarthVisible == nil {
@@ -183,7 +184,7 @@ func simulate(c Candidate) Option {
 		if charge<=p.ReserveWh {mode="SAFE_MODE"}
 		if energyDeficit>0 {mode="POWER_LOSS"}
 		trace=append(trace,Snapshot{
-			EpochUTC:t.Add(time.Duration(i+1)*time.Duration(c.StepMinutes)*time.Minute).UTC().Format(time.RFC3339),
+			EpochUTC:t.Add(time.Duration(i+1)*time.Duration(c.StepMinutes)*time.Minute).UTC().Format(time.RFC3339Nano),
 			SunVisible:*s.SunVisible,EarthVisible:*s.EarthVisible,
 			ChargeWh:rounded(charge),UnservedEnergyWh:rounded(energyDeficit),Mode:mode,
 		})
@@ -205,7 +206,7 @@ func simulate(c Candidate) Option {
 	if minCharge<=p.ReserveWh {mode="SAFE_MODE"}
 	if powerLoss {mode="POWER_LOSS"}
 	return Option{
-		ID:c.ID,SiteID:c.SiteID,StartUTC:t.UTC().Format(time.RFC3339),
+		ID:c.ID,SiteID:c.SiteID,StartUTC:t.UTC().Format(time.RFC3339Nano),
 		SourceClaimUnverified:c.SourceClaim,
 		SimulationStatus:status,EndMode:mode,Risks:r,
 		Metrics:Metrics{DurationHours:rounded(float64(len(c.Samples))*stepH),MinChargeWh:rounded(minCharge),
@@ -264,6 +265,11 @@ func Handler() http.Handler {
 		if err!=nil || len(raw)>MaxRequestBytes {
 			w.WriteHeader(http.StatusRequestEntityTooLarge)
 			_ = json.NewEncoder(w).Encode(map[string]string{"code":"REQUEST_TOO_LARGE","error":"maximum request size exceeded"})
+			return
+		}
+		if err:=jsoncontract.Check(raw);err!=nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]string{"code":"INVALID_JSON","error":"invalid JSON document"})
 			return
 		}
 		dec:=json.NewDecoder(strings.NewReader(string(raw)))

@@ -19,18 +19,22 @@ import { TEXTS } from "./evidence-texts.js";
 import { TEXTS as CK } from "./cockpit-texts.js";
 import { REGISTRY } from "./evidence-registry.js";
 import { sourceRows, trustRows, buildPassport, pickVersion, parseConfigCommit, registryChip, SECTIONS, TRUST_BLOCKS } from "./evidence-model.js";
-import { backendVectorSearch } from "../../lab/backend-bridge.js";
+// @ts-ignore TS7016
+import { mountVectorSearch } from "./vector-search.js";
 
 register(TEXTS);
 register({ en: { "cockpit.assumed": CK.en["cockpit.assumed"] }, "pt-BR": { "cockpit.assumed": CK["pt-BR"]["cockpit.assumed"] } });
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string | null, text?: string | null): HTMLElementTagNameMap[K] => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-const shell = mountShell({ screen: "evidence", context: null, onLang: () => draw() });
+let vectorUI: { setLocale(next: string): void } | undefined;
+const shell = mountShell({ screen: "evidence", context: null, onLang: () => { vectorUI?.setLocale(lang()); draw(); } });
+// One provenance-aware metadata search (model id, SHA, source links, stale-result guard) lives in vector-search.js.
+vectorUI = mountVectorSearch($("metadata-search"), { locale: lang() });
 holdReady();
 const doc = await loadSites();
 if (!doc.sites.some(s => s.id === getState().site)) setState({ site: doc.sites[0].id });
 // Static facts loaded once.
-const [ready, health, caps, layers, apiSites, vector] = await Promise.all([api("/readyz", { timeoutMs: 3000 }), api("/api/health", { timeoutMs: 3000 }), api("/v1/capabilities", { timeoutMs: 3000 }), api("/api/layers", { timeoutMs: 3000 }), api("/api/sites", { timeoutMs: 3000 }), api("/api/vector/status", { timeoutMs: 3000 })]);
+const [ready, health, caps, layers, apiSites] = await Promise.all([api("/readyz", { timeoutMs: 3000 }), api("/api/health", { timeoutMs: 3000 }), api("/v1/capabilities", { timeoutMs: 3000 }), api("/api/layers", { timeoutMs: 3000 }), api("/api/sites", { timeoutMs: 3000 })]);
 const online = ready.ok;
 let configCommit: string | null = null;
 try { const r = await fetch(new URL("../../config.js", import.meta.url), { cache: "no-store" }); if (r.ok) configCommit = parseConfigCommit(await r.text()); } catch { /* no config.js here */ }
@@ -134,38 +138,10 @@ async function draw() {
     const apiList = apiSites.ok ? (apiSites.data as { sites?: unknown }).sites : undefined;
     const n = Array.isArray(apiList) ? apiList.length : null, hl = (health.ok ? health.data : {}) as { series_science_statuses?: Record<string, number>; sites_with_series?: number };
     const stt = hl.series_science_statuses ? Object.entries(hl.series_science_statuses).map(([k, v]) => `${v} ${k}`).join(" · ") : t("nd");
-    const vd = (vector.ok ? vector.data : null) as { enabled?: boolean; available?: boolean; model_id?: string } | null;
-    const vec = vector.ok ? (vd?.enabled && vd?.available ? t("evidence.sync.vecOn") : t("evidence.sync.vecOff")) : t("evidence.sync.vecNa");
-    const slot: { out?: HTMLElement } = {};
-    const onSubmit = async (ev: Event) => {
-      ev.preventDefault();
-      const q = (inp.current as HTMLInputElement).value.trim();
-      const out = slot.out as HTMLElement;
-      if (!q) return;
-      out.replaceChildren(el("p", "mp-label", "…"));
-      try {
-        const res = await backendVectorSearch(q, { limit: 4, modelID: vd?.model_id });
-        if (!res.results.length) { out.replaceChildren(el("p", "mp-label", t("nd"))); return; }
-        out.replaceChildren(...res.results.map((hit: { source_url: string; title: string; similarity: number; sha256: string }) => {
-          const p = el("p", "mp-label");
-          const a = Object.assign(el("a"), { href: hit.source_url, target: "_blank", rel: "noopener", textContent: hit.title });
-          p.append(a, ` · sim ${(hit.similarity * 100).toFixed(0)}% · SHA ${hit.sha256.slice(0, 10)}…`);
-          return p;
-        }));
-      } catch (err) { out.replaceChildren(el("p", "mp-label", (err as Error).message || t("evidence.sync.vecNa"))); }
-    };
-    const inp: { current: HTMLInputElement | null } = { current: null };
     return (
       <div class="mp-sync"><h3>{t("evidence.sync")}</h3>
-        {([["evidence.sync.sites", n == null ? t("nd") : String(n)], ["evidence.sync.series", `${hl.sites_with_series ?? t("nd")} (${stt})`], ["evidence.sync.local", String(doc.sites.length)], ["evidence.sync.vector", vec]] as [string, string][])
+        {([["evidence.sync.sites", n == null ? t("nd") : String(n)], ["evidence.sync.series", `${hl.sites_with_series ?? t("nd")} (${stt})`], ["evidence.sync.local", String(doc.sites.length)]] as [string, string][])
           .map(([k, v]) => <p class="mp-label"><b>{t(k) + ": "}</b>{v}</p>)}
-        {vector.ok && vd?.enabled && vd?.available && <>
-          <form class="mp-vec-form" onSubmit={onSubmit}>
-            <input class="mp-vec-input" type="search" placeholder="LOLA DEM, SPICE, Malapert..." aria-label={t("evidence.sync.vector")} ref={(e: HTMLInputElement | null) => { inp.current = e; }} />
-            <button class="mp-pill" type="submit">Buscar</button>
-          </form>
-          <div class="mp-vec-results" ref={(e: HTMLElement | null) => { if (e) slot.out = e; }} />
-        </>}
       </div>
     );
   };

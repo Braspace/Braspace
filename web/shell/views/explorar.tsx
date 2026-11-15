@@ -6,7 +6,7 @@ import { num } from "../../ds/components.js";
 import { buildHash, type RouteCtx } from "../../ds/router.js";
 import { Badge, LayerCard, mount } from "../../ds/ui.js";
 import { windowMetrics, hourlyRows, type WindowMetrics } from "../data.js";
-import { scenario, ContextBar, regionMap, seriesFor, seriesProof, pct, hrs, fmtDate, HourStrip, download, setQuery } from "./common.js";
+import { scenarioQuery, scenario, ContextBar, regionMap, seriesFor, seriesProof, pct, hrs, fmtDate, HourStrip, download, setQuery } from "./common.js";
 
 const G = "est"; // global badge of this page (see the provenance strip)
 
@@ -69,7 +69,7 @@ export async function render(outlet: HTMLElement, ctx: RouteCtx): Promise<void> 
           why="Altura do relevo LOLA no ponto do catálogo. Declividade e rugosidade aparecem no Terreno 3D."
           proof={[["Coordenadas", num(sc.site.lat, 2, "°") + ", " + num(sc.site.lon, 2, "°")],
             ["Fonte do ponto", sc.site.source_url ? <a href={sc.site.source_url} rel="noopener" target="_blank">{sc.site.source}</a> : sc.site.source],
-            ["Nota", sc.data.raw.note], ["3D", <a href={buildHash("/terreno", { site: sc.site.id })}>Abrir no Terreno 3D</a>]]} />
+            ["Nota", sc.data.raw.note], ["3D", <a href={buildHash("/terreno", scenarioQuery(sc))}>Abrir no Terreno 3D</a>]]} />
       </div>
     </div>
   </>);

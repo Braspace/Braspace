@@ -68,17 +68,24 @@ export async function backendVectorAvailability(fetcher = fetch) {
     }
 }
 export async function backendVectorSearch(query, { limit = 5, modelID = VECTOR_MODEL_ID } = {}, fetcher = fetch) {
+    // This browser encoder only generates the pinned lexical projection. Never
+    // label its output as a trained-model embedding, even at equal dimension.
+    if (modelID !== VECTOR_MODEL_ID) {
+        const err = new Error("MODEL_MISMATCH");
+        err.code = "MODEL_MISMATCH";
+        throw err;
+    }
     const vector = embedProvenanceText(query);
     const result = await json("/api/vector/search", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ model_id: modelID, vector, limit })
     }, fetcher);
-    if (!Array.isArray(result.results) || result.scientifically_validated !== false) {
+    if (result.model_id !== modelID || result.dimension !== VECTOR_DIMENSIONS || !Array.isArray(result.results) || result.scientifically_validated !== false) {
         throw new Error("INVALID_VECTOR_SEARCH_CONTRACT");
     }
     return {
-        modelID: result.model_id || modelID,
+        modelID: result.model_id,
         results: result.results,
         limitations: Array.isArray(result.limitations) ? result.limitations : [],
         scientificallyValidated: false

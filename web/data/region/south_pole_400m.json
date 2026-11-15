@@ -21,9 +21,10 @@
   "pgda_sun": {
    "file": "pgda_sun_400m.bin",
    "type": "uint8 percent",
-   "sha256": "a354543b62871227a5066077f5ac61ed7e8dabd5268eb5a5aa4b147aa5bba61e",
+   "sha256": "de500c3b504e09ee0423b53b17ae8e87d6cdc855da3c9c496c090c489fd77d4e",
    "meaning": "average fraction of the solar disc visible (PGDA, Mazarico et al. 2011); 0 = permanent shadow",
    "product": "AVGVISIB_75S_120M_201608",
+   "source_sha256": "a354543b62871227a5066077f5ac61ed7e8dabd5268eb5a5aa4b147aa5bba61e",
    "label_sha256": "1b597f85822c20e349469c9499e7bd85a48efc3a23b9dd9d82b658e59192883c",
    "url": "http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_75S_120M_201608.IMG",
    "resolution_m": 120.0,
@@ -32,9 +33,10 @@
   "pgda_earth": {
    "file": "pgda_earth_400m.bin",
    "type": "uint8 percent",
-   "sha256": "443ad251a480dea19e96417dfcfe1cb87a91eb02ee158b262d78abe899258fff",
+   "sha256": "dfa7930ff8573d27951e031cc9f358eaa31bb93a956e648834340a595ea95a48",
    "meaning": "average Earth visibility; Earth counted visible if any part of its disc is unobscured (PGDA)",
    "product": "AVGVISIB_75S_120M_201608_EARTH",
+   "source_sha256": "443ad251a480dea19e96417dfcfe1cb87a91eb02ee158b262d78abe899258fff",
    "label_sha256": "86eabf4611eaf18c4e9b170b205d517b014ec9e694bc93c80d693caf7c0ca015",
    "url": "http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_75S_120M_201608_EARTH.IMG",
    "resolution_m": 120.0,

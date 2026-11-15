@@ -5,6 +5,20 @@
 
 export const HOUR_MS = 3600 * 1000;
 
+// Durations the Lab offers (days). The SPA hands over 7/14/28/56; the Lab menu adds 2 and 365.
+export const LAB_DURATION_DAYS = [2, 7, 14, 28, 56, 365];
+
+/** Window length in whole hours: finite, positive, an integer number of hours. */
+export function validHours(h: unknown): h is number { return typeof h === "number" && Number.isFinite(h) && h > 0 && Number.isInteger(h); }
+
+/** Check a duration in days against the Lab's supported set. {ok:true,hours} or {ok:false,reason}. */
+export function checkDurationDays(days: unknown): { ok: true; hours: number } | { ok: false; reason: string } {
+  if (typeof days !== "number" || !Number.isFinite(days)) return { ok: false, reason: `Duration ${days} is not a finite number of days.` };
+  if (days <= 0) return { ok: false, reason: `Duration ${days} d must be positive.` };
+  if (!LAB_DURATION_DAYS.includes(days as number)) return { ok: false, reason: `Duration ${days} d is not supported (use ${LAB_DURATION_DAYS.join(", ")} d).` };
+  return { ok: true, hours: (days as number) * 24 };
+}
+
 export interface HorizonSample { az: number; el: number; [extra: string]: unknown; }
 export interface SeriesMeta {
   series: { start_utc: string; count: number; sha256: string; step_seconds?: number; [extra: string]: unknown };
@@ -17,7 +31,7 @@ export type WindowComputed = {
   status: "COMPUTED"; hours: number; sunPct: number; earthPct: number; bothPct: number;
   longestDarkH: number; longestBlackoutH: number; maxSunElDeg: number; darkRuns: number; blackoutRuns: number;
 };
-export interface WindowNotComputed { status: "NOT_COMPUTED"; reason: string; }
+export interface WindowNotComputed { status: "NOT_COMPUTED" | "INVALID_DURATION"; reason: string; }
 export type SeriesWindowResult = WindowComputed | WindowNotComputed;
 export type StateChange =
   | { status: "NOT_COMPUTED" }
@@ -101,6 +115,7 @@ export class SiteSeries {
 
   /** Window metrics over [t0, t0 + hours). {status:"NOT_COMPUTED"} if out of range. */
   window(t0: number, hours: number): SeriesWindowResult {
+    if (!validHours(hours)) return { status: "INVALID_DURATION", reason: `Window of ${hours} h is invalid: it must be a finite, positive whole number of hours.` };
     const i0 = Math.ceil((t0 - this.start) / HOUR_MS);
     const i1 = i0 + hours;
     if (i0 < 0 || i1 > this.count) return { status: "NOT_COMPUTED", reason: "Requested dates are outside the computed ephemeris window." };
@@ -169,12 +184,19 @@ export function rankSites<S>(entries: RankEntry<S>[], t0: number, hours: number,
 }
 
 // Handoff from the SPA (#site=&t=&d=). Unknown site or out-of-coverage time keeps the default, never guesses (BR-02).
-export function parseEntryHash(hash: unknown, sites: { id: string }[], start: number, end: number): { siteId?: string; t?: number; compareH?: number } {
+export interface DurationNotice { kind: "clamped" | "invalid"; requestedDays: number | string; usedDays?: number; message: string; }
+export function parseEntryHash(hash: unknown, sites: { id: string }[], start: number, end: number): { siteId?: string; t?: number; compareH?: number; durationNotice?: DurationNotice } {
   const q = new URLSearchParams(String(hash || "").replace(/^#/, ""));
-  const out: { siteId?: string; t?: number; compareH?: number } = {};
+  const out: { siteId?: string; t?: number; compareH?: number; durationNotice?: DurationNotice } = {};
   const id = q.get("site"); if (id && sites.some(s => s.id === id)) out.siteId = id;
   const raw = q.get("t");
   if (raw) { const t = Date.parse(raw.length === 10 ? raw + "T00:00Z" : /Z|[+-]\d\d:?\d\d$/.test(raw) ? raw : raw + "Z"); if (Number.isFinite(t)) out.t = Math.min(Math.max(Math.floor(t / HOUR_MS) * HOUR_MS, start), end); }
-  const d = Number(q.get("d")); if (d > 0) out.compareH = d * 24;
+  const rawD = q.get("d");
+  if (rawD !== null && rawD !== "") {
+    const d = Number(rawD), max = LAB_DURATION_DAYS[LAB_DURATION_DAYS.length - 1];
+    // Too long for the Lab: use the longest supported window and say so, with the numbers. Anything else invalid keeps the default and reports why.
+    if (Number.isFinite(d) && d > max) { out.compareH = max * 24; out.durationNotice = { kind: "clamped", requestedDays: d, usedDays: max, message: `Requested ${d} d exceeds the longest supported window; using ${max} d.` }; }
+    else { const c = checkDurationDays(d); if (c.ok) out.compareH = c.hours; else out.durationNotice = { kind: "invalid", requestedDays: rawD, message: `${c.reason} Keeping the default window.` }; }
+  }
   return out;
 }

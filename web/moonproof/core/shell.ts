@@ -1,4 +1,6 @@
 // MoonProof shell: top navigation, context bar, "Open in", kits Class/Plan, language, mobile bottom nav.
+// @ts-ignore TS7016: JS module without types
+import { missionFromMultipage, moonHdHref } from "../../ds/mission-context.js";
 import { t, setLang, pickLang, apply, lang } from "./i18n.js";
 import { getState, setState, hrefTo, LAYERS, type Layer } from "./state.js";
 import { sealEl } from "./layers.js";
@@ -129,7 +131,7 @@ function helpPill() {
       pop = document.createElement("div"); pop.id = "mp-help"; pop.className = "mp-glass mp-help-pop"; pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", t("nav.help"));
       pop.dataset.mpLegend = ""; // seal legend, not a value
       for (const k of ["VAL", "PRE", "EST", "SIM", "N/D", "FALHA"]) { const r = document.createElement("p"); r.append(sealEl(k), " ", t("seal." + k)); pop.append(r); }
-      const moon = document.createElement("p"), link = document.createElement("a"); link.href = "../moon-hd.html" + (lang() === "pt-BR" ? "?lang=pt" : ""); link.className = "mp-pill"; link.textContent = t("nav.moon3d"); moon.append(link); pop.append(moon);
+      const moon = document.createElement("p"), link = document.createElement("a"); link.href = moonHdHref(missionFromMultipage({ ...getState(), lang: lang() }).ctx, "../moon-hd.html"); link.className = "mp-pill"; link.textContent = t("nav.moon3d"); moon.append(link); pop.append(moon);
       const credit = document.createElement("p"); credit.textContent = t("nav.moon3d.credit"); pop.append(credit);
       document.body.append(pop);
     }

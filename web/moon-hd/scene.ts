@@ -27,9 +27,9 @@ export { THREE };
 export const R_KM = R_REF / 1000;
 
 // ---------------------------------------------------------------- loading
-export const fetchJSON = async (url: string) => { const res = await fetch(url); if (!res.ok) throw new Error(url + " " + res.status); return res.json(); };
+export const fetchJSON = async (url: string) => { const res = await fetch(url, { signal: AbortSignal.timeout(30e3) }); if (!res.ok) throw new Error(url + " " + res.status); return res.json(); };
 export async function fetchBinary(url: string, byteLength: number): Promise<ArrayBuffer> {
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(180e3) }); // a stalled network must leave the loading state (FE-05)
   if (!res.ok) throw new Error(url + " " + res.status);
   const buffer = await res.arrayBuffer();
   if (buffer.byteLength !== byteLength) throw new Error(url + ": unexpected size");

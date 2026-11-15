@@ -15,6 +15,7 @@ import { createLayerCard, sealEl } from "../core/layers.js";
 import { t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import type { Layer } from "../core/state.js";
+import { createMediaLoader } from "../core/media-client.js";
 import { coordText, parseCoord, pgdaAt, rampColor, rampCss, horizonPoints, elRange, fmtVal } from "./mission-calc.js";
 import type { RampName, HorizonPoint } from "./mission-calc.js";
 // @ts-ignore TS7016
@@ -59,6 +60,7 @@ function Node({ node }: { node: Node | null }) {
 }
 const el = (tag: string, cls?: string | null, text?: string | null): HTMLElement => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const nd = (): string => t("nd");
+const loadMedia = createMediaLoader(api);
 interface LayerDef { id: string; key: string; unit: string; ramp: RampName | null; legend: string; status: string | null }
 export const LAYERS: LayerDef[] = [
   { id: "altitude", key: "ex.l.altitude", unit: "ex.u.m", ramp: "altitude", legend: "ex.leg.altitude", status: null },
@@ -214,8 +216,18 @@ function legend(): HTMLElement {
 
 function drawRight(s: ExSite, m: Metrics) {
   const right = $("right"); right.replaceChildren(card(s, m), fromHere(s, m, DESK_HORIZON));
-  if (online && !point) mediaCard(s).then(c => { if (c && site()?.id === s.id) right.append(c); });
-  $("sheet-body").replaceChildren(card(s, m, true), fromHere(s, m));
+  const mobile = $("sheet-body"); mobile.replaceChildren(card(s, m, true), fromHere(s, m));
+  if (!point) {
+    // Each render owns its own slot, so late results cannot duplicate a card or
+    // attach it to a different site/coordinate. Both responsive layouts use the same request.
+    for (const target of [right, mobile]) {
+      const slot = el("div"); target.append(slot);
+      mediaCard(s).then(c => {
+        if (!slot.isConnected || point || site()?.id !== s.id) return;
+        if (c) slot.replaceWith(c); else slot.remove();
+      });
+    }
+  }
 }
 
 function rows(list: SealRow[]): ComponentChild {
@@ -340,10 +352,14 @@ draw();
 
 // Official LROC images related to the site (GET /api/sites/{id}/media, from the legacy onboard "Visual" tab).
 // Links only: the API returns page links and credits, never image bytes (LROC website terms).
-const mediaCache = new Map<string, ReturnType<typeof api<{ media?: MediaItem[] }>>>();
 async function mediaCard(s: ExSite): Promise<HTMLElement | null> {
-  if (!mediaCache.has(s.id)) mediaCache.set(s.id, api<{ media?: MediaItem[] }>(`/api/sites/${encodeURIComponent(s.id)}/media`));
-  const r = await (mediaCache.get(s.id) as ReturnType<typeof api<{ media?: MediaItem[] }>>); const items = r.ok ? r.data?.media || [] : [];
+  const items = (await loadMedia(s.id)) as MediaItem[] | null;
+  if (items === null) {
+    const c = el("article", "mp-card ex-media"); c.append(el("h3", null, t("ex.media")));
+    const pt = lang() === "pt-BR", retry = el("button", "mp-pill", pt ? "Tentar novamente" : "Retry links") as HTMLButtonElement; retry.type = "button";
+    retry.onclick = () => draw(); c.append(el("p", "mp-label", pt ? "Links oficiais indisponíveis; os dados locais permanecem utilizáveis." : "Official source links unavailable; local data remain usable."), retry);
+    return c;
+  }
   if (!items.length) return null;
   return one(
     <article class="mp-card ex-media"><h3>{t("ex.media")}</h3>{items.slice(0, 4).map(it => (

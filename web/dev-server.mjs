@@ -9,6 +9,7 @@ import path from "node:path";
 const directory=path.dirname(fileURLToPath(import.meta.url));
 const upstreamHost="127.0.0.1",upstreamPort=Number.parseInt(process.env.BRASPACE_API_PORT||"8080",10);
 const staticFiles=new Map([
+  ["/vector-embed.js",{name:"vector-embed.js",type:"text/javascript; charset=utf-8"}],
   ["/",{name:"index.html",type:"text/html; charset=utf-8"}],
   ["/index.html",{name:"index.html",type:"text/html; charset=utf-8"}],
   ["/styles.css",{name:"styles.css",type:"text/css; charset=utf-8"}],

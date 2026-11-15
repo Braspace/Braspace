@@ -50,6 +50,18 @@ class PolarAssetIntegrity(unittest.TestCase):
             self.assertEqual(len(raw), info["count"] * 8, site["id"])
             self.assertEqual(hashlib.sha256(raw).hexdigest(), info["sha256"], site["id"])
 
+    def test_pgda_layers_distinguish_derived_and_source_checksums(self):
+        region = load(DATA / "region" / "south_pole_400m.json")
+        source = load(SCIENCE / "validation_pgda.json")["pgda"]
+        for body in ("sun", "earth"):
+            with self.subTest(body=body):
+                layer = region["layers"]["pgda_" + body]
+                assert_derived_file(self, DATA / "region" / layer["file"], layer,
+                                    region["nx"] * region["ny"])
+                self.assertEqual(layer["source_sha256"], source[body]["sha256"])
+                self.assertEqual(layer["label_sha256"], source[body]["label_sha256"])
+                self.assertNotEqual(layer["sha256"], layer["source_sha256"])
+
     def test_preliminary_metrics_agree_with_summary_and_disclose_pgda_discrepancies(self):
         idx = load(DATA / "sites.json")
         summary = load(SCIENCE / "summary.json")

@@ -7,7 +7,7 @@ import { apiBase } from "../api-base.js";
 import { Viewer } from "./scene.js";
 import type { Pgda, LabSite } from "./scene.js";
 import { TerrainGrid } from "./terrain.js";
-import { SiteSeries, rankSites, HOUR_MS, parseEntryHash } from "./data.js";
+import { SiteSeries, rankSites, HOUR_MS, parseEntryHash, validHours } from "./data.js";
 import type { SeriesWindowResult, StateChange } from "./data.js";
 import { azElToEnu, enuToBody } from "./coords.js";
 import type { Vec3 } from "./coords.js";
@@ -68,6 +68,7 @@ interface AppState {
   view: string; level: string; siteId: string; t: number; layer: string; exag: number; lang: string; reduced: boolean;
   index: Json | null; region: TerrainGrid | null; pgda: Pgda | null; slope: Float32Array | null;
   series: Map<string, Promise<SiteSeries>>; tiles: Map<string, Promise<TerrainGrid>>; compareH: number;
+  durationNotice?: import("./data.js").DurationNotice | null;
   recover: { delayH: number; windowH: number; minSun: number; maxBlackout: number; power?: Record<string, number | undefined> };
   lab: LabState; windowStart: number; windowEnd: number; handoffNote?: string;
 }
@@ -101,6 +102,7 @@ function applyEntryHash(hash: string) {
   if (e.siteId) state.siteId = e.siteId;
   if (e.t !== undefined) state.t = e.t;
   if (e.compareH) state.compareH = e.compareH;
+  state.durationNotice = e.durationNotice || null;
 }
 const siteById = (id: string): LabSite => state.index!.sites.find((s: Json) => s.id === id);
 function series(id: string): Promise<SiteSeries> {
@@ -341,7 +343,8 @@ function drawHorizon(cv: HTMLCanvasElement, s: SiteSeries, t: number) {
 async function renderCompare() {
   panel().innerHTML = `<p class="eyebrow">02 / ${esc(tr("compare"))}</p><h2>${esc(tr("compareTitle"))}</h2>
     <p class="lede">Same start time (${iso(state.t)}), same window, all sites. Values come from the hourly SPICE geometry against each site's LOLA horizon.</p>
-    <label for="cw">Window</label><select id="cw"><option value="48">2 days</option><option value="168">7 days</option><option value="336">14 days</option><option value="672">28 days</option><option value="8760">1 year</option></select>
+    ${state.durationNotice ? `<p class="hud-warn" role="alert">${esc(state.durationNotice.message)}</p>` : ""}
+    <label for="cw">Window</label><select id="cw"><option value="48">2 days</option><option value="168">7 days</option><option value="336">14 days</option><option value="672">28 days</option><option value="1344">56 days</option><option value="8760">1 year</option></select>
     <div id="ctable" class="tablewrap">Loading all site series…</div>
     <p class="muted small">"Long-term" columns are the NASA PGDA average maps at the site (independent reference over a longer period; Earth counted if any part is visible).</p>`;
   $<HTMLSelectElement>("#cw").value = String(state.compareH);
@@ -349,14 +352,16 @@ async function renderCompare() {
   fillCompare();
 }
 async function fillCompare() {
+  if (!validHours(state.compareH)) { const e0 = $("#ctable"); if (e0) e0.innerHTML = `<p class="hud-warn" role="alert">${esc(tr("notComputed"))}: invalid window (${esc(String(state.compareH))} h).</p>`; return; }
   const entries = await Promise.all(state.index!.sites.map(async (site: LabSite) => ({ site, series: await series(site.id) })));
   const rows: CompareRow[] = entries.map(({ site, series: s }: { site: LabSite; series: SiteSeries }) => ({ site, w: s.window(state.t, state.compareH) }));
   const ok = rows.filter(r => r.w.status === "COMPUTED");
   const best = (k: string) => Math.max(...ok.map(r => (r.w as Json)[k])), worst = (k: string) => Math.min(...ok.map(r => (r.w as Json)[k]));
   const cell = (r: CompareRow, k: string, d: number, hiGood: boolean) => { if (r.w.status !== "COMPUTED") return `<td>${esc(tr("notComputed"))}</td>`; const v = (r.w as Json)[k]; const star = v === (hiGood ? best(k) : worst(k)) ? " best" : ""; return `<td class="num${star}">${fmt(v, d)}</td>`; };
   const el = $("#ctable"); if (!el) return;
+  if (!ok.length) { el.innerHTML = `<p class="hud-warn" role="alert">${esc(tr("notComputed"))}: ${esc((rows[0]?.w as Json)?.reason || "no site series covers this window")}</p>`; return; }
   // Live API: rows for sites the API holds a series for, in batches of 3 (API limit). Others keep static values.
-  const apiRows = new Map<string, Json>(), ids = (state.index!.sites as LabSite[]).map(x => x.id).filter((id: string) => live.online && live.apiId(id) && live.covers(id, state.t, state.compareH));
+  const apiRows = new Map<string, Json>(), ids = state.compareH > 720 ? [] : (state.index!.sites as LabSite[]).map(x => x.id).filter((id: string) => live.online && live.apiId(id) && live.covers(id, state.t, state.compareH)); // API maxWindowHours = 720 (api/mission.go): longer windows stay on the precomputed series
   for (let i = 0; i < ids.length; i += 3) {
     const r = await live.compare(ids.slice(i, i + 3), isoZ(state.t), state.compareH);
     if (r.ok) r.data!.results.forEach((x: Json) => { const lab = ids.find(id => live.apiId(id) === x.site.id), row = compareRow(x, r.data!.scientifically_validated === true); if (lab && row) apiRows.set(lab, row); });

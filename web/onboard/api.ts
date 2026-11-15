@@ -3,7 +3,7 @@ interface Window { BRASPACE_API_BASE?: string }
 type ApiRoot = { BRASPACE_API_BASE?: string; location?: { hostname?: string }; OnboardApi?: unknown };
 // data is the parsed JSON of the Go API (schema owned by the API), so it stays untyped here.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ApiResult = { ok: boolean; status: number; data?: any; error?: string; windowNote?: string };
+type ApiResult = { ok: boolean; status: number; data?: any; error?: string; windowNote?: string; coverage?: { hours: number; of: number; startMs: number; endMs: number } };
 interface OnboardApiClient {
   base(): string;
   evaluate(body?: unknown): Promise<ApiResult>; readyz(): Promise<ApiResult>; capabilities(): Promise<ApiResult>;

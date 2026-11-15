@@ -1,4 +1,6 @@
 // MoonProof shell: top navigation, context bar, "Open in", kits Class/Plan, language, mobile bottom nav.
+// @ts-ignore TS7016: JS module without types
+import { missionFromMultipage, moonHdHref } from "../../ds/mission-context.js";
 import { t, setLang, pickLang, apply, lang } from "./i18n.js";
 import { getState, setState, hrefTo, LAYERS } from "./state.js";
 import { sealEl } from "./layers.js";
@@ -167,7 +169,7 @@ function helpPill() {
                 pop.append(r);
             }
             const moon = document.createElement("p"), link = document.createElement("a");
-            link.href = "../moon-hd.html" + (lang() === "pt-BR" ? "?lang=pt" : "");
+            link.href = moonHdHref(missionFromMultipage({ ...getState(), lang: lang() }).ctx, "../moon-hd.html");
             link.className = "mp-pill";
             link.textContent = t("nav.moon3d");
             moon.append(link);
