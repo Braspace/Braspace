@@ -85,9 +85,20 @@ const projected = new THREE.Vector3();
 function placeLabel(label, camera, visible) {
   if (visible) projected.copy(label.position).project(camera);
   const show = visible && projected.z < 1 && Math.abs(projected.x) < 1.05 && Math.abs(projected.y) < 1.05;
-  label.el.hidden = !show;
-  if (show) label.el.style.transform = `translate(${((projected.x + 1) / 2 * innerWidth + 8).toFixed(1)}px, ${((1 - projected.y) / 2 * innerHeight - 10).toFixed(1)}px)`;
+  let x = 0, y = 0, free = show;
+  if (show) {
+    x = (projected.x + 1) / 2 * innerWidth + 8; y = (1 - projected.y) / 2 * innerHeight - 10;
+    // No label over another label or over a panel (phone: names were piling up and running under the readout).
+    const box = { l: x, t: y, r: x + label.el.textContent.length * (label.kind === "mare" ? 8.5 : 7) + 22, b: y + 20 };
+    free = !taken.some(q => box.l < q.r && box.r > q.l && box.t < q.b && box.b > q.t);
+    if (free) taken.push(box);
+  }
+  label.el.hidden = !free;
+  if (free) label.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
 }
+let taken = [];
+const obstacles = () => [".top", ".views", ".readout", ".site-card", ".panel", ".credits"].map(q => document.querySelector(q))
+  .filter(e => e && !e.hidden).map(e => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; });
 
 // ---------------------------------------------------------------- app
 async function main() {
@@ -387,7 +398,8 @@ async function main() {
 
     const names = $("markers").checked, distance = camera.position.length();
     sites.visible = names;
-    for (const l of labels) {
+    taken = obstacles();
+    for (const l of [...labels].sort((a, b) => (a.kind === "body" ? 0 : a.kind === "site" ? 1 : a.kind === "feature" ? 2 : 3) - (b.kind === "body" ? 0 : b.kind === "site" ? 1 : b.kind === "feature" ? 2 : 3))) {
       let visible = !flying && (l.kind === "body" || names);
       if (visible && l.kind === "feature") visible = mode === "pole" || distance < 2.4;
       if (visible && l.kind === "mare") visible = mode === "globe" && distance > 2.4;
