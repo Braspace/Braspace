@@ -31,6 +31,9 @@ const view = (name) => async (outlet, ctx) => {
   await mod.render(outlet, ctx);
 };
 
+/** Scenario handed to the Polar Lab: same site and window start (t) as the shell view. */
+const labHash = q => { const p = new URLSearchParams(); if (q.site) p.set("site", q.site); if (q.t) p.set("t", q.t); if (q.d) p.set("d", q.d); const s = p.toString(); return s ? "#" + s : ""; };
+
 const routes = [
   { path: "/", title: "Escolha", render: view("escolha") },
   { path: "/explorar", title: "Explorar o polo sul", render: view("explorar") },

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Braspace/Braspace/api/navigation"
 	"github.com/Braspace/Braspace/api/onboard"
 	"log"
 	"math"
@@ -206,6 +207,7 @@ func routes(binary string) http.Handler {
 		writeJSON(w, http.StatusOK, result)
 	})
 	mux.Handle("POST /api/onboard/evaluate", onboard.Handler())
+	mux.Handle("POST /api/onboard/navigation", navigation.Handler())
 	mux.Handle("POST /api/onboard/report", onboard.ReportHandler())
 	store, err := loadDefaultStore()
 	if err != nil {

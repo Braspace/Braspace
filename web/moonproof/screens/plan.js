@@ -14,7 +14,7 @@ register({
   en: {
     "plan.h1": "Planning Kit",
     "plan.title": "Mission rules",
-    "plan.editable": "editable · assumed limit",
+    "plan.editable": "editable",
     "plan.night": "Max night",
     "plan.blackout": "Max Earth blackout",
     "plan.battery": "Battery floor",
@@ -84,7 +84,7 @@ register({
   "pt-BR": {
     "plan.h1": "Kit Planejamento",
     "plan.title": "Regras da missão",
-    "plan.editable": "editáveis · limite assumido",
+    "plan.editable": "editáveis",
     "plan.night": "Noite máxima",
     "plan.blackout": "Perda máxima da Terra",
     "plan.battery": "Piso da bateria",

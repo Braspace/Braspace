@@ -806,6 +806,89 @@
         }
       }
     },
+    "/api/onboard/navigation": {
+      "post": {
+        "summary": "Synthetic lunar GNSS geometry for one site over a time window (premises are assumptions, not a validated navigation model)",
+        "operationId": "onboardNavigation",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "lat",
+                  "lon"
+                ],
+                "properties": {
+                  "lat": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "lon": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "start_utc": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "duration_hours": {
+                    "type": "number"
+                  },
+                  "step_minutes": {
+                    "type": "number"
+                  },
+                  "gdop_limit": {
+                    "type": "number"
+                  },
+                  "min_satellites": {
+                    "type": "integer"
+                  },
+                  "elevation_mask_deg": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK: version, model_status, premises, summary, outages, samples",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "version",
+                    "model_status",
+                    "premises",
+                    "summary",
+                    "outages",
+                    "samples"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON"
+          },
+          "413": {
+            "description": "Too large"
+          },
+          "415": {
+            "description": "Content-Type"
+          },
+          "422": {
+            "description": "Invalid request"
+          }
+        }
+      }
+    },
     "/api/onboard/evaluate": {
       "post": {
         "summary": "Onboard simulator v1 with caller-supplied visibility booleans (owned by #70)",

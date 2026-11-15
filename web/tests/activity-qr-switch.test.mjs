@@ -112,7 +112,7 @@ test("activity.js: switches are role=switch with aria-checked, QR comes from the
   assert.match(js, /const url = shareUrl\(\)/);
   assert.doesNotMatch(js + css + html, /moonproof\.app|LUA-7K2/);
   assert.match(css, /\.mp-switch::after\s*\{[^}]*width:\s*20px;[^}]*height:\s*20px/);
-  assert.match(css, /\.mp-qr\s*\{[^}]*width:\s*84px;[^}]*height:\s*84px;[^}]*padding:\s*6px/);
+  assert.match(css, /\.mp-qr\s*\{[^}]*width:\s*84px;[^}]*height:\s*84px;[^}]*padding:\s*5px/);
   assert.match(css, /\.mp-qr\s*\{[^}]*background:\s*var\(--pill\)/);
 });
 
@@ -142,7 +142,7 @@ const activityGeometryChecks = (js, css) => [
   [/mountShell\(\{[^}]*context:\s*null/.test(js) && !/shell\.setContext/.test(js), "shell mounted with context null (the board has no context bar)"],
   [/\.mp-act-layout\s*\{[^}]*inset:\s*97px 29px 28px 29px/.test(css), "panels start at y=97 with 29 px side margins"],
   [/grid-template-columns:\s*320px minmax\(0, 552fr\) minmax\(300px, 510fr\)/.test(css), "columns 320 / 552 / 510"],
-  [/\.mp-act-share\s*\{[^}]*padding:\s*16px 20px 15px/.test(css), "share bar 129 px tall (96 px QR + padding)"],
+  [/\.mp-act-share\s*\{[^}]*padding:\s*13px 21px 13px/.test(css), "share bar 129 px tall (96 px QR + padding)"],
   [/\.mp-btn-jade\s*\{[^}]*height:\s*47px/.test(css) && /\.mp-btn-outline\s*\{[^}]*height:\s*47px/.test(css), "share buttons 47 px"],
 ];
 test("activity: panel geometry follows the V3Atividade board", () => {

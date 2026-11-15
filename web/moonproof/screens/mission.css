@@ -16,10 +16,10 @@
 .mc-left .mp-layer-answer{font-size:17px}
 .mc-energy-form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:13px}
 .mc-energy-form p,.mc-energy-form button{grid-column:1/-1}
-.mc-energy-form label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-2)}
-.mc-energy-form input{min-height:36px;border-radius:12px;border:1px solid var(--line);background:#0d1014;color:#fff;padding:0 10px;font:inherit}
-.mc-numbers select{min-height:36px;border-radius:999px;background:#11151a;color:#fff;border:1px solid var(--line);padding:0 10px;font:inherit;font-size:12px;max-width:150px}
-.mc-numbers h4{margin:13px 0 4px;color:var(--jade)}
+.mc-energy-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-2)}
+.mc-energy-form input{min-height:36px;border-radius:12px;border:1px solid var(--line);background:#0d1014;color:#fff;padding:0 8px;font:inherit}
+.mc-numbers select{min-height:36px;border-radius:999px;background:#11151a;color:#fff;border:1px solid var(--line);padding:0 8px;font:inherit;font-size:12px;max-width:150px}
+.mc-numbers h4{margin:13px 0 5px;color:var(--jade)}
 .mc-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 .mc-table th{text-align:left;font-weight:600;color:var(--text-2);padding:5px 0;font-size:13px}
 .mc-table td,.mc-table thead th{text-align:right;font-weight:800;padding:5px 0 5px 13px;width:56px}
@@ -30,20 +30,20 @@
 .mc-compass small{font-size:10px;font-weight:700;letter-spacing:.08em}.mc-compass b{font-size:20px}
 .mc-dock{position:fixed;z-index:11;bottom:22px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px}
 .mc-dock-row{display:flex;gap:8px;align-items:center}
-.mc-dock-row .mp-pill{min-width:var(--touch);justify-content:center;padding:0 14px}
-.mc-sel{appearance:none;max-width:280px;font:inherit;font-weight:700;padding:0 22px!important}
-.mc-hint{margin:0;padding:8px 16px;border-radius:999px;background:var(--glass);backdrop-filter:blur(22px) saturate(1.2);-webkit-backdrop-filter:blur(22px) saturate(1.2);border:1px solid rgba(255,255,255,.08);font-size:12.5px;font-weight:600}
+.mc-dock-row .mp-pill{min-width:var(--touch);justify-content:center;padding:0 13px}
+.mc-sel{appearance:none;max-width:280px;font:inherit;font-weight:700;padding:0 21px!important}
+.mc-hint{margin:0;padding:8px 13px;border-radius:999px;background:var(--glass);backdrop-filter:blur(22px) saturate(1.2);-webkit-backdrop-filter:blur(22px) saturate(1.2);border:1px solid rgba(255,255,255,.08);font-size:12.5px;font-weight:600}
 .mc-hint::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--jade);margin-right:8px}
 .mc-rays{position:fixed;inset:0;z-index:5;pointer-events:none;width:100%;height:100%}
-.mc-ray-label{position:fixed;z-index:6;transform:translate(-50%,-50%);padding:5px 12px;border-radius:999px;background:var(--pill);color:var(--pill-text);font-weight:700;font-size:12.5px;pointer-events:none;white-space:nowrap}
+.mc-ray-label{position:fixed;z-index:6;transform:translate(-50%,-50%);padding:5px 13px;border-radius:999px;background:var(--pill);color:var(--pill-text);font-weight:700;font-size:12.5px;pointer-events:none;white-space:nowrap}
 .mc-handle{display:none}
-.mc-notes p{margin:4px 0 13px}.mc-notes a{color:var(--jade);overflow-wrap:anywhere}
+.mc-notes p{margin:5px 0 13px}.mc-notes a{color:var(--jade);overflow-wrap:anywhere}
 .mp-layer,.mp-card,.mp-marker{transition:opacity .18s,transform .18s}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media (max-width:700px){
   .mc-panels{position:fixed;z-index:12;left:8px;right:8px;bottom:74px;height:46vh;overflow:auto;border-radius:26px;background:rgba(12,15,18,.86);backdrop-filter:blur(22px) saturate(1.2);-webkit-backdrop-filter:blur(22px) saturate(1.2);border:1px solid rgba(255,255,255,.08);padding:0 13px 13px}
   .mc-handle{display:block;position:sticky;top:0;z-index:2;width:100%;height:28px;border:0;background:transparent;cursor:grab;touch-action:none}
-  .mc-handle::after{content:"";display:block;margin:10px auto;width:44px;height:5px;border-radius:3px;background:#5b6570}
+  .mc-handle::after{content:"";display:block;margin:8px auto;width:44px;height:5px;border-radius:3px;background:#5b6570}
   .mc-left,.mc-right{position:static;width:auto;overflow:visible}
   .mc-right{margin-top:13px}
   .mc-dock{top:118px;bottom:auto}
@@ -57,8 +57,8 @@
   .ex-left{max-height:calc(100vh - 254px)}
 }
 @media (min-width:701px) and (max-width:1300px){
-  .mp-top .mp-pill{padding:0 11px;font-size:12.5px;min-height:38px}
-  .mp-top{gap:6px}.mp-brand{font-size:17px}
+  .mp-top .mp-pill{padding:0 13px;font-size:12.5px;min-height:38px}
+  .mp-top{gap:5px}.mp-brand{font-size:17px}
   .mp-context{top:66px;font-size:12.5px}
   .mc-left,.mc-right,.ex-left,.ex-right{top:120px}
   .mc-left{width:270px}.mc-right,.ex-right{width:290px}.ex-left{width:250px}
@@ -68,13 +68,13 @@
   .mc-dock-row .mp-pill,.ex-dock-row .mp-pill{min-height:40px}
   .mc-sel,.ex-sel{max-width:200px}
 }
-.mc-battery{font-size:12.5px;white-space:normal;line-height:1.2;padding:8px 18px}
+.mc-battery{font-size:12.5px;white-space:normal;line-height:1.2;padding:8px 21px}
 .mc-numbers select{max-width:170px;text-overflow:ellipsis}
 .mc-sel,.ex-sel{text-overflow:ellipsis;overflow:hidden}
 @media (max-width:700px){
   .mc-panels,.ex-sheet{padding-bottom:34px}
   .mc-dock{top:auto;bottom:calc(46vh + 84px);left:auto;right:var(--margin);transform:none}
-  .mc-ray-label{font-size:11px;padding:3px 9px}
+  .mc-ray-label{font-size:11px;padding:3px 8px}
   .mp-context{text-overflow:ellipsis}
 }
 /* Fidelity audit (items 9, 12, 14). */
@@ -85,7 +85,7 @@
 /* Design A: two 210px stat circles overflow the 330px column (row margin -8 -20 -8 -24).
    The column scrolls, so it is widened by transparent padding instead of clipping them. */
 @media (min-width:1301px){
-  .mc-left{left:4px;width:424px;padding:0 70px 0 24px;box-sizing:border-box;pointer-events:none}
+  .mc-left{left:4px;width:424px;padding:0 70px 0 21px;box-sizing:border-box;pointer-events:none}
   .mc-left>*{pointer-events:auto}
   .mc-circles{display:flex;gap:0;margin:0 -70px 0 -24px;padding:0}
   /* The box is the 140px halo; the 35px margin gives the 210px footprint, so satellites sit on the halo. */
@@ -96,7 +96,7 @@
   .mc-circles .mp-sat{width:44px;height:44px;margin:-22px 0 0 -22px}
   .mc-circles .mp-sat span{font-size:8.5px}
 }
-.mc-vs{display:block;width:100%;max-width:none!important;margin-top:10px}
+.mc-vs{display:block;width:100%;max-width:none!important;margin-top:8px}
 .mc-circles .mp-sat span{font-size:10px}
 /* UX audit: .mc-right also carries [data-mp-sheet], so the core turned it into a second fixed sheet on top
    of .mc-panels (the numbers card covered the stat circles). Inside the Mission sheet it stays in flow. */
@@ -113,52 +113,52 @@
   .mc-circles .mp-stat-core .mp-num{font-size:22px}
 }
 /* Geometry pass against the Main board (1440x900). Desktop-wide rules first, then the 1301+ column grid. */
-.mc-num-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mc-num-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .mc-num-head h3{margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em;min-width:0}
-.mc-numbers select.mc-win{min-height:26px;height:26px;width:87px;max-width:none;padding:0 10px;font-size:12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--line);flex:none}
-.mc-num-sub{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.mc-numbers select.mc-win{min-height:26px;height:26px;width:87px;max-width:none;padding:0 8px;font-size:12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--line);flex:none}
+.mc-num-sub{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
 .mc-numbers h4{margin:0;color:var(--text-2)}
 .mc-num-sub h4 strong{color:#fff;font-size:15px;font-weight:700}.mc-num-sub h4 span{color:var(--jade);font-size:12.5px;font-weight:600}
-.mc-numbers select.mc-vs{width:auto;max-width:96px;min-height:24px;height:24px;margin:0;padding:0 4px;border:0;background:transparent;color:var(--text-2);font-size:12px;appearance:auto}
+.mc-numbers select.mc-vs{width:auto;max-width:96px;min-height:24px;height:24px;margin:0;padding:0 5px;border:0;background:transparent;color:var(--text-2);font-size:12px;appearance:auto}
 .mc-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .mc-table th{font-size:15px;color:var(--text)}
 .mc-table tbody th,.mc-table tbody td{height:37px;padding-top:0;padding-bottom:0}
 .mc-table td{font-size:18px}.mc-table td+td{font-size:15px}
-.mc-prov{display:flex;align-items:center;gap:8px;margin:14px 0 0;min-width:0}
+.mc-prov{display:flex;align-items:center;gap:8px;margin:13px 0 0;min-width:0}
 .mc-prov span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.mc-now{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px}
+.mc-now{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px}
 .mc-now-head{display:flex;align-items:center;gap:8px}.mc-now-head h3{margin:0}
 .mc-now-big{font-size:28px;line-height:1.1;margin:2px 0 0}
 .mc-now-sub{margin:0}
 .mc-now-ico{width:62px;height:62px;border-radius:50%;border:2px dashed var(--sun);color:var(--sun);display:grid;place-items:center;flex:none}
 @media (min-width:701px){
   /* Tabs: visual 30px, touch area 46px through ::after. */
-  .mc-tabs{gap:6px}
-  .mc-tabs .mp-pill{position:relative;min-height:30px;height:30px;padding:0 12px;font-size:13.5px;font-weight:600}
+  .mc-tabs{gap:5px}
+  .mc-tabs .mp-pill{position:relative;min-height:30px;height:30px;padding:0 13px;font-size:13.5px;font-weight:600}
   .mc-tabs .mp-pill::after{content:"";position:absolute;inset:-8px -3px}
-  .mc-hint{padding:0 16px;height:36px;display:flex;align-items:center;font-size:12.5px;white-space:nowrap}
-  .mc-dock{gap:16px}
+  .mc-hint{padding:0 13px;height:36px;display:flex;align-items:center;font-size:12.5px;white-space:nowrap}
+  .mc-dock{gap:13px}
   .mc-sel{width:172px;max-width:172px}
 }
 @media (min-width:1301px){
-  .mc-left{gap:12px}
-  .mp-pill.is-white.mc-battery{width:fit-content;max-width:100%;height:40px;min-height:40px;padding:0 14px;font-size:12.5px;white-space:nowrap;line-height:1}
+  .mc-left{gap:13px}
+  .mp-pill.is-white.mc-battery{width:fit-content;max-width:100%;height:40px;min-height:40px;padding:0 13px;font-size:12.5px;white-space:nowrap;line-height:1}
   .mc-left .mp-layer-answer{font-size:15px;line-height:1.3}
   .mc-circles{margin:-8px -70px -8px -24px}
   /* The 142px halo is the element itself (border + glass), so its box is measurable; satellites sit on it. */
   .mc-circles .mp-stat{width:142px;height:142px;margin:34px!important;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
   .mc-circles .mp-stat::before{display:none}
   .mc-circles .mp-stat-core{inset:25px}
-  .mc-right{width:342px;gap:19px}
-  .mc-numbers{padding:20px}
-  .mc-now{padding:18px 20px}
-  .mc-compass{width:100px;height:100px;margin:12px 92px 0 0;background:var(--earth);color:#04101f;box-shadow:0 0 0 7px rgba(76,155,255,.28)}
+  .mc-right{width:342px;gap:21px}
+  .mc-numbers{padding:21px}
+  .mc-now{padding:21px 21px}
+  .mc-compass{width:100px;height:100px;margin:13px 92px 0 0;background:var(--earth);color:#04101f;box-shadow:0 0 0 7px rgba(76,155,255,.28)}
   .mc-compass small{font-size:11px}.mc-compass b{font-size:24px;line-height:1}
 }
 .mc-compass{width:100px;height:100px}
 @media (min-width:1301px){
   /* Context bar CTA: 30px visual, 46px touch area. */
-  .mp-context>a.mp-pill{position:relative;min-height:30px;height:30px;padding:0 16px;font-size:13px}
+  .mp-context>a.mp-pill{position:relative;min-height:30px;height:30px;padding:0 13px;font-size:13px}
   .mp-context>a.mp-pill::after{content:"";position:absolute;inset:-8px -3px}
 }
 /* 701-1300: the 124px circles plus the core 31px margins overflowed the 270px column (satellites overlapped, Earth clipped).
@@ -166,7 +166,7 @@
 @media (min-width:701px) and (max-width:1300px){
   .mc-left{width:300px}
   .mc-circles{gap:0;padding:0}
-  .mc-circles .mp-stat{width:96px;height:96px;margin:27px!important;flex:none}
+  .mc-circles .mp-stat{width:96px;height:96px;margin:34px!important;flex:none}
   .mc-circles .mp-stat::before{inset:0}
   .mc-circles .mp-stat-core{inset:18px}
   .mc-circles .mp-stat-core .mp-num{font-size:16px}.mc-circles .mp-stat-core small{font-size:9px}

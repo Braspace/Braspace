@@ -81,6 +81,18 @@ test("nested VALIDATED can never override false response-level scientific attest
   assert.equal(compareRow(r.data.results[0],r.data.scientifically_validated).seal.cls,"unverified");
 });
 
+test("nested VALIDATED can never override false response-level scientific attestation", async () => {
+  const forged = cmp("VALIDATED");
+  forged.scientifically_validated = false;
+  forged.results[0].provenance = {terrain_sha256: "a".repeat(64), ephemeris_id: "NAIF-TEST", frame:"MOON_ME"};
+  const fetcher=fakeFetch({"/api/sites":catalogue,"/api/compare":forged});
+  const live=createLive({base:"http://x",fetchImpl:fetcher}); await live.probe();
+  const r=await live.compare(["connecting-ridge"],"2026-11-15T00:00:00Z",24);
+  assert.equal(r.ok,true);
+  assert.equal(r.seal.cls,"unverified");
+  assert.equal(compareRow(r.data.results[0],r.data.scientifically_validated).seal.cls,"unverified");
+});
+
 test("sky, delay and onboard hit the documented routes with the mapped id", async () => {
   const f = fakeFetch({ "/api/sites?": 0, "/sky": { science_status: "UNVERIFIED", samples: [{ sun: { azimuth_deg: 1, elevation_deg: 2 }, sun_visible: true }] }, "/api/scenarios/delay": { options: [{ science_status: "UNVERIFIED" }] }, "/api/onboard/site-evaluate": { candidates: [{ science_status: "UNVERIFIED" }] }, "/api/sites": catalogue });
   const live = createLive({ base: "http://a", fetchImpl: f }); await live.probe();

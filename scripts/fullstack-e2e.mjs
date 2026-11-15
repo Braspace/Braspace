@@ -168,6 +168,11 @@ try {
   const siteReport = await both("POST /api/onboard/site-report", "/api/onboard/site-report", 200, {body: siteFixture, as: "html"});
   assert.match(siteReport, /UNVERIFIED|NOT FLIGHT|SYNTHETIC/i);
 
+  const navigation = await both("POST /api/onboard/navigation", "/api/onboard/navigation", 200,
+    {body: JSON.stringify({lat: -89.45, lon: -137.31, start_utc: "2026-12-01T00:00:00Z", duration_hours: 24, step_minutes: 60})});
+  assert.equal(navigation.model_status, "SYNTHETIC");
+  assert.ok(Array.isArray(navigation.samples) && navigation.samples.length > 0);
+
   const visibility = await both("POST /v1/visibility", "/v1/visibility", 200,
     {body: await fixture("examples/visibility.synthetic.json")});
   assert.equal(visibility.science_status, "UNVERIFIED_INPUTS");
@@ -184,7 +189,7 @@ try {
 
   // Verify malformed JSON is rejected by every non-optional POST operation.
   // Vector's disabled state short-circuits validation by contract, covered above.
-  for (const pathname of ["/api/compare", "/api/scenarios/delay", "/api/onboard/evaluate", "/api/onboard/site-evaluate", "/api/onboard/site-report", "/v1/visibility"]) {
+  for (const pathname of ["/api/compare", "/api/scenarios/delay", "/api/onboard/evaluate", "/api/onboard/site-evaluate", "/api/onboard/site-report", "/api/onboard/navigation", "/v1/visibility"]) {
     const invalid = await both(`POST ${pathname}`, pathname, 400, {body: "{"});
     assert.equal(typeof invalid.error, "string");
   }
