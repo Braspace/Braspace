@@ -22,3 +22,12 @@ test("scrollable regions are keyboard reachable and named", () => {
   assert.match(read("evidence.html"), /id="main" tabindex="0" role="region" aria-label=/);
   assert.match(read("screens/plan.tsx"), /class="mp-table-wrap" tabindex="0" role="region" aria-label="\$\{t\("plan\.tableRegion"\)\}"/);
 });
+
+test("explore: slope and its range are computed on demand; range scan is indexed; one Intl formatter per language", () => {
+  const s = read("screens/explore.tsx");
+  assert.doesNotMatch(s, /^const slope = grid\.slopeField\(\);/m);
+  assert.match(s, /const getSlope = \(\): ArrayLike<number> => \(slopeArr \?\?= grid\.slopeField\(\)\);/);
+  assert.match(s, /get slope\(\): \[number, number\] \{ return \[0, \(slopeMax \?\?= finiteRange\(getSlope\(\)\)\[1\]\)\]; \}/);
+  assert.doesNotMatch(s, /Array\.from\(arr\)/);
+  assert.match(s, /const dateFmt = \(l: string\) =>/);
+});
