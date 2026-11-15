@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import worker, { ROUTES, KIND_TYPES, DEFAULT_UPSTREAM, handleAPI, handleMoonAPI } from "./moonproof-worker.mjs";
+import worker, { ROUTES, KIND_TYPES, DEFAULT_UPSTREAM, handleAPI, handleMoonAPI } from "./moonproof-proxy.mjs";
 
 const spec = (()=>{try {return JSON.parse(readFileSync(process.env.BRASPACE_OPENAPI_SPEC || new URL("../../api/openapi.json", import.meta.url),"utf8"));} catch (e){if(process.env.BRASPACE_OPENAPI_SPEC || e.code!=="ENOENT")throw e;return JSON.parse(readFileSync(new URL("./openapi-operations.json",import.meta.url),"utf8"));}})();
 
