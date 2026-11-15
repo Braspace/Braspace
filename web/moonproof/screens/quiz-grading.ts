@@ -2,6 +2,7 @@
 export type QuizMetric = { longestDarkH: { value: number | null | undefined }; longestBlackoutH: { value: number | null | undefined } };
 export type QuizAnswer = { verdicts: (boolean | null)[]; correctIds: string[]; status: "ready" | "unknown" };
 export function evaluateQuestion(question: number, metrics: readonly QuizMetric[], limits: { night: number; blackout: number }): QuizAnswer {
+  if (!metrics.length) return { verdicts: [], correctIds: [], status: "unknown" };
   const needsNight = question !== 3;
   const needsEarth = question !== 2;
   const verdicts = metrics.map(m => {
@@ -22,5 +23,7 @@ export function evaluateQuestion(question: number, metrics: readonly QuizMetric[
 export function gradeChoice(choice: string | null, result: QuizAnswer): "correct" | "incorrect" | "unknown" | "unanswered" {
   if (result.status === "unknown") return "unknown";
   if (!choice) return "unanswered";
+  const index = choice.charCodeAt(0) - 65;
+  if (choice.length === 1 && index >= 0 && index < result.verdicts.length && result.verdicts[index] === null) return "unknown";
   return result.correctIds.includes(choice) ? "correct" : "incorrect";
 }
