@@ -72,10 +72,10 @@ export function sunCaveat(site) {
     return Object.freeze({ kind: "SUN_UPPER_BOUND", ours, pgda, diff: ours - pgda, ...(reach ? { reach } : {}) });
 }
 const seriesCache = new Map();
-export function loadSeries(site) {
+export function loadSeries(site, opts = {}) {
     // SiteSeriesLike is the screens' loose view of SiteSeries (a NOT_COMPUTED window carries no metrics), hence the cast.
     if (!seriesCache.has(site.id)) {
-        const pending = SiteSeries.load(DATA_BASE + site.series).catch(error => {
+        const pending = SiteSeries.load(DATA_BASE + site.series, opts).catch(error => {
             if (seriesCache.get(site.id) === pending)
                 seriesCache.delete(site.id);
             throw error;
