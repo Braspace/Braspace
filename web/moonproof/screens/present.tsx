@@ -7,6 +7,7 @@ import { sealEl } from "../core/layers.js";
 import { register, t, fmtNum, pickLang, setLang } from "../core/i18n.js";
 import { getState, hrefTo, DEFAULT_RULES } from "../core/state.js";
 import { evaluateQuestion, gradeChoice } from "./quiz-grading.js";
+import { classroomWindows } from "./class-scenarios.js";
 
 register({
   en: {
@@ -67,8 +68,9 @@ holdReady();
 const doc = await loadSites();
 const LETTERS = ["A", "B", "C"];
 // Scenarios are real sites; the terrain marker shows the scenario letter instead of the site number.
-const scenarios = doc.sites.slice(0, 3).map((s, i) => ({ ...s, n: LETTERS[i] }));
 const st = getState();
+const chosenWindows = classroomWindows(doc.sites, location.hash, st);
+const scenarios = chosenWindows.map((w, i) => ({ ...w.site, n: LETTERS[i] }));
 const nightLimit = Number(st.night ?? DEFAULT_RULES.night);
 const blackoutLimit = Number(st.blackout ?? DEFAULT_RULES.blackout);
 
@@ -77,7 +79,7 @@ await mountTerrain(document.getElementById("terrain")!, {
   selected: st.site || scenarios[0]?.id
 });
 
-const metrics = await Promise.all(scenarios.map((s) => apiWindowMetrics(doc, s, st.start, st.hours || 336)));
+const metrics = await Promise.all(chosenWindows.map((w) => apiWindowMetrics(doc, w.site, w.start, w.hours || 336)));
 type Metrics = (typeof metrics)[number];
 
 let qIndex = 1;
@@ -118,7 +120,7 @@ function draw() {
   $("present-badge").textContent = t("present.badge");
   const exitEl = $("present-exit") as HTMLAnchorElement;
   paint(<><IconX />{t("present.exit")}</>, exitEl);
-  exitEl.href = hrefTo("activity.html");
+  exitEl.href = hrefTo("activity.html") + location.hash;
 
   const progEl = $("present-progress");
   progEl.setAttribute("aria-label", t("present.qOf", { n: qIndex }));
