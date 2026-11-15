@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { evaluateQuestion, gradeChoice } from "../screens/quiz-grading.js";
+import { evaluateQuestion, gradeChoice, unavailableQuizMetric } from "../screens/quiz-grading.js";
 const m = (night, earth) => ({longestDarkH:{value:night},longestBlackoutH:{value:earth}});
 const limits = { night:60, blackout:72 };
 test("Q2 evaluates darkness only; Q3 evaluates Earth only", () => {
@@ -49,4 +49,14 @@ test("an empty catalogue does not fabricate a None-of-the-above answer",()=>{
  assert.equal(out.status,"unknown");
  assert.deepEqual(out.correctIds,[]);
  assert.equal(gradeChoice("none",out),"unknown");
+});
+
+test("an unavailable per-scenario lookup remains inconclusive without losing other evidence",()=>{
+ const bad=unavailableQuizMetric();
+ assert.deepEqual(bad,{longestDarkH:{value:null},longestBlackoutH:{value:null}});
+ const out=evaluateQuestion(4,[m(20,30),bad,m(90,80)],limits);
+ assert.deepEqual(out.verdicts,[true,null,false]);
+ assert.equal(gradeChoice("A",out),"correct");
+ assert.equal(gradeChoice("B",out),"unknown");
+ assert.equal(gradeChoice("C",out),"incorrect");
 });
