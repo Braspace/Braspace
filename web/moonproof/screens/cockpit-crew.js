@@ -7,12 +7,18 @@ export const CREW_DEFAULT = Object.freeze({ size: 2, o2_stock_kg: 6, food_stock_
 export const POWER_FIELDS = ["battery_capacity_wh", "initial_charge_wh", "reserve_wh", "solar_generation_w", "load_w"];
 export const CREW_FIELDS = ["size", "o2_stock_kg", "food_stock_kg", "o2_kg_per_person_day", "food_kg_per_person_day", "reserve_hours"];
 
-/** Validates the form values; returns { ok, errors } (finite, >= 0, size an integer >= 1, initial <= capacity, reserve <= capacity). */
+/** Validates the same bounded input domain as the Go API. */
 export function validateInputs(power, crew) {
   const errors = [];
-  for (const k of POWER_FIELDS) if (!(Number.isFinite(power[k]) && power[k] >= 0)) errors.push(k);
+  for (const k of POWER_FIELDS) if (!(Number.isFinite(power[k]) && power[k] >= 0 && power[k] <= 1e8)) errors.push(k);
+  if (!(power.battery_capacity_wh > 0)) errors.push("battery_capacity_wh");
   for (const k of CREW_FIELDS) if (!(Number.isFinite(crew[k]) && crew[k] >= 0)) errors.push(k);
-  if (!(Number.isInteger(crew.size) && crew.size >= 1)) errors.push("size");
+  if (!(Number.isInteger(crew.size) && crew.size >= 1 && crew.size <= 12)) errors.push("size");
+  for (const k of ["o2_stock_kg", "food_stock_kg"]) if (crew[k] > 1e5) errors.push(k);
+  for (const k of ["o2_kg_per_person_day", "food_kg_per_person_day"]) if (!(crew[k] > 0 && crew[k] <= 100)) errors.push(k);
+  if (crew.reserve_hours > 720) errors.push("reserve_hours");
+  if (typeof crew.rate_source !== "string" || !crew.rate_source.trim() || crew.rate_source.length > 300) errors.push("rate_source");
+  if (typeof crew.aboard_during_delay !== "boolean") errors.push("aboard_during_delay");
   if (power.initial_charge_wh > power.battery_capacity_wh) errors.push("initial_charge_wh");
   if (power.reserve_wh > power.battery_capacity_wh) errors.push("reserve_wh");
   return { ok: errors.length === 0, errors: [...new Set(errors)] };
@@ -54,8 +60,9 @@ export const SAVED_KEY = "braspace.cockpit.saved.v1";
 export function loadSaved(storage) { try { const v = JSON.parse(storage?.getItem(SAVED_KEY) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; } }
 export function saveScenario(storage, entry, max = 20) {
   const list = [entry, ...loadSaved(storage).filter(x => x.id !== entry.id)].slice(0, max);
-  try { storage?.setItem(SAVED_KEY, JSON.stringify(list)); return { ok: true, list }; } catch { return { ok: false, list }; }
+  try { if (!storage) return { ok: false, list }; storage.setItem(SAVED_KEY, JSON.stringify(list)); return { ok: true, list }; } catch { return { ok: false, list }; }
 }
 export function savedExport(list, now = new Date()) {
   return { schema: "braspace.cockpit-scenarios", version: 1, exported_utc: now.toISOString(), storage: "localStorage (this browser only)", science_status: "SIMULATION", scenarios: list };
 }
+

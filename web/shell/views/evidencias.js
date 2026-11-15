@@ -3,6 +3,7 @@
 import { h, badge, num, layerCard } from "../../ds/components.js";
 import { buildHash } from "../../ds/router.js";
 import { loadSites } from "../data.js";
+import { mountVectorSearch } from "../../moonproof/screens/vector-search.js";
 
 const getJSON = url => fetch(url).then(r => (r.ok ? r.json() : null), () => null);
 const short = n => n.replace(/\s*\(.*\)$/, "");
@@ -56,7 +57,9 @@ export async function render(outlet, ctx) {
       h("li", { text: "Sem recomendação de voo. A NASA não endossa esta ferramenta." })),
     h("p", {}, h("a", { class: "chipg", href: buildHash("/bordo/status", { site: ctx.site }), text: "Status do painel de bordo →" })));
 
+  const vector = h("section", { class: "solid card", id: "metadata-search" });
   outlet.append(h("div", { class: "ev stack" },
     h("div", { class: "page-head" }, h("div", {}, h("p", { class: "lbl-s", text: "Evidências" }), h("h1", { "data-route-title": "", text: "Fontes e limitações" }))),
-    legend, h("div", { class: "cards2" }, pgdaCard, horCard), sources, limits));
+    legend, h("div", { class: "cards2" }, pgdaCard, horCard), sources, vector, limits));
+  mountVectorSearch(vector, { locale: "pt-BR" });
 }

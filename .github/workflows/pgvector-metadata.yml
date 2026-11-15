@@ -4,6 +4,16 @@ on:
     paths:
       - "api/vector.go"
       - "api/vector_test.go"
+      - "api/vector_ingest.go"
+      - "api/vector_ingest_test.go"
+      - "api/cli.go"
+      - "api/store_pg.go"
+      - "api/store_pg_concurrency_test.go"
+      - "web/**"
+      - "scripts/vector-fullstack-e2e.mjs"
+      - "scripts/vector_embeddings.py"
+      - "scripts/test_vector_embeddings.py"
+      - "scripts/requirements-vector.txt"
       - "api/db/optional-vector.sql"
       - "compose.vector.yaml"
       - ".github/workflows/pgvector-metadata.yml"
@@ -31,6 +41,7 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 20
     env:
       TEST_VECTOR_DATABASE_URL: postgres://braspace:ci-temporary-only@localhost:5432/braspace?sslmode=disable
+      TEST_DATABASE_URL: postgres://braspace:ci-temporary-only@localhost:5432/braspace?sslmode=disable
       BRASPACE_VECTOR_ENABLED: "0"
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +53,33 @@ jobs:
         working-directory: api
         run: |
           go vet ./...
-          go test -race -count=1 -run 'TestVector' ./...
+          go test -race -count=1 -run 'TestDB|TestVector' ./...
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Embedding manifest validation (no model download)
+        run: python -m unittest discover -s scripts -p test_vector_embeddings.py -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Real vector HTTP and frontend proxy integration
+        run: |
+          set -euo pipefail
+          (cd api && go build -o /tmp/braspace-vector-e2e-api .)
+          BRASPACE_VECTOR_E2E_API_BIN=/tmp/braspace-vector-e2e-api node scripts/vector-fullstack-e2e.mjs
+      - name: Evidence UI states in Chromium (isolated HTTP fixtures)
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock playwright@1.58.2
+          npx playwright install --with-deps chromium
+          BRASPACE_WEB_PORT=5173 node web/dev-server.mjs >/tmp/braspace-vector-web.log 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:5173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          node web/browser/vector-search.e2e.mjs
       - name: Verify conventional SQL migration has no mandatory vector extension
         run: |
           if grep -ri 'CREATE EXTENSION.*vector' api/db/migrations; then
