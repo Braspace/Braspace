@@ -22,9 +22,11 @@ export function layoutState(hidden: ReadonlySet<PanelId>) {
 }
 
 /** Uses the existing lazy Three.js Moon button; never creates another WebGL renderer. */
-export function requestSharedMoon(): boolean {
-  if (typeof document === "undefined") return false;
+export function requestSharedMoon(isStillWanted: () => boolean = () => true): boolean {
+  if (typeof document === "undefined" || !isStillWanted()) return false;
   const open = () => {
+    // A lazy backdrop must not open after the user has already restored panels.
+    if (!isStillWanted()) return false;
     const btn = document.querySelector<HTMLButtonElement>(".moon-ui .moon-open");
     if (!btn || btn.disabled) return false;
     btn.click();
@@ -68,7 +70,7 @@ export function mountCockpitPanels(host: HTMLElement): () => void {
     const l = language(), pt = l === "pt-BR", clear = hidden.size === PANEL_IDS.length;
     const change = (id: PanelId) => { hidden = togglePanel(hidden, id); paint(); };
     render(<div class="ck-panel-toolbar" role="group" aria-label={pt ? "Visibilidade dos painéis do cockpit" : "Cockpit panel visibility"}>
-      <button type="button" class="mp-pill ck-panel-focus" aria-pressed={clear} onClick={() => { if (clear) hidden = new Set(previous); else { previous = new Set(hidden); hidden = new Set(PANEL_IDS); requestSharedMoon(); } paint(); }}>
+      <button type="button" class="mp-pill ck-panel-focus" aria-pressed={clear} onClick={() => { if (clear) hidden = new Set(previous); else { previous = new Set(hidden); hidden = new Set(PANEL_IDS); requestSharedMoon(() => hidden.size === PANEL_IDS.length); } paint(); }}>
         {clear ? (pt ? "Restaurar painéis" : "Restore panels") : (pt ? "Só a Lua" : "Moon only")}
       </button>
       <details class="ck-panel-menu" onKeyDown={e => { if (e.key === "Escape") { e.currentTarget.open = false; e.currentTarget.querySelector("summary")?.focus(); } }}>
