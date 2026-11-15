@@ -59,10 +59,23 @@ func fakeEngineBinary(t *testing.T, mode string) string {
 
 func testAPI(t *testing.T, engineMode string) (http.Handler, *missionAPI) {
 	t.Helper()
+	// The handler tests run against the explicit no-data fixture (nodata_fixture_test.go) so the
+	// DATA_NOT_AVAILABLE / N/D paths stay covered now that every real catalog site has a series.
+	return testAPIWithStore(t, storeWithNoDataSite(t), engineMode)
+}
+
+// productionTestAPI serves the real embedded catalog (every real site has a series).
+func productionTestAPI(t *testing.T, engineMode string) (http.Handler, *missionAPI) {
+	t.Helper()
 	store, err := loadDefaultStore()
 	if err != nil {
 		t.Fatal(err)
 	}
+	return testAPIWithStore(t, store, engineMode)
+}
+
+func testAPIWithStore(t *testing.T, store *siteStore, engineMode string) (http.Handler, *missionAPI) {
+	t.Helper()
 	bin := "/nonexistent/engine"
 	if engineMode != "" {
 		bin = fakeEngineBinary(t, engineMode)
@@ -435,7 +448,8 @@ func TestRealEngineAgreesWithContract(t *testing.T) {
 	real := &missionAPI{store: store, engine: newEngineClient(abs)}
 	mux := http.NewServeMux()
 	real.register(mux)
-	fake, _ := testAPI(t, "ok")
+	// Same catalog on both sides: testAPI swaps in the no-data fixture store.
+	fake, _ := productionTestAPI(t, "ok")
 	a, b := do(mux, "POST", "/api/compare", compareBody), do(fake, "POST", "/api/compare", compareBody)
 	if a.Code != 200 {
 		t.Fatalf("real engine: %d %s", a.Code, a.Body.String())

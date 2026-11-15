@@ -43,3 +43,10 @@ test("the Worker routes /data/* through itself and still answers assets from ASS
   const plain = await worker.fetch(req("/moonproof/core/tokens.css"), {ASSETS: {fetch: async () => new Response("x", {headers: {"content-type": "text/css"}})}});
   assert.equal(plain.headers.get("content-encoding"), null);
 });
+
+test("the versioned wrangler.toml (used by every deploy) keeps /data/* through the Worker", () => {
+  const live = readFileSync(new URL("./wrangler.toml", import.meta.url), "utf8");
+  assert.match(live, /run_worker_first = \[[^\]]*"\/data\/\*"/);
+  assert.match(live, /^main = "moonproof-worker\.mjs"$/m);
+  assert.match(live, /^compatibility_date = "2026-11-01"$/m);
+});

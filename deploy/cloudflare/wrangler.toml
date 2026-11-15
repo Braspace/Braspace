@@ -1,0 +1,14 @@
+# Versioned Worker config (15/11): every `wrangler deploy` run in deploy/cloudflare/ uses THIS file, so a manual
+# deploy can no longer ship a stale local config (a manual deploy on 15/11 dropped "/data/*" from
+# run_worker_first and turned off gzip for the binary grids). Prefer deploy/cloudflare/deploy.sh (tests, commit
+# in /config.js, smoke, rollback). No secrets here: the API upstream is pinned in moonproof-proxy.mjs.
+name = "braspace-moonproof"
+main = "moonproof-worker.mjs"
+compatibility_date = "2026-11-01"
+
+[assets]
+directory = "../../web"
+binding = "ASSETS"
+# Run the Worker first for /api/*, /v1/*, /healthz and /readyz; everything else is served from ASSETS.
+# /data/* also goes through the Worker so binary grids are gzip-encoded (moonproof-assets.mjs).
+run_worker_first = ["/api", "/api/*", "/v1", "/v1/*", "/healthz", "/healthz/*", "/readyz", "/readyz/*", "/data/*"]

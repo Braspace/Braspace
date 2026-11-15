@@ -8,6 +8,9 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 fail=0
 for req in "$DIR"/*.request.json; do
   name="$(basename "$req" .request.json)"
+  # Fixture-only: every real catalog site has a series, so a live API answers 200
+  # here (api/openapi_test.go TestExamples covers it with the no-data fixture store).
+  [ "$name" = site-without-data ] && { echo "skip  $name  (fixture-only)"; continue; }
   case "$name" in
     compare) path=/api/compare ;;
     onboard-*) path=/api/onboard/site-evaluate ;;

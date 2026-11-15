@@ -132,7 +132,7 @@ func TestReproducesCommittedSummary(t *testing.T) {
 	if rc != 0 {
 		t.Fatalf("rc=%d %s", rc, stderr)
 	}
-	if n := strings.Count(stdout, "\n"); n != 5 {
+	if n := strings.Count(stdout, "\n"); n != len(sites) {
 		t.Errorf("expected one line per site, got %d", n)
 	}
 	strip := func(b []byte) string {
