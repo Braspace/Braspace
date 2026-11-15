@@ -44,14 +44,14 @@ test("sky response carries next_transitions through", () => {
   assert.deepEqual(k.next_transitions, nt);
 });
 test("cockpit wires the helpers: no fixed 480, no 15-site list, next-transitions panel in Janelas", () => {
-  const c = src("cockpit.js");
+  const c = src("cockpit.ts");
   assert.doesNotMatch(c, /Math\.min\(S\.durationH, 480\)/);
   assert.match(c, /L\.pickSites\(S\.compareSel/);
   assert.match(c, /L\.refusalText\(res\)/);
   assert.match(c, /nextTransitionsPanel\(\)/);
 });
 test("site-evaluate panel does not print the combined_decision object as [object Object]", () => {
-  const c = src("cockpit.js");
+  const c = src("cockpit.ts");
   assert.match(c, /decisionText\(r\.data\.combined_decision\)/);
   assert.doesNotMatch(c, /r\.data\.combined_decision \|\| /);
 });

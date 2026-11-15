@@ -38,7 +38,7 @@ test("BRASPACE_API_BASE prefixes every call and trailing slash is dropped", asyn
 });
 
 test("no front-end script calls fetch with a bare /api path", () => {
-  for (const f of ["cockpit.js", "app.js"]) {
+  for (const f of ["cockpit.ts", "app.ts"]) {
     const src = readFileSync(new URL("../" + f, import.meta.url), "utf8");
     assert.ok(!/fetch\(\s*["']\/api/.test(src), f + " bypasses the configurable base");
     assert.ok(!/fetch\(\s*API_PATH/.test(src), f + " calls fetch(API_PATH) without the base");
