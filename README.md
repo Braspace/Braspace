@@ -8,12 +8,15 @@ BRASPACE / MoonProof is an educational and engineering prototype for evaluating 
 
 ## Live Demo & API
 
-Verified in production on **2026-11-15** (frontend `9dab20c`, Worker `ec490d15`; backend `2b62474`):
+Verified in production on **2026-11-15** (main `dc2411b`, Worker `c792c009`, published with `deploy/cloudflare/deploy.sh`; API image `ad83cfe7517c`):
 
 - **MoonProof, the product:** https://braspace-moonproof.almeida-me.workers.dev/moonproof/. A Cloudflare Worker serves `web/` and proxies every OpenAPI route same-origin to the Go API. Polar Lab, Onboard, Studio, Classic and the old shell are archived in `archive/web-legacy/`.
 - **Public API:** https://braspace-api.srv1898743.hstgr.cloud: [`/api/health`](https://braspace-api.srv1898743.hstgr.cloud/api/health), [`/readyz`](https://braspace-api.srv1898743.hstgr.cloud/readyz), [`/v1/capabilities`](https://braspace-api.srv1898743.hstgr.cloud/v1/capabilities), [`/api/sites`](https://braspace-api.srv1898743.hstgr.cloud/api/sites), [`/api/vector/status`](https://braspace-api.srv1898743.hstgr.cloud/api/vector/status).
 - **Last production QA (#351, #374):** 13 screens × 320/390/768/1024/1440/1920 = 78 runs. All HTTP 200, 0 overflow, 0 clipped controls, 0 console errors, 0 HTTP errors, 246 API calls all 200. Backend probes 7/7: pgvector `index_ready`, search serves only audited sources, 720 h onboard window, strict JSON.
 
+- **Production QA, main `dc2411b` (EXO-X1, Chrome):** route matrix `web/browser/route-matrix.mjs` (16 pages × 320–1920 px) 96/96 with a real GPU and 95/96 without WebGL (1 local network change); axe-core WCAG 2/2.1 A+AA **0 violations** on the 13 screens × 2 viewports (#398); Lighthouse with warm edge: Index 97, Cockpit 89, Mission 85–88 (LCP 3.4 s).
+- **Performance:** three.js 0.181.0 vendored in `web/vendor/three` (no CDN, one THREE instance, #365); NASA-derived binary grids gzip-encoded by the Worker, −48% on the wire (#406, #417); the 2D hillshade is not painted while the Moon HD relief is loading (#420).
+- **CI:** GitHub-hosted runners are blocked by Actions billing; `ci.yml` and the browser workflow run on self-hosted runners `exo-x1` selected by the repository variable `CI_RUNS_ON` (#383, #388). Delete the variable to return to `ubuntu-latest`.
 - **Docs & operations:**
   - release [`v2026.11.15-prod-2b62474`](https://github.com/Braspace/Braspace/releases/tag/v2026.11.15-prod-2b62474);
   - API reference [`docs/API.md`](docs/API.md), 22 operations, generated from `api/openapi.json` and checked in CI;
