@@ -10,7 +10,7 @@ import { getState, setState, onState, hrefTo } from "../core/state.js";
 const byId = (id) => document.getElementById(id);
 const within = (root, sel) => root.querySelector(sel);
 import { parseRules, shareUrl, shortVersion, ruleEffects, compareScenarios, compareBody, compareOutcome, computePlan, violates, hourlyRows, seriesStepH, observerHeightM, csvDocument, jsonDocument, passportHtml } from "./plan-model.js";
-import { pickVersion, parseConfigCommit } from "./evidence-model.js";
+import { pickVersion } from "./evidence-model.js";
 import { H1_PROFILE, runScenario } from "./cockpit-model.js";
 register({
     en: {
@@ -172,12 +172,9 @@ const rulesDraft = parseRules(location.search);
 if (rulesDraft.night !== getState().night || rulesDraft.blackout !== getState().blackout || rulesDraft.battery !== getState().battery) {
     setState({ night: rulesDraft.night, blackout: rulesDraft.blackout, battery: rulesDraft.battery });
 }
-// Plan version = deployment commit (config.js) or /api/health; absent → "—" + N/D. Same source as the Evidence screen.
-const [health, cfg] = await Promise.all([
-    api("/api/health", { timeoutMs: 3000 }),
-    fetch(new URL("../../config.js", import.meta.url), { cache: "no-store" }).then((r) => (r.ok ? r.text() : "")).catch(() => "")
-]);
-const version = pickVersion({ configCommit: parseConfigCommit(cfg), health: health.ok ? health.data : null });
+// Plan version = API build commit (/healthz) or /api/health; absent → "—" + N/D. Same source as the Evidence screen.
+const [health, healthz] = await Promise.all([api("/api/health", { timeoutMs: 3000 }), api("/healthz", { timeoutMs: 3000 })]);
+const version = pickVersion({ buildCommit: healthz.ok ? healthz.data.build_commit : null, health: health.ok ? health.data : null });
 function downloadFile(filename, content, mime) {
     const blob = new Blob([content], { type: mime });
     const a = document.createElement("a");
