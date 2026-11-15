@@ -19,9 +19,13 @@ export async function scenario(ctx) {
   return { data, site, t0, days, hours: days * 24 };
 }
 
-/** Sites picked for comparison (?a=&b=&c=), defaulting to the first three real sites. */
+/** Sites picked for comparison (?a=&b=&c=). Explicit letters win; otherwise the originating
+ *  ?site= is A and the remaining slots take the next distinct real sites (BR-01). */
 export function pickedSites(data, query) {
-  const ids = LETTERS.map((L, i) => query[L.toLowerCase()] || (data.sites[i] && data.sites[i].id));
+  const known = id => data.sites.some(s => s.id === id);
+  const explicit = LETTERS.map(L => query[L.toLowerCase()]);
+  const fill = [query.site, ...data.sites.map(s => s.id)].filter(id => known(id) && !explicit.includes(id));
+  const ids = explicit.map(id => id || fill.shift());
   return ids.map(id => data.sites.find(s => s.id === id)).filter(Boolean);
 }
 
