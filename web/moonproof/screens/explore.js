@@ -54,7 +54,9 @@ const grid = (await loadRegion());
 const terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id) => { point = null; setState({ site: id }); } });
 const fetchU8 = (f) => fetch(new URL("../../data/region/" + f, import.meta.url)).then(r => r.ok ? r.arrayBuffer() : null).then(b => b && new Uint8Array(b)).catch(() => null);
 const [pSun, pEarth] = await Promise.all([fetchU8(grid.h.layers.pgda_sun.file), fetchU8(grid.h.layers.pgda_earth.file)]);
-const slope = grid.slopeField();
+// Slope (and its range) only when the slope layer or legend needs it: ~0.25 s of CPU on load otherwise (profile 15/11).
+let slopeArr = null, slopeMax = null;
+const getSlope = () => (slopeArr ??= grid.slopeField());
 let layer = new URLSearchParams(location.search).get("paint") || "altitude", tab = "layers", natural = null;
 // ---- layer painting: one image per layer at grid resolution, drawn with the same transform as core/terrain.js
 const overlay = el("canvas", "ex-overlay");
@@ -65,14 +67,16 @@ const pin = el("div", "ex-pin");
 pin.hidden = true;
 tc.append(pin);
 const cache = new Map();
-function finiteRange(arr) { let lo = Infinity, hi = -Infinity; for (const v of Array.from(arr))
+function finiteRange(arr) { let lo = Infinity, hi = -Infinity; for (let i = 0, n = arr.length; i < n; i++) {
+    const v = arr[i];
     if (Number.isFinite(v)) {
         if (v < lo)
             lo = v;
         if (v > hi)
             hi = v;
-    } return [lo, hi]; }
-const RANGES = { altitude: [grid.min, grid.max], slope: [0, finiteRange(slope)[1]], sun: [0, 100], earth: [0, 100] };
+    }
+} return [lo, hi]; } // indexed: no copy of the grid
+const RANGES = { altitude: [grid.min, grid.max], get slope() { return [0, (slopeMax ??= finiteRange(getSlope())[1])]; }, sun: [0, 100], earth: [0, 100] };
 async function loadNatural() {
     if (natural !== null)
         return natural;
@@ -97,6 +101,7 @@ async function layerImage(id) {
         return cache.get(id);
     const { nx, ny } = grid, img = new ImageData(nx, ny), d = img.data;
     const nat = id === "natural" ? await loadNatural() : null;
+    const slope = id === "slope" ? getSlope() : null, slopeTop = id === "slope" ? RANGES.slope[1] : 1;
     for (let j = 0; j < ny; j++)
         for (let i = 0; i < nx; i++) {
             const k = j * nx + i, p = ((ny - 1 - j) * nx + i) * 4;
@@ -106,10 +111,10 @@ async function layerImage(id) {
                 if (Number.isFinite(v))
                     c = rampColor("altitude", (v - RANGES.altitude[0]) / (RANGES.altitude[1] - RANGES.altitude[0]));
             }
-            else if (id === "slope") {
+            else if (slope) {
                 const v = slope[k];
                 if (Number.isFinite(v))
-                    c = rampColor("slope", v / RANGES.slope[1]);
+                    c = rampColor("slope", v / slopeTop);
             }
             else if (id === "sun" || id === "earth") {
                 const a = id === "sun" ? pSun : pEarth;
@@ -192,10 +197,14 @@ overlay.addEventListener("click", e => {
     draw();
 });
 function pointAt(lat, lon) { const [x, y] = southStereoForward(lat, lon); point = grid.contains(x, y) ? { x, y, lat, lon } : { x, y, lat, lon, outside: true }; }
+// One Intl.DateTimeFormat per language (building one per call cost ~35 ms per draw on a throttled phone).
+const DATE_FMT = new Map();
+const dateFmt = (l) => { let f = DATE_FMT.get(l); if (!f)
+    DATE_FMT.set(l, f = new Intl.DateTimeFormat(l, { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })); return f; };
 async function draw() {
     const st = getState(), s = site();
     const m = (await apiWindowMetrics(doc, s, st.start, hours()));
-    const fmtDate = (d) => new Intl.DateTimeFormat(lang(), { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(d) + " UTC";
+    const fmtDate = (d) => dateFmt(lang()).format(d) + " UTC";
     shell.setContext({ site: point ? t("ex.point") : `${s.n} · ${s.name}`, date: fmtDate(new Date(m.t0)), days: fmtNum(hours() / DAY), seal: sealFor(doc.status), online,
         action: { label: t("ex.addCompare"), href: hrefTo("compare.html") } });
     drawLeft();

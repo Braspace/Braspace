@@ -78,7 +78,9 @@ const grid = (await loadRegion()) as Grid;
 const terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id: string) => { point = null; setState({ site: id }); } });
 const fetchU8 = (f: string): Promise<Uint8Array | null> => fetch(new URL("../../data/region/" + f, import.meta.url)).then(r => r.ok ? r.arrayBuffer() : null).then(b => b && new Uint8Array(b)).catch(() => null);
 const [pSun, pEarth] = await Promise.all([fetchU8(grid.h.layers.pgda_sun.file), fetchU8(grid.h.layers.pgda_earth.file)]);
-const slope = grid.slopeField();
+// Slope (and its range) only when the slope layer or legend needs it: ~0.25 s of CPU on load otherwise (profile 15/11).
+let slopeArr: ArrayLike<number> | null = null, slopeMax: number | null = null;
+const getSlope = (): ArrayLike<number> => (slopeArr ??= grid.slopeField());
 let layer = new URLSearchParams(location.search).get("paint") || "altitude", tab = "layers", natural: Natural | false | null = null;
 
 // ---- layer painting: one image per layer at grid resolution, drawn with the same transform as core/terrain.js
@@ -86,8 +88,8 @@ const overlay = el("canvas", "ex-overlay") as HTMLCanvasElement; overlay.setAttr
 const tc = $("terrain"); tc.insertBefore(overlay, tc.children[1]);
 const pin = el("div", "ex-pin"); pin.hidden = true; tc.append(pin);
 const cache = new Map<string, HTMLCanvasElement>();
-function finiteRange(arr: ArrayLike<number>): [number, number] { let lo = Infinity, hi = -Infinity; for (const v of Array.from(arr)) if (Number.isFinite(v)) { if (v < lo) lo = v; if (v > hi) hi = v; } return [lo, hi]; }
-const RANGES: RangeMap = { altitude: [grid.min, grid.max], slope: [0, finiteRange(slope)[1]], sun: [0, 100], earth: [0, 100] };
+function finiteRange(arr: ArrayLike<number>): [number, number] { let lo = Infinity, hi = -Infinity; for (let i = 0, n = arr.length; i < n; i++) { const v = arr[i]; if (Number.isFinite(v)) { if (v < lo) lo = v; if (v > hi) hi = v; } } return [lo, hi]; } // indexed: no copy of the grid
+const RANGES: RangeMap = { altitude: [grid.min, grid.max], get slope(): [number, number] { return [0, (slopeMax ??= finiteRange(getSlope())[1])]; }, sun: [0, 100], earth: [0, 100] };
 async function loadNatural(): Promise<Natural | false> {
   if (natural !== null) return natural;
   try { const img = new Image(); img.src = new URL("../../data/moonhd/color_4k.jpg", import.meta.url).href; await img.decode();
@@ -99,10 +101,11 @@ async function layerImage(id: string): Promise<HTMLCanvasElement> {
   if (cache.has(id)) return cache.get(id) as HTMLCanvasElement;
   const { nx, ny } = grid, img = new ImageData(nx, ny), d = img.data;
   const nat = id === "natural" ? await loadNatural() : null;
+  const slope = id === "slope" ? getSlope() : null, slopeTop = id === "slope" ? RANGES.slope[1] : 1;
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
     const k = j * nx + i, p = ((ny - 1 - j) * nx + i) * 4; let c: number[] | null = null;
     if (id === "altitude") { const v = grid.data[k]; if (Number.isFinite(v)) c = rampColor("altitude", (v - RANGES.altitude[0]) / (RANGES.altitude[1] - RANGES.altitude[0])); }
-    else if (id === "slope") { const v = slope[k]; if (Number.isFinite(v)) c = rampColor("slope", v / RANGES.slope[1]); }
+    else if (slope) { const v = slope[k]; if (Number.isFinite(v)) c = rampColor("slope", v / slopeTop); }
     else if (id === "sun" || id === "earth") { const a = id === "sun" ? pSun : pEarth; const v = a?.[k]; if (v != null && v <= 100) c = rampColor(id, v / 100); }
     else if (nat) { const { lat, lon } = southStereoInverse(grid.x0 + i * grid.dx, grid.y0 + j * grid.dx);
       const u = Math.floor(((lon + 180) / 360) * nat.w) % nat.w, v = Math.min(nat.h - 1, Math.floor(((90 - lat) / 180) * nat.h)), q = (v * nat.w + u) * 4; c = [nat.d[q], nat.d[q + 1], nat.d[q + 2]]; }
@@ -144,10 +147,13 @@ overlay.addEventListener("click", e => {
 
 function pointAt(lat: number, lon: number) { const [x, y] = southStereoForward(lat, lon); point = grid.contains(x, y) ? { x, y, lat, lon } : { x, y, lat, lon, outside: true }; }
 
+// One Intl.DateTimeFormat per language (building one per call cost ~35 ms per draw on a throttled phone).
+const DATE_FMT = new Map<string, Intl.DateTimeFormat>();
+const dateFmt = (l: string) => { let f = DATE_FMT.get(l); if (!f) DATE_FMT.set(l, f = new Intl.DateTimeFormat(l, { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })); return f; };
 async function draw() {
   const st = getState(), s = site();
   const m = (await apiWindowMetrics(doc, s, st.start, hours())) as unknown as Metrics;
-  const fmtDate = (d: Date) => new Intl.DateTimeFormat(lang(), { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(d) + " UTC";
+  const fmtDate = (d: Date) => dateFmt(lang()).format(d) + " UTC";
   shell.setContext({ site: point ? t("ex.point") : `${s.n} · ${s.name}`, date: fmtDate(new Date(m.t0)), days: fmtNum(hours() / DAY), seal: sealFor(doc.status), online,
     action: { label: t("ex.addCompare"), href: hrefTo("compare.html") } });
   drawLeft(); drawRight(s, m); dock(s); chips(); frame();
