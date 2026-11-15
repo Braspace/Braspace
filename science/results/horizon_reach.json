@@ -1,0 +1,423 @@
+{
+ "schema": "braspace.horizon-reach-study.v1",
+ "science_status": "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED",
+ "terrain_sha256": "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc",
+ "ray_step_m": 160,
+ "azimuth_step_deg": 1,
+ "reaches_m": [
+  100000,
+  150000,
+  200000,
+  250000,
+  300000
+ ],
+ "note": "Sun/Earth angles are the committed hourly series; only the horizon changes between reaches. The DEM ends at 80 S: 'partial_azimuths' counts rays that left it before the reach.",
+ "sites": [
+  {
+   "site": "mons-mouton-im2",
+   "latitude_deg": -84.78,
+   "longitude_deg": 29.13,
+   "control_max_abs_diff_deg_vs_committed_100km_horizon": 0.0,
+   "pgda_avg_solar_disc_pct": 46.43,
+   "reaches": [
+    {
+     "reach_m": 100000,
+     "sun_center_visible_pct": 45.22,
+     "mean_solar_disc_visible_pct": 45.57,
+     "earth_center_visible_pct": 81.04,
+     "longest_darkness_h": 456.0,
+     "longest_earth_blackout_h": 148.0,
+     "diff_solar_disc_vs_pgda_pp": -0.86,
+     "azimuths_raised_vs_100km": 0,
+     "max_rise_deg": 0.0,
+     "raised_azimuth_range_deg": null,
+     "partial_azimuths": 0
+    },
+    {
+     "reach_m": 150000,
+     "sun_center_visible_pct": 45.22,
+     "mean_solar_disc_visible_pct": 45.57,
+     "earth_center_visible_pct": 81.04,
+     "longest_darkness_h": 456.0,
+     "longest_earth_blackout_h": 148.0,
+     "diff_solar_disc_vs_pgda_pp": -0.86,
+     "azimuths_raised_vs_100km": 0,
+     "max_rise_deg": 0.0,
+     "raised_azimuth_range_deg": null,
+     "partial_azimuths": 41
+    },
+    {
+     "reach_m": 200000,
+     "sun_center_visible_pct": 45.22,
+     "mean_solar_disc_visible_pct": 45.57,
+     "earth_center_visible_pct": 81.04,
+     "longest_darkness_h": 456.0,
+     "longest_earth_blackout_h": 148.0,
+     "diff_solar_disc_vs_pgda_pp": -0.86,
+     "azimuths_raised_vs_100km": 0,
+     "max_rise_deg": 0.0,
+     "raised_azimuth_range_deg": null,
+     "partial_azimuths": 129
+    },
+    {
+     "reach_m": 250000,
+     "sun_center_visible_pct": 45.22,
+     "mean_solar_disc_visible_pct": 45.57,
+     "earth_center_visible_pct": 81.04,
+     "longest_darkness_h": 456.0,
+     "longest_earth_blackout_h": 148.0,
+     "diff_solar_disc_vs_pgda_pp": -0.86,
+     "azimuths_raised_vs_100km": 0,
+     "max_rise_deg": 0.0,
+     "raised_azimuth_range_deg": null,
+     "partial_azimuths": 173
+    },
+    {
+     "reach_m": 300000,
+     "sun_center_visible_pct": 45.22,
+     "mean_solar_disc_visible_pct": 45.57,
+     "earth_center_visible_pct": 81.04,
+     "longest_darkness_h": 456.0,
+     "longest_earth_blackout_h": 148.0,
+     "diff_solar_disc_vs_pgda_pp": -0.86,
+     "azimuths_raised_vs_100km": 0,
+     "max_rise_deg": 0.0,
+     "raised_azimuth_range_deg": null,
+     "partial_azimuths": 207
+    }
+   ]
+  },
+  {
+   "site": "malapert-massif",
+   "latitude_deg": -85.9948,
+   "longitude_deg": -0.23578,
+   "control_max_abs_diff_deg_vs_committed_100km_horizon": 0.0,
+   "pgda_avg_solar_disc_pct": 34.97,
+   "reaches": [
+    {
+     "reach_m": 100000,
+     "sun_center_visible_pct": 38.44,
+     "mean_solar_disc_visible_pct": 38.52,
+     "earth_center_visible_pct": 48.82,
+     "longest_darkness_h": 670.0,
+     "longest_earth_blackout_h": 357.0,
+     "diff_solar_disc_vs_pgda_pp": 3.55,
+     "azimuths_raised_vs_100km": 0,
+     "max_rise_deg": 0.0,
+     "raised_azimuth_range_deg": null,
+     "partial_azimuths": 0
+    },
+    {
+     "reach_m": 150000,
+     "sun_center_visible_pct": 33.99,
+     "mean_solar_disc_visible_pct": 34.09,
+     "earth_center_visible_pct": 48.82,
+     "longest_darkness_h": 2791.0,
+     "longest_earth_blackout_h": 357.0,
+     "diff_solar_disc_vs_pgda_pp": -0.88,
+     "azimuths_raised_vs_100km": 68,
+     "max_rise_deg": 1.7677,
+     "raised_azimuth_range_deg": [
+      140,
+      207
+     ],
+     "partial_azimuths": 0
+    },
+    {
+     "reach_m": 200000,
+     "sun_center_visible_pct": 33.84,
+     "mean_solar_disc_visible_pct": 33.85,
+     "earth_center_visible_pct": 48.82,
+     "longest_darkness_h": 3389.0,
+     "longest_earth_blackout_h": 357.0,
+     "diff_solar_disc_vs_pgda_pp": -1.12,
+     "azimuths_raised_vs_100km": 68,
+     "max_rise_deg": 1.7677,
+     "raised_azimuth_range_deg": [
+      140,
+      207
+     ],
+     "partial_azimuths": 79
+    },
+    {
+     "reach_m": 250000,
+     "sun_center_visible_pct": 33.84,
+     "mean_solar_disc_visible_pct": 33.85,
+     "earth_center_visible_pct": 48.82,
+     "longest_darkness_h": 3389.0,
+     "longest_earth_blackout_h": 357.0,
+     "diff_solar_disc_vs_pgda_pp": -1.12,
+     "azimuths_raised_vs_100km": 68,
+     "max_rise_deg": 1.7677,
+     "raised_azimuth_range_deg": [
+      140,
+      207
+     ],
+     "partial_azimuths": 151
+    },
+    {
+     "reach_m": 300000,
+     "sun_center_visible_pct": 33.84,
+     "mean_solar_disc_visible_pct": 33.85,
+     "earth_center_visible_pct": 48.82,
+     "longest_darkness_h": 3389.0,
+     "longest_earth_blackout_h": 357.0,
+     "diff_solar_disc_vs_pgda_pp": -1.12,
+     "azimuths_raised_vs_100km": 68,
+     "max_rise_deg": 1.7677,
+     "raised_azimuth_range_deg": [
+      140,
+      207
+     ],
+     "partial_azimuths": 201
+    }
+   ]
+  },
+  {
+   "site": "nobile-rim-1",
+   "latitude_deg": -85.4381,
+   "longitude_deg": 37.36667,
+   "control_max_abs_diff_deg_vs_committed_100km_horizon": 0.0,
+   "pgda_avg_solar_disc_pct": 30.85,
+   "reaches": [
+    {
+     "reach_m": 100000,
+     "sun_center_visible_pct": 31.18,
+     "mean_solar_disc_visible_pct": 31.22,
+     "earth_center_visible_pct": 31.98,
+     "longest_darkness_h": 515.0,
+     "longest_earth_blackout_h": 488.0,
+     "diff_solar_disc_vs_pgda_pp": 0.37,
+     "azimuths_raised_vs_100km": 0,
+     "max_rise_deg": 0.0,
+     "raised_azimuth_range_deg": null,
+     "partial_azimuths": 0
+    },
+    {
+     "reach_m": 150000,
+     "sun_center_visible_pct": 31.18,
+     "mean_solar_disc_visible_pct": 31.22,
+     "earth_center_visible_pct": 31.98,
+     "longest_darkness_h": 515.0,
+     "longest_earth_blackout_h": 488.0,
+     "diff_solar_disc_vs_pgda_pp": 0.37,
+     "azimuths_raised_vs_100km": 28,
+     "max_rise_deg": 2.1423,
+     "raised_azimuth_range_deg": [
+      58,
+      85
+     ],
+     "partial_azimuths": 0
+    },
+    {
+     "reach_m": 200000,
+     "sun_center_visible_pct": 31.18,
+     "mean_solar_disc_visible_pct": 31.22,
+     "earth_center_visible_pct": 31.98,
+     "longest_darkness_h": 515.0,
+     "longest_earth_blackout_h": 488.0,
+     "diff_solar_disc_vs_pgda_pp": 0.37,
+     "azimuths_raised_vs_100km": 53,
+     "max_rise_deg": 2.1423,
+     "raised_azimuth_range_deg": [
+      58,
+      110
+     ],
+     "partial_azimuths": 107
+    },
+    {
+     "reach_m": 250000,
+     "sun_center_visible_pct": 31.18,
+     "mean_solar_disc_visible_pct": 31.22,
+     "earth_center_visible_pct": 31.98,
+     "longest_darkness_h": 515.0,
+     "longest_earth_blackout_h": 488.0,
+     "diff_solar_disc_vs_pgda_pp": 0.37,
+     "azimuths_raised_vs_100km": 53,
+     "max_rise_deg": 2.1423,
+     "raised_azimuth_range_deg": [
+      58,
+      110
+     ],
+     "partial_azimuths": 163
+    },
+    {
+     "reach_m": 300000,
+     "sun_center_visible_pct": 31.18,
+     "mean_solar_disc_visible_pct": 31.22,
+     "earth_center_visible_pct": 31.98,
+     "longest_darkness_h": 515.0,
+     "longest_earth_blackout_h": 488.0,
+     "diff_solar_disc_vs_pgda_pp": 0.37,
+     "azimuths_raised_vs_100km": 53,
+     "max_rise_deg": 2.1423,
+     "raised_azimuth_range_deg": [
+      58,
+      110
+     ],
+     "partial_azimuths": 203
+    }
+   ]
+  },
+  {
+   "site": "connecting-ridge",
+   "latitude_deg": -89.4632,
+   "longitude_deg": -137.49,
+   "control_max_abs_diff_deg_vs_committed_100km_horizon": 0.0,
+   "pgda_avg_solar_disc_pct": 50.65,
+   "reaches": [
+    {
+     "reach_m": 100000,
+     "sun_center_visible_pct": 53.32,
+     "mean_solar_disc_visible_pct": 51.92,
+     "earth_center_visible_pct": 44.82,
+     "longest_darkness_h": 502.0,
+     "longest_earth_blackout_h": 382.0,
+     "diff_solar_disc_vs_pgda_pp": 1.27,
+     "azimuths_raised_vs_100km": 0,
+     "max_rise_deg": 0.0,
+     "raised_azimuth_range_deg": null,
+     "partial_azimuths": 0
+    },
+    {
+     "reach_m": 150000,
+     "sun_center_visible_pct": 53.32,
+     "mean_solar_disc_visible_pct": 51.92,
+     "earth_center_visible_pct": 44.82,
+     "longest_darkness_h": 502.0,
+     "longest_earth_blackout_h": 382.0,
+     "diff_solar_disc_vs_pgda_pp": 1.27,
+     "azimuths_raised_vs_100km": 0,
+     "max_rise_deg": 0.0,
+     "raised_azimuth_range_deg": null,
+     "partial_azimuths": 0
+    },
+    {
+     "reach_m": 200000,
+     "sun_center_visible_pct": 53.32,
+     "mean_solar_disc_visible_pct": 51.92,
+     "earth_center_visible_pct": 44.82,
+     "longest_darkness_h": 502.0,
+     "longest_earth_blackout_h": 382.0,
+     "diff_solar_disc_vs_pgda_pp": 1.27,
+     "azimuths_raised_vs_100km": 0,
+     "max_rise_deg": 0.0,
+     "raised_azimuth_range_deg": null,
+     "partial_azimuths": 0
+    },
+    {
+     "reach_m": 250000,
+     "sun_center_visible_pct": 53.32,
+     "mean_solar_disc_visible_pct": 51.92,
+     "earth_center_visible_pct": 44.82,
+     "longest_darkness_h": 502.0,
+     "longest_earth_blackout_h": 382.0,
+     "diff_solar_disc_vs_pgda_pp": 1.27,
+     "azimuths_raised_vs_100km": 0,
+     "max_rise_deg": 0.0,
+     "raised_azimuth_range_deg": null,
+     "partial_azimuths": 0
+    },
+    {
+     "reach_m": 300000,
+     "sun_center_visible_pct": 53.32,
+     "mean_solar_disc_visible_pct": 51.92,
+     "earth_center_visible_pct": 44.82,
+     "longest_darkness_h": 502.0,
+     "longest_earth_blackout_h": 382.0,
+     "diff_solar_disc_vs_pgda_pp": 1.27,
+     "azimuths_raised_vs_100km": 0,
+     "max_rise_deg": 0.0,
+     "raised_azimuth_range_deg": null,
+     "partial_azimuths": 161
+    }
+   ]
+  },
+  {
+   "site": "peak-near-shackleton",
+   "latitude_deg": -88.811,
+   "longitude_deg": 123.6901,
+   "control_max_abs_diff_deg_vs_committed_100km_horizon": 0.0,
+   "pgda_avg_solar_disc_pct": 71.89,
+   "reaches": [
+    {
+     "reach_m": 100000,
+     "sun_center_visible_pct": 80.38,
+     "mean_solar_disc_visible_pct": 80.91,
+     "earth_center_visible_pct": 58.87,
+     "longest_darkness_h": 345.0,
+     "longest_earth_blackout_h": 288.0,
+     "diff_solar_disc_vs_pgda_pp": 9.02,
+     "azimuths_raised_vs_100km": 0,
+     "max_rise_deg": 0.0,
+     "raised_azimuth_range_deg": null,
+     "partial_azimuths": 0
+    },
+    {
+     "reach_m": 150000,
+     "sun_center_visible_pct": 75.89,
+     "mean_solar_disc_visible_pct": 77.23,
+     "earth_center_visible_pct": 55.44,
+     "longest_darkness_h": 379.0,
+     "longest_earth_blackout_h": 327.0,
+     "diff_solar_disc_vs_pgda_pp": 5.34,
+     "azimuths_raised_vs_100km": 76,
+     "max_rise_deg": 2.0417,
+     "raised_azimuth_range_deg": [
+      122,
+      263
+     ],
+     "partial_azimuths": 0
+    },
+    {
+     "reach_m": 200000,
+     "sun_center_visible_pct": 75.52,
+     "mean_solar_disc_visible_pct": 76.97,
+     "earth_center_visible_pct": 55.37,
+     "longest_darkness_h": 381.0,
+     "longest_earth_blackout_h": 328.0,
+     "diff_solar_disc_vs_pgda_pp": 5.08,
+     "azimuths_raised_vs_100km": 84,
+     "max_rise_deg": 2.0417,
+     "raised_azimuth_range_deg": [
+      122,
+      269
+     ],
+     "partial_azimuths": 0
+    },
+    {
+     "reach_m": 250000,
+     "sun_center_visible_pct": 75.52,
+     "mean_solar_disc_visible_pct": 76.97,
+     "earth_center_visible_pct": 55.37,
+     "longest_darkness_h": 381.0,
+     "longest_earth_blackout_h": 328.0,
+     "diff_solar_disc_vs_pgda_pp": 5.08,
+     "azimuths_raised_vs_100km": 84,
+     "max_rise_deg": 2.0417,
+     "raised_azimuth_range_deg": [
+      122,
+      269
+     ],
+     "partial_azimuths": 0
+    },
+    {
+     "reach_m": 300000,
+     "sun_center_visible_pct": 75.52,
+     "mean_solar_disc_visible_pct": 76.97,
+     "earth_center_visible_pct": 55.37,
+     "longest_darkness_h": 381.0,
+     "longest_earth_blackout_h": 328.0,
+     "diff_solar_disc_vs_pgda_pp": 5.08,
+     "azimuths_raised_vs_100km": 84,
+     "max_rise_deg": 2.0417,
+     "raised_azimuth_range_deg": [
+      122,
+      269
+     ],
+     "partial_azimuths": 177
+    }
+   ]
+  }
+ ]
+}
