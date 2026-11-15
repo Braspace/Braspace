@@ -3,9 +3,6 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 )
@@ -35,26 +32,17 @@ func TestVisibilityEngineFailureCodesMatchMissionRoutes(t *testing.T) {
 	}
 }
 
-func scriptEngine(t *testing.T, body string) string {
-	t.Helper()
-	if runtime.GOOS == "windows" {
-		t.Skip("POSIX shell script")
-	}
-	p := filepath.Join(t.TempDir(), "engine")
-	if err := os.WriteFile(p, []byte("#!/bin/sh\n"+body+"\n"), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	return p
-}
+// scriptEngine is an engine that prints exactly `out` (portable, see stdoutEngine).
+func scriptEngine(t *testing.T, out string) string { return stdoutEngine(t, out) }
 
 const okEngineJSON = `{"site_id":"demo-synthetic","epoch_utc":"2026-11-14T12:00:00Z","science_status":"UNVERIFIED_INPUTS","sun_horizon_deg":0,"earth_horizon_deg":0,"sun_margin_deg":2,"earth_margin_deg":-1,"sun_visible":true,"earth_visible":false,"simultaneous_visibility":false`
 
 func TestVisibilityRejectsUnknownEngineFields(t *testing.T) {
-	good := visibilityVia(t, scriptEngine(t, "printf '%s\\n' '"+okEngineJSON+"}'"))
+	good := visibilityVia(t, scriptEngine(t, okEngineJSON+"}\n"))
 	if good.Code != 200 {
 		t.Fatalf("control (no extra field) must pass: %d %s", good.Code, good.Body.String())
 	}
-	rec := visibilityVia(t, scriptEngine(t, "printf '%s\\n' '"+okEngineJSON+`,"evil":1}'`))
+	rec := visibilityVia(t, scriptEngine(t, okEngineJSON+`,"evil":1}`+"\n"))
 	if rec.Code != 502 || strings.Contains(rec.Body.String(), "evil") {
 		t.Fatalf("extra engine field must be refused and not echoed: %d %s", rec.Code, rec.Body.String())
 	}
@@ -65,7 +53,7 @@ func TestVisibilityRejectsNullEngineScalars(t *testing.T) {
 		t.Run(field, func(t *testing.T) {
 			key := strings.SplitN(field, ":", 2)[0]
 			payload := strings.Replace(okEngineJSON, field, key+":null", 1) + "}"
-			rec := visibilityVia(t, scriptEngine(t, "printf '%s\\n' '"+payload+"'"))
+			rec := visibilityVia(t, scriptEngine(t, payload+"\n"))
 			if rec.Code != http.StatusBadGateway {
 				t.Fatalf("null engine scalar must fail closed: %d %s", rec.Code, rec.Body.String())
 			}
@@ -92,7 +80,7 @@ func TestVisibilityRejectsAmbiguousEngineOutput(t *testing.T) {
 	}
 	for name, payload := range cases {
 		t.Run(name, func(t *testing.T) {
-			rec := visibilityVia(t, scriptEngine(t, "printf '%s\\n' '"+payload+"'"))
+			rec := visibilityVia(t, scriptEngine(t, payload+"\n"))
 			if rec.Code != http.StatusBadGateway || decode(t, rec)["code"] != "ENGINE_ERROR" {
 				t.Fatalf("ambiguous output must be a stable ENGINE_ERROR: %d %s", rec.Code, rec.Body.String())
 			}
@@ -102,7 +90,7 @@ func TestVisibilityRejectsAmbiguousEngineOutput(t *testing.T) {
 		})
 	}
 	for _, payload := range []string{valid, okEngineJSON + `,"source_warning":"unverified caller inputs"}`} {
-		rec := visibilityVia(t, scriptEngine(t, "printf '%s\\n' '"+payload+"'"))
+		rec := visibilityVia(t, scriptEngine(t, payload+"\n"))
 		if rec.Code != http.StatusOK {
 			t.Fatalf("explicit zero/false and valid optional string must pass: %d %s", rec.Code, rec.Body.String())
 		}
@@ -114,7 +102,7 @@ func TestVisibilityRejectsAmbiguousEngineOutput(t *testing.T) {
 
 func TestVisibilityCapsEngineOutput(t *testing.T) {
 	// ~200 KB of valid-looking padding after the contract: must be refused, not buffered.
-	rec := visibilityVia(t, scriptEngine(t, "printf '%s' '"+okEngineJSON+",\"source_warning\":\"'; head -c 200000 /dev/zero | tr '\\\\0' 'x'; printf '\"}\\n'"))
+	rec := visibilityVia(t, scriptEngine(t, okEngineJSON+`,"source_warning":"`+strings.Repeat("x", 200000)+"\"}\n"))
 	if rec.Code != 502 {
 		t.Fatalf("oversized engine output: got %d %.200s", rec.Code, rec.Body.String())
 	}
