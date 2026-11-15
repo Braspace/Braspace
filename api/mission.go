@@ -15,8 +15,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Braspace/Braspace/api/onboard"
 	"github.com/Braspace/Braspace/api/internal/jsoncontract"
+	"github.com/Braspace/Braspace/api/onboard"
 )
 
 //go:embed openapi.json
