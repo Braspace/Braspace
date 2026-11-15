@@ -9,6 +9,7 @@ import { createLayerCard, statCircle, sealEl } from "../core/layers.js";
 import { register, t, fmtNum } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { TEXTS } from "./cockpit-texts.js";
+import { mountArtemisCockpit } from "../../moon-hd/artemis-cockpit.js";
 import { CREW_DEFAULT, POWER_FIELDS, CREW_FIELDS, crewRequest, readCrewAnswer, validateInputs, sensitivityVariants, readEnergy, loadSaved, saveScenario, savedExport } from "./cockpit-crew.js";
 import { siteEvaluateBody, FAULTS, H1_PROFILE, SPEEDS, HOUR_MS, applyFault, runScenario, nextChange, dailyFractions, autonomyHours, fmtDuration, clockLabel, hourIndex, evaluateRules, rulesMet, longestRun, countRises } from "./cockpit-model.js";
 register(TEXTS);
@@ -23,6 +24,37 @@ if (!doc.sites.some(s => s.id === getState().site))
 const online = await apiOnline();
 const terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id) => setState({ site: id }) });
 const narrow = () => matchMedia("(max-width:700px)").matches;
+// The shared Artemis-style lander over this site on the shared 3D Moon (loaded on demand by the page's Moon script).
+const siteNow = () => doc.sites.find(s => s.id === getState().site);
+const artemis = mountArtemisCockpit({ lat: siteNow()?.lat, lon: siteNow()?.lon, texts: () => ({ note: t("cockpit.artemis_note"), tag: t("cockpit.artemis_tag") }) });
+const moonBtn = el("button", "mp-pill mp-ck-moon");
+moonBtn.type = "button";
+const openMoon = (retry) => {
+    const live = window.moonBackdrop;
+    if (live) {
+        live.explore(true);
+        return;
+    }
+    const open = document.querySelector(".moon-ui .moon-open");
+    if (open && !open.disabled) {
+        open.click();
+        return;
+    }
+    // the Moon's button is added after the page's load event: wait for it once before giving up
+    if (retry) {
+        const later = () => setTimeout(() => openMoon(false), 60);
+        if (document.readyState === "complete")
+            later();
+        else
+            addEventListener("load", later, { once: true });
+        return;
+    }
+    if (!open) {
+        moonBtn.disabled = true;
+        moonBtn.textContent = t("cockpit.moon3d.na");
+    }
+};
+moonBtn.onclick = () => openMoon(true);
 const hoursOf = () => getState().hours || 14 * 24;
 const S = { t: 0, playing: false, speed: SPEEDS[1], fault: null, run: null, light: null, siteKey: "", dismissed: null, sky: null, noSiteRoute: new Set() };
 /** Frame the chosen site inside the free area of the map (centre on desktop, upper part above the sheet on mobile). */
@@ -222,7 +254,11 @@ async function drawNow() {
     const card = createLayerCard({ id: "card-sun-days", title: t("cockpit.sun_hours_day"), status: L.m.sunPct.status, answer: chart,
         why: el("p", "mp-label", t("cockpit.sunsets_why") + " " + t("cockpit.nextnight_why")), layer: st.layer, onLayer: (layer) => setState({ layer }),
         proof: rows([t("proof.source"), `${L.m.sunPct.source}`], [t("proof.sha"), code(L.m.sunPct.detail.sha256)], [t("proof.window"), `${L.m.sunPct.detail.start} · ${fmtNum(H)} h`], [t("proof.status"), `${L.m.sunPct.status} · ${t("seal." + L.m.sunPct.seal)}`], [t("cockpit.route"), route], [t("cockpit.inputs"), `${t("cockpit.in.capacity")} ${fmtNum(L.power.battery_capacity_wh)} Wh · ${t("cockpit.in.initial")} ${fmtNum(L.power.initial_charge_wh)} Wh · ${t("cockpit.in.solar")} ${fmtNum(L.power.solar_generation_w)} W · ${t("cockpit.in.load")} ${fmtNum(L.power.load_w)} W · ${t("cockpit.in.floor")} ${fmtNum(st.battery)}%`], [t("cockpit.fault_on", { p: "" }), L.f.fault ? `${t(L.f.fault.key, { n: L.f.fault.n })} (${t("seal.SIM")})` : t("nd")], [t("proof.status") + " API", run?.ok ? `${run.status} · ${t("seal." + sealFor(run.status))}` : t("cockpit.route.none")], ["inputs_sha256", code(run?.sha)], [t("cockpit.derived"), trace ? "charge_wh" : t("nd")]) });
-    left.replaceChildren(title, stat, visrow, card.el);
+    if (!moonBtn.disabled)
+        moonBtn.textContent = "◐ " + t("cockpit.moon3d");
+    moonBtn.title = t("cockpit.moon3d.hint");
+    artemis.relabel();
+    left.replaceChildren(title, stat, visrow, moonBtn, card.el);
     // rules
     const list = evaluateRules({ rules: { night: st.night, blackout: st.blackout, battery: st.battery }, lightStatus: doc.status, trace, capacityWh: run?.ok ? cap : null, light: L });
     const met = rulesMet(list);
@@ -352,6 +388,9 @@ onState((s) => { if (s.site !== last) {
     S.t = 0;
     S.dismissed = null;
     frame();
+    const x = siteNow();
+    if (x)
+        artemis.setSite(Number(x.lat), Number(x.lon));
 } draw(); });
 frame();
 await draw();

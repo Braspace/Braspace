@@ -1,0 +1,16 @@
+/* Artemis-style lander on the shared 3D Moon (artemis-cockpit.js). Shown only in explore mode, next to the Moon. */
+.artemis-note, .artemis-tag { display: none; }
+html.moon-explore-on .artemis-note { display: block; position: fixed; z-index: 2147483001; top: calc(16px + env(safe-area-inset-top)); left: 50%;
+  transform: translateX(-50%); max-width: calc(100vw - 32px); margin: 0; padding: 8px 14px; border-radius: 999px;
+  background: rgba(10,13,18,.78); border: 1px solid rgba(255,209,102,.45); color: #f2f4f7; text-align: center;
+  font: 600 12px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: .01em;
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); pointer-events: none; }
+/* tag on the left of the lander (site labels of the Moon sit on the right of their dots) */
+html.moon-explore-on .artemis-tag { display: block; position: fixed; z-index: 2147483001; left: 0; top: 0; pointer-events: none; transform-origin: 0 0; will-change: transform; }
+html.moon-explore-on .artemis-tag span { display: inline-block; white-space: nowrap; transform: translate(calc(-100% - 34px), -50%); padding: 3px 9px; border-radius: 999px;
+  background: rgba(10,13,18,.72); border: 1px solid rgba(46,196,160,.6); color: #f2f4f7; font: 600 11px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif; }
+/* the lander marks its own site: the selected pin's dot steps back so it does not shine through the model */
+html.artemis-on .moon-pin[aria-pressed="true"] i { opacity: .35; }
+html.moon-explore-on .artemis-tag.is-off { visibility: hidden; }
+@media (max-width: 720px) { html.moon-explore-on .artemis-note { font-size: 11px; padding: 6px 10px; border-radius: 14px; } }
+@media print { .artemis-note, .artemis-tag { display: none !important; } }

@@ -167,3 +167,7 @@
 
 /* Series failed to load (offline or cancelled): one status line above the bottom bar, never invented numbers. */
 .mp-ck-loaderr{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:60;max-width:min(560px,calc(100vw - 26px));margin:0;padding:10px 16px;border-radius:18px;font-size:13px;line-height:18px;text-align:center}
+/* "See the lander on the 3D Moon": opens the shared Moon (explore mode) with the illustrative Artemis-style lander. */
+.mp-ck-moon{display:flex;width:100%;justify-content:center;align-items:center;gap:6px;margin:10px 0 12px;border-color:rgba(46,196,160,.55)}
+.mp-ck-moon:hover{border-color:rgba(46,196,160,.9)}
+.mp-ck-moon[disabled]{opacity:.7;cursor:default}
