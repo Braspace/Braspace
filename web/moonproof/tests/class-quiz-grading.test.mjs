@@ -34,3 +34,19 @@ test("Q2 only requires darkness; Q3 only requires communication",()=>{
  assert.deepEqual(evaluateQuestion(2,[m(30,null)],limits).correctIds,["A"]);
  assert.deepEqual(evaluateQuestion(3,[m(null,30)],limits).correctIds,["A"]);
 });
+
+test("a missing-data scenario is inconclusive even when another scenario passes",()=>{
+ const out = evaluateQuestion(4,[m(20,20),m(null,30),m(80,80)],limits);
+ assert.deepEqual(out.verdicts,[true,null,false]);
+ assert.deepEqual(out.correctIds,["A"]);
+ assert.equal(gradeChoice("A",out),"correct");
+ assert.equal(gradeChoice("B",out),"unknown");
+ assert.equal(gradeChoice("C",out),"incorrect");
+ assert.equal(gradeChoice("none",out),"incorrect");
+});
+test("an empty catalogue does not fabricate a None-of-the-above answer",()=>{
+ const out = evaluateQuestion(4,[],limits);
+ assert.equal(out.status,"unknown");
+ assert.deepEqual(out.correctIds,[]);
+ assert.equal(gradeChoice("none",out),"unknown");
+});
