@@ -45,6 +45,19 @@ export function siteMetric(doc, site, key, unit) {
     source: "web/data/sites.json · metrics." + key, detail: { window: doc.window, generated: doc.generated } });
 }
 
+/** Tolerance of the science review against NASA PGDA (docs/SCIENCE_REVIEW_ONBOARD_BS061.md, section 2.2). */
+export const PGDA_SUN_TOLERANCE_PP = 5;
+/**
+ * null, or why the sunlight figures of a site are to be read as an upper bound: our series shows more
+ * sunlight than the NASA PGDA average map by more than the tolerance. Decided from sites.json alone
+ * (metrics.mean_solar_disc_visible_pct against pgda_sun_pct), never from a site id.
+ */
+export function sunCaveat(site) {
+  const ours = site?.metrics?.mean_solar_disc_visible_pct, pgda = site?.pgda_sun_pct;
+  if (!Number.isFinite(ours) || !Number.isFinite(pgda) || ours - pgda <= PGDA_SUN_TOLERANCE_PP) return null;
+  return Object.freeze({ kind: "SUN_UPPER_BOUND", ours, pgda, diff: ours - pgda });
+}
+
 const seriesCache = new Map();
 export function loadSeries(site) {
   if (!seriesCache.has(site.id)) seriesCache.set(site.id, SiteSeries.load(DATA_BASE + site.series));

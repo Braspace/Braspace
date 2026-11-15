@@ -13,9 +13,13 @@ These results come from `science/three_site_pipeline.py` with the PR #86 half-pi
 | Malapert Massif | 38.4% | 48.8% | 19.5% | 670 h | 357 h |
 | Nobile Rim 1 | 31.2% | 32.0% | 10.4% | 515 h | 488 h |
 | Connecting Ridge | 53.3% | 44.8% | 26.9% | 502 h | 382 h |
-| Peak Near Shackleton | 80.4% | 58.9% | 47.0% | 345 h | 288 h |
+| Peak Near Shackleton | ≤ 80.4% ¹ | 58.9% | ≤ 47.0% ¹ | 345 h | 288 h |
 
 "Visible" means the body's **centre** is above the terrain horizon.
+
+¹ Upper bound. NASA PGDA gives 71.9% average sunlight at this site against our 80.9% (+9.0 pp, outside the ±5 pp tolerance of
+`docs/SCIENCE_REVIEW_ONBOARD_BS061.md`), and a ray marched past our 100 km horizon limit finds more shadow there. The cause is
+not confirmed. The web screens show the same caveat (`sunCaveat` in `web/moonproof/core/data.js`).
 
 The per-site hourly JSON files (~6 MB each) are not committed. Compact copies, 280 KB per site at 0.01°, live in `web/data/sites/`.
 
