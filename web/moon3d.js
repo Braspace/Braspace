@@ -57,6 +57,24 @@ export function focusRotation(lat, lon, cam = CAMERA_POSITION) {
   const x = Math.atan2(cam.z, cam.y) - Math.atan2(h, v.y);
   return {x: Math.atan2(Math.sin(x), Math.cos(x)), y};
 }
+// The GLB is a visual asset with a baked base-color map. Its PBR clearcoat and
+// the scene's bright lights can wash the texture out. This rendering material
+// displays the NASA color map directly, without pretending to model lunar light.
+export function bakedNASAColorMaterial(THREE, original) {
+  if (!original?.map) return null;
+  return new THREE.MeshBasicMaterial({
+    map: original.map, color: original.color || 0xffffff,
+    side: original.side, transparent: original.transparent,
+    opacity: original.opacity, alphaTest: original.alphaTest,
+    depthWrite: original.depthWrite
+  });
+}
+// A slightly raised visual beacon keeps pins clear of the GLB relief.
+// Both radii are decorative, not NASA landing-coordinate accuracy guarantees.
+export const GLB_MARKER_RADIUS = SURFACE_RADIUS + 0.14;
+export function visualMarkerRadius(glbLoaded) {
+  return glbLoaded ? GLB_MARKER_RADIUS : MARKER_RADIUS;
+}
 export const STATUS_TEXT = {
   sphere: "Sphere + NASA SVS LROC texture · visual model · not terrain science",
   glb: "NASA SVS 14959 Moon GLB · visual model · not terrain science",
@@ -140,6 +158,19 @@ export async function createMoon(stage,status,options={}) {
     try{
       const {GLTFLoader}=await import(GLTF_LOADER_URL);
       const gltf=await new GLTFLoader().loadAsync(apiURL(MODEL_PATH));
+      // NASA SVS GLB embeds its color texture. Show it without bright PBR
+      // lighting/clearcoat; reject a blank or untextured model and retain LROC.
+      let texturedMeshes=0;
+      gltf.scene.traverse(object=>{
+        if(!object.isMesh||!object.material)return;
+        const convert=material=>{
+          const display=bakedNASAColorMaterial(THREE,material);
+          if(display){texturedMeshes++;return display;}
+          return material;
+        };
+        object.material=Array.isArray(object.material)?object.material.map(convert):convert(object.material);
+      });
+      if(texturedMeshes===0)throw new Error("NASA GLB has no usable base-color texture");
       // The GLB is a sphere: its radius is half the box edge (NOT the box's
       // bounding-sphere radius, which is sqrt(3) times larger).
       const box=new THREE.Box3().setFromObject(gltf.scene),size=box.getSize(new THREE.Vector3());
@@ -150,6 +181,10 @@ export async function createMoon(stage,status,options={}) {
       globe.add(pivot);globe.remove(surface);
       surface.geometry.dispose();surface.material.map?.dispose();surface.material.dispose();
       modelRoot=pivot;modelState="ready";stage.dataset.globeModel="glb";
+      stage.dataset.modelTexturedMeshes=String(texturedMeshes);
+      // Pins share the globe transform, so their geographical direction stays
+      // unchanged. Lift their visual beacons above local relief after the swap.
+      for(const pin of markers.children)pin.position.setLength(visualMarkerRadius(true));
       stage.dataset.modelMs=String(Math.round(performance.now()-t0));
       modelButton.textContent="NASA 3D model loaded";modelButton.hidden=true;setStatus();render();
     }catch(err){
@@ -167,8 +202,8 @@ export async function createMoon(stage,status,options={}) {
     for(const site of (sites||[]).slice(0,25)){
       const lat=Number(site.coordinate?.latitude_deg),lon=Number(site.coordinate?.longitude_deg);
       if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90)continue;
-      const pin=new THREE.Mesh(new THREE.SphereGeometry(.027,12,8),new THREE.MeshBasicMaterial({color:0x72edff}));
-      pin.position.copy(lonLat(lat,lon));pin.userData={id:site.id,name:site.name};
+      const pin=new THREE.Mesh(new THREE.SphereGeometry(.035,12,8),new THREE.MeshBasicMaterial({color:0x72edff}));
+      pin.position.copy(lonLat(lat,lon)).setLength(visualMarkerRadius(Boolean(modelRoot)));pin.userData={id:site.id,name:site.name};
       markers.add(pin);
     }
     render();
