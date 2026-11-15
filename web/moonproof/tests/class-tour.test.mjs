@@ -88,12 +88,22 @@ test("Cockpit tour references actual page controls, not removed/stale selectors"
  assert.match(js,/moon-open/);
 });
 
-test("site root redirects to the Cockpit where first-visit onboarding is mounted",async()=>{
+test("site root opens the three-mode chooser and first-visit tutorial is on that page",async()=>{
  const root=await read("../../index.html"),entry=await read("../index.html");
- const cockpit=await read("../cockpit.html"),script=await read("../screens/tour.js");
+ const script=await read("../screens/tour.js");
  assert.match(root,/url=moonproof\//);
- assert.match(entry,/screens\/cockpit-entry\.js/);
- assert.match(cockpit,/data-moon-tour="cockpit"/);
+ assert.match(entry,/screens\/entry\.js/);
+ assert.match(entry,/data-moon-tour="entry"/);
+ assert.match(entry,/id="cards" role="list"/);
+ assert.doesNotMatch(entry,/screens\/cockpit-entry\.js/);
+ assert.equal(TOUR_STEPS.entry.length,4);
+ for(const step of TOUR_STEPS.entry){
+   assert.ok(step.targets.length);
+   for(const locale of ["pt","en"]){
+     assert.equal(step[locale].length,2);
+     assert.ok(step[locale][1].length>20 && step[locale][1].length<220);
+   }
+ }
  assert.match(script,/setTimeout\(\(\) => \{/);
  assert.doesNotMatch(script,/attempts\+\+ > 65/,"slow API must not suppress first-site welcome");
  assert.doesNotMatch(script,/!document\.documentElement\.classList\.contains\("mp-ready"\)/,"welcome does not need science data");
@@ -103,6 +113,7 @@ test("one site-wide welcome on first entry, but guide can always be manually reo
  const mock={getItem:key=>storage.get(key)??null};
  assert.equal(SITE_WELCOME_KEY,"moonproof.tour.welcome.v1");
  assert.equal(hasCompletedSiteWelcome(mock),false);
+ assert.equal(shouldAutoOpenTour("entry",hasCompletedSiteWelcome(mock)),true);
  assert.equal(shouldAutoOpenTour("cockpit",hasCompletedSiteWelcome(mock)),true);
  assert.equal(shouldAutoOpenTour("explore",hasCompletedSiteWelcome(mock)),true);
  assert.equal(shouldAutoOpenTour("present",false),false,"projector never interrupts a lesson");
