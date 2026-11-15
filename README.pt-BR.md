@@ -14,6 +14,13 @@ Verificado em produção em **2026-11-15** (frontend `9dab20c`, Worker `ec490d15
 - **API pública:** https://braspace-api.srv1898743.hstgr.cloud: [`/api/health`](https://braspace-api.srv1898743.hstgr.cloud/api/health), [`/readyz`](https://braspace-api.srv1898743.hstgr.cloud/readyz), [`/v1/capabilities`](https://braspace-api.srv1898743.hstgr.cloud/v1/capabilities), [`/api/sites`](https://braspace-api.srv1898743.hstgr.cloud/api/sites), [`/api/vector/status`](https://braspace-api.srv1898743.hstgr.cloud/api/vector/status).
 - **Último QA de produção (#351, #374):** 13 telas × 320/390/768/1024/1440/1920 = 78 execuções. Todas com HTTP 200, 0 overflow, 0 controles cortados, 0 erros de console, 0 erros HTTP, 246 chamadas de API todas 200. Sondas do backend 7/7: pgvector `index_ready`, busca serve só fontes auditadas, janela de 720 h, JSON estrito.
 
+- **Documentação e operação:**
+  - release [`v2026.11.15-prod-2b62474`](https://github.com/Braspace/Braspace/releases/tag/v2026.11.15-prod-2b62474);
+  - referência da API [`docs/API.md`](docs/API.md), 22 operações, gerada do `api/openapi.json` e conferida no CI;
+  - contrato cockpit ↔ backend [`docs/COCKPIT_BACKEND_CONTRACT.md`](docs/COCKPIT_BACKEND_CONTRACT.md), 49/49 em produção;
+  - deploys, backups e rollback [`docs/harness/STATUS.md`](docs/harness/STATUS.md);
+  - donos de cada frente [`docs/harness/OWNERS.md`](docs/harness/OWNERS.md).
+
 > **Honestidade científica:** `/readyz` retorna `"science_status": "UNVERIFIED_INPUTS"` e `/v1/capabilities` retorna `"scientifically_validated": false`. As séries são `PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED`.
 
 ## Dado Real vs. Simulação
