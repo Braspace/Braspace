@@ -27,3 +27,8 @@ Banco descartável e local: container `braspace-qa-pg` (Postgres 16 + pgvector),
 
 ## Observação de ambiente
 O comando de subida indicado não inclui `BRASPACE_VECTOR_ENABLED=1` nem `BRASPACE_VECTOR_MODEL_ID`. Sem eles `/api/vector/status` devolve `enabled:false` e a busca devolve 503. Para os testes de vetor, a API foi reiniciada com `BRASPACE_VECTOR_ENABLED=1 BRASPACE_VECTOR_MODEL_ID=braspace-lexical-384-v1`.
+
+## Atualização 2026-11-15
+- `migrate` sem pendências agora imprime `[]` (antes `null`).
+- Ingestão auditada: use `ingest -manifest ../data/manifest.json` (preenche `source_manifest`), depois `vector-ingest`, depois `verify -manifest ../data/manifest.json`. Sem `-manifest`, `source_manifest` fica vazio. Executado no banco descartável: 1 linha em `source_manifest`, verify ok.
+- Queda do banco: `/api/health` agora mostra `store.status=degraded` (HTTP 200) enquanto o Postgres está parado e volta a `ok` sozinho; `/readyz` segue 200 por design.

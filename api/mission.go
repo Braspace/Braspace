@@ -38,7 +38,12 @@ var limitations = []string{
 type missionAPI struct {
 	store  *siteStore
 	engine *engineClient
+	// storePing, quando definido (store postgres), sonda o banco com timeout curto.
+	// O catálogo é servido da memória: falha aqui degrada /api/health, não derruba o serviço.
+	storePing func(context.Context) error
 }
+
+const storePingTimeout = 500 * time.Millisecond
 
 type modelInfo struct {
 	APIVersion      string `json:"api_version"`
@@ -108,6 +113,18 @@ func (m *missionAPI) health(w http.ResponseWriter, r *http.Request) {
 		"series_science_statuses": statuses,
 		"status":                  "ok",
 	}
+	store := map[string]any{"source": m.store.source, "status": "ok"}
+	if m.storePing != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), storePingTimeout)
+		start := time.Now()
+		err := m.storePing(ctx)
+		cancel()
+		store["last_ping_ms"] = float64(time.Since(start).Microseconds()) / 1000
+		if err != nil {
+			store["status"], body["status"] = "degraded", "degraded"
+		}
+	}
+	body["store"] = store
 	code := http.StatusOK
 	if !m.engine.available() {
 		body["engine"], body["status"], code = "unavailable", "degraded", http.StatusServiceUnavailable

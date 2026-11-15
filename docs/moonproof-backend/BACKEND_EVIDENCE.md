@@ -50,8 +50,8 @@ Ver `DB_MIGRATION_RUNBOOK.md`: `migrate` idempotente (2x), `verify` ok, `data_so
 | Suíte | Resultado |
 |---|---|
 | `go vet ./...` | sem avisos |
-| `go test ./...` (sem DB), testes e subtestes | 265 passou, 0 falhou, 17 pulou |
-| `go test ./...` com `TEST_DATABASE_URL` e `TEST_VECTOR_DATABASE_URL` no banco descartável | 280 passou, 0 falhou, 2 pulou |
+| `go test ./...` (sem DB), testes e subtestes | 296 passou, 0 falhou, 23 pulou (apos merge de origin/main 85ca385 e 5 testes novos) |
+| `go test ./...` com `TEST_DATABASE_URL` e `TEST_VECTOR_DATABASE_URL` no banco descartável | 312 passou, 0 falhou, 7 pulou (pulos: motor Rust real/serie real/validacoes Python, sem RUST_ENGINE_BIN ou dados); nenhum schema test_* restou |
 | `cargo test --locked --all-targets` | 24 passou (3 + 18 + 3), 0 falhou, 0 ignorado |
 | `scripts/fullstack-e2e.mjs` | 22/22 operações PASS |
 
@@ -75,3 +75,24 @@ Os testes de DB usam um schema próprio por teste e o removem no fim. Verifiquei
 
 ## Bloqueios
 Nenhum bloqueio. Não houve chamada à API pública. A suíte com `TEST_*` não foi verificada contra uma instância Postgres diferente da descartável.
+
+
+## Atualização 2026-11-15 (squad backend 2)
+Merge de origin/main (85ca385) sem conflitos. `go vet ./...` sem avisos; `cargo test --locked --all-targets` 24 passou (3+18+3).
+
+### Corrigido
+1. Readiness honesta. `/api/health` agora traz `store: {source, status: ok|degraded, last_ping_ms}`. Com store postgres, a API faz ping (pool lazy, 1 conexão, timeout 500 ms). Falha => `store.status=degraded` e `status=degraded`, mas HTTP 200: o catálogo em memória continua servindo. `/readyz` continua 200 (decisão: o serviço serve da memória). Teste: `api/health_store_test.go` (RED: não compilava, campo `storePing` inexistente; GREEN: 4 testes). `openapi.json` ganhou `Health.store`; testes de contrato passam. Evidência ao vivo com Postgres real: ok (ping 5 ms) -> `docker stop` => degraded 200 (readyz 200) -> `docker start` => ok, sem reiniciar a API.
+2. `migrate` sem nada a aplicar imprimia `null`; agora `[]`. Teste: `api/migrate_empty_test.go` (RED: "imprime null"; GREEN). Requer TEST_DATABASE_URL.
+
+### Apenas documentado
+3. Chave duplicada em JSON: o contrato não pretende rejeitar (não existe `api/internal/jsoncontract`; o OpenAPI não menciona; `DisallowUnknownFields` só cobre chaves desconhecidas). Continua aceito, a última vence. Se o produto quiser rejeitar, é decisão de contrato (exigiria tokenizar o JSON em `decodeJSON` e `parseVectorRequest`).
+4. Reset de PUT via proxy: REPRODUZIDO. `repro/put_after_2mib.mjs` (9 rotas POST x 5 casos x 20 rodadas, fetch keep-alive): proxy 30/180 PUT com `ECONNRESET`, Go direto 0/180. Causa: o dev-server responde 413 (relay do Go) ou 405 antes de ler o corpo; o restante dos 2 MiB fica no socket keep-alive e a requisição seguinte (PUT) é reiniciada. Não é bug do Go. Sugestão de patch (NÃO aplicado, `web/` intocado): `repro/dev-server-drain.patch` (`req.resume()` e `res.shouldKeepAlive=false` quando `!req.complete`, e no 405). Com o patch numa cópia: 0/180 ECONNRESET.
+5. Ingestão auditada. Comando completo (banco descartável, senha lida de arquivo):
+```
+export DATABASE_URL="postgres://braspace:$(cat ~/braspace-qa/.pgpw)@127.0.0.1:55432/braspace?sslmode=disable"
+cd api && go build -o ~/braspace-qa/s23-api .
+~/braspace-qa/s23-api ingest -manifest ../data/manifest.json   # migra, carrega catálogo/séries e source_manifest
+~/braspace-qa/s23-api vector-ingest                            # CLI não aceita manifest; só metadados (10 upserts)
+~/braspace-qa/s23-api verify -manifest ../data/manifest.json   # ok:true, problems:[]
+```
+Executado: `source_manifest` passou de 0 para 1 linha (`manifest_sha256` 15d80e11...). `vector-ingest` não usa manifest (limitação do CLI).

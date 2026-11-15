@@ -1,5 +1,5 @@
 metodo,caminho,direto_status,proxy_status,content_type,schema_ok,observacao
-GET,/api/health,200,200,application/json,sim,lat=32ms/4ms
+GET,/api/health,200,200,application/json,sim,lat=32ms/4ms; 2026-11-15 pos-merge: body agora inclui store{source,status,last_ping_ms}; store degradado => 200 com status=degraded
 GET,/healthz,200,200,application/json,sim,lat=1ms/2ms
 GET,/readyz,200,200,application/json,sim,lat=1ms/2ms
 GET,/v1/capabilities,200,200,application/json,sim,lat=1ms/1ms
@@ -86,3 +86,4 @@ POST,/api/vector/search,400,400,application/json,sim,ADV json-trailing lat=2ms/3
 GET,/api/inexistente,404,404,text/plain,n/a,lat=1ms/2ms
 GET,/api/sites/%2e%2e%2fetc,404,404,application/json,sim,lat=1ms/1ms
 GET,/api/vector/status?x=1,200,200,application/json,sim,lat=1ms/2ms
+PUT,/api/* apos POST 2MiB (fetch keep-alive),405,405+30/180 ECONNRESET,text/plain,sim,reproduzido via proxy 30/180; direto 0/180; com patch de drenagem 0/180 (ver repro/)
