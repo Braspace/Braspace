@@ -11,17 +11,18 @@ independente) do BRASPACE / NASA Space Apps 2026. Issue BS-017 (dono humano: Joe
 - `benchmark.json` — normalização das 48 entradas: ponto, época, corpo, azimute, elevação,
   convenção de azimute, frame, versão do Horizons e fonte de efeméride informada na resposta,
   mais SHA-256 de cada resposta bruta para rastreabilidade.
-- `download_benchmark.py` — script de biblioteca padrão que refaz o download de todas as
-  consultas (respeitando no máximo 1 requisição por segundo) e regrava `raw/` + `benchmark.json`.
-- `compare_angles.py` — compara um arquivo de ângulos calculados com o benchmark e imprime o
-  resíduo (calculado − benchmark) por entrada, mais resumo estatístico.
-- `test_compare_synthetic.py` — teste do comparador com dados sintéticos (desvios injetados
-  conhecidos + caso idêntico).
+- `api/cmd/downloadbenchmark` — comando Go (biblioteca padrão; porta de `download_benchmark.py`) que refaz o
+  download de todas as consultas (respeitando no máximo 1 requisição por segundo) e regrava `raw/` + `benchmark.json`.
+  Seu teste (`go test ./cmd/downloadbenchmark`) reproduz `raw/` e `benchmark.json` byte a byte a partir das
+  respostas brutas já commitadas, sem rede.
+- `api/cmd/compareangles` — comando Go (porta de `compare_angles.py`) que compara um arquivo de ângulos
+  calculados com o benchmark e imprime o resíduo (calculado − benchmark) por entrada, mais resumo estatístico.
+  Seu teste porta `test_compare_synthetic.py` (desvios injetados conhecidos + caso idêntico).
 
 ## Como regenerar
 
 ```bash
-python3 science/benchmarks/horizons/download_benchmark.py
+go -C api run ./cmd/downloadbenchmark
 ```
 
 Reexecuta as 48 consultas contra `https://ssd.jpl.nasa.gov/api/horizons.api` (sem chave),

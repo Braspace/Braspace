@@ -33,6 +33,10 @@ COPY examples/ ./examples/
 COPY compose.yaml ./compose.yaml
 # api/cmd/validatederivedseries tests pin the NAIF metadata kept outside api/.
 COPY science/evidence/ ./science/evidence/
+# api/cmd/{exportapiseries,validatehorizons,compareangles,downloadbenchmark} tests read these committed science artefacts.
+COPY science/results/ ./science/results/
+COPY science/benchmarks/horizons/ ./science/benchmarks/horizons/
+COPY web/data/sites/ ./web/data/sites/
 COPY --from=rustbuilder /build/engine/target/release/braspace-lunar-engine /src/engine/target/debug/braspace-lunar-engine
 WORKDIR /src/api
 ENV RUST_ENGINE_BIN=/src/engine/target/debug/braspace-lunar-engine

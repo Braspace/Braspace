@@ -34,7 +34,7 @@ azimuth/elevation pairs against the JPL Horizons API (quantity 4, airless).
 - Recorded maximum difference: 0.0° in elevation and in azimuth × cos(elevation), at the file's precision
   (`science/results/README.md` states below 0.000005°).
 - **Tolerance set by this review: 0.001°.** The site series is stored at 0.01°, so an error ten times smaller cannot change
-  a stored sample. `science/tests/test_reference_tolerances.py` now fails if a recorded residual exceeds it (#153: the
+  a stored sample. `api/cmd/validatehorizons/reference_tolerances_test.go` (`go test ./cmd/validatehorizons` in `api/`) now fails if a recorded residual exceeds it (#153: the
   script itself had no tolerance).
 - Limit of this evidence: the test reads the committed file. I did not re-query Horizons today.
 
