@@ -1,5 +1,11 @@
 // Accessible, opt-out, contextual MoonProof tours. Pure UI: no NASA data or mission state changes.
 export const TOUR_STEPS = {
+  entry: [
+    { targets: ["#cards", ".mp-entry-cards"], en: ["Choose how to use MoonProof", "Three modes are available. Pick the one that matches your goal; you can switch to another mode later."], pt: ["Escolha como usar o MoonProof", "Há três modos diferentes. Escolha o que combina com seu objetivo; você pode mudar de modo depois."] },
+    { targets: ['#cards [data-task="explore"]'], en: ["Explore the Moon", "Get to know lunar regions and see sunlight, Earth visibility and terrain without technical jargon."], pt: ["Explorar a Lua", "Conheça regiões lunares e observe luz do Sol, visibilidade da Terra e relevo de forma simples."] },
+    { targets: ['#cards [data-task="class"]'], en: ["Teach a class", "Prepare an activity, share it with students and open a guided presentation with questions."], pt: ["Dar uma aula", "Prepare uma atividade, compartilhe com a turma e abra uma apresentação guiada com perguntas."] },
+    { targets: ['#cards [data-task="plan"]'], en: ["Plan a mission", "Compare scenarios and adjust mission assumptions. Results are educational and must be checked against their evidence labels."], pt: ["Planejar uma missão", "Compare cenários e ajuste hipóteses da missão. Os resultados são educativos; confira sempre os selos das evidências."] }
+  ],
   cockpit: [
     { targets: ["#terrain"], en: ["Welcome to the lunar Cockpit", "This is the MoonProof map. Explore candidate regions at the lunar south pole; the prototype is not flight-certified."], pt: ["Bem-vinda ao Cockpit lunar", "Este é o mapa do MoonProof. Explore regiões candidatas no polo sul da Lua; o protótipo não é certificado para voo."] },
     { targets: [".mp-context", "#ck-panel-controls"], en: ["Check the mission context", "The top bar shows the selected site, time window and evidence status. Missing values remain N/D."], pt: ["Confira o contexto da missão", "A barra superior informa o local selecionado, o período e o estado das evidências. Dados ausentes continuam como N/D."] },
