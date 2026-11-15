@@ -24,6 +24,8 @@ Verificado em produção em **2026-11-15** (frontend `9dab20c`, Worker `ec490d15
 
 > **Honestidade científica:** `/readyz` retorna `"science_status": "UNVERIFIED_INPUTS"` e `/v1/capabilities` retorna `"scientifically_validated": false`. As séries são `PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED`.
 
+> **Candidato Cockpit P0 (#411, não publicado):** Os nove grupos Preact podem ser ocultados independentemente sem duplicar a Lua Three.js de Joel nem o módulo Artemis ilustrativo. A ação assíncrona `Só a Lua` agora verifica se os painéis ainda estão ocultos antes de abrir a cena 3D; restaurá-los antes do carregamento cancela o pedido obsoleto. Fixture Node: 3/3 PASS; JS gerado conferido contra a saída local TypeScript 5.8.3. O gate real com TypeScript 5.6.3, Chromium, Go/Rust e pgvector permanece obrigatório. Entrada canônica em #440, densidade 75% em #426 e verificação do SHA Worker em #424.
+
 ## Dado Real vs. Simulação
 
 | Fonte NASA / Externa | Produto no Repositório | Estado | Observações |
