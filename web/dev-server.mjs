@@ -13,6 +13,8 @@ const staticFiles=new Map([
   ["/index.html",{name:"index.html",type:"text/html; charset=utf-8"}],
   ["/api-base.js",{name:"api-base.js",type:"text/javascript; charset=utf-8"}],
   ["/vector-embed.js",{name:"vector-embed.js",type:"text/javascript; charset=utf-8"}],
+  ["/favicon.ico",{name:"favicon.ico",type:"image/x-icon"}],
+  ["/config.js",{name:"config.js",type:"text/javascript; charset=utf-8"}],
   ["/vendor/preact/preact.module.js",{name:"vendor/preact/preact.module.js",type:"text/javascript; charset=utf-8"}],
 ]);
 // Shared lab modules (physics, scene, coords, terrain, data) used by MoonProof and the NASA-derived data.
@@ -120,20 +122,7 @@ export function createServer(){
    proxyAPI(req,res);
    return;
   }
-  if(pathname==="/favicon.ico"){
-   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
-   res.writeHead(204,{"cache-control":"no-store"});
-   res.end();
-   return;
-  }
-  if(pathname==="/config.js"){
-   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
-   const body="// local dev-server\n";
-   res.writeHead(200,{"content-type":"text/javascript; charset=utf-8","cache-control":"no-store","content-length":body.length});
-   if(req.method==="HEAD"){res.end();return;}
-   res.end(body);
-   return;
-  }
+  // /favicon.ico and /config.js are real files in web/, served like in production (no local stand-ins).
   const file=staticFiles.get(pathname)||labFile(pathname)||moonproofFile(pathname)||moonHdFile(pathname);
   if(!file){res.writeHead(404);res.end("Not found");return;}
   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
