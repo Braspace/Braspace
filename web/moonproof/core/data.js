@@ -84,12 +84,13 @@ export function apiBase() { return (globalThis.window && window.BRASPACE_API_BAS
  * Call the API. Resolves {ok:true, data, status} or {ok:false, offline:true, error}. Never throws.
  * status is the payload's own science state when present (science_status / status / state).
  */
-export async function api(path, { method = "GET", body, timeoutMs = 8000 } = {}) {
+export async function api(path, { method = "GET", body, timeoutMs = 8000, as = "json" } = {}) {
   const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), timeoutMs);
   try {
     const r = await fetch(apiBase() + path, { method, signal: ctl.signal,
       headers: body ? { "content-type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined });
     if (!r.ok) return { ok: false, offline: r.status >= 500, error: "HTTP " + r.status };
+    if (as === "text") return { ok: true, data: await r.text(), status: null };
     const data = await r.json();
     return { ok: true, data, status: data?.science_status || data?.status || data?.state || null };
   } catch (e) { return { ok: false, offline: true, error: String(e?.message || e) }; }
