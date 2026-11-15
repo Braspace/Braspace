@@ -8,7 +8,7 @@ export const SITE_MAP = Object.freeze({
   "connecting-ridge": "connecting-ridge",
   "malapert-massif": "malapert-massif",
   "nobile-rim-1": "nobile-rim-1",
-  "mons-mouton-im2": null, // not in the API catalogue
+  "mons-mouton-im2": "mons-mouton-im2",
 });
 
 export const OFFLINE_SEAL = Object.freeze({ text: "offline · precomputed", cls: "offline", live: false });
@@ -22,7 +22,7 @@ export function sealFor(resp) {
   const certified=st==="VALIDATED" && resp?.scientifically_validated===true &&
     typeof prov?.terrain_sha256==="string" && /^[0-9a-f]{64}$/.test(prov.terrain_sha256) &&
     typeof prov?.ephemeris_id==="string" && prov.ephemeris_id.length>0 && prov.frame==="MOON_ME";
-  const label = { SYNTHETIC: "synthetic", UNVERIFIED: "unverified inputs", VALIDATED: certified ? "validated" : "unverified inputs", NO_SERIES_DATA: "no series data" }[st];
+  const label = { SYNTHETIC: "synthetic", UNVERIFIED: "unverified inputs", PRELIMINARY: "preliminary · not independently reviewed", VALIDATED: certified ? "validated" : "unverified inputs", NO_SERIES_DATA: "no series data" }[st];
   if (!label) return { text: "live API · status not reported", cls: "unknown", live: true };
   return { text: `live API · ${label}${eng && eng !== st ? ` (${eng})` : ""}`, cls: certified ? "validated" : "unverified", live: true };
 }

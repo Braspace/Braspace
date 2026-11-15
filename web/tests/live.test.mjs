@@ -60,7 +60,13 @@ test("the seal never says validated unless the response says VALIDATED", async (
 test("compareRow refuses numbers when the API has no data; ids without a pair stay static", () => {
   assert.equal(compareRow({ data_status: "NO_SERIES_DATA" }), null);
   assert.equal(compareRow({ data_status: "OUTSIDE_COVERAGE", evaluation: { metrics: {} } }), null);
-  assert.equal(SITE_MAP["mons-mouton-im2"], null);
+  assert.equal(SITE_MAP["mons-mouton-im2"], "mons-mouton-im2"); // the API serves a series for it
+  for (const id of Object.keys(SITE_MAP)) assert.ok(SITE_MAP[id] === null || typeof SITE_MAP[id] === "string", id);
+});
+
+test("PRELIMINARY (every real site series today) reads as preliminary, never as unknown or validated", () => {
+  const s = sealFor({ science_status: "PRELIMINARY" });
+  assert.match(s.text, /preliminary/); assert.equal(s.cls, "unverified"); assert.doesNotMatch(s.text, /not reported|validated/i);
 });
 
 test("nested VALIDATED can never override false response-level scientific attestation", async () => {
