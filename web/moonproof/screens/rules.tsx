@@ -4,7 +4,7 @@
 import { h, Fragment, render } from "../../vendor/preact/preact.module.js";
 import { mountShell } from "../core/shell.js";
 import { holdReady, markReady } from "../core/ready.js";
-import { loadSites, windowMetrics, dailySun, SEALS } from "../core/data.js";
+import { loadSites, windowMetrics, apiWindowMetrics, dailySun, SEALS } from "../core/data.js";
 import { createLayerCard, barEl, sealEl } from "../core/layers.js";
 import { register, t, fmtNum, apply } from "../core/i18n.js";
 import { getState, hrefTo, TASKS } from "../core/state.js";
@@ -150,7 +150,7 @@ try {
   const st = getState();
   site = doc.sites.find(s => s.id === st.site) || doc.sites[0];
   hours = st.hours || 336;
-  m = (await windowMetrics(doc as never, site as never, st.start, hours)) as unknown as Metrics;
+  m = (await apiWindowMetrics(doc as never, site as never, st.start, hours)) as unknown as Metrics;
 } catch (e) { failure = String((e as Error)?.message || e); }
 
 function CoreTiles() {

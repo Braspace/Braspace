@@ -2,7 +2,7 @@
 import { h, Fragment, render as mount } from "../../vendor/preact/preact.module.js";
 import { mountTerrain } from "../core/terrain.js";
 import { holdReady, markReady } from "../core/ready.js";
-import { loadSites, windowMetrics, sealFor } from "../core/data.js";
+import { loadSites, windowMetrics, apiWindowMetrics, sealFor } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
 import { register, t, fmtNum, pickLang, setLang } from "../core/i18n.js";
 import { getState, hrefTo, DEFAULT_RULES } from "../core/state.js";
@@ -64,7 +64,7 @@ await mountTerrain(document.getElementById("terrain")!, {
   selected: st.site || scenarios[0]?.id
 });
 
-const metrics = await Promise.all(scenarios.map((s) => windowMetrics(doc, s, st.start, st.hours || 336)));
+const metrics = await Promise.all(scenarios.map((s) => apiWindowMetrics(doc, s, st.start, st.hours || 336)));
 type Metrics = (typeof metrics)[number];
 
 let qIndex = 1;

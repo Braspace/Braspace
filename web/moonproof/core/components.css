@@ -159,3 +159,31 @@ button,input,select,textarea{font:inherit;color:inherit}
    if a script fails. The reduced-motion rule above zeroes duration, not delay. */
 html:not(.mp-ready) body{visibility:hidden;animation:mp-reveal 0s 2s forwards}
 @keyframes mp-reveal{to{visibility:visible}}
+/* Top bar fits at 1280–1500 px: the 6–9 nav pills + Aula/Planejar/?/EN used to push the language pill past the right edge
+   (mission at 1440: 16 px clipped). Right group never shrinks; the centre nav compacts first and, as a last resort, scrolls. */
+.mp-nav-right{flex:none}
+.mp-nav{min-width:0;overflow-x:auto;scrollbar-width:none}
+.mp-nav::-webkit-scrollbar{display:none}
+@media (max-width:1500px) and (min-width:701px){
+  .mp-brand{width:auto;margin-right:6px}
+  .mp-top{gap:8px}.mp-nav,.mp-nav-right{gap:6px}
+  .mp-top .mp-pill{padding:0 12px;font-size:13.5px}
+  .mp-top .mp-pill.is-round{padding:0}
+}
+
+/* Fold buttons (core/collapse.ts): small glass pills on the panel edge; panels slide to their own side.
+   `translate` (not `transform`) composes with each screen's own centring transforms, e.g. .mp-scn-dock. */
+.mp-fold { position: fixed; z-index: 45; width: 28px; height: 44px; padding: 0; border-radius: 13px; border: 1px solid var(--line-2);
+  background: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); color: var(--text);
+  font: 700 17px/1 var(--font, system-ui); display: grid; place-items: center; cursor: pointer; }
+.mp-fold[data-side="bottom"] { width: 44px; height: 28px; }
+.mp-fold:hover { border-color: var(--jade); }
+.mp-fold:focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
+@media (min-width: 901px) {
+  [data-fold] { transition: translate .22s ease, opacity .22s ease; }
+  [data-fold="left"][data-folded="true"] { translate: calc(-100% - 48px) 0; opacity: 0; pointer-events: none; }
+  [data-fold="right"][data-folded="true"] { translate: calc(100% + 48px) 0; opacity: 0; pointer-events: none; }
+  [data-fold="bottom"][data-folded="true"] { translate: 0 calc(100% + 48px); opacity: 0; pointer-events: none; }
+}
+@media (max-width: 900px) { .mp-fold { display: none; } }
+@media (prefers-reduced-motion: reduce) { [data-fold] { transition: none; } }

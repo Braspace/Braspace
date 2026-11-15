@@ -134,7 +134,7 @@ async function draw() {
     const apiList = apiSites.ok ? (apiSites.data as { sites?: unknown }).sites : undefined;
     const n = Array.isArray(apiList) ? apiList.length : null, hl = (health.ok ? health.data : {}) as { series_science_statuses?: Record<string, number>; sites_with_series?: number };
     const stt = hl.series_science_statuses ? Object.entries(hl.series_science_statuses).map(([k, v]) => `${v} ${k}`).join(" · ") : t("nd");
-    const vd = (vector.ok ? vector.data : null) as { enabled?: boolean; available?: boolean; model_id?: string } | null;
+    const vd = (vector.ok ? vector.data : null) as { enabled?: boolean; available?: boolean; model_id?: string; purpose?: string } | null;
     const vec = vector.ok ? (vd?.enabled && vd?.available ? t("evidence.sync.vecOn") : t("evidence.sync.vecOff")) : t("evidence.sync.vecNa");
     const slot: { out?: HTMLElement } = {};
     const onSubmit = async (ev: Event) => {
@@ -162,8 +162,9 @@ async function draw() {
         {vector.ok && vd?.enabled && vd?.available && <>
           <form class="mp-vec-form" onSubmit={onSubmit}>
             <input class="mp-vec-input" type="search" placeholder="LOLA DEM, SPICE, Malapert..." aria-label={t("evidence.sync.vector")} ref={(e: HTMLInputElement | null) => { inp.current = e; }} />
-            <button class="mp-pill" type="submit">Buscar</button>
+            <button class="mp-pill" type="submit">{t("evidence.sync.search")}</button>
           </form>
+          <p class="mp-label">{t("evidence.sync.purpose", { p: vd?.purpose ?? t("nd") })}</p>
           <div class="mp-vec-results" ref={(e: HTMLElement | null) => { if (e) slot.out = e; }} />
         </>}
       </div>

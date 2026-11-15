@@ -1,3 +1,4 @@
+@import url("density.css");
 /* MoonProof design tokens — single source of base style (design: @lisanogueira, S-design-system). */
 /* Fonts: OFL-1.1, served from web/moonproof/fonts/ (CSP font-src 'self'); see docs/ASSET_LICENSE_MATRIX.md. */
 @font-face{font-family:"Manrope";font-style:normal;font-weight:400;font-display:swap;src:url("../fonts/manrope-latin-400-normal.woff2") format("woff2")}
