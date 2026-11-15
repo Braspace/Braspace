@@ -1,0 +1,18 @@
+/* Artemis lander view (core/artemis-view.tsx) and its open/close pill. Tokens only (core/tokens.css). */
+.mp-artemis-host{position:fixed;left:0;top:0;z-index:4;pointer-events:none}
+.mp-artemis-host[hidden]{display:none}
+.mp-artemis{position:relative;margin:0;width:clamp(89px,9vw,144px);aspect-ratio:4/5;pointer-events:none;
+  transition:transform var(--t) var(--ease),opacity var(--t) var(--ease);will-change:transform}
+.mp-artemis-canvas{position:absolute;inset:0}
+/* Toggle: a round "3D" control inside the Cockpit player bar, same size as restart/play. */
+.mp-player .mp-artemis-toggle{width:var(--touch);height:var(--touch);min-height:var(--touch);padding:0;border-radius:50%;border:1px solid var(--line-2);
+  background:rgba(12,15,18,.55);color:var(--text-2);font-family:var(--mono);font-size:var(--fs-label);font-weight:600;cursor:pointer;flex:none;
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);transition:color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease)}
+.mp-player .mp-artemis-toggle[aria-pressed="true"]{color:var(--jade);border-color:var(--jade)}
+.mp-player .mp-artemis-toggle:hover{border-color:var(--jade)}
+.mp-player .mp-artemis-toggle[data-status="unsupported"],.mp-player .mp-artemis-toggle[data-status="error"]{border-style:dashed;color:var(--unknown)}
+/* Phones: the sheet owns the bottom; keep the pill above it and in the thumb zone. */
+@media (max-width:700px){
+  .mp-artemis{width:clamp(110px,34vw,144px)}
+  }
+@media (prefers-reduced-motion:reduce){.mp-artemis{transition:none}}

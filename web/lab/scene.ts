@@ -10,6 +10,7 @@
 
 // @ts-ignore TS2307: remote ES module (CDN), no local types
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.181.0/build/three.module.js";
+import { buildArtemisLander, plumeFor, type ArtemisLander } from "../moonproof/core/artemis.js";
 import type { Three } from "../api-types.js";
 import type { TerrainGrid } from "./terrain.js";
 import { latLonToBodyFixed, southStereoInverse, enuToBody, R_REF } from "./coords.js";
@@ -137,6 +138,7 @@ export class Viewer {
   declare renderer: Three; declare camera: Three; declare orbit: Orbit; declare labelLayer: HTMLElement; declare labels: Label[];
   declare scene: Three; declare mode: string | null; declare followLander: ((dt: number) => void) | null; declare clock: Three; declare texLoader: Three;
   declare selectedSite: string | undefined; declare onTextureError: (() => void) | undefined;
+  declare lander: ArtemisLander | null;
   declare region: Three; declare site: Three; declare landerGroup: Three; declare sunLight: Three; declare sunDirSite: Three;
   declare ambient: Three; declare sunDisc: Three; declare earthDisc: Three; declare sunLabel: Label; declare earthLabel: Label; declare target: Three;
   declare flame: Three; declare camMode: string;
@@ -175,7 +177,7 @@ export class Viewer {
   clear() {
     if (this.scene) disposeTree(this.scene);
     this.scene = null; this.labels.forEach((l: Label) => l.el.remove()); this.labels = []; this.followLander = null;
-    this.region = null; this.site = null; this.landerGroup = null; this.sunLight = null; this.sunDirSite = null;
+    this.lander?.dispose(); this.lander = null; this.region = null; this.site = null; this.landerGroup = null; this.sunLight = null; this.sunDirSite = null;
     this.orbit.enabled = true; this.orbit.anim = null; // a fly-to from another scale must not leak into this scene
   }
 
@@ -458,26 +460,13 @@ export class Viewer {
     }
   }
 
-  // Hypothetical lander built from primitives (original design, no mission insignia).
+  // The product's single lander model (moonproof/core/artemis.ts): same envelope as before
+  // (pads at y = -1.6, engine exit at y = -1.15), so physics, touchdown and cameras are unchanged.
   addLander() {
-    const g = new THREE.Group();
-    const gold = new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: 0.45, metalness: 0.6 });
-    const grey = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, roughness: 0.6, metalness: 0.4 });
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.25, 1.5, 8), gold); body.position.y = 0.15; g.add(body);
-    const deck = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.35, 1.6), grey); deck.position.y = 1.08; g.add(deck);
-    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.9), grey); ant.position.set(0.5, 1.65, 0.4); g.add(ant);
-    const dish = new THREE.Mesh(new THREE.CircleGeometry(0.32, 20), grey); dish.position.set(0.5, 2.1, 0.4); dish.rotation.x = -1.1; g.add(dish);
-    for (const [x, z] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) {
-      const top = new THREE.Vector3(x * 0.5, -0.35, z * 0.5), foot = new THREE.Vector3(x, -1.6, z);
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, top.distanceTo(foot)), grey);
-      leg.position.copy(top.clone().add(foot).multiplyScalar(0.5));
-      leg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), foot.clone().sub(top).normalize()); g.add(leg);
-      const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.06, 16), grey); pad.position.copy(foot); g.add(pad);
-    }
-    const bell = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.6, 20, 1, true), grey); bell.position.y = -0.85; g.add(bell);
-    this.flame = new THREE.Mesh(new THREE.ConeGeometry(0.34, 1, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }));
-    this.flame.rotation.x = Math.PI; g.add(this.flame);
-    g.traverse((o: Three) => { if (o.isMesh && o !== this.flame) o.castShadow = true; });
+    this.lander?.dispose();
+    this.lander = buildArtemisLander(THREE);
+    const g = this.lander.group;
+    this.flame = this.lander.flame;
     this.landerGroup = g; this.scene.add(g);
     this.camMode = "chase";
     return g;
@@ -488,9 +477,9 @@ export class Viewer {
     const [x, y, z] = sim.s;
     g.position.set(x, z, -y);
     g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), enuToSite(tiltDir).normalize());
-    const th = sim.outcome ? 0 : sim.throttle;
-    this.flame.visible = th > 0.01;
-    this.flame.scale.set(1, 0.6 + 5 * th, 1); this.flame.position.y = -1.15 - (0.6 + 5 * th) / 2;
+    const plume = plumeFor(sim.outcome ? 0 : sim.throttle);
+    this.flame.visible = plume.visible;
+    this.flame.scale.set(1, plume.scaleY, 1); this.flame.position.y = plume.y;
   }
 
   startFollow() {

@@ -328,3 +328,34 @@ function crewCard() {
   };
   return c;
 }
+
+// Artemis-class lander (core/artemis.ts, same model as the Landing Lab) hovering over the selected
+// site of the south pole relief. Open/close button; the choice is remembered per viewer. three.js
+// loads only when it is open; closing frees the GPU. Illustrative (SIM), carries no physics.
+{
+  const KEY = "moonproof:artemis";
+  const { LANDER_LABEL } = await import("../core/artemis.js");
+  const css = document.createElement("link"); css.rel = "stylesheet"; css.href = new URL("../core/artemis.css", import.meta.url).href; document.head.append(css);
+  const host = document.createElement("div"); host.id = "artemis-host"; host.className = "mp-artemis-host"; document.body.append(host);
+  const btn = document.createElement("button"); btn.type = "button"; btn.className = "mp-pill mp-round mp-artemis-toggle"; btn.setAttribute("aria-controls", "artemis-host");
+  // Lives in the player bar with the other scene controls: no extra floating control over the panels.
+  (document.getElementById("player") || document.body).append(btn);
+  const onStatus = (s: string) => { btn.dataset.status = s; const pt = lang() !== "en";
+    btn.title = s === "ready" || s === "loading" ? LANDER_LABEL[pt ? "pt-BR" : "en"] : s === "unsupported" ? (pt ? "3D indisponível neste aparelho (sem WebGL 2)" : "3D unavailable on this device (no WebGL 2)") : s === "error" ? (pt ? "A nave 3D não carregou" : "The 3D lander did not load") : ""; };
+  let stop: (() => void) | null = null;
+  const remembered = (() => { try { return localStorage.getItem(KEY); } catch { return null; } })();
+  let open = remembered !== "off";
+  // Compact round control (like restart/play): "3D" on the button, full name for screen readers and tooltip.
+  const label = () => { const pt = lang() !== "en"; btn.textContent = "3D";
+    btn.setAttribute("aria-label", open ? (pt ? "Ocultar nave 3D" : "Hide 3D lander") : (pt ? "Mostrar nave 3D" : "Show 3D lander"));
+    if (!btn.dataset.status || btn.dataset.status === "ready" || btn.dataset.status === "loading") btn.title = LANDER_LABEL[pt ? "pt-BR" : "en"]; };
+  const apply = async () => {
+    btn.setAttribute("aria-pressed", String(open)); label(); host.hidden = !open;
+    try { localStorage.setItem(KEY, open ? "on" : "off"); } catch { /* per-viewer convenience only */ }
+    if (open && !stop) { const { mountArtemis } = await import("../core/artemis-view.js"); if (open && !stop) stop = mountArtemis(host, { anchor: markerCentre, lang: lang() === "en" ? "en" : "pt-BR", onStatus }); }
+    else if (!open && stop) { stop(); stop = null; }
+  };
+  btn.addEventListener("click", () => { open = !open; void apply(); });
+  addEventListener("pagehide", () => { stop?.(); stop = null; });
+  void apply();
+}
