@@ -1,4 +1,6 @@
 export function evaluateQuestion(question, metrics, limits) {
+    if (!metrics.length)
+        return { verdicts: [], correctIds: [], status: "unknown" };
     const needsNight = question !== 3;
     const needsEarth = question !== 2;
     const verdicts = metrics.map(m => {
@@ -27,5 +29,8 @@ export function gradeChoice(choice, result) {
         return "unknown";
     if (!choice)
         return "unanswered";
+    const index = choice.charCodeAt(0) - 65;
+    if (choice.length === 1 && index >= 0 && index < result.verdicts.length && result.verdicts[index] === null)
+        return "unknown";
     return result.correctIds.includes(choice) ? "correct" : "incorrect";
 }
