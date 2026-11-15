@@ -70,3 +70,9 @@ test("projector isolates failed API/series requests by scenario, not whole page"
    assert.ok(src.includes("markReady();"));
  }
 });
+
+test("projector answer buttons keep accessible 44px targets at every viewport",()=>{
+ const css=readFileSync(new URL("../screens/present.css",import.meta.url),"utf8");
+ assert.match(css,/\.mp-quiz-pick\{[^}]*min-height:44px/);
+ assert.doesNotMatch(css,/\.mp-quiz-pick\{min-height:(?!44px)\d+px/);
+});
