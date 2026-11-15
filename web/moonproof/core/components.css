@@ -177,6 +177,9 @@ html:not(.mp-ready) body{visibility:hidden;animation:mp-reveal 0s 2s forwards}
   background: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); color: var(--text);
   font: 700 17px/1 var(--font, system-ui); display: grid; place-items: center; cursor: pointer; }
 .mp-fold[data-side="bottom"] { width: 44px; height: 28px; }
+/* `display: grid` above beats the UA `[hidden] { display: none }` (class > attribute), so a fold the
+   controller marks hidden stayed visible and clickable, covering other controls (seen on the cockpit). */
+.mp-fold[hidden] { display: none; }
 .mp-fold:hover { border-color: var(--jade); }
 .mp-fold:focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
 @media (min-width: 901px) {

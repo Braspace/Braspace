@@ -893,16 +893,44 @@
             }
           },
           "400": {
-            "description": "Invalid JSON"
+            "description": "Malformed JSON, duplicate or unknown key, trailing data (INVALID_JSON)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "413": {
-            "description": "Too large"
+            "description": "Body above the navigation request limit (REQUEST_TOO_LARGE)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "415": {
-            "description": "Content-Type"
+            "description": "Content-Type is not application/json (UNSUPPORTED_MEDIA_TYPE)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "422": {
-            "description": "Invalid request"
+            "description": "Well-formed JSON with an invalid value, e.g. missing start_utc or unknown site (INVALID_INPUT)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -1605,7 +1633,8 @@
               "MODEL_MISMATCH",
               "INVALID_LIMIT",
               "INVALID_VECTOR",
-              "INVALID_VISIBILITY_INPUT"
+              "INVALID_VISIBILITY_INPUT",
+            "INVALID_INPUT"
             ]
           },
           "state": {
