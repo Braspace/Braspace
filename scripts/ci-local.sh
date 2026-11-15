@@ -62,8 +62,8 @@ endpoints() {
   # CORS contract (was compose-cors.yml): exact origin allowed (204), others refused (403, no ACAO header)
   code=$(curl -s -o /dev/null -w "%{http_code}" -X OPTIONS "$BASE/api/sites" -H "Origin: https://braspace.github.io" -H "Access-Control-Request-Method: GET")
   echo "CORS allowed origin -> $code"; [ "$code" = 204 ] || rc=1
-  code=$(curl -s -D /tmp/cors-deny.$$ -o /dev/null -w "%{http_code}" -X OPTIONS "$BASE/api/sites" -H "Origin: https://evil.example" -H "Access-Control-Request-Method: GET")
-  echo "CORS other origin -> $code"; [ "$code" = 403 ] && ! grep -qi "^access-control-allow-origin:" /tmp/cors-deny.$$ || rc=1; rm -f /tmp/cors-deny.$$
+  code=$(curl -s -D ${TMPDIR:-/tmp}/cors-deny.$$ -o /dev/null -w "%{http_code}" -X OPTIONS "$BASE/api/sites" -H "Origin: https://evil.example" -H "Access-Control-Request-Method: GET")
+  echo "CORS other origin -> $code"; [ "$code" = 403 ] && ! grep -qi "^access-control-allow-origin:" ${TMPDIR:-/tmp}/cors-deny.$$ || rc=1; rm -f ${TMPDIR:-/tmp}/cors-deny.$$
   curl -fsS "$BASE/api/health" | python3 -c "import json,sys; assert json.load(sys.stdin)[\"data_source\"]==\"postgres\"" || rc=1
   ./examples/mission/replay.sh "$BASE" || rc=1
   return $rc
@@ -78,6 +78,14 @@ postgres_tests() {
     -e "TEST_DATABASE_URL=postgres://braspace:${POSTGRES_PASSWORD}@db:5432/braspace_test?sslmode=disable" \
     "$PROJECT-go" go test -count=1 -v -run "TestDB" ./ 2>&1); echo "$out" | grep -E "^(--- |ok|FAIL)" 
   ! echo "$out" | grep -q -- "--- SKIP" && echo "$out" | grep -q -- "--- PASS: TestDB"
+}
+freeport() { python3 -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1]);s.close()'; }
+smoke_publico() { # front via dev-server (proxies /api, /healthz, /v1) + Compose API, as main-smoke did
+  local wport; wport=$(freeport)
+  BRASPACE_API_PORT=$PORT BRASPACE_WEB_PORT=$wport node web/dev-server.mjs >${TMPDIR:-/tmp}/smoke-web.$$ 2>&1 & local wp=$!
+  for i in $(seq 1 30); do curl -fsS "http://127.0.0.1:$wport/" >/dev/null 2>&1 && break; sleep 1; done
+  ./scripts/smoke-publico.sh "http://127.0.0.1:$wport" "$BASE"; local rc=$?
+  kill $wp 2>/dev/null; [ $rc = 0 ] || tail -20 ${TMPDIR:-/tmp}/smoke-web.$$; rm -f ${TMPDIR:-/tmp}/smoke-web.$$; return $rc
 }
 browser_qa() {
   command -v node >/dev/null && command -v google-chrome >/dev/null || { echo "need node + host Chrome"; return 1; }
@@ -101,6 +109,7 @@ step "build release image (needs test)" build_rel || finish
 step "build go test image" build_go_img || finish
 if step "compose up (api + postgres + ingest)" compose_up; then
   step "endpoints /healthz /readyz /api/sites /v1/capabilities + replay" endpoints
+  step "public smoke (scripts/smoke-publico.sh: dev-server front + compose API)" smoke_publico
   step "go tests against compose Postgres" postgres_tests
 else
   "${DC[@]}" logs 2>&1 | tail -30
