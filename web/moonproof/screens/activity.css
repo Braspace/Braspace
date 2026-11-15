@@ -7,7 +7,7 @@
   display: grid;
   grid-template-columns: 320px minmax(0, 552fr) minmax(300px, 510fr);
   grid-template-rows: 1fr auto;
-  gap: 14px 0;
+  gap: 13px 0;
   pointer-events: none;
   z-index: 15;
 }
@@ -16,7 +16,7 @@
   max-height: 100%;
   grid-column: 1;
   grid-row: 1 / span 2;
-  padding: 20px;
+  padding: 21px;
   pointer-events: auto;
   display: flex;
   flex-direction: column;
@@ -28,11 +28,11 @@
   max-height: 100%;
   grid-column: 2;
   grid-row: 1;
-  padding: 20px;
+  padding: 21px;
   pointer-events: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 13px;
   min-width: 0;
 }
 .mp-act-controls {
@@ -40,7 +40,7 @@
   max-height: 100%;
   grid-column: 3;
   grid-row: 1;
-  padding: 20px;
+  padding: 21px;
   pointer-events: auto;
   display: flex;
   flex-direction: column;
@@ -50,14 +50,14 @@
 .mp-act-share {
   grid-column: 2 / span 2;
   grid-row: 2;
-  padding: 16px 20px 15px;
+  padding: 13px 21px 13px;
   pointer-events: auto;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 21px;
   flex-wrap: wrap;
 }
-.mp-act-share .mp-share-btns { margin-left: auto; gap: 18px; flex-wrap: nowrap; }
+.mp-act-share .mp-share-btns { margin-left: auto; gap: 21px; flex-wrap: nowrap; }
 .mp-act-head {
   display: flex;
   justify-content: space-between;
@@ -72,9 +72,9 @@
 /* Steps */
 .mp-step-item {
   display: flex;
-  gap: 12px;
+  gap: 13px;
   align-items: flex-start;
-  padding: 9px 0;
+  padding: 8px 0;
   min-height: 57px;
   border: 0;
   border-radius: 12px;
@@ -102,8 +102,8 @@
 .mp-step-item.is-done .mp-step-num { background: var(--jade); color: var(--jade-text); }
 .mp-step-item.is-active .mp-step-num { background: var(--pill); color: var(--pill-text); }
 .mp-act-tip {
-  margin: 10px 0 0;
-  padding: 12px;
+  margin: 8px 0 0;
+  padding: 13px;
   border-radius: var(--r-inner);
   background: rgba(255,255,255,.07);
   font-size: 12.5px;
@@ -147,7 +147,7 @@
   display: inline-flex;
   align-items: center;
   height: 28px;
-  padding: 0 14px;
+  padding: 0 13px;
   border-radius: var(--r-pill);
   background: var(--pill);
   color: var(--pill-text);
@@ -161,7 +161,7 @@
   left: 12px;
   right: 12px;
   bottom: 12px;
-  padding: 12px 14px;
+  padding: 13px 13px;
   border-radius: var(--r-inner);
   display: flex;
   flex-direction: column;
@@ -177,9 +177,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 13px;
   min-height: 44px;
-  padding: 7px 0;
+  padding: 8px 0;
   cursor: pointer;
 }
 .mp-toggle-txt { display: flex; flex-direction: column; line-height: 18px; }
@@ -212,14 +212,14 @@
 .mp-switch[aria-checked="true"]::after { transform: translateX(18px); background: var(--jade-text); }
 .mp-teacher-notes {
   border-top: 1px solid var(--line);
-  margin-top: 14px;
-  padding-top: 14px;
+  margin-top: 13px;
+  padding-top: 13px;
   font-size: 13px;
   line-height: 19px;
   color: var(--text-2);
 }
 .mp-teacher-notes strong { display: block; font-size: 14px; font-weight: 700; color: var(--text); }
-.mp-teacher-notes p { margin: 7px 0 0; }
+.mp-teacher-notes p { margin: 8px 0 0; }
 
 /* Share bar */
 .mp-qr {
@@ -227,7 +227,7 @@
   width: 84px;
   height: 84px;
   box-sizing: content-box;
-  padding: 6px;
+  padding: 5px;
   border-radius: 10px;
   background: var(--pill);
 }
@@ -235,7 +235,7 @@
 .mp-share-main { flex: 1; min-width: 220px; }
 .mp-share-main strong { font-size: 16px; font-weight: 800; }
 .mp-share-url {
-  margin-top: 4px;
+  margin-top: 5px;
   font-family: var(--mono);
   font-size: 12px;
   line-height: 17px;
@@ -248,7 +248,7 @@
   color: var(--jade-text);
   border: none;
   border-radius: var(--r-pill);
-  padding: 0 22px;
+  padding: 0 21px;
   font: 700 15px var(--font);
   text-decoration: none;
   display: inline-flex;
@@ -264,18 +264,18 @@
   color: var(--pill);
   border: 1px solid rgba(255,255,255,.14);
   border-radius: var(--r-pill);
-  padding: 0 20px;
+  padding: 0 21px;
   font: 600 15px var(--font);
   height: 47px;
   cursor: pointer;
 }
-.mp-chip-row { display: flex; gap: 4px; flex-wrap: wrap; }
+.mp-chip-row { display: flex; gap: 5px; flex-wrap: wrap; }
 
 /* Chips: 28 px; layer tabs show the layers already passed through in jade tint */
 .mp-chip, .mp-layer-tab {
   min-height: 28px;
   height: 28px;
-  padding: 0 12px;
+  padding: 0 13px;
   border: 0;
   border-radius: var(--r-pill);
   background: rgba(255,255,255,.08);
@@ -289,7 +289,7 @@
 @media (max-width: 900px) {
   .mp-act-layout {
     position: static;
-    margin: 76px 12px 84px 12px;
+    margin: 76px 13px 84px 13px;
     grid-template-columns: 1fr;
     grid-template-rows: auto;
   }

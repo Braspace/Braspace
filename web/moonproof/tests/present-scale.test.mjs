@@ -46,7 +46,7 @@ test("scenario cards: A/B/C circle 52px, rows with 30px icon, label 20/600, valu
   has(".mp-sc-label", /font-weight:\s*600/);
   has(".mp-sc-val", /font-size:\s*40px/);
   has(".mp-sc-val", /font-weight:\s*800/);
-  has(".mp-sc-card", /padding:\s*22px 24px/);
+  has(".mp-sc-card", /padding:\s*21px 21px/);
   assert.equal((js.match(/<svg width="30" height="30"/g) || []).length, 2, "night and Earth icons are 30px");
   assert.match(js, /mp-sc-row">\$\{ICON_NIGHT\}/);
   assert.match(js, /mp-sc-row">\$\{ICON_EARTH\}/);

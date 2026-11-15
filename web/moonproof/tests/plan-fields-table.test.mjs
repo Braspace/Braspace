@@ -17,7 +17,7 @@ test("rule fields are 70x40 pills (design box, 52 px pitch) with the design bord
   assert.match(r, /border-radius: 999px/); assert.match(r, /border: 1px solid #5E6C7D/); assert.match(r, /background: rgba\(255,255,255,\.06\)/);
   assert.match(rule(".mp-rule-row"), /grid-template-columns: 1fr 70px 22px/);
   assert.match(rule(".mp-rule-row"), /min-height: 48px/); // 48 + 4 px column gap = the board's 52 px pitch
-  assert.match(rule(".mp-plan-rules"), /gap: 4px/);
+  assert.match(rule(".mp-plan-rules"), /gap: 5px/);
   assert.doesNotMatch(css, /width: 64px|height: 36px|grid-template-columns: 1fr 64px/);
 });
 
@@ -31,9 +31,9 @@ test("the two choices are plain text + chevron (no pill box), still >= 24 px tal
 test("desktop geometry: rules card 382 wide from y=150, export card 368x260, table anchored bottom 415 min", () => {
   const l = rule(".mp-plan-layout");
   assert.match(l, /inset: 150px 28px 28px 28px/); assert.match(l, /grid-template-columns: 382px 1fr 368px/); assert.match(l, /grid-template-rows: 260px 1fr/);
-  assert.match(rule(".mp-plan-rules"), /padding: 20px/);
+  assert.match(rule(".mp-plan-rules"), /padding: 21px/);
   assert.match(css, /@media \(min-height: 900px\) and \(min-width: 901px\) \{\s*\.mp-plan-table \{ min-height: 415px; \}/);
-  assert.match(css, /\n\.mp-plan-table \{[^}]*padding: 8px 8px 4px/);
+  assert.match(css, /\n\.mp-plan-table \{[^}]*padding: 8px 8px 5px/);
   assert.match(rule(".mp-btn-jade"), /height: 48px/);
   assert.match(js, /class="mp-plan-head"><h2>\$\{t\("plan\.exportTitle"\)\}<\/h2><p class="mp-note mp-version"/); // version sits in the head so the card stays 260 tall
 });
