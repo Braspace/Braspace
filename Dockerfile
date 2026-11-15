@@ -29,6 +29,7 @@ WORKDIR /src
 COPY api/ ./api/
 COPY data/ ./data/
 COPY examples/ ./examples/
+COPY compose.yaml ./compose.yaml
 COPY --from=rustbuilder /build/engine/target/release/braspace-lunar-engine /src/engine/target/debug/braspace-lunar-engine
 WORKDIR /src/api
 ENV RUST_ENGINE_BIN=/src/engine/target/debug/braspace-lunar-engine
@@ -78,7 +79,6 @@ COPY data/ ./data/
 COPY web/ ./web/
 COPY api/db/ ./api/db/
 COPY compose.yaml ./
-COPY api/middleware.go ./api/middleware.go
 # science/tests/test_terrain_backgrounds.py checks the products against this matrix.
 COPY docs/ASSET_LICENSE_MATRIX.md ./docs/ASSET_LICENSE_MATRIX.md
 RUN python3 -m compileall -q scripts tests science \
