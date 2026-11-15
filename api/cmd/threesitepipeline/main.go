@@ -23,6 +23,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -264,7 +265,7 @@ func pipeline(stdout io.Writer, img, label, kdir, outDir, startUTC string, hours
 	}
 	summarySites := []any{}
 	summary := pyfmt.Obj{
-		{K: "generated_utc", V: time.Now().UTC().Format("2006-01-02T15:04:05Z")},
+		{K: "generated_utc", V: generatedUTC(os.Getenv, time.Now)},
 		{K: "window", V: pyfmt.Obj{{K: "start_utc", V: start.Format("2006-01-02T15:04:05Z")}, {K: "hours", V: hours}, {K: "step_minutes", V: step}}},
 		{K: "science_status", V: "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED"},
 		{K: "sites", V: nil},
@@ -364,4 +365,20 @@ func contains(l []string, s string) bool {
 		}
 	}
 	return false
+}
+
+// generatedUTC stamps summary.json. SOURCE_DATE_EPOCH (reproducible-builds.org)
+// pins it, so regenerating with the same inputs gives the same bytes (#157);
+// without it the stamp is the wall clock, as before. A malformed value is an
+// error the operator must see, so it panics instead of silently using now.
+func generatedUTC(getenv func(string) string, now func() time.Time) string {
+	t := now()
+	if v := strings.TrimSpace(getenv("SOURCE_DATE_EPOCH")); v != "" {
+		sec, err := strconv.ParseInt(v, 10, 64)
+		if err != nil || sec < 0 {
+			panic(fmt.Sprintf("SOURCE_DATE_EPOCH=%q is not a non-negative integer of seconds", v))
+		}
+		t = time.Unix(sec, 0)
+	}
+	return t.UTC().Format("2006-01-02T15:04:05Z")
 }
