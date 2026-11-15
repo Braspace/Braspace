@@ -112,12 +112,19 @@ worker_contract() {
   if command -v node >/dev/null 2>&1; then node --test deploy/cloudflare/*.test.mjs
   else docker run --rm --security-opt label=disable -v "$PWD:/src:ro" -w /src node:22.23.5-alpine sh -c 'node --test deploy/cloudflare/*.test.mjs'; fi
 }
+cockpit_contract() {
+  # The MoonProof cockpit's own request builders/readers (web/moonproof/screens/cockpit-*.js) against the compose
+  # Go + Rust + Postgres stack: every site, fallback route, determinism, energy/crew/report, negatives, vector status.
+  if command -v node >/dev/null 2>&1; then BRASPACE_COCKPIT_API="$BASE" node scripts/cockpit-backend-contract.mjs
+  else docker run --rm --network host --security-opt label=disable -e BRASPACE_COCKPIT_API="$BASE" -v "$PWD:/src:ro" -w /src node:22.23.5-alpine node scripts/cockpit-backend-contract.mjs; fi
+}
 step "cloudflare worker same-origin API proxy contract (node --test)" worker_contract || finish
 step "docker build --target test (go vet+race, rust, web, science)" build_tests || finish
 step "build release image (needs test)" build_rel || finish
 step "build go test image" build_go_img || finish
 if step "compose up (api + postgres + ingest)" compose_up; then
   step "endpoints /healthz /readyz /api/sites /v1/capabilities + replay" endpoints
+  step "cockpit ↔ Go/Rust/Postgres contract (scripts/cockpit-backend-contract.mjs)" cockpit_contract
   step "public smoke (scripts/smoke-publico.sh: dev-server front + compose API)" smoke_publico
   step "go tests against compose Postgres" postgres_tests
 else
