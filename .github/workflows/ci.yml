@@ -29,7 +29,9 @@ jobs:
       # Layer cache for every Dockerfile stage (Go/Rust/Node/Python builds and tests).
       - uses: actions/cache@v4
         with:
-          path: /tmp/.buildx-cache
+          # runner.temp is on disk on the self-hosted exo-x1 runner (its /tmp is a RAM tmpfs shared with other builds);
+          # it is cleaned per job and restored by actions/cache, the same as on hosted runners.
+          path: ${{ runner.temp }}/.buildx-cache
           key: buildx-${{ runner.os }}-${{ github.sha }}
           restore-keys: buildx-${{ runner.os }}-
       - uses: actions/setup-node@v4
@@ -37,7 +39,7 @@ jobs:
           node-version: "22"
       - name: Run scripts/ci-local.sh (all tests, Compose + Postgres, endpoints, Chromium)
         env:
-          BRASPACE_CI_CACHE: /tmp/.buildx-cache
+          BRASPACE_CI_CACHE: ${{ runner.temp }}/.buildx-cache
         run: bash scripts/ci-local.sh --browser
 
   release:
