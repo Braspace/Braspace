@@ -19,7 +19,8 @@ Verified in production on **2026-11-15** (frontend `9dab20c`, Worker `ec490d15`;
   - API reference [`docs/API.md`](docs/API.md), 22 operations, generated from `api/openapi.json` and checked in CI;
   - cockpit ↔ backend contract [`docs/COCKPIT_BACKEND_CONTRACT.md`](docs/COCKPIT_BACKEND_CONTRACT.md), 49/49 in production;
   - deploys, backups and rollback [`docs/harness/STATUS.md`](docs/harness/STATUS.md);
-  - lane owners [`docs/harness/OWNERS.md`](docs/harness/OWNERS.md).
+  - lane owners [`docs/harness/OWNERS.md`](docs/harness/OWNERS.md);
+  - series grid rule [`docs/harness/GRID_SEMANTICS_EVIDENCE.md`](docs/harness/GRID_SEMANTICS_EVIDENCE.md): a start or duration off the hourly grid gets `GRID_NOT_ALIGNED` (compare: per site) and is never rounded. Measured in production.
 
 > **Scientific honesty:** `/readyz` reports `"science_status": "UNVERIFIED_INPUTS"` and `/v1/capabilities` reports `"scientifically_validated": false`. Series are `PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED`.
 
