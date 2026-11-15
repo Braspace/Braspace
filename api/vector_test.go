@@ -296,6 +296,18 @@ func TestVectorPostgresOptionalIntegration(t *testing.T) {
 	if !api.ready(ctx) {
 		t.Fatal("pgvector extension and schema should be ready")
 	}
+	// #331 quarantine: only rows of the model's current audited manifest are
+	// served, so the test rows below carry a recorded ingest manifest.
+	manifest := strings.Repeat("c", 64)
+	if _, err := pool.Exec(ctx, `INSERT INTO public.source_semantic_ingest_runs(manifest_sha256,source_registry_sha256,model_id,model_revision,model_license,entry_count)
+		VALUES ($1,$2,$3,'qa-revision','QA-only',4)`, manifest, strings.Repeat("d", 64), model); err != nil {
+		t.Fatal(err)
+	}
+	insertAudited := func(id, title, url, model, vec string) error {
+		_, err := pool.Exec(ctx, `INSERT INTO public.source_semantic_index(source_ref,title,source_url,sha256,model_id,embedding,ingest_manifest_sha256)
+			VALUES ($1,$2,$3,$4,$5,$6::public.vector,$7)`, id, title, url, strings.Repeat("a", 64), model, vec, manifest)
+		return err
+	}
 	var legacyModel, legacyTitle string
 	if err := pool.QueryRow(ctx, `SELECT model_id,title FROM public.source_semantic_index WHERE source_ref='qa-braspace-source-a'`).Scan(&legacyModel, &legacyTitle); err != nil || legacyModel != "qa-previous-model" || legacyTitle != "Legacy source A" {
 		t.Fatalf("legacy row lost or overwritten: %s %s %v", legacyModel, legacyTitle, err)
@@ -307,9 +319,10 @@ func TestVectorPostgresOptionalIntegration(t *testing.T) {
 		api.search(w, req)
 		return w
 	}
+	// Only another model's legacy row exists: honest 503 with state, not an empty 200 (#331).
 	w := request(vectorRequest(model, v1, 2), "application/json")
-	if w.Code != 200 || !strings.Contains(w.Body.String(), `"results":[]`) {
-		t.Fatalf("valid empty model index: HTTP %d %s", w.Code, w.Body)
+	if w.Code != 503 || !strings.Contains(w.Body.String(), `"state":"model_mismatch"`) {
+		t.Fatalf("index without rows for the model: HTTP %d %s", w.Code, w.Body)
 	}
 	for _, entry := range []struct{ id, title, vec string }{
 		{"qa-braspace-source-c", "Tie C", literal1},
@@ -317,9 +330,13 @@ func TestVectorPostgresOptionalIntegration(t *testing.T) {
 		{"qa-braspace-source-a", "Current source A", literal1},
 		{"qa-braspace-source-d", "Opposite D", literal3},
 	} {
-		if err := insert(entry.id, entry.title, "https://example.org/qa", model, entry.vec); err != nil {
+		if err := insertAudited(entry.id, entry.title, "https://example.org/qa", model, entry.vec); err != nil {
 			t.Fatal(err)
 		}
+	}
+	// A legacy (NULL manifest) row of the same model must never be served.
+	if err := insert("qa-braspace-legacy-e", "Legacy E", "https://example.org/qa", model, literal1); err != nil {
+		t.Fatal(err)
 	}
 	if err := insert("qa-braspace-source-a", "Duplicate", "https://example.org/qa", model, literal1); err == nil {
 		t.Fatal("duplicate source+model unexpectedly accepted")
@@ -370,7 +387,7 @@ func TestVectorPostgresOptionalIntegration(t *testing.T) {
 	}
 	// SQL retains basic legacy constraints; malformed HTTPS syntax and blank
 	// metadata must still be rejected before any response reaches the UI.
-	if err := insert("qa-braspace-malformed", "Malformed URL", "https://nasa.gov@evil.test", model, literal1); err != nil {
+	if err := insertAudited("qa-braspace-malformed", "Malformed URL", "https://nasa.gov@evil.test", model, literal1); err != nil {
 		t.Fatal(err)
 	}
 	w = request(vectorRequest(model, v1, 10), "application/json")
