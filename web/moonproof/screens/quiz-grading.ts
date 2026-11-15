@@ -5,10 +5,9 @@ export function evaluateQuestion(question: number, metrics: readonly QuizMetric[
   const needsNight = question !== 3;
   const needsEarth = question !== 2;
   const verdicts = metrics.map(m => {
-    const requirements: [number | null | undefined, number][] = [
-      ...(needsNight ? [[m.longestDarkH?.value, limits.night]] : []),
-      ...(needsEarth ? [[m.longestBlackoutH?.value, limits.blackout]] : [])
-    ];
+    const requirements: [number | null | undefined, number][] = [];
+    if (needsNight) requirements.push([m.longestDarkH?.value, limits.night]);
+    if (needsEarth) requirements.push([m.longestBlackoutH?.value, limits.blackout]);
     let missing = false;
     for (const [value, limit] of requirements) {
       if (value == null || !Number.isFinite(value) || !Number.isFinite(limit)) { missing = true; continue; }
