@@ -54,10 +54,10 @@ The current science effort is being developed separately in PR [#75](https://git
 ## Reproducible QA
 
 ```sh
-python3 scripts/validate_polar_source_evidence.py
-python3 -m unittest discover -s tests -p 'test_polar_source_evidence.py'
+go -C api run ./cmd/validatepolarsource
+go -C api test -count=1 ./cmd/validatepolarsource
 # Only in the original chat upload environment with access to all five files:
-python3 scripts/validate_polar_source_evidence.py --verify-uploads /path/to/original/uploads
+go -C api run ./cmd/validatepolarsource --verify-uploads /path/to/original/uploads
 ```
 
 The validator is an **offline catalog integrity gate**. It checks source/ref uniqueness, HTTPS locators, coverage exclusion for SLDEM2015, fingerprint metadata and the prohibition against treating screenshots as science ground truth. With `--verify-uploads` it additionally recomputes all five SHA-256 values, otherwise it does not pretend to have inspected image files. It does not download data, interpret DEMs, reproduce ephemerides or validate landing-site physics.

@@ -3,13 +3,13 @@ on:
   push:
     branches: [test/naif-source-artifact-integrity-20261114]
     paths:
-      - "scripts/validate_derived_series.py"
-      - "tests/test_derived_series_integrity.py"
+      - "api/cmd/validatederivedseries/**"
+      - "api/internal/pyjson/**"
       - ".github/workflows/naif-series-integrity.yml"
   pull_request:
     paths:
-      - "scripts/validate_derived_series.py"
-      - "tests/test_derived_series_integrity.py"
+      - "api/cmd/validatederivedseries/**"
+      - "api/internal/pyjson/**"
       - ".github/workflows/naif-series-integrity.yml"
       - "science/evidence/**"
       - "api/sitedata/**"
@@ -22,9 +22,10 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-go@v5
         with:
-          python-version: "3.12"
-      - run: python -m py_compile scripts/validate_derived_series.py tests/test_derived_series_integrity.py
-      - run: python3 scripts/validate_derived_series.py
-      - run: python -m unittest discover -s tests -p "test_derived_series_integrity.py" -v
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+      - run: go -C api vet ./cmd/validatederivedseries ./internal/pyjson
+      - run: go -C api run ./cmd/validatederivedseries
+      - run: go -C api test -count=1 -v ./cmd/validatederivedseries ./internal/pyjson
