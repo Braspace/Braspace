@@ -4,6 +4,7 @@
 // positioned from live layout measurements, and the crew form is built once so typed values survive redraws.
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
+import { mountCockpit3D } from "./cockpit-3d.js";
 import { loadSites, windowMetrics, api, sealFor, apiOnline } from "../core/data.js";
 import { createLayerCard, statCircle, sealEl } from "../core/layers.js";
 import { register, t, fmtNum } from "../core/i18n.js";
@@ -22,6 +23,10 @@ if (!doc.sites.some(s => s.id === getState().site))
     setState({ site: doc.sites[0].id });
 const online = await apiOnline();
 const terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id) => setState({ site: id }) });
+const sceneHost = document.createElement("div");
+sceneHost.id = "cockpit-3d";
+$("terrain").after(sceneHost);
+const scene3d = mountCockpit3D(sceneHost, { sites: doc.sites, selected: getState().site, onSelect: id => setState({ site: id }) });
 const narrow = () => matchMedia("(max-width:700px)").matches;
 const hoursOf = () => getState().hours || 14 * 24;
 const S = { t: 0, playing: false, speed: SPEEDS[1], fault: null, run: null, light: null, siteKey: "", dismissed: null, sky: null, noSiteRoute: new Set() };
@@ -29,6 +34,7 @@ const S = { t: 0, playing: false, speed: SPEEDS[1], fault: null, run: null, ligh
 function frame() {
     const site = doc.sites.find(s => s.id === getState().site);
     terrain.select(site.id);
+    scene3d.select(site.id);
     // phone framing: core/terrain.js already centres the site in the free area between the context bar and the sheet
     placeBodies();
 }

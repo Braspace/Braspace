@@ -10,6 +10,7 @@
 // @ts-ignore TS2307: remote ES module (CDN), no local types
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.181.0/build/three.module.js";
 import { latLonToBodyFixed, southStereoInverse, enuToBody, R_REF } from "./coords.js";
+import { createArtemisLander } from "../moonproof/core/artemis-lander.js";
 const KM = 1000;
 const D2R = Math.PI / 180;
 // ---------- colour maps (polynomial fits of matplotlib viridis / inferno) ----------
@@ -558,42 +559,10 @@ export class Viewer {
             this.earthLabel.position.copy(this.earthDisc.position);
         }
     }
-    // Hypothetical lander built from primitives (original design, no mission insignia).
+    // Same original illustrative Artemis-inspired geometry as the Cockpit, not NASA vehicle data.
     addLander() {
-        const g = new THREE.Group();
-        const gold = new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: 0.45, metalness: 0.6 });
-        const grey = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, roughness: 0.6, metalness: 0.4 });
-        const body = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.25, 1.5, 8), gold);
-        body.position.y = 0.15;
-        g.add(body);
-        const deck = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.35, 1.6), grey);
-        deck.position.y = 1.08;
-        g.add(deck);
-        const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.9), grey);
-        ant.position.set(0.5, 1.65, 0.4);
-        g.add(ant);
-        const dish = new THREE.Mesh(new THREE.CircleGeometry(0.32, 20), grey);
-        dish.position.set(0.5, 2.1, 0.4);
-        dish.rotation.x = -1.1;
-        g.add(dish);
-        for (const [x, z] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) {
-            const top = new THREE.Vector3(x * 0.5, -0.35, z * 0.5), foot = new THREE.Vector3(x, -1.6, z);
-            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, top.distanceTo(foot)), grey);
-            leg.position.copy(top.clone().add(foot).multiplyScalar(0.5));
-            leg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), foot.clone().sub(top).normalize());
-            g.add(leg);
-            const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.06, 16), grey);
-            pad.position.copy(foot);
-            g.add(pad);
-        }
-        const bell = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.6, 20, 1, true), grey);
-        bell.position.y = -0.85;
-        g.add(bell);
-        this.flame = new THREE.Mesh(new THREE.ConeGeometry(0.34, 1, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }));
-        this.flame.rotation.x = Math.PI;
-        g.add(this.flame);
-        g.traverse((o) => { if (o.isMesh && o !== this.flame)
-            o.castShadow = true; });
+        const { group: g, flame } = createArtemisLander(THREE);
+        this.flame = flame;
         this.landerGroup = g;
         this.scene.add(g);
         this.camMode = "chase";
