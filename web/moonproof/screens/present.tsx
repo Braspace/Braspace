@@ -17,7 +17,7 @@ register({
     "present.scenario": "Scenario {n}",
     "present.q1": "Where would you land?",
     "present.q2": "Which site stays within the darkness limit?",
-    "present.q3": "Which site keeps Earth radio contact?",
+    "present.q3": "Which site stays within the assumed maximum time without seeing Earth?",
     "present.q4": "Which scenario meets both mission rules?",
     "present.rules": "Battery limit: {night} h in darkness (assumed limit). Radio needs Earth at least every {blackout} h (assumed limit).",
     "present.timer": "Discuss in pairs",
@@ -41,7 +41,7 @@ register({
     "present.scenario": "Cenário {n}",
     "present.q1": "Onde vocês pousariam?",
     "present.q2": "Qual local fica dentro do limite de horas no escuro?",
-    "present.q3": "Qual local mantém contato de rádio com a Terra?",
+    "present.q3": "Qual local respeita o limite assumido de tempo sem ver a Terra?",
     "present.q4": "Qual cenário atende às duas regras da missão?",
     "present.rules": "A bateria aguenta {night} h no escuro (limite assumido). O rádio precisa ver a Terra pelo menos a cada {blackout} h (limite assumido).",
     "present.timer": "Discutam em dupla",
@@ -149,7 +149,7 @@ function draw() {
     return (
       <article class={"mp-glass mp-sc-card" + (chosen === String(s.n) ? " is-chosen" : "") + (revealed && pass === true ? " is-winner" : "") + (revealed && chosen === String(s.n) && pass === false ? " is-fail" : "")}>
         <button type="button" class="mp-quiz-pick" aria-pressed={chosen === String(s.n)} onClick={() => { chosen = String(s.n); draw(); }}>{t("present.pick")} {s.n}</button>
-        <div class="mp-sc-head"><span class="mp-sc-letter">{s.n}</span><span class="mp-sc-title"><span class="mp-sc-name">{t("present.scenario", { n: s.n })}</span><span class="mp-sc-site">{s.name}</span></span><span class="mp-sc-seal"><Node node={sealEl(sealFor(m.longestDarkH.value == null ? "NOT_COMPUTED" : doc.status))} /></span></div>
+        <div class="mp-sc-head"><span class="mp-sc-letter">{s.n}</span><span class="mp-sc-title"><span class="mp-sc-name">{t("present.scenario", { n: s.n })}</span><span class="mp-sc-site">{s.name}</span></span><span class="mp-sc-seal"><Node node={sealEl(sealFor(m.longestDarkH.value == null || m.longestBlackoutH.value == null ? "NOT_COMPUTED" : doc.status))} /></span></div>
         <div class="mp-sc-row"><IconNight /><span class="mp-sc-label">{t("present.night")}</span><strong class="mp-sc-val">{nVal}</strong></div>
         <div class="mp-sc-row"><IconEarth /><span class="mp-sc-label">{t("present.blackout")}</span><strong class="mp-sc-val">{bVal}</strong></div>
       </article>
