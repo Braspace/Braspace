@@ -6,7 +6,7 @@ import { loadSites, windowMetrics, apiWindowMetrics, sealFor } from "../core/dat
 import { sealEl } from "../core/layers.js";
 import { register, t, fmtNum, pickLang, setLang } from "../core/i18n.js";
 import { getState, hrefTo, DEFAULT_RULES } from "../core/state.js";
-import { evaluateQuestion, gradeChoice } from "./quiz-grading.js";
+import { evaluateQuestion, gradeChoice, unavailableQuizMetric } from "./quiz-grading.js";
 import { classroomWindows, classroomWindowLabel } from "./class-scenarios.js";
 
 register({
@@ -83,7 +83,7 @@ await mountTerrain(document.getElementById("terrain")!, {
   selected: st.site || scenarios[0]?.id
 });
 
-const metrics = await Promise.all(chosenWindows.map((w) => apiWindowMetrics(doc, w.site, w.start, w.hours || 336)));
+const metrics = await Promise.all(chosenWindows.map((w) => apiWindowMetrics(doc, w.site, w.start, w.hours || 336).catch(() => unavailableQuizMetric())));
 type Metrics = (typeof metrics)[number];
 
 let qIndex = 1;
