@@ -39,7 +39,6 @@ export function requestSharedMoon() {
     setTimeout(open, 100);
     return false;
 }
-
 export function mountCockpitPanels(host) {
     let hidden = new Set();
     let previous = new Set();
