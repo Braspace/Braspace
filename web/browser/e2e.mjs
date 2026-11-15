@@ -57,7 +57,9 @@ try{
  const onboardResponse=await desktop.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});
  assert(onboardResponse?.status()===200,"onboard cockpit HTTP");
  const tabs=desktop.locator("nav.tabs button[data-tab]");
- assert(await tabs.count()===13,"onboard cockpit missing required tabs");
+ // Exact tab set (14 since the Navigation panel, b964c27); a count alone hid that the expectation was stale.
+ const tabNames=await tabs.evaluateAll(els=>els.map(e=>e.dataset.tab));
+ assert(JSON.stringify(tabNames)===JSON.stringify(["visao","entrada","geometria","horizonte","janelas","navegacao","energia","vida","replan","visual","sens","historico","lanc","status"]),"onboard cockpit tabs differ: "+tabNames.join(","));
  await desktop.waitForFunction(()=>{
   const text=document.querySelector("#badges")?.textContent||"";
   return text.includes("UNVERIFIED_INPUTS")&&text.includes("No flight recommendation");
