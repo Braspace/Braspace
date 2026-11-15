@@ -151,7 +151,7 @@ try{
  await mobile.screenshot({path:path.join(out,"mission-studio-mobile.png"),fullPage:true});
  const studioOverflow=await mobile.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
  assert(studioOverflow.width<=studioOverflow.viewport+4,"Mission Studio mobile overflow: "+JSON.stringify(studioOverflow));
- for(const page of ["explore.html","mission.html","compare.html","recover.html","cockpit.html","evidence.html"]){
+ for(const page of ["explore.html","mission.html","compare.html","recover.html","cockpit.html","evidence.html","activity.html"]){
   const r=await mobile.goto(base+"/moonproof/"+page+"?lang=en",{waitUntil:"domcontentloaded",timeout:30000});
   assert(r?.status()===200,"v3 mobile HTTP "+page);
   await mobile.waitForTimeout(1500);
