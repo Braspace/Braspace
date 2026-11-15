@@ -94,7 +94,7 @@ export function mountCockpitPanels(host) {
                     "/",
                     PANEL_IDS.length),
                 h("div", { class: "ck-panel-options" },
-                    PANEL_IDS.map(id => h("button", { key: id, type: "button", class: "mp-pill", "aria-pressed": !hidden.has(id), onClick: () => change(id) },
+                    PANEL_IDS.map(id => h("button", { key: id, "data-panel": id, type: "button", class: "mp-pill", "aria-pressed": !hidden.has(id), onClick: () => change(id) },
                         h("span", { "aria-hidden": "true" }, hidden.has(id) ? "+" : "−"),
                         LABELS[l][id])),
                     h("button", { type: "button", class: "mp-pill", onClick: () => { hidden = new Set(); paint(); } }, pt ? "Abrir todos" : "Open all")))), host);
