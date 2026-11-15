@@ -1,0 +1,45 @@
+{
+ "schema": "braspace.moon-hd.gpu-renders.v1",
+ "status": "CANDIDATE_PENDING_FIDELITY_APPROVAL",
+ "wired_into_ui": false,
+ "scene": "web/moon-hd.html?view=pole (Joel Moon HD, web/moon-hd/scene.ts + app.ts)",
+ "scene_revision": "9a82af7a0d25b6c37e0dffff65ae216d375a2693",
+ "utc": "2025-03-06T12:00:00Z",
+ "utc_note": "IM-2 landing day; Sun and Earth from the viewer's packed JPL/NAIF ephemeris",
+ "camera": "viewer default pole camera; UI hidden for capture; deviceScaleFactor 1",
+ "renderer": "Chrome headless, ANGLE Vulkan, AMD Radeon 890M (RADV STRIX1)",
+ "source_manifest": {
+  "file": "web/data/moonhd/manifest.json",
+  "sha256": "baab41d5f7f8a2e9f7fedcf7c18f1d391f018e5b73dfd13d8753dae4a5915ccc"
+ },
+ "terrain_source": {
+  "file": "web/data/moonhd/south_pole_80m.bin",
+  "sha256": "a1244e43cb392feb55aa63ee2289de5a7a098847f2511ce5fba2fcafceccf23c",
+  "product": "LRO LOLA LDEM_80S_80M"
+ },
+ "attribution": "Terrain NASA LRO/LOLA; colour NASA SVS; scene and integration Joel (@joeljato), BRASPACE; capture BRASPACE.",
+ "use": "Visual identity only. Not a registered map, hazard certification or live SPICE prediction.",
+ "variants": {
+  "desktop": {
+   "file": "web/moon-hd/renders/pole-gpu-desktop.webp",
+   "width": 1920,
+   "height": 1080,
+   "bytes": 157192,
+   "sha256": "b49b3ab50c4039327d96bf08ab9fb2595fc5e54cf25bc7814885d27d0a612fd9"
+  },
+  "tablet": {
+   "file": "web/moon-hd/renders/pole-gpu-tablet.webp",
+   "width": 1366,
+   "height": 1024,
+   "bytes": 115104,
+   "sha256": "53e95083a6b746c433bb88177187358f8da908bdb4243d91d7e6cba5007d0eef"
+  },
+  "portrait": {
+   "file": "web/moon-hd/renders/pole-gpu-portrait.webp",
+   "width": 900,
+   "height": 1600,
+   "bytes": 72992,
+   "sha256": "fdc7f1a3079faf87a75010b708c0dd886c4eb9aaeee3cdffe8ac69a836a478a7"
+  }
+ }
+}
