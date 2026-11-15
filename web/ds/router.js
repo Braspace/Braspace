@@ -76,11 +76,23 @@ export function loadLastRoute() { try { return localStorage.getItem(LAST_KEY); }
  * On every route change: renders into `outlet`, updates <title>, moves focus to [data-route-title], stores last route.
  */
 export function startRouter({ routes, outlet, appName = "moonproof", onAfter }) {
-  let current = null;
+  let gen = 0; // navigation generation: only the newest navigation may touch the DOM or call onAfter
+  let routeHash = "#/"; // last real route hash, restored after an in-page anchor (skip link)
   const go = (path, query = {}) => { location.hash = buildHash(path, query); };
   async function handle() {
     const legacy = legacyRedirect(location.hash);
     if (legacy) { location.replace(legacy); return; }
+    // In-page anchor (skip link "#view"): not a route. Focus the target and put the route hash back.
+    const raw = location.hash;
+    if (raw && !raw.startsWith("#/")) {
+      let id = raw.slice(1); try { id = decodeURIComponent(id); } catch { /* keep raw id */ }
+      const target = document.getElementById(id);
+      if (target) {
+        target.setAttribute("tabindex", "-1"); target.focus();
+        history.replaceState(null, "", routeHash);
+        return;
+      }
+    }
     const { path, parts, query } = parseHash(location.hash || "#/");
     const { route, rest } = resolveRoute(routes, path);
     if (!route) return;
@@ -89,12 +101,16 @@ export function startRouter({ routes, outlet, appName = "moonproof", onAfter }) 
       go: (p, q) => go(p, { site: query.site, ...q }),
       setSite: id => { const q = { ...query, site: id }; history.replaceState(null, "", buildHash(path, q)); return q; },
     };
+    const mine = ++gen;
+    routeHash = location.hash || "#/";
     if (route.external) { route.external(ctx); return; }
-    current = path;
+    // Views render into a private stage so a slow, superseded render can never write into the live outlet.
+    const stage = document.createElement("div");
     outlet.replaceChildren();
     outlet.setAttribute("aria-busy", "true");
-    try { await route.render(outlet, ctx); } finally { outlet.removeAttribute("aria-busy"); }
-    if (current !== path) return; // a newer navigation happened while rendering
+    try { await route.render(stage, ctx); } finally { if (mine === gen) outlet.removeAttribute("aria-busy"); }
+    if (mine !== gen) { stage.replaceChildren(); return; } // a newer navigation happened while rendering: drop this view
+    outlet.replaceChildren(...stage.childNodes);
     document.title = (typeof route.title === "function" ? route.title(ctx) : route.title) + " · " + appName;
     const h1 = outlet.querySelector("[data-route-title]") || outlet.querySelector("h1");
     if (h1) { h1.setAttribute("tabindex", "-1"); h1.focus({ preventScroll: false }); }
