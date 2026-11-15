@@ -15,7 +15,7 @@
 .deb-card>.mp-label{color:#8E99A6;margin-bottom:8px}
 .deb-how{display:flex;gap:13px;align-items:center;margin-bottom:8px}
 .deb-ic{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:22px;background:var(--ok);color:#04110D}
-.deb-ic[data-k=bad]{background:var(--fail);color:#fff}.deb-ic[data-k=warn]{background:var(--warn);color:#1a1000}.deb-ic[data-k=nd]{background:var(--unknown);color:#000}
+.deb-ic[data-k=bad]{background:var(--fail-fill);color:#fff}.deb-ic[data-k=warn]{background:var(--warn);color:#1a1000}.deb-ic[data-k=nd]{background:var(--unknown);color:#000}
 .deb-verdict{font-size:21px;font-weight:800;line-height:26px;margin:0}
 .deb-sum{margin:0;color:#B7C0C9;font-size:14px;line-height:21px}
 .deb-pills{display:grid;gap:8px;margin-top:5px}
@@ -25,7 +25,7 @@
 .deb-pill .v{margin-left:auto;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
 .deb-st,.deb-rules .tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font:700 10.5px/20px var(--font);letter-spacing:.06em;white-space:nowrap;border:1px solid var(--ok);background:var(--ok);color:#04110D}
 .deb-st[data-s=low],.deb-rules .tag[data-s=low]{background:var(--warn);border-color:var(--warn);color:#1A0E02}
-.deb-st[data-s=fail],.deb-rules .tag[data-s=fail]{background:var(--fail);border-color:var(--fail-text);color:#fff}
+.deb-st[data-s=fail],.deb-rules .tag[data-s=fail]{background:var(--fail-fill);border-color:var(--fail-text);color:#fff}
 .deb-st[data-s=nd],.deb-rules .tag[data-s=nd]{background:repeating-linear-gradient(45deg,rgba(128,140,153,.25) 0 1px,transparent 1px 5px);border:1px dashed #808C99;color:#3a424b}
 .deb-rules .tag[data-s=nd]{color:#B7C0C9}
 .deb-chart{margin-top:auto;padding:21px}
