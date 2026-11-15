@@ -194,8 +194,8 @@ try {
     assert.equal(typeof invalid.error, "string");
   }
   // The printable report answers errors as JSON {code, error} like every handler (#151).
-  const invalidReport = await both("POST /api/onboard/report", "/api/onboard/report", 400, {body: "{", as: "text"});
-  assert.match(invalidReport, /invalid JSON/i);
+  const invalidReport = await both("POST /api/onboard/report", "/api/onboard/report", 400, {body: "{"});
+  assert.equal(invalidReport.code, "INVALID_JSON");
 
   assert.deepEqual(new Set(coverage.keys()), expectedOps, "every OpenAPI operation requires an explicit E2E case");
   for (const operation of expectedOps) {
