@@ -24,6 +24,8 @@ Verified in production on **2026-11-15** (frontend `9dab20c`, Worker `ec490d15`;
 
 > **Scientific honesty:** `/readyz` reports `"science_status": "UNVERIFIED_INPUTS"` and `/v1/capabilities` reports `"scientifically_validated": false`. Series are `PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED`.
 
+> **Cockpit P0 candidate (#411, not deployed):** Nine independently hideable Preact panel groups retain the *same* Joel Three.js Moon and illustrative Artemis lander. The delayed `Moon only` request now checks that panels remain hidden before opening the lazy 3D backdrop; restoring them before load cancels the stale request. Node fixture: 3/3 PASS; generated JS verified against local TypeScript 5.8.3 output. Full pinned TS 5.6.3 / Chromium / Go-Rust / pgvector release checks remain mandatory. Canonical entry is separately coordinated in #440, density 75% in #426, Worker SHA gate in #424.
+
 ## Real Data vs. Simulation
 
 | NASA / External Source | Product in Repo | Status | Notes |
