@@ -138,3 +138,4 @@ function download(passport) {
 onState(() => draw());
 await draw();
 markReady();
+if (new URLSearchParams(location.search).get("print") === "1") globalThis.print?.();

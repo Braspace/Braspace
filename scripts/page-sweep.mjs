@@ -11,7 +11,7 @@ const base=(process.env.BASE||"http://127.0.0.1:5380").replace(/\/$/,"");
 const pages=process.env.PAGES?process.env.PAGES.split(","):(()=>{
  const out=[];
  const walk=(dir,rel)=>{for(const n of readdirSync(dir)){const p=path.join(dir,n),r=rel?rel+"/"+n:n;
-  if(statSync(p).isDirectory()){if(!["node_modules","tests","test","data","assets","lab","browser"].includes(n))walk(p,r);}
+  if(statSync(p).isDirectory()){if(!["node_modules","tests","test","data","assets","lab","browser","designer"].includes(n))walk(p,r);}
   else if(n.endsWith(".html"))out.push("/"+r);}};
  walk(path.join(root,"web"),"");return out.sort();})();
 const sizes=[[1440,900],[390,844]];

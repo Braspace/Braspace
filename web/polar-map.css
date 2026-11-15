@@ -1,4 +1,6 @@
 /* BRASPACE polar elevation map component. Scoped under .pm */
+.pm-demo-body { margin: 0; padding: 20px; background: #eef1f5; font-family: system-ui, sans-serif; }
+.pm-demo-title { font-size: 18px; margin: 0 0 12px; }
 .pm { --pm-frame: #000; --pm-margin: #fff; --pm-ink: #111; color: var(--pm-ink); font-family: system-ui, "Segoe UI", sans-serif; }
 .pm-figure { margin: 0; max-width: 900px; }
 .pm-frame { position: relative; background: var(--pm-margin); padding: 30px; }
