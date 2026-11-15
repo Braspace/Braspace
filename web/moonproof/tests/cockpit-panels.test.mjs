@@ -57,3 +57,28 @@ test('Moon-only deferred open never overrides a user who restored the panels',()
     if(hadDocument)globalThis.document=oldDocument;else delete globalThis.document;
   }
 });
+
+test('Moon-only/restore/Moon-only invalidates a stale earlier timer (ABA sequence)',()=>{
+  const hadDocument=Object.hasOwn(globalThis,'document');
+  const oldDocument=globalThis.document, oldTimeout=globalThis.setTimeout;
+  const pending=[];let clicks=0,requestRevision=0,hidden=false,available=false;
+  globalThis.document={readyState:'complete',querySelector:()=>available?{disabled:false,click:()=>{clicks++;}}:null};
+  globalThis.setTimeout=callback=>{pending.push(callback);return pending.length;};
+  try{
+    hidden=true;const first=++requestRevision;
+    assert.equal(requestSharedMoon(()=>first===requestRevision&&hidden),false);
+    hidden=false;requestRevision++; // user restores before delayed WebGL/backdrop availability
+    hidden=true;const second=++requestRevision;
+    assert.equal(requestSharedMoon(()=>second===requestRevision&&hidden),false);
+    available=true;
+    assert.equal(pending.length,2);
+    pending[0]();assert.equal(clicks,0,'obsolete initial request must not toggle immersive mode');
+    pending[1]();assert.equal(clicks,1,'only latest request opens the shared renderer once');
+    const controller=readFileSync(new URL('../screens/cockpit-panels.tsx',import.meta.url),'utf8');
+    assert.match(controller,/let moonRequestRevision = 0/);
+    assert.match(controller,/request === moonRequestRevision && hidden.size === PANEL_IDS.length/);
+  }finally{
+    globalThis.setTimeout=oldTimeout;
+    if(hadDocument)globalThis.document=oldDocument;else delete globalThis.document;
+  }
+});
