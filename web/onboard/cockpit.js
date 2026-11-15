@@ -1743,23 +1743,58 @@
     return apiPanelFrame("API · Relatório do lugar (/api/onboard/site-report)", "Um lugar, um candidato. Só para lugares com série.", button, body);
   }
 
-  // ---------- Navigation: can the lander get a satellite fix? (synthetic, see nav.js) ----------
+  // ---------- Navigation: can the lander get a satellite fix? (synthetic) ----------
+  // Source of truth: POST /api/onboard/navigation (api/navigation). When the API does not answer,
+  // the same geometry runs in the browser (web/onboard/nav.js) and the panel says so.
   const NAV = OnboardNav;
   const NAV_LIMITS = [
     [6, "GDOP ≤ 6 · uso terrestre"],
     [50, "GDOP ≤ 50 · LuGRE a 15 raios"],
     [1000, "GDOP ≤ 1000 · LuGRE na superfície"]
   ];
+  function navLimit() { return S.navGdop || 50; }
+  function navKey() { return [S.site, iso(startMs()), S.durationH, S.stepMin, navLimit()].join("|"); }
+  function ensureNav() {
+    const site = M.SITES[S.site];
+    if (!site || S.navAvail === false) return;
+    const key = navKey();
+    if ((S.navApi && S.navApi.key === key) || S.navLoading === key) return;
+    S.navLoading = key;
+    OnboardApi.navigation({ lat: site.lat, lon: site.lon, start_utc: iso(startMs()), duration_hours: S.durationH,
+      step_minutes: S.stepMin, gdop_limit: navLimit() }).then(r => {
+      if (r.status === 404 && /404 page not found/.test(r.error || "")) S.navAvail = false;   // route absent in this deployment
+      S.navApi = { key, ok: r.ok, data: r.ok ? r.data : null, error: r.ok ? null : (r.error || ("HTTP " + r.status)) };
+      S.navLoading = null;
+      renderTab();
+    });
+  }
+  // Same shape for the table whether the numbers came from the API or the browser.
+  function navFromApi(data) {
+    const tr = data.samples.map((s, i) => ({ i, satellites: s.satellites, gdop: s.gdop === null ? Infinity : s.gdop, nav_available: s.available, epoch: s.epoch_utc }));
+    const x = data.summary;
+    const sum = { availability: x.availability, availableH: x.available_h, totalH: x.total_h, minSatellites: x.min_satellites_seen,
+      medianGdop: x.median_gdop === null ? Infinity : x.median_gdop, longestOutageH: x.longest_outage_h, outageCount: x.outage_count };
+    const outages = data.outages.map(o => ({ from: o.from_utc, to: o.to_utc, hours: o.hours }));
+    return { tr, sum, outages, source: "API · " + data.version + " · " + data.model_status };
+  }
+  function navFromBrowser(base, limit) {
+    const tr = base.map(s => Object.assign({}, s, { nav_available: s.satellites >= NAV.PREMISES.minSatellites && s.gdop <= limit }));
+    const sum = NAV.summary(tr, S.stepMin);
+    const outages = NAV.outages(tr, S.stepMin).map(o => ({ from: fmt(startMs() + o.from * S.stepMin * 60e3), to: fmt(startMs() + o.to * S.stepMin * 60e3), hours: o.hours }));
+    return { tr, sum, outages, source: "modelo do navegador (API indisponível)" };
+  }
+
   VIEWS.navegacao = () => {
     const site = M.SITES[S.site];
     if (!site) return [h("section", { class: "panel" }, h("h2", { text: "Navegação por satélite" }),
       h("p", { class: "note", text: "Escolha um lugar com modelo local para ver a disponibilidade." }))];
+    ensureNav();
     const base = NAV.track({ startMs: startMs(), stepMin: S.stepMin, count: count(), lat: site.lat, lon: site.lon });
     if (!base.length) return [noDataState("Navegação por satélite")];
-    const limit = S.navGdop || 50;
-    const tr = base.map(s => Object.assign({}, s, { nav_available: s.satellites >= NAV.PREMISES.minSatellites && s.gdop <= limit }));
-    const sum = NAV.summary(tr, S.stepMin);
-    const runs = NAV.outages(tr, S.stepMin);
+    const limit = navLimit();
+    const cur = S.navApi && S.navApi.key === navKey() ? S.navApi : null;
+    const use = cur && cur.ok && cur.data ? navFromApi(cur.data) : navFromBrowser(base, limit);
+    const { tr, sum, outages, source } = use;
     const avail = runsOf(tr, "nav_available", true);
     const total = Math.max(1, tr.length);
     const at = i => fmt(startMs() + i * S.stepMin * 60e3);
@@ -1767,9 +1802,13 @@
     const width = (a, b) => ((b - a + 1) / total * 100).toFixed(3) + "%";
     const share = v => (v * 100).toFixed(1) + " %";
     const gdopTxt = v => Number.isFinite(v) ? f1(v, 0) : "sem solução";
+    const pending = !cur && S.navLoading ? h("p", { class: "note", text: "Consultando a API de navegação…" }) : null;
+    const failed = cur && !cur.ok ? h("div", { class: "caution", role: "alert", text: "A API recusou o pedido: " + cur.error + ". Mostrando o cálculo do navegador." }) : null;
 
-    const summary = h("section", { class: "panel span2" },
-      h("div", { class: "grid four" },
+    const head = h("section", { class: "panel span2" },
+      h("div", { class: "row" }, h("span", { class: "chip info", text: "SINTÉTICO" }), h("span", { class: "dim", text: "Fonte: " + source })),
+      pending, failed,
+      h("div", { class: "grid four", style: "margin-top:12px" },
         h("div", {}, h("div", { class: "label", text: "Disponibilidade (limite escolhido)" }), h("strong", { class: "num", text: share(sum.availability) })),
         h("div", {}, h("div", { class: "label", text: "Menos satélites visíveis" }), h("strong", { class: "num", text: String(sum.minSatellites) })),
         h("div", {}, h("div", { class: "label", text: "GDOP mediano" }), h("strong", { class: "num", text: gdopTxt(sum.medianGdop) })),
@@ -1783,7 +1822,7 @@
       h("p", { class: "note", style: "margin-top:10px", text: "Mesmo cenário, três critérios. Quanto maior o limite, mais tempo há solução, e menor é a precisão esperada." }),
       h("div", { class: "scroll", style: "margin-top:8px" }, h("table", { class: "table" },
         h("thead", {}, h("tr", {}, h("th", { text: "critério" }), h("th", { class: "n", text: "tempo com solução" }))),
-        h("tbody", {}, NAV_LIMITS.map(([g, lab]) => h("tr", {}, h("td", { text: lab }), h("td", { class: "n", text: share(NAV.availabilityAt(base, g)) })))))));
+        h("tbody", {}, NAV_LIMITS.map(([g, lab]) => h("tr", {}, h("td", { text: lab }), h("td", { class: "n", text: share(NAV.availabilityAt(tr, g)) })))))));
 
     const timeline = h("section", { class: "panel span2" },
       h("h2", { text: "Linha do tempo · disponibilidade" }),
@@ -1791,23 +1830,22 @@
         h("div", { class: "tl-row" },
           h("span", { class: "tl-label", text: "Solução" }),
           h("div", { class: "tl-track", role: "img", "aria-label": "Solução: " + avail.length + " janela(s)" },
-            avail.map(([a, b]) => h("span", { class: "tl-seg", title: at(a) + " até " + at(b), style: "left:" + pct(a) + ";width:" + width(a, b) + ";background:var(--green)" })))),
-      ),
+            avail.map(([a, b]) => h("span", { class: "tl-seg", title: at(a) + " até " + at(b), style: "left:" + pct(a) + ";width:" + width(a, b) + ";background:var(--green)" }))))),
       h("div", { class: "tl-axis dim" }, h("span", { text: at(0) }), h("span", { text: at(tr.length - 1) })),
       h("p", { class: "note", text: "Verde: há satélites suficientes e GDOP dentro do limite escolhido. Espaços vazios: sem solução." }));
 
-    const outTable = runs.length === 0
+    const outTable = outages.length === 0
       ? h("p", { class: "note", text: "Sem interrupções no limite escolhido." })
       : h("div", { class: "scroll" }, h("table", { class: "table" },
           h("thead", {}, h("tr", {}, h("th", { text: "início (UTC)" }), h("th", { text: "fim (UTC)" }), h("th", { class: "n", text: "horas" }))),
-          h("tbody", {}, runs.slice(0, 200).map(r => h("tr", {}, h("td", { text: at(r.from) }), h("td", { text: at(r.to) }), h("td", { class: "n", text: f1(r.hours) }))))));
-    const outages = h("section", { class: "panel span2" },
+          h("tbody", {}, outages.slice(0, 200).map(o => h("tr", {}, h("td", { text: typeof o.from === "number" ? at(o.from) : o.from }), h("td", { text: typeof o.to === "number" ? at(o.to) : o.to }), h("td", { class: "n", text: f1(o.hours) }))))));
+    const outPanel = h("section", { class: "panel span2" },
       h("h2", { text: "Interrupções de navegação" }),
       outTable,
       h("p", { class: "note", text: "Premissas, não validadas: constelação genérica de 24 satélites (6 planos), libração aproximada, máscara de 5°, mínimo de 4 satélites. Não modela sinais de lóbulo lateral, que o LuGRE captou abaixo de cerca de 33 dB-Hz." }),
       edu("O GDOP mede a geometria dos satélites vistos da Lua. Os satélites GPS ficam quase na mesma direção, então a geometria é ruim e a posição, imprecisa. O LuGRE calculou posição na superfície, mas com erros de centenas de metros a quilômetros."));
 
-    return [summary, limits, timeline, outages];
+    return [head, limits, timeline, outPanel];
   };
 
   const API_EXTRA = {

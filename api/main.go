@@ -18,6 +18,7 @@ import (
  "os/exec"
  "strings"
  "time"
+ "github.com/Braspace/Braspace/api/navigation"
  "github.com/Braspace/Braspace/api/onboard"
 )
 
@@ -146,6 +147,7 @@ func routes(binary string) http.Handler {
  })
  mux.Handle("POST /api/onboard/evaluate", onboard.Handler())
  mux.Handle("POST /api/onboard/report", onboard.ReportHandler())
+ mux.Handle("POST /api/onboard/navigation", navigation.Handler())
  store,err:=loadDefaultStore()
  if err!=nil { panic(fmt.Errorf("site data: %w",err)) }
  (&missionAPI{store:store,engine:newEngineClient(binary)}).register(mux)
