@@ -13,8 +13,9 @@ cd deploy/cloudflare
 node --test ./*.test.mjs
 [ -f wrangler.toml ] || cp wrangler.toml.example wrangler.toml
 prev=$(npx -y wrangler@4 deployments list --name braspace-moonproof 2>/dev/null | awk '/Version\(s\):/{v=$3} END{print v}')
-cfg="$root/web/config.js"; cp "$cfg" "$cfg.bak"
-trap 'mv -f "$cfg.bak" "$cfg"' EXIT
+# Backup outside web/ (web/ is the assets directory: anything there would be uploaded).
+cfg="$root/web/config.js"; bak=$(mktemp); cp "$cfg" "$bak"
+trap 'cp -f "$bak" "$cfg"; rm -f "$bak"' EXIT
 printf 'const BRASPACE_COMMIT = "%s";\n' "$sha" >> "$cfg"
 npx -y wrangler@4 deploy --message "main $short${note:+ ($note)}"
 echo "deployed $sha; rollback: npx wrangler rollback ${prev:-<previous version id>}"
