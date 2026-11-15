@@ -74,7 +74,7 @@ export function mountCockpitPanels(host: HTMLElement): () => void {
       <details class="ck-panel-menu" onKeyDown={e => { if (e.key === "Escape") { e.currentTarget.open = false; e.currentTarget.querySelector("summary")?.focus(); } }}>
         <summary class="mp-pill">{pt ? "Painéis" : "Panels"} · {PANEL_IDS.length - hidden.size}/{PANEL_IDS.length}</summary>
         <div class="ck-panel-options">
-          {PANEL_IDS.map(id => <button key={id} type="button" class="mp-pill" aria-pressed={!hidden.has(id)} onClick={() => change(id)}><span aria-hidden="true">{hidden.has(id) ? "+" : "−"}</span>{LABELS[l][id]}</button>)}
+          {PANEL_IDS.map(id => <button key={id} data-panel={id} type="button" class="mp-pill" aria-pressed={!hidden.has(id)} onClick={() => change(id)}><span aria-hidden="true">{hidden.has(id) ? "+" : "−"}</span>{LABELS[l][id]}</button>)}
           <button type="button" class="mp-pill" onClick={() => { hidden = new Set(); paint(); }}>{pt ? "Abrir todos" : "Open all"}</button>
         </div>
       </details>
