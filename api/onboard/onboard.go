@@ -23,7 +23,7 @@ const (
 	Version = "braspace.onboard-simulator.v1"
 	MaxRequestBytes = 128 << 10
 	MaxCandidates = 8
-	MaxSamples = 480
+	MaxSamples = 720
 )
 
 type Power struct {
@@ -130,7 +130,7 @@ func validate(req Request) error {
 			return fmt.Errorf("candidate %s: start_utc must be RFC3339 in supported range", c.ID)
 		}
 		if c.StepMinutes < 1 || c.StepMinutes > 360 || len(c.Samples) < 1 || len(c.Samples) > MaxSamples || c.StepMinutes * len(c.Samples) > 43200 {
-			return fmt.Errorf("candidate %s: use 1..480 samples, 1..360 min step, <= 30-day duration", c.ID)
+			return fmt.Errorf("candidate %s: use 1..720 samples, 1..360 min step, <= 30-day duration", c.ID)
 		}
 		for i, s := range c.Samples {
 			if s.SunVisible == nil || s.EarthVisible == nil {

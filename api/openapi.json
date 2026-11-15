@@ -2690,7 +2690,7 @@
           "samples": {
             "type": "array",
             "minItems": 1,
-            "maxItems": 480,
+            "maxItems": 720,
             "items": {"$ref": "#/components/schemas/StandaloneOnboardSample"}
           }
         }

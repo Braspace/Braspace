@@ -247,7 +247,7 @@
     const count = Math.floor((S.durationH * 60) / S.stepMin);
     if (!(S.durationH >= 1 && S.durationH <= 720)) out.push("A duração deve ficar entre 1 e 720 h.");
     if (!(S.stepMin >= 1 && S.stepMin <= 360)) out.push("O passo deve ficar entre 1 e 360 min.");
-    if (S.durationH >= 1 && S.stepMin >= 1 && count > 480) out.push("Muitas amostras (" + count + "). Aumente o passo ou reduza a duração: o máximo é 480.");
+    if (S.durationH >= 1 && S.stepMin >= 1 && count > 720) out.push("Muitas amostras (" + count + "). Aumente o passo ou reduza a duração: o máximo é 720.");
     POWER_FIELDS.forEach(([k, label]) => { const v = S.power[k]; if (!(Number.isFinite(v) && v >= 0)) out.push(label + " precisa ser um número igual ou maior que zero."); });
     if (Number.isFinite(S.power.reserve_wh) && Number.isFinite(S.power.battery_capacity_wh) && S.power.reserve_wh > S.power.battery_capacity_wh) out.push("A reserva não pode ser maior que a capacidade da bateria.");
     if (Number.isFinite(S.power.initial_charge_wh) && Number.isFinite(S.power.battery_capacity_wh) && S.power.initial_charge_wh > S.power.battery_capacity_wh) out.push("A carga inicial não pode ser maior que a capacidade.");
