@@ -3,10 +3,11 @@ export function evaluateQuestion(question, metrics, limits) {
     const needsNight = question !== 3;
     const needsEarth = question !== 2;
     const verdicts = metrics.map(m => {
-        const requirements = [
-            ...(needsNight ? [[m.longestDarkH?.value, limits.night]] : []),
-            ...(needsEarth ? [[m.longestBlackoutH?.value, limits.blackout]] : [])
-        ];
+        const requirements = [];
+        if (needsNight)
+            requirements.push([m.longestDarkH?.value, limits.night]);
+        if (needsEarth)
+            requirements.push([m.longestBlackoutH?.value, limits.blackout]);
         let missing = false;
         for (const [value, limit] of requirements) {
             if (value == null || !Number.isFinite(value) || !Number.isFinite(limit)) {
