@@ -192,3 +192,49 @@
 @media (prefers-reduced-motion:reduce){.mp-ck-left:empty{animation:none}}
 /* Touch: the "where do these rules come from?" link was 17 px tall on phones. */
 @media (pointer:coarse){.mp-ck-right a.mp-link,.mp-ck-left a.mp-link,.mp-sheet a.mp-link{display:inline-flex;align-items:center;min-height:44px}}
+
+/* Declutter (owner request 15/11: "tela grande demais, muito poluído"). Same Heloísa tokens (Fibonacci --s1..--s4 = 8/13/21/34), no new colours or icons.
+   Secondary cards are accordions (<details>/<summary>) closed by default: "Horas de Sol por dia", "Testar um problema", "Tripulação…";
+   the mission rules show 3 rows and the rest open behind "+N regras". State is kept in sessionStorage (screens/cockpit-fold.ts). No animation, so reduced-motion is respected. */
+.ck-acc{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:var(--r-card);box-shadow:none}
+.ck-acc>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:var(--s1);min-height:44px;font-weight:700;font-size:14px;color:var(--text);border-radius:var(--r-card)}
+.ck-acc>summary::-webkit-details-marker{display:none}
+.ck-acc>summary::after{content:"⌄";flex:none;margin-left:auto;font-weight:700;color:var(--text-2)}
+.ck-acc[open]>summary::after{content:"⌃"}
+.ck-acc>summary .ck-acc-name{flex:1;min-width:0}
+.ck-acc>summary .mp-seal{flex:none}
+.ck-acc>summary:focus-visible{outline:2px solid var(--jade);outline-offset:2px}
+.mp-ck-left .ck-acc,.mp-ck-right .ck-acc{margin:0;padding:0 var(--s3);min-height:0}
+.mp-ck-left .ck-acc[open],.mp-ck-right .ck-acc[open]{padding-bottom:var(--s2)}
+.ck-acc-sun .mp-layer-head{display:none}
+.mp-ck-left .ck-acc-sun .mp-layer{position:static;width:auto;min-height:0;padding:0;border:0;background:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+.mp-ck-left .ck-acc-sun .mp-layer-answer{margin:0}
+.mp-ck-left .ck-acc-sun .mp-layer .mp-chips{position:static;margin:var(--s1) 0 0;flex-wrap:wrap}
+.mp-ck-left .ck-acc-sun .mp-chip{background:var(--pill);color:var(--pill-text)}
+.mp-ck-left .ck-acc-sun .mp-chip[aria-pressed="true"]{background:var(--jade);color:var(--jade-text)}
+.ck-crew .ck-crew-form{margin:var(--s1) 0}
+/* Mission rules: 3 rows + "+N regras" */
+.mp-rules-more[hidden],.ck-rules-toggle[hidden]{display:none}
+.ck-rules-toggle{display:inline-flex;align-items:center;min-height:36px;margin:0 var(--s2) 0 0;padding:0;background:none;border:0;cursor:pointer;font-family:inherit}
+@media (min-width:701px){
+  .mp-ck-left{gap:var(--s1);padding-bottom:0}
+  .mp-ck-left .mp-stat{margin:var(--s3) auto var(--s2)!important}
+  .mp-ck-left .mp-ck-moon{margin:0;min-height:36px}
+  .mp-vis{min-height:36px;padding:0 var(--s2)}
+  .mp-ck-right{gap:var(--s1)}
+  .mp-ck-right .mp-rules{min-height:0;padding:var(--s2) var(--s3)}
+  .mp-rule{padding:var(--s1) 0}
+  .mp-ck-right .mp-alert{margin:0;padding:var(--s2) var(--s3);min-height:0;gap:var(--s2)}
+  .mp-ck-right .mp-alert[hidden]+.ck-acc{margin:0}
+  .mp-alert-ic{width:34px;height:34px}
+}
+@media (max-width:700px){
+  .mp-ck-left,.mp-ck-right{display:grid;gap:var(--s1)}
+  .mp-ck-left .ck-acc,.mp-ck-right .ck-acc{padding:0 var(--s2)}
+}
+/* QA prod: at 320 px the crew form's 2nd column ran past the screen. Under 420 px it is one column, inputs at full width. */
+.ck-crew-form label{min-width:0}.ck-crew-form input{box-sizing:border-box;max-width:100%}
+@media (max-width:420px){
+  .ck-crew-form{grid-template-columns:minmax(0,1fr)}
+  .ck-crew-form input{width:100%}
+}
