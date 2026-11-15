@@ -18,8 +18,9 @@
   #left>*,#right>*{flex:none;min-width:0}
   #verdict{order:1;width:100%;padding:18px}
   .mp-scn-list{order:2;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-  #right>.mp-glass{order:3;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:18px;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+  #right>.mp-glass,#right>.mp-card{order:3;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:18px;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 18px 40px rgba(0,0,0,.45)}
   #left>.mp-glass{order:4;padding:18px}
+  #left>.mp-cmp-time{order:5;position:static;width:auto;padding:18px;height:auto}
   /* verdict card: answer first, CTA full width and 48 px, "Pousar" in lilac outline below it */
   #verdict .mp-layer-answer{font-size:19px;font-weight:800;line-height:1.26}
   #verdict .mp-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
