@@ -1,0 +1,214 @@
+superficie,rota_head,viewport,captura_baseline,status_baseline,observacao,conceito_flow,captura_depois,status
+classic-compare,classic.html (view=compare),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/classic_compare.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-compare,classic.html (view=compare),notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/classic_compare.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-compare,classic.html (view=compare),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-classic-compare.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-compare,classic.html (view=compare),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-classic-compare.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-evidence-learn,classic.html (view=evidence),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/classic_evidence.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-evidence-learn,classic.html (view=evidence),notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/classic_evidence.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-evidence-learn,classic.html (view=evidence),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-classic-evidence-learn.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-evidence-learn,classic.html (view=evidence),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-classic-evidence-learn.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-explore,classic.html (view=explore),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/classic_explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-explore,classic.html (view=explore),notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/classic_explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-explore,classic.html (view=explore),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-classic-explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-explore,classic.html (view=explore),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-classic-explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-recover,classic.html (view=recover),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/classic_recover.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-recover,classic.html (view=recover),notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/classic_recover.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-recover,classic.html (view=recover),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-classic-recover.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-recover,classic.html (view=recover),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-classic-recover.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-science-engineering,classic.html (view=science),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/classic_science.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-science-engineering,classic.html (view=science),notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/classic_science.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-science-engineering,classic.html (view=science),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-classic-science.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+classic-science-engineering,classic.html (view=science),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-classic-science.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+hd-globe,moon-hd.html (mode=globe),pc_1920x1080,,PENDENTE,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+hd-globe,moon-hd.html (mode=globe),notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_hd-02-globe.png,CAPTURADA_COM_FALHA,"Moon HD tablet/mobile: captura mostra loading negro, render nao comprovado",NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+hd-globe,moon-hd.html (mode=globe),tablet_768x1024,LOADING: 01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-map-hd-globe.png,CAPTURADA_COM_FALHA,"Moon HD tablet/mobile: captura mostra loading negro, render nao comprovado",NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+hd-globe,moon-hd.html (mode=globe),mobile_390x844,LOADING: 01_CAPTURAS_BRASPACE/mobile_390x844/mobile-map-hd-globe.png,CAPTURADA_COM_FALHA,"Moon HD tablet/mobile: captura mostra loading negro, render nao comprovado",NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+hd-pole,moon-hd.html (mode=pole),pc_1920x1080,,PENDENTE,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+hd-pole,moon-hd.html (mode=pole),notebook_1440x900,,PENDENTE,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+hd-pole,moon-hd.html (mode=pole),tablet_768x1024,LOADING: 01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-map-hd-pole.png,CAPTURADA_COM_FALHA,"Moon HD tablet/mobile: captura mostra loading negro, render nao comprovado",NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+hd-pole,moon-hd.html (mode=pole),mobile_390x844,LOADING: 01_CAPTURAS_BRASPACE/mobile_390x844/mobile-map-hd-pole.png,CAPTURADA_COM_FALHA,"Moon HD tablet/mobile: captura mostra loading negro, render nao comprovado",NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-compare,lab.html (view=compare),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/lab_compare.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-compare,lab.html (view=compare),notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/lab_compare.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-compare,lab.html (view=compare),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-lab-compare.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-compare,lab.html (view=compare),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-lab-compare.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-evidence-learn,lab.html (view=evidence-learn),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/lab_evidence.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-evidence-learn,lab.html (view=evidence-learn),notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/lab_evidence.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-evidence-learn,lab.html (view=evidence-learn),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-lab-evidence-learn.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-evidence-learn,lab.html (view=evidence-learn),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-lab-evidence-learn.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-explore,lab.html (view=explore),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_lab-01-explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-explore,lab.html (view=explore),notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_lab-01-explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-explore,lab.html (view=explore),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_lab-01-explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-explore,lab.html (view=explore),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-lab-explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-landing,lab.html (view=landing),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/lab_landing.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-landing,lab.html (view=landing),notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/lab_landing.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-landing,lab.html (view=landing),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-lab-landing.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-landing,lab.html (view=landing),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-lab-landing.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-recover,lab.html (view=recover),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/lab_recover.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-recover,lab.html (view=recover),notebook_1440x900,,PENDENTE,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-recover,lab.html (view=recover),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-lab-recover.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+lab-recover,lab.html (view=recover),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-lab-recover.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+map-polar,polar-map-demo.html,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_map-01-polar.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+map-polar,polar-map-demo.html,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_map-01-polar.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+map-polar,polar-map-demo.html,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_map-01-polar.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+map-polar,polar-map-demo.html,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile_map-01-polar.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-activity,moonproof/activity.html,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_mp-11-activity.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-activity,moonproof/activity.html,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_mp-11-activity.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-activity,moonproof/activity.html,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_mp-11-activity.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-activity,moonproof/activity.html,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-mp-activity.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-cockpit,moonproof/cockpit.html,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_mp-06-cockpit.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-cockpit,moonproof/cockpit.html,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_mp-06-cockpit.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-cockpit,moonproof/cockpit.html,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_mp-06-cockpit.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-cockpit,moonproof/cockpit.html,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-mp-cockpit.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-compare,moonproof/compare.html,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_mp-04-compare.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-compare,moonproof/compare.html,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_mp-04-compare.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-compare,moonproof/compare.html,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_mp-04-compare.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-compare,moonproof/compare.html,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-mp-compare.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-debrief,moonproof/debrief.html,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_mp-08-debrief.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-debrief,moonproof/debrief.html,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_mp-08-debrief.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-debrief,moonproof/debrief.html,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_mp-08-debrief.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-debrief,moonproof/debrief.html,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-mp-debrief.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-evidence,moonproof/evidence.html,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_mp-09-evidence.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-evidence,moonproof/evidence.html,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_mp-09-evidence.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-evidence,moonproof/evidence.html,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_mp-09-evidence.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-evidence,moonproof/evidence.html,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-mp-evidence.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-explore,moonproof/explore.html,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_mp-03-explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-explore,moonproof/explore.html,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_mp-03-explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-explore,moonproof/explore.html,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_mp-03-explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-explore,moonproof/explore.html,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-mp-explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-index,moonproof/index.html,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_mp-01-index.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-index,moonproof/index.html,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_mp-01-index.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-index,moonproof/index.html,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_mp-01-index.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-index,moonproof/index.html,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-mp-index.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-landing,moonproof/landing.html,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_mp-07-landing.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-landing,moonproof/landing.html,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_mp-07-landing.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-landing,moonproof/landing.html,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_mp-07-landing.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-landing,moonproof/landing.html,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-mp-landing.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-mission,moonproof/mission.html,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_mp-02-mission.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-mission,moonproof/mission.html,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_mp-02-mission.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-mission,moonproof/mission.html,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_mp-02-mission.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-mission,moonproof/mission.html,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-mp-mission.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-plan,moonproof/plan.html,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_mp-12-plan.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-plan,moonproof/plan.html,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_mp-12-plan.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-plan,moonproof/plan.html,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_mp-12-plan.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-plan,moonproof/plan.html,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-mp-plan.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-present,moonproof/present.html,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_mp-10-present.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-present,moonproof/present.html,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_mp-10-present.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-present,moonproof/present.html,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_mp-10-present.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-present,moonproof/present.html,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-mp-present.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-recover,moonproof/recover.html,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_mp-05-recover.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-recover,moonproof/recover.html,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_mp-05-recover.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-recover,moonproof/recover.html,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_mp-05-recover.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-recover,moonproof/recover.html,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-mp-recover.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-rules,moonproof/rules.html,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_mp-13-rules.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-rules,moonproof/rules.html,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_mp-13-rules.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-rules,moonproof/rules.html,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_mp-13-rules.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+mp-rules,moonproof/rules.html,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-mp-rules.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-energia,onboard/cockpit.html#energia,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/onboard_energia.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-energia,onboard/cockpit.html#energia,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/onboard_energia.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-energia,onboard/cockpit.html#energia,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_onboard_energia.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-energia,onboard/cockpit.html#energia,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile_onboard_energia.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-entrada,onboard/cockpit.html#entrada,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/onboard_entrada.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-entrada,onboard/cockpit.html#entrada,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/onboard_entrada.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-entrada,onboard/cockpit.html#entrada,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_onboard_entrada.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-entrada,onboard/cockpit.html#entrada,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile_onboard_entrada.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-geometria,onboard/cockpit.html#geometria,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/onboard_geometria.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-geometria,onboard/cockpit.html#geometria,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/onboard_geometria.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-geometria,onboard/cockpit.html#geometria,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_onboard_geometria.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-geometria,onboard/cockpit.html#geometria,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile_onboard_geometria.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-historico,onboard/cockpit.html#historico,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/onboard_historico.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-historico,onboard/cockpit.html#historico,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/onboard_historico.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-historico,onboard/cockpit.html#historico,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_onboard_historico.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-historico,onboard/cockpit.html#historico,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile_onboard_historico.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-horizonte,onboard/cockpit.html#horizonte,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/onboard_horizonte.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-horizonte,onboard/cockpit.html#horizonte,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/onboard_horizonte.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-horizonte,onboard/cockpit.html#horizonte,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_onboard_horizonte.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-horizonte,onboard/cockpit.html#horizonte,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile_onboard_horizonte.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-janelas,onboard/cockpit.html#janelas,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/onboard_janelas.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-janelas,onboard/cockpit.html#janelas,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/onboard_janelas.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-janelas,onboard/cockpit.html#janelas,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_onboard_janelas.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-janelas,onboard/cockpit.html#janelas,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile_onboard_janelas.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-lanc,onboard/cockpit.html#lanc,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/onboard_lanc.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-lanc,onboard/cockpit.html#lanc,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/onboard_lanc.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-lanc,onboard/cockpit.html#lanc,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_onboard_lanc.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-lanc,onboard/cockpit.html#lanc,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile_onboard_lanc.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-replan,onboard/cockpit.html#replan,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/onboard_replan.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-replan,onboard/cockpit.html#replan,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/onboard_replan.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-replan,onboard/cockpit.html#replan,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_onboard_replan.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-replan,onboard/cockpit.html#replan,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile_onboard_replan.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-sens,onboard/cockpit.html#sens,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/onboard_sens.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-sens,onboard/cockpit.html#sens,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/onboard_sens.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-sens,onboard/cockpit.html#sens,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_onboard_sens.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-sens,onboard/cockpit.html#sens,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile_onboard_sens.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-status,onboard/cockpit.html#status,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/onboard_status.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-status,onboard/cockpit.html#status,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/onboard_status.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-status,onboard/cockpit.html#status,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_onboard_status.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-status,onboard/cockpit.html#status,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile_onboard_status.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-vida,onboard/cockpit.html#vida,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/onboard_vida.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-vida,onboard/cockpit.html#vida,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/onboard_vida.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-vida,onboard/cockpit.html#vida,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_onboard_vida.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-vida,onboard/cockpit.html#vida,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile_onboard_vida.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-visao,onboard/cockpit.html#visao,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_onboard-01-overview.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-visao,onboard/cockpit.html#visao,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_onboard-01-overview.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-visao,onboard/cockpit.html#visao,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_onboard-01-overview.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-visao,onboard/cockpit.html#visao,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile_onboard_visao.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-visual,onboard/cockpit.html#visual,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/onboard_visual.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-visual,onboard/cockpit.html#visual,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/onboard_visual.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-visual,onboard/cockpit.html#visual,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_onboard_visual.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-visual,onboard/cockpit.html#visual,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile_onboard_visual.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-atividade,index.html#/aula/atividade,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_spa-06-atividade.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-atividade,index.html#/aula/atividade,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_spa-06-atividade.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-atividade,index.html#/aula/atividade,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_spa-06-atividade.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-atividade,index.html#/aula/atividade,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-spa-atividade.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-aula,index.html#/aula,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_spa-05-aula.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-aula,index.html#/aula,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_spa-05-aula.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-aula,index.html#/aula,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_spa-05-aula.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-aula,index.html#/aula,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-spa-aula.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-compare,index.html#/comparar,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_spa-03-comparar.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-compare,index.html#/comparar,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_spa-03-comparar.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-compare,index.html#/comparar,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_spa-03-comparar.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-compare,index.html#/comparar,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-spa-compare.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-evidence,index.html#/evidencias,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_spa-07-evidencias.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-evidence,index.html#/evidencias,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_spa-07-evidencias.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-evidence,index.html#/evidencias,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_spa-07-evidencias.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-evidence,index.html#/evidencias,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-spa-evidence.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-explore,index.html#/explorar,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_spa-02-explorar.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-explore,index.html#/explorar,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_spa-02-explorar.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-explore,index.html#/explorar,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_spa-02-explorar.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-explore,index.html#/explorar,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-spa-explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-home,index.html#/,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_spa-01-home.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-home,index.html#/,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_spa-01-home.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-home,index.html#/,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_spa-01-home.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-home,index.html#/,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-spa-home.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-plan,index.html#/comparar/tecnico,pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/pc_spa-04-tecnico.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-plan,index.html#/comparar/tecnico,notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/notebook_spa-04-tecnico.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-plan,index.html#/comparar/tecnico,tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet_spa-04-tecnico.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+spa-plan,index.html#/comparar/tecnico,mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-spa-plan.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-compare,studio/index.html (view=compare),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/studio_compare.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-compare,studio/index.html (view=compare),notebook_1440x900,,PENDENTE,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-compare,studio/index.html (view=compare),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-studio-compare.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-compare,studio/index.html (view=compare),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-studio-compare.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-evidence,studio/index.html (view=evidence),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/studio_evidence.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-evidence,studio/index.html (view=evidence),notebook_1440x900,,PENDENTE,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-evidence,studio/index.html (view=evidence),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-studio-evidence.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-evidence,studio/index.html (view=evidence),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-studio-evidence.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-explore,studio/index.html (view=explore),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/studio_explore.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-explore,studio/index.html (view=explore),notebook_1440x900,,PENDENTE,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-explore,studio/index.html (view=explore),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-studio-explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-explore,studio/index.html (view=explore),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-studio-explore.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-learn,studio/index.html (view=learn),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/studio_learn.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-learn,studio/index.html (view=learn),notebook_1440x900,,PENDENTE,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-learn,studio/index.html (view=learn),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-studio-learn.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-learn,studio/index.html (view=learn),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-studio-learn.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-overview,studio/index.html (view=overview),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/studio_overview.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-overview,studio/index.html (view=overview),notebook_1440x900,01_CAPTURAS_BRASPACE/notebook_1440x900/studio_overview.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-overview,studio/index.html (view=overview),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-studio-overview.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-overview,studio/index.html (view=overview),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-studio-overview.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-recover,studio/index.html (view=recover),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/studio_recover.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-recover,studio/index.html (view=recover),notebook_1440x900,,PENDENTE,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-recover,studio/index.html (view=recover),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-studio-recover.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-recover,studio/index.html (view=recover),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-studio-recover.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-science,studio/index.html (view=science),pc_1920x1080,01_CAPTURAS_BRASPACE/pc_1920x1080/studio_science.jpg,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-science,studio/index.html (view=science),notebook_1440x900,,PENDENTE,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-science,studio/index.html (view=science),tablet_768x1024,01_CAPTURAS_BRASPACE/tablet_768x1024/tablet-studio-science.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+studio-science,studio/index.html (view=science),mobile_390x844,01_CAPTURAS_BRASPACE/mobile_390x844/mobile-studio-science.png,CAPTURADA,,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
+onboard-navegacao,onboard/cockpit.html#navegacao,todos,,AUSENTE_DO_INVENTARIO,Aba descoberta no HEAD b899730; nao consta nas 53,NAO_GERADO,NAO_CAPTURADO,NOT_STARTED
