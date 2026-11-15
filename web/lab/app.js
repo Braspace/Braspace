@@ -5,7 +5,7 @@
 import { apiBase } from "../api-base.js";
 import { Viewer } from "./scene.js";
 import { TerrainGrid } from "./terrain.js";
-import { SiteSeries, rankSites, HOUR_MS, parseEntryHash } from "./data.js";
+import { SiteSeries, rankSites, HOUR_MS, parseEntryHash, validHours } from "./data.js";
 import { azElToEnu, enuToBody } from "./coords.js";
 import { createLive, compareRow, OFFLINE_SEAL } from "./live.js";
 import { createSim, advance, telemetry, thrustDirection, DEFAULT_VEHICLE, MOON_R_REF } from "./physics.js";
@@ -78,6 +78,7 @@ function applyEntryHash(hash) {
   if (e.siteId) state.siteId = e.siteId;
   if (e.t !== undefined) state.t = e.t;
   if (e.compareH) state.compareH = e.compareH;
+  state.durationNotice = e.durationNotice || null;
 }
 const siteById = id => state.index.sites.find(s => s.id === id);
 function series(id) {
@@ -318,7 +319,8 @@ function drawHorizon(cv, s, t) {
 async function renderCompare() {
   panel().innerHTML = `<p class="eyebrow">02 / ${esc(tr("compare"))}</p><h2>${esc(tr("compareTitle"))}</h2>
     <p class="lede">Same start time (${iso(state.t)}), same window, all sites. Values come from the hourly SPICE geometry against each site's LOLA horizon.</p>
-    <label for="cw">Window</label><select id="cw"><option value="48">2 days</option><option value="168">7 days</option><option value="336">14 days</option><option value="672">28 days</option><option value="8760">1 year</option></select>
+    ${state.durationNotice ? `<p class="hud-warn" role="alert">${esc(state.durationNotice.message)}</p>` : ""}
+    <label for="cw">Window</label><select id="cw"><option value="48">2 days</option><option value="168">7 days</option><option value="336">14 days</option><option value="672">28 days</option><option value="1344">56 days</option><option value="8760">1 year</option></select>
     <div id="ctable" class="tablewrap">Loading all site series…</div>
     <p class="muted small">"Long-term" columns are the NASA PGDA average maps at the site (independent reference over a longer period; Earth counted if any part is visible).</p>`;
   $("#cw").value = String(state.compareH);
@@ -326,12 +328,14 @@ async function renderCompare() {
   fillCompare();
 }
 async function fillCompare() {
+  if (!validHours(state.compareH)) { const e0 = $("#ctable"); if (e0) e0.innerHTML = `<p class="hud-warn" role="alert">${esc(tr("notComputed"))}: invalid window (${esc(String(state.compareH))} h).</p>`; return; }
   const entries = await Promise.all(state.index.sites.map(async site => ({ site, series: await series(site.id) })));
   const rows = entries.map(({ site, series: s }) => ({ site, w: s.window(state.t, state.compareH) }));
   const ok = rows.filter(r => r.w.status === "COMPUTED");
   const best = k => Math.max(...ok.map(r => r.w[k])), worst = k => Math.min(...ok.map(r => r.w[k]));
   const cell = (r, k, d, hiGood) => { if (r.w.status !== "COMPUTED") return `<td>${esc(tr("notComputed"))}</td>`; const v = r.w[k]; const star = v === (hiGood ? best(k) : worst(k)) ? " best" : ""; return `<td class="num${star}">${fmt(v, d)}</td>`; };
   const el = $("#ctable"); if (!el) return;
+  if (!ok.length) { el.innerHTML = `<p class="hud-warn" role="alert">${esc(tr("notComputed"))}: ${esc(rows[0]?.w.reason || "no site series covers this window")}</p>`; return; }
   // Live API: rows for sites the API holds a series for, in batches of 3 (API limit). Others keep static values.
   const apiRows = new Map(), ids = state.index.sites.map(x => x.id).filter(id => live.online && live.apiId(id) && live.covers(id, state.t, state.compareH));
   for (let i = 0; i < ids.length; i += 3) {
