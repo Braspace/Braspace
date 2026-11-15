@@ -19,21 +19,11 @@ export interface ArtemisCockpitOptions { lat?: number; lon?: number; texts?: () 
 
 /** South pole fallback when the page has no site (lat -89.5, lon 0). */
 export const SOUTH_POLE = { lat: -89.5, lon: 0 };
-/** Leg span on the unit Moon: about 0.04 scene units, visible from the explore camera at ~1.6 radii. */
+/** Leg span on the unit Moon: about 0.04 scene units, a clear share of the frame from the explore camera. */
 export const COCKPIT_SPAN = 0.04;
-/** Camera distance (Moon radii) when explore opens, and how far (deg of latitude) it stands off the site so the
- * lander is seen at an angle instead of straight from above. */
-export const FOCUS_DISTANCE = 1.6, FOCUS_OFFSET_DEG = 3;
-
-/**
- * Latitude/longitude the camera is sent to: FOCUS_OFFSET_DEG from the site along its meridian, toward the pole when
- * the backdrop's camera cap (|lat| <= 88) allows it (the lander then shows above the screen centre, clear of the
- * controls at the bottom), else toward the equator. Either way the lander is seen at an angle, not straight down.
- */
-export function focusTarget(lat: number, lon: number, off = FOCUS_OFFSET_DEG): { lat: number; lon: number } {
-  const sign = lat < 0 ? -1 : 1, a = Math.abs(lat);
-  return { lat: sign * (a + off <= 88 ? a + off : a - off), lon };
-}
+/** Camera distance from the site (Moon radii) when explore opens. The backdrop orbits around the site itself,
+ * tilted above its horizon from the sunlit side, so the lander is seen in perspective over the relief. */
+export const FOCUS_DISTANCE = 0.4;
 
 const DEFAULT_TEXTS = (): ArtemisTexts => {
   const pt = (document.documentElement.lang || navigator.language || "").toLowerCase().startsWith("pt");
@@ -90,7 +80,7 @@ export function mountArtemisCockpit(options: ArtemisCockpitOptions = {}) {
     tag.classList.toggle("is-off", off);
     if (!off) tag.style.transform = `translate(${((p.x * .5 + .5) * innerWidth).toFixed(1)}px,${((-p.y * .5 + .5) * innerHeight).toFixed(1)}px)`;
   };
-  const focus = () => { if (api) { const f = focusTarget(site.lat, site.lon); api.focusLatLon(f.lat, f.lon, FOCUS_DISTANCE); } };
+  const focus = () => { api?.focusLatLon(site.lat, site.lon, FOCUS_DISTANCE); };
 
   const attach = (a: MoonBackdropApi) => {
     if (dead || api || !a?.scene || !a.THREE) return;

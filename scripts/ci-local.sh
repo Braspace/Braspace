@@ -31,6 +31,7 @@ step() { # step <name> <command...>
 skip() { SUMMARY+=("SKIP  $1 ($2)"); }
 cleanup() {
   "${DC[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true
+  docker rm -f "$PROJECT-pgvector" >/dev/null 2>&1
   [ -n "${BCID:-}" ] && docker rm -f "$BCID" >/dev/null 2>&1
   [ -n "${BTMP:-}" ] && rm -rf "$BTMP"
 }
@@ -79,7 +80,58 @@ postgres_tests() {
     "$PROJECT-go" go test -count=1 -v -run "TestDB" ./ 2>&1); echo "$out" | grep -E "^(--- |ok|FAIL)" 
   ! echo "$out" | grep -q -- "--- SKIP" && echo "$out" | grep -q -- "--- PASS: TestDB"
 }
+pgvector_tests() { # real pgvector lane: own container in this project's network, disposable
+  local vc="$PROJECT-pgvector"; docker rm -f "$vc" >/dev/null 2>&1
+  docker run -d --name "$vc" --network "${PROJECT}_default" -e POSTGRES_USER=braspace -e "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" \
+    -e POSTGRES_DB=braspace_vector_test pgvector/pgvector:pg17 >/dev/null || return 1
+  for i in $(seq 1 30); do docker exec "$vc" pg_isready -U braspace -d braspace_vector_test >/dev/null 2>&1 && break; sleep 1; done
+  local out; out=$(docker run --rm --network "${PROJECT}_default" \
+    -e "TEST_VECTOR_DATABASE_URL=postgres://braspace:${POSTGRES_PASSWORD}@$vc:5432/braspace_vector_test?sslmode=disable" \
+    "$PROJECT-go" go test -count=1 -v -run "TestVector" ./ 2>&1); local rc=$?
+  echo "$out" | grep -E "^(--- |ok|FAIL)"; docker rm -f "$vc" >/dev/null 2>&1
+  [ $rc = 0 ] && ! echo "$out" | grep -q -- "--- SKIP" && echo "$out" | grep -q -- "--- PASS: TestVectorDBQuarantineAndStates"
+}
 freeport() { python3 -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1]);s.close()'; }
+cockpit_focus_qa() {
+  # Older checkouts do not yet have the P0 cockpit focus suite. Once the
+  # cockpit panel controller is shipped, its six-width browser gate is mandatory.
+  local suite=web/browser/cockpit-focus-e2e.mjs
+  [ -f "$BTMP/web/moonproof/cockpit.html" ] || return 1
+  if [ ! -f "$BTMP/$suite" ]; then
+    if grep -q 'cockpit-panels.js' "$BTMP/web/moonproof/cockpit.html"; then
+      echo "Cockpit panel controller present without mandatory $suite" >&2
+      return 1
+    fi
+    echo "SKIP six-width cockpit focus: controller not yet present"
+    return 0
+  fi
+  local wp chrome web_pid rc=0 artifacts
+  wp=$(freeport) || return 1
+  chrome=$(command -v google-chrome) || return 1
+  artifacts="$(node -e 'console.log(require("node:path").resolve(process.argv[1]))' "${BRASPACE_BROWSER_ARTIFACTS:-$BTMP/shots}/cockpit-focus")" || return 1
+  mkdir -p "$artifacts" || return 1
+  # Run the same checked-in suite with the host Chrome and already installed
+  # playwright-core. The source tree remains untouched (only a temporary copy).
+  sed -e "s#from [\"']playwright[\"']#from 'playwright-core'#" \
+      -e "s#chromium.launch({#chromium.launch({executablePath:\"$chrome\",args:[\"--use-angle=swiftshader\",\"--enable-webgl\",\"--enable-unsafe-swiftshader\"],#" \
+      "$BTMP/$suite" > "$BTMP/web/browser/cockpit-focus-ci.mjs" || return 1
+  (cd "$BTMP" && exec env BRASPACE_WEB_PORT="$wp" node web/dev-server.mjs) >"$BTMP/cockpit-web.log" 2>&1 & web_pid=$!
+  local ready=0
+  for i in $(seq 1 30); do
+    kill -0 "$web_pid" 2>/dev/null || break
+    if curl -fsS --max-time 2 "http://127.0.0.1:$wp/moonproof/" >/dev/null 2>&1; then ready=1; break; fi
+    sleep 1
+  done
+  if [ "$ready" != 1 ]; then
+    echo "Cockpit QA web did not start" >&2; tail -10 "$BTMP/cockpit-web.log"; rc=1
+  else
+    (cd "$BTMP" && BRASPACE_COCKPIT_QA_URL="http://127.0.0.1:$wp/moonproof/" \
+      BRASPACE_BROWSER_ARTIFACTS="$artifacts" node web/browser/cockpit-focus-ci.mjs) || rc=$?
+  fi
+  kill "$web_pid" 2>/dev/null || true
+  wait "$web_pid" 2>/dev/null || true
+  return "$rc"
+}
 smoke_publico() { # front via dev-server (proxies /api, /healthz, /v1) + Compose API, as main-smoke did
   local wport; wport=$(freeport)
   # Node may be absent on the CI host: run the dev-server in the same Node image the Dockerfile tests with.
@@ -104,6 +156,7 @@ browser_qa() {
   sed "s#from \"playwright\"#from \"playwright-core\"#; s#chromium.launch({#chromium.launch({executablePath:\"$(command -v google-chrome)\",#" web/browser/e2e.mjs > "$BTMP/web/browser/e2e.mjs"
   ( cd "$BTMP" && cp -r "$OLDPWD/data" "$OLDPWD/examples" . 2>/dev/null; NODE_PATH="$BTMP/web/node_modules" BRASPACE_REQUIRE_BACKEND=1 BRASPACE_BROWSER_ARTIFACTS="$BTMP/shots" \
     BRASPACE_REQUIRE_BACKEND=1 BRASPACE_BROWSER_ARTIFACTS="$BTMP/shots" node web/browser/e2e.mjs ); local rc=$?
+  if [ "$rc" = 0 ]; then cockpit_focus_qa || rc=$?; fi
   kill $ap 2>/dev/null; return $rc
 }
 
@@ -127,6 +180,7 @@ if step "compose up (api + postgres + ingest)" compose_up; then
   step "cockpit ↔ Go/Rust/Postgres contract (scripts/cockpit-backend-contract.mjs)" cockpit_contract
   step "public smoke (scripts/smoke-publico.sh: dev-server front + compose API)" smoke_publico
   step "go tests against compose Postgres" postgres_tests
+  step "go tests against real pgvector (quarantine, states, rollback)" pgvector_tests
 else
   "${DC[@]}" logs 2>&1 | tail -30
 fi

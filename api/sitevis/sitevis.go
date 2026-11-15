@@ -33,9 +33,10 @@ func DiscFraction(marginDeg, radiusDeg float64) float64 {
 	if marginDeg <= -radiusDeg {
 		return 0.0
 	}
-	d := -marginDeg / radiusDeg
-	hidden := (math.Acos(d) - float64(d*math.Sqrt(1-float64(d*d)))) / math.Pi
-	return 1.0 - hidden
+	d := -marginDeg / radiusDeg // horizon line above the centre, in radii
+	// Area of the circular segment ABOVE the horizon (the visible part), not its hidden complement.
+	// The earlier port returned 1 - this, inverted between -r and +r (see sitevis_test.go and #291).
+	return (math.Acos(d) - float64(d*math.Sqrt(1-float64(d*d)))) / math.Pi
 }
 
 // Runs is runs(): the lengths of the maximal runs of value in flags.

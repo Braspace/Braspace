@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-14T17:36:37Z",
+ "generated_utc": "2026-11-15T15:56:44Z",
  "science_status": "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED",
  "note": "Site coordinates are catalogue feature centres, not certified touchdown points.",
  "series_window": {
@@ -20,7 +20,7 @@
    "source_url": "https://www.lroc.asu.edu/images/1401",
    "metrics": {
     "sun_center_visible_pct": 45.23,
-    "mean_solar_disc_visible_pct": 45.57,
+    "mean_solar_disc_visible_pct": 45.29,
     "earth_center_visible_pct": 81.03,
     "sun_and_earth_visible_pct": 37.51,
     "longest_darkness_h": 456.0,
@@ -47,7 +47,7 @@
    "source_url": "",
    "metrics": {
     "sun_center_visible_pct": 38.44,
-    "mean_solar_disc_visible_pct": 38.52,
+    "mean_solar_disc_visible_pct": 38.49,
     "earth_center_visible_pct": 48.83,
     "sun_and_earth_visible_pct": 19.49,
     "longest_darkness_h": 670.0,
@@ -74,7 +74,7 @@
    "source_url": "",
    "metrics": {
     "sun_center_visible_pct": 31.19,
-    "mean_solar_disc_visible_pct": 31.22,
+    "mean_solar_disc_visible_pct": 31.19,
     "earth_center_visible_pct": 31.98,
     "sun_and_earth_visible_pct": 10.44,
     "longest_darkness_h": 515.0,
@@ -101,7 +101,7 @@
    "source_url": "",
    "metrics": {
     "sun_center_visible_pct": 53.32,
-    "mean_solar_disc_visible_pct": 51.92,
+    "mean_solar_disc_visible_pct": 53.0,
     "earth_center_visible_pct": 44.82,
     "sun_and_earth_visible_pct": 26.94,
     "longest_darkness_h": 502.0,
@@ -128,7 +128,7 @@
    "source_url": "",
    "metrics": {
     "sun_center_visible_pct": 80.38,
-    "mean_solar_disc_visible_pct": 80.89,
+    "mean_solar_disc_visible_pct": 80.43,
     "earth_center_visible_pct": 58.88,
     "sun_and_earth_visible_pct": 46.95,
     "longest_darkness_h": 345.0,

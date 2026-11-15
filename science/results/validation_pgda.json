@@ -26,45 +26,45 @@
   "results": [
     {
       "site": "mons-mouton-im2",
-      "pipeline_mean_solar_disc_pct": 45.57,
+      "pipeline_mean_solar_disc_pct": 45.29,
       "pgda_avg_solar_disc_pct": 46.43,
-      "diff_sun_pp": -0.86,
+      "diff_sun_pp": -1.14,
       "pipeline_earth_centre_pct": 81.03,
       "pgda_avg_earth_any_part_pct": 92.06,
       "diff_earth_pp": -11.03
     },
     {
       "site": "malapert-massif",
-      "pipeline_mean_solar_disc_pct": 38.52,
+      "pipeline_mean_solar_disc_pct": 38.49,
       "pgda_avg_solar_disc_pct": 34.97,
-      "diff_sun_pp": 3.55,
+      "diff_sun_pp": 3.52,
       "pipeline_earth_centre_pct": 48.83,
       "pgda_avg_earth_any_part_pct": 52.75,
       "diff_earth_pp": -3.92
     },
     {
       "site": "nobile-rim-1",
-      "pipeline_mean_solar_disc_pct": 31.22,
+      "pipeline_mean_solar_disc_pct": 31.19,
       "pgda_avg_solar_disc_pct": 30.85,
-      "diff_sun_pp": 0.37,
+      "diff_sun_pp": 0.34,
       "pipeline_earth_centre_pct": 31.98,
       "pgda_avg_earth_any_part_pct": 35.83,
       "diff_earth_pp": -3.85
     },
     {
       "site": "connecting-ridge",
-      "pipeline_mean_solar_disc_pct": 51.92,
+      "pipeline_mean_solar_disc_pct": 53.0,
       "pgda_avg_solar_disc_pct": 50.65,
-      "diff_sun_pp": 1.27,
+      "diff_sun_pp": 2.35,
       "pipeline_earth_centre_pct": 44.82,
       "pgda_avg_earth_any_part_pct": 43.74,
       "diff_earth_pp": 1.08
     },
     {
       "site": "peak-near-shackleton",
-      "pipeline_mean_solar_disc_pct": 80.89,
+      "pipeline_mean_solar_disc_pct": 80.43,
       "pgda_avg_solar_disc_pct": 71.89,
-      "diff_sun_pp": 9.0,
+      "diff_sun_pp": 8.54,
       "pipeline_earth_centre_pct": 58.88,
       "pgda_avg_earth_any_part_pct": 57.26,
       "diff_earth_pp": 1.62

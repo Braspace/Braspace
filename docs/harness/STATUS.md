@@ -16,9 +16,9 @@ Horas em BRT (America/Sao_Paulo). Horas UTC entre parênteses quando informadas 
 
 ## API em produção (harness, `/docker/braspace`)
 
-- Imagem: `62bf446e386d`, publicada às 11:35 BRT (14:35Z).
-- Backup antes do deploy: `backup/pre-62bf446e386d-20261115-143519.dump`.
-- Rollback: `IMAGEM=20882693109b`.
+- Imagem: `2b6247498db4-sha` (main `2b62474`, #374), publicada às 13:39 BRT (16:39Z). Release `v2026.11.15-prod-2b62474`.
+- Backup antes do deploy: `backup/pre-2b6247498db4-sha-20261115-163914.dump`.
+- Rollback: `IMAGEM=41dedbb4705b-sha` (anterior), depois `ad83cfe7517c-sha`. Se for preciso desfazer a migração do pgvector, restaurar o dump.
 
 ## Verificado ao vivo pela borda
 
@@ -61,6 +61,7 @@ Feito pela sessão do #296 com autorização do Gustavo. O integrador MAC estava
 - **Subida:** `.env` com `IMAGEM=ad83cfe7517c`, depois `docker compose up -d` (`ingest` → `vector-ingest`, 10 upserts → `api` healthy).
 - **Rollback:** `IMAGEM=62bf446e386d` no `.env` e `docker compose up -d`. A imagem anterior continua no host.
 
+
 Smoke pós-deploy, direto e pela borda do Worker:
 - `/api/health`: 200, `data_source: postgres`, `store.status: ok`, 16 locais, 7 com série.
 - `/readyz` e `/api/sites`: 200.
@@ -71,3 +72,47 @@ Matriz `web/browser/route-matrix.mjs` em produção (16 páginas × 6 tamanhos),
 - Depois, 95/96 em cada trilha. A única falha de cada uma foi `net::ERR_NETWORK_CHANGED` ao baixar o three.js de `cdn.jsdelivr.net`: a rede do host de teste oscilou, não é defeito da aplicação.
 
 Risco anotado: o three.js vem do CDN jsDelivr (CSP `script-src`). Se o CDN falhar, a cena 3D cai no poster. Vendorizar o three.js em `web/vendor/` eliminaria essa dependência externa; ainda não foi feito.
+
+## Re-stamp da API `ad83cfe7517c-sha` — 15/11/2026 12:53 BRT (15:53Z), EXO-X1
+
+- **Motivo:** `/healthz` do deploy acima respondia `build_commit: "unknown"` (imagem construída sem `--build-arg BRASPACE_GIT_SHA`). Sem o SHA, o smoke de release não prova qual código está no ar.
+- **Código:** o mesmo commit `ad83cfe7517c481adb2b8ba4c0971c9ada0c302a`, sem migração. Build no EXO-X1: `docker build --target release --build-arg BRASPACE_GIT_SHA=<sha completo>` a partir de `git archive`.
+- **Imagem:** `braspace-api:ad83cfe7517c-sha`. Só o serviço `api` foi trocado (`docker compose up -d --no-deps api`), healthy.
+- **Backup:** `backup/pre-ad83cfe7517c-sha-20261115-155332.dump` e `backup/env-antes-ad83cfe7517c-sha-20261115-155332`.
+- **Verificado:** `BRASPACE_EXPECT_COMMIT=ad83cfe7517c… BRASPACE_COCKPIT_PACE_MS=150 node scripts/cockpit-backend-contract.mjs` com 49/49 pela borda do Worker e 49/49 direto na API. `smoke-publico.sh` também passou.
+- **Rollback:** `IMAGEM=ad83cfe7517c` (mesmo código, sem SHA) ou `IMAGEM=62bf446e386d`.
+- **Regra para os próximos deploys:** sempre construir com `BRASPACE_GIT_SHA=$(git rev-parse HEAD)` e validar com `BRASPACE_EXPECT_COMMIT`. Rodar o contrato com `BRASPACE_COCKPIT_PACE_MS=150`, porque o Traefik limita 20 req/s com burst 40 por IP.
+
+## Deploy do Worker `f26e95fa` — main `6433866` (#365), 15/11/2026 ~13:10 BRT
+
+Feito pela sessão do #296 com autorização do Gustavo. A configuração ao vivo (`3f1b9c03`) foi conferida antes: `compatibility_date` 2026-11-01, binding `ASSETS`, handler `fetch`, igual ao `deploy/cloudflare/wrangler.toml.example`.
+
+- **Origem:** worktree limpa em `origin/main`. Antes do upload, `web/config.js` recebeu `BRASPACE_COMMIT` com o SHA completo, só na árvore de deploy, sem commit.
+- **Testes do Worker:** `node --test deploy/cloudflare/*.test.mjs`, 55/0.
+- **Rollback:** `npx wrangler rollback 3f1b9c03-0f0c-4988-b9b6-d381dd632cb2` (versão anterior, main `acbd5d6`).
+
+Verificado ao vivo:
+- `/config.js` traz o commit;
+- `/vendor/three/three.module.min.js` responde 200;
+- `/moon-hd/scene.js` importa o three vendorizado;
+- `/api/health` responde `store.status: ok`.
+
+Matriz em produção (16 páginas × 6 tamanhos): **96/96 sem WebGL** e **96/96 com GPU**. Não há mais dependência do CDN jsDelivr; o risco anotado no deploy da API está resolvido.
+
+## Deploys da API `41dedbb4705b-sha` e `2b6247498db4-sha` — 15/11/2026, EXO-X1
+
+| Hora (Z) | Imagem | Conteúdo | Backup |
+|---|---|---|---|
+| 16:16 | `41dedbb4705b-sha` | #363 contratos + vector-ingest sem flag, #369 disc_fraction corrigido; migração `optional-vector.sql` (tabela `source_semantic_ingest_runs`, PK `(source_ref, model_id)`, CHECK norma > 0) | `pre-41dedbb4705b-sha-20261115-161650.dump` |
+| 16:39 | `2b6247498db4-sha` | #374: quarentena pgvector e estados (#331+#358), saída exata do Rust (#347), grade do sky (#332) | `pre-2b6247498db4-sha-20261115-163914.dump` |
+
+Procedimento usado nos dois deploys:
+1. `ci-local --browser` GREEN no SHA. No último, 12/12, com a faixa de pgvector real.
+2. Build com `--build-arg BRASPACE_GIT_SHA=<sha completo>`.
+3. Ensaio num pgvector:pg17 local, restaurado de um dump atual da produção: `ingest`, `vector-ingest` e `api`.
+4. `docker save | tailscale ssh harness docker load`.
+5. `pg_dump`.
+6. `IMAGEM` no `.env`, depois `up --no-deps ingest`, depois `vector-ingest`, depois `api`.
+7. Contrato com `BRASPACE_EXPECT_COMMIT` e `BRASPACE_COCKPIT_PACE_MS=150` (49/49 pela borda e direto), `smoke-publico.sh` e QA do cockpit em 6 viewports com toque e GPU real.
+
+Estado do pgvector depois do deploy: `index_ready`, 4 auditados com manifesto `8fdc414e…`, 10 legados em quarentena (`legacy_unverified`, não servidos; as linhas não foram apagadas).

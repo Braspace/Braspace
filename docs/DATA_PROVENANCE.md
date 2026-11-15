@@ -28,16 +28,16 @@ Verified against `main` (`0e646c3c50ad665c34013415809e951e489a3b0f`) on **2026-1
 | `web/data/region/south_pole_400m.bin` | `87e7353dafe537cef80fe45047162770a29c9de4b620423b18dd1a1fb3da1d89` |
 | `web/data/region/south_pole_400m.json` | `c7468bb643403f9914b8502bc9f6606a260da23241b9a16572da2f67567887a9` |
 | `web/data/sites/connecting-ridge.bin` | `9b6c4b473ace9777a9f20cc7d75f28a8ba77c23fd5dc83777b23da4a60d1f061` |
-| `web/data/sites/connecting-ridge.json` | `811f5e211fa00549c3740bc6bf2a23e4937ad8b6c9e4c8938505ce03e981073c` |
-| `web/data/sites.json` | `ca33daa5bb294e7924a6fe3c070e457ebbeecb79d2e576d8100ef0eeb731f914` |
+| `web/data/sites/connecting-ridge.json` | `1d5d900207fa367d1568f98412729a905e36c09c7e84e4b8eba45b037bb4445a` |
+| `web/data/sites.json` | `ea98bffc786954af8d884a1ba60c995e9cfa8466505a1d854bd19dbf404bb76a` |
 | `web/data/sites/malapert-massif.bin` | `3c3cc5ba37e752ced5512481ccde7d7ed90895f8bca6b0e026ea6d435df58e1f` |
-| `web/data/sites/malapert-massif.json` | `4b20b0b9101cbea5886f423950555734c725e8e319af5ddc8d431832921825bd` |
+| `web/data/sites/malapert-massif.json` | `703f0b5c66136bcaec10c2198558e74aa07b74762c8c1a075a4a00999c9a66dd` |
 | `web/data/sites/mons-mouton-im2.bin` | `e37019c126cbe6e2f6aac192110684abad01c2eadbfce531e2e8c8bab6a2b5f8` |
-| `web/data/sites/mons-mouton-im2.json` | `4ede8ca1841b4f903aebb9cacb89a65f0f5b6d1a55808ad8dceeadff81a73b75` |
+| `web/data/sites/mons-mouton-im2.json` | `7b9390284cea6af7e687f24c4d28532f79a00bbaa6bd30fea97d35df24b94fcf` |
 | `web/data/sites/nobile-rim-1.bin` | `4a1af8b347c44b08ae7130d7cc10ee5a97cc9019a49933e02594b509482f5be9` |
-| `web/data/sites/nobile-rim-1.json` | `784bee0841930d806cdb66ce862da8c60232d2907db1aab8f06544096b9bd7f0` |
+| `web/data/sites/nobile-rim-1.json` | `1a64d2a2be5d40f970b989b363c75fd1d83a29fa812cdc0373b453bc4dd24167` |
 | `web/data/sites/peak-near-shackleton.bin` | `bc5c44430bb5fe20cf1ce9bfcb7411cff0605c98f0f8c2fff9a6a158fc273d86` |
-| `web/data/sites/peak-near-shackleton.json` | `1731df3d7b6f31ddfad1485669f985229b5d33e9c07723efb46d656317943bda` |
+| `web/data/sites/peak-near-shackleton.json` | `65ba82deb0f672def7205a5f253236dc45545bc09f98f5f1aca909408987518c` |
 | `web/data/terrain/connecting-ridge_local.bin` | `22110502d839eefe3454d820f20a3983f35191d917911ef0b0af1557ba866888` |
 | `web/data/terrain/connecting-ridge_local.json` | `885630720a1aeface7a75a7bb15d7ddc07ac2b225fe1ad0c8aa46739a5ab0d38` |
 | `web/data/terrain/malapert-massif_local.bin` | `f12bd70d3b1518a948a3dd3ab2038a2f2dfcf321ece3d40b2e9354cf1fea593f` |
@@ -49,4 +49,40 @@ Verified against `main` (`0e646c3c50ad665c34013415809e951e489a3b0f`) on **2026-1
 | `web/data/terrain/peak-near-shackleton_local.bin` | `fb54a0571cd76de6cb0ef94cbb37ba75c465575039b3551b6c3b56729a79ccc9` |
 | `web/data/terrain/peak-near-shackleton_local.json` | `889aec2589bfb46955186ac2c04b578ebe44dc007af073e90338d97b86851082` |
 | `web/data/validation/validation_horizons.json` | `09f10d0ffe30a751aecdaf15b434b993a75ea53c9c912cd0973ab869c4eb5229` |
-| `web/data/validation/validation_pgda.json` | `de0ccf38db16779f1a900c232e5824dd88cf01d29980b183dcaece53b7c20fdd` |
+| `web/data/validation/validation_pgda.json` | `08d6a608285419f46ffd9a2a0399c71baebfc42f90f50d75af01328af14ee536` |
+
+
+## 15/11/2026 — solar-disc fraction fix: derived artefacts regenerated
+
+`api/sitevis.DiscFraction` (the Go port of `disc_fraction`, #318) returned `1 − visible`, the pre-#291 inverted
+formula. It is now the visible circular segment, and `TestDiscFraction` checks analytical segment areas,
+monotonicity, continuity at ±r and symmetry. Only `mean_solar_disc_visible_pct` and the derived PGDA
+differences change. Status stays **PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED**.
+
+Inputs: NASA/NAIF bytes whose SHA-256 match the provenance above (LDEM_80S_80M `e6591eee…`, naif0012 `678e32bd…`,
+de440s `c1c7feea…`, moon_pa_de440_200625 `60cd55aa…`, moon_de440_250416 `a47c71e9…`, PGDA AVGVISIB_75S_120M_201608
+`a354543b…`, _EARTH `443ad251…`). Tools: `cmd/threesitepipeline`, `science/build_web_assets.py`, `cmd/horizonreachstudy`.
+`TestReproducesCommittedSummary` and `TestReproducesCommittedStudy` pass with the real inputs. Every `.bin`
+(series, region, terrain tiles) is byte-identical. An independent Python run of the fixed pipeline gave the same
+summary, and the new PGDA differences match a second session's independent regeneration.
+
+| Site | mean solar disc % (before → after) | vs PGDA (pp, before → after) |
+|---|---|---|
+| mons-mouton-im2 | 45.57 → 45.29 | −0.86 → −1.14 |
+| malapert-massif | 38.52 → 38.49 | 3.55 → 3.52 |
+| nobile-rim-1 | 31.22 → 31.19 | 0.37 → 0.34 |
+| connecting-ridge | 51.92 → 53.00 | 1.27 → 2.35 |
+| peak-near-shackleton | 80.89 → 80.43 | 9.00 → 8.54 (still the only site beyond the 5 pp tolerance) |
+
+| Derived file | SHA-256 before | after |
+|---|---|---|
+| `web/data/sites.json` | `ca33daa5bb294e79…` | `ea98bffc786954af…` |
+| `science/results/summary.json` | `f08340a2b2c24039…` | `6540ff057219c437…` |
+| `science/results/validation_pgda.json` | `de0ccf38db16779f…` | `08d6a608285419f4…` |
+| `science/results/horizon_reach.json` | `0e0ad8abc33f2819…` | `960ae95921446b84…` |
+| `web/data/validation/validation_pgda.json` | `de0ccf38db16779f…` | `08d6a608285419f4…` |
+| `web/data/sites/connecting-ridge.json` | `811f5e211fa00549…` | `1d5d900207fa367d…` |
+| `web/data/sites/malapert-massif.json` | `4b20b0b9101cbea5…` | `703f0b5c66136bca…` |
+| `web/data/sites/mons-mouton-im2.json` | `4ede8ca1841b4f90…` | `7b9390284cea6af7…` |
+| `web/data/sites/nobile-rim-1.json` | `784bee0841930d80…` | `1a64d2a2be5d40f9…` |
+| `web/data/sites/peak-near-shackleton.json` | `1731df3d7b6f31dd…` | `65ba82deb0f672de…` |

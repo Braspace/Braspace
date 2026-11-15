@@ -30,16 +30,35 @@ func TestDiscFraction(t *testing.T) {
 	if got := DiscFraction(0, r); math.Abs(got-0.5) > 1e-15 {
 		t.Errorf("half disc: %v", got)
 	}
-	// KNOWN DEFECT PRESERVED, NOT ENDORSED. science/three_site_pipeline.py disc_fraction() (which this ports
-	// bit for bit, because the committed results depend on it) is inverted between -r and +r: a centre
-	// 0.5 r above the horizon should show ~0.80 of the disc, it returns 0.196, and 0.804 at -0.5 r. These are
-	// the Python values (python3.11); a future fix must change them here deliberately and regenerate every
-	// artefact that carries mean_solar_disc_visible_pct.
-	for _, c := range []struct{ m, want float64 }{{-0.5 * r, 0.8044988905221147}, {-0.1 * r, 0.5635557142152309},
-		{0.1 * r, 0.4364442857847691}, {0.5 * r, 0.19550110947788524}} {
-		if got := DiscFraction(c.m, r); math.Abs(got-c.want) > 1e-15 {
-			t.Errorf("DiscFraction(%v r) = %v, Python gives %v", c.m/r, got, c.want)
+	// Analytical circular-segment areas (ported from the #291 regression, science/tests/test_solar_disc_fraction.py):
+	// a centre 0.5 r BELOW the horizon shows the segment 1/3 - sqrt(3)/(4 pi) ~ 0.1955 of the disc, 0.5 r ABOVE
+	// shows the complement ~ 0.8045. The previous port returned these swapped (inverted between -r and +r).
+	halfMinus := 1.0/3 - math.Sqrt(3)/(4*math.Pi)
+	for _, c := range []struct{ m, want float64 }{{-0.5 * r, halfMinus}, {0.5 * r, 1 - halfMinus}} {
+		if got := DiscFraction(c.m, r); math.Abs(got-c.want) > 1e-12 {
+			t.Errorf("DiscFraction(%v r) = %v, want %v", c.m/r, got, c.want)
 		}
+	}
+	// Monotonic non-decreasing, bounded, continuous to the saturation limits, and symmetric f(m)+f(-m)=1.
+	prev := -1.0
+	for i := -120; i <= 120; i++ {
+		f := DiscFraction(r*float64(i)/100, r)
+		if f < 0 || f > 1 || f < prev {
+			t.Fatalf("not monotonic/bounded at %d/100 r: %v after %v", i, f, prev)
+		}
+		prev = f
+		if i >= -100 && i <= 100 {
+			if s := f + DiscFraction(-r*float64(i)/100, r); math.Abs(s-1) > 1e-12 {
+				t.Errorf("asymmetric at %d/100 r: sum %v", i, s)
+			}
+		}
+	}
+	if DiscFraction(-r*(1-1e-6), r) > 1e-6 || DiscFraction(r*(1-1e-6), r) < 1-1e-6 {
+		t.Error("discontinuous at the saturation limits")
+	}
+	// Centre above the horizon always shows more than half of the disc (the inverted port gave 0.436 at +0.1 r).
+	if DiscFraction(0.1*r, r) <= 0.5 {
+		t.Errorf("centre 0.1 r above the horizon shows %v of the disc", DiscFraction(0.1*r, r))
 	}
 }
 

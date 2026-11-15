@@ -207,3 +207,18 @@ func TestDBSkySameAnswers(t *testing.T) {
 		t.Error("no-series answers differ")
 	}
 }
+
+// A duration that is not a whole multiple of the series step is rejected, never rounded up.
+func TestSkyDurationMustBeOnGrid(t *testing.T) {
+	h, _ := testAPI(t, "ok")
+	for _, q := range []string{"hours=0.01", "hours=0.5", "hours=1.5"} {
+		rec := do(h, "GET", "/api/sites/synthetic-demo-a/sky?"+q, "")
+		if rec.Code != 422 || decode(t, rec)["code"] != "GRID_NOT_ALIGNED" {
+			t.Errorf("%s: %d %.200s", q, rec.Code, rec.Body.String())
+		}
+	}
+	rec := do(h, "GET", "/api/sites/synthetic-demo-a/sky?hours=3", "")
+	if rec.Code != 200 || len(decode(t, rec)["samples"].([]any)) != 3 {
+		t.Fatalf("%d %.200s", rec.Code, rec.Body.String())
+	}
+}

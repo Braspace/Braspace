@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { buildArtemisLander, hoverPose, plumeLength, scaleForSpan, globeUp, ARTEMIS_NAME, ARTEMIS_SPAN_M, NOZZLE_EXIT_Y } from "../moon-hd/artemis.js";
-import { focusTarget, COCKPIT_SPAN, SOUTH_POLE } from "../moon-hd/artemis-cockpit.js";
+import { COCKPIT_SPAN, SOUTH_POLE, FOCUS_DISTANCE } from "../moon-hd/artemis-cockpit.js";
+import { orbitCamera, MIN_RANGE, MAX_RANGE, MIN_CAMERA_RADIUS, FOCUS_PITCH } from "../moon-hd/backdrop.js";
 
 const read = p => readFile(new URL("../" + p, import.meta.url), "utf8");
 
@@ -58,14 +59,16 @@ test("hover loop stays at an exaggerated altitude; reduced motion is one still p
   assert.ok(hoverPose(0, { reducedMotion: true }).r > 1.03);
 });
 
-test("local up is the surface normal in the globe scene frame; camera stands off equatorward", () => {
+test("local up is the surface normal in the globe scene frame; camera orbits the site at an angle", () => {
   const u = globeUp(-90, 0); assert.ok(Math.abs(u[1] + 1) < 1e-12, "south pole is -Y");
   const e = globeUp(0, 90); assert.ok(Math.abs(e[2] + 1) < 1e-12, "body +Y maps to scene -Z");
   assert.ok(Math.abs(Math.hypot(...globeUp(-84.8, 29.1)) - 1) < 1e-12);
-  assert.deepEqual(focusTarget(SOUTH_POLE.lat, 0), { lat: -86.5, lon: 0 }, "inside the 88° camera cap: equatorward");
-  assert.deepEqual(focusTarget(-70, 30), { lat: -73, lon: 30 }, "poleward on the same meridian");
-  assert.ok(Math.abs(focusTarget(-84.78, 29).lat + 87.78) < 1e-9);
-  assert.ok(focusTarget(40, 5).lat > 40);
+  // explore aims at the site itself (backdrop orbit camera): close, tilted, outside the Moon
+  assert.ok(FOCUS_DISTANCE >= MIN_RANGE && FOCUS_DISTANCE <= MAX_RANGE && FOCUS_DISTANCE < 0.6);
+  const site = globeUp(SOUTH_POLE.lat, SOUTH_POLE.lon), cam = orbitCamera(site, 0.7, FOCUS_PITCH, FOCUS_DISTANCE);
+  const off = cam.map((v, i) => v - site[i]), elev = Math.asin(off.reduce((a, v, i) => a + v * site[i], 0) / Math.hypot(...off)) * 180 / Math.PI;
+  assert.ok(Math.abs(elev - FOCUS_PITCH) < 1e-6, "seen at the focus pitch, not from straight above: " + elev);
+  assert.ok(Math.hypot(...cam) >= MIN_CAMERA_RADIUS);
 });
 
 test("lab and cockpit share the lander; no second Moon, no style attribute, honest label", async () => {

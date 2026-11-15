@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"github.com/Braspace/Braspace/api/sitevis"
 	"os"
 	"path/filepath"
 	"strings"
@@ -94,6 +95,23 @@ func TestMetricsOnASyntheticSeries(t *testing.T) {
 	}
 	if _, err := computeMetrics(nil, horizon, 60); err == nil || err.Error() != "ZeroDivisionError: float division by zero" {
 		t.Errorf("empty series: %v", err)
+	}
+}
+
+// Ported from science/tests/test_solar_disc_fraction.py (#291): a sun centre half a radius above a flat
+// horizon is fully "centre visible" and shows 80.45 % of the disc (the inverted port reported 19.55 %).
+func TestMetricsPreservePartialSolarDisc(t *testing.T) {
+	horizon := make([]float64, 360)
+	m, err := computeMetrics([]sample{{sunAz: 0, sunEl: sitevis.SunRadiusDeg / 2, earthAz: 0, earthEl: 1}}, horizon, 60)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := m.obj()
+	if v, _ := got.Get("sun_center_visible_pct"); v != 100.0 {
+		t.Errorf("sun_center_visible_pct = %v", v)
+	}
+	if v, _ := got.Get("mean_solar_disc_visible_pct"); v != 80.45 {
+		t.Errorf("mean_solar_disc_visible_pct = %v, want 80.45", v)
 	}
 }
 

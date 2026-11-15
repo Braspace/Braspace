@@ -66,4 +66,9 @@ END $$;
 -- Safe initial B-tree filter. Consider HNSW only with enough real data
 -- and a measured query plan, not blindly during the hackathon.
 CREATE INDEX IF NOT EXISTS idx_source_semantic_model ON public.source_semantic_index(model_id);
+-- Audit lineage lookup (#331): the API serves only rows of the model's current
+-- audited manifest; rows with NULL or another manifest are quarantined, never deleted.
+-- Rollback of the audit link (keeps every row): db/optional-vector.down.sql.
+CREATE INDEX IF NOT EXISTS idx_source_semantic_model_manifest
+    ON public.source_semantic_index(model_id, ingest_manifest_sha256);
 COMMIT;

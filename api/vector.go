@@ -192,11 +192,89 @@ func (v *vectorAPI) ready(ctx context.Context) bool {
 	return err == nil
 }
 
+// Readiness states (#331). ready() above is only the schema/privilege probe;
+// public search is served exclusively in state index_ready, from rows of the
+// model's current audited ingest manifest. Legacy rows (NULL manifest, or a
+// manifest that is not the current one) stay in the table, quarantined.
+type vectorState struct {
+	State      string
+	Audited    int
+	Legacy     int
+	OtherModel int
+	Manifest   string
+}
+
+// vectorCurrentManifestSQL selects the model's most recently APPLIED audited
+// manifest. The ingest ledger keeps first-ingest time only (ON CONFLICT DO
+// NOTHING on replay), while every apply rewrites updated_at=now() on all of its
+// rows in one transaction, so the latest audited row identifies the manifest of
+// the latest apply, replays included. The ledger join pins model and audit.
+const vectorCurrentManifestSQL = `(SELECT i.ingest_manifest_sha256 AS manifest_sha256
+	  FROM public.source_semantic_index i
+	  JOIN public.source_semantic_ingest_runs r ON r.manifest_sha256=i.ingest_manifest_sha256 AND r.model_id=i.model_id
+	  WHERE i.model_id=$1 ORDER BY i.updated_at DESC, r.ingested_at DESC, i.ingest_manifest_sha256 LIMIT 1)`
+
+func (v *vectorAPI) diagnose(ctx context.Context) vectorState {
+	if !v.enabled {
+		return vectorState{State: "disabled"}
+	}
+	if v.pool == nil {
+		return vectorState{State: "db_down"}
+	}
+	c, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	// The pool is lazy (no startup Ping): a DB down at boot recovers here.
+	if v.pool.Ping(c) != nil {
+		return vectorState{State: "db_down"}
+	}
+	if !v.ready(c) {
+		return vectorState{State: "schema_unavailable"}
+	}
+	var audit bool
+	if err := v.pool.QueryRow(c, `SELECT to_regclass('public.source_semantic_ingest_runs') IS NOT NULL AND EXISTS(
+	  SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('public.source_semantic_index')
+	  AND attname='ingest_manifest_sha256' AND NOT attisdropped)`).Scan(&audit); err != nil {
+		return vectorState{State: "db_down"}
+	}
+	if !audit {
+		return vectorState{State: "schema_unavailable"}
+	}
+	var s vectorState
+	var manifest *string
+	// Legacy = same model but NOT audited. A NULL manifest is always legacy (#358):
+	// with no ingest run yet, NULL IS DISTINCT FROM NULL is false and would hide it.
+	err := v.pool.QueryRow(c, `WITH cur AS `+vectorCurrentManifestSQL+`
+	  SELECT (SELECT manifest_sha256 FROM cur),
+	   count(*) FILTER (WHERE model_id=$1 AND ingest_manifest_sha256=(SELECT manifest_sha256 FROM cur)),
+	   count(*) FILTER (WHERE model_id=$1 AND (ingest_manifest_sha256 IS NULL OR ingest_manifest_sha256 IS DISTINCT FROM (SELECT manifest_sha256 FROM cur))),
+	   count(*) FILTER (WHERE model_id<>$1)
+	  FROM public.source_semantic_index`, v.modelID).Scan(&manifest, &s.Audited, &s.Legacy, &s.OtherModel)
+	if err != nil {
+		return vectorState{State: "schema_unavailable"}
+	}
+	if manifest != nil {
+		s.Manifest = strings.TrimSpace(*manifest)
+	}
+	switch {
+	case s.Audited > 0:
+		s.State = "index_ready"
+	case s.Legacy > 0:
+		s.State = "legacy_unverified"
+	case s.OtherModel > 0:
+		s.State = "model_mismatch"
+	default:
+		s.State = "empty"
+	}
+	return s
+}
+
 func (v *vectorAPI) status(w http.ResponseWriter, r *http.Request) {
-	ready := v.enabled && v.ready(r.Context())
+	s := v.diagnose(r.Context())
 	writeJSON(w, 200, map[string]any{
-		"enabled": v.enabled, "available": ready, "dimension": vectorDimensions,
-		"model_id":                 v.modelID,
+		"enabled": v.enabled, "available": s.State == "index_ready", "dimension": vectorDimensions,
+		"model_id": v.modelID, "state": s.State, "audited_count": s.Audited,
+		"legacy_unverified_count": s.Legacy, "other_model_count": s.OtherModel,
+		"ingest_manifest_sha256":   s.Manifest,
 		"purpose":                  "provenance-linked metadata retrieval only; never a lunar physics engine",
 		"scientifically_validated": false,
 	})
@@ -211,8 +289,9 @@ func validVectorHit(h vectorHit) bool {
 }
 
 func (v *vectorAPI) search(w http.ResponseWriter, r *http.Request) {
-	if !v.enabled || !v.ready(r.Context()) {
-		writeJSON(w, 503, map[string]string{"error": "vector metadata index unavailable or disabled", "code": "VECTOR_UNAVAILABLE"})
+	st := v.diagnose(r.Context())
+	if st.State != "index_ready" {
+		writeJSON(w, 503, map[string]string{"error": "vector metadata index unavailable or disabled", "code": "VECTOR_UNAVAILABLE", "state": st.State})
 		return
 	}
 	req, literal, err := parseVectorRequest(r)
@@ -235,10 +314,13 @@ func (v *vectorAPI) search(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
-	rows, err := v.pool.Query(ctx, `SELECT source_ref, title, source_url, sha256,
-	  (1 - (embedding OPERATOR(public.<=>) $1::public.vector))::float8
-	  FROM public.source_semantic_index WHERE model_id=$2 AND public.vector_norm(embedding)>0
-	  ORDER BY embedding OPERATOR(public.<=>) $1::public.vector, source_ref COLLATE "C" LIMIT $3`, literal, req.ModelID, req.Limit)
+	// Only the current audited manifest is searchable; legacy rows are quarantined.
+	rows, err := v.pool.Query(ctx, `WITH cur AS `+strings.Replace(vectorCurrentManifestSQL, "$1", "$2", 1)+`
+	  SELECT s.source_ref, s.title, s.source_url, s.sha256,
+	  (1 - (s.embedding OPERATOR(public.<=>) $1::public.vector))::float8
+	  FROM public.source_semantic_index s JOIN cur ON s.ingest_manifest_sha256=cur.manifest_sha256
+	  WHERE s.model_id=$2 AND public.vector_norm(s.embedding)>0
+	  ORDER BY s.embedding OPERATOR(public.<=>) $1::public.vector, s.source_ref COLLATE "C" LIMIT $3`, literal, req.ModelID, req.Limit)
 	if err != nil {
 		writeJSON(w, 503, map[string]string{"error": "vector query unavailable", "code": "VECTOR_UNAVAILABLE"})
 		return
@@ -263,7 +345,9 @@ func (v *vectorAPI) search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, map[string]any{"model_id": v.modelID, "dimension": vectorDimensions, "results": hits,
-		"scientifically_validated": false, "limitations": []string{"Similarity concerns source metadata only; not Sun/Earth geometry, terrain or mission validity."}})
+		"ingest_manifest_sha256":   st.Manifest,
+		"scientifically_validated": false, "limitations": []string{"Similarity concerns source metadata only; not Sun/Earth geometry, terrain or mission validity.",
+			"Only rows from the current audited ingest manifest are returned; legacy rows are quarantined."}})
 }
 
 func registerVectorAPI(mux *http.ServeMux) {

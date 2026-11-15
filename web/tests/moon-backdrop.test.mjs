@@ -130,6 +130,57 @@ test("camera stays outside the Moon and south of the equator in both views",()=>
  for(const d of [0.5,2,20]){const r=Math.hypot(...cameraPosition("globe",1,30,d));assert.ok(r>=MIN_DISTANCE-1e-9&&r<=MAX_DISTANCE+1e-9);}
 });
 
+test("explore camera orbits a surface target: tilted, never inside the Moon, NaN-safe, global view unchanged",()=>{
+ const {orbitCamera,orbitFrame,yawToward,slerpUnit,tweenPose,nearPlane,facesCamera,clampRange,clampPitch,MIN_CAMERA_RADIUS,MIN_RANGE,MAX_RANGE,MIN_PITCH,MAX_PITCH,FOCUS_RANGE,FOCUS_PITCH}=backdrop;
+ const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],sub=(a,b)=>a.map((v,i)=>v-b[i]),len=a=>Math.hypot(...a),close=(a,b,e=1e-9)=>a.every((v,i)=>Math.abs(v-b[i])<e);
+ // target at the origin is exactly the old global camera
+ for(const [yaw,lat,d] of [[0,-62,4.4],[2.5,30,7.5],[-1,-88,1.35]])assert.ok(close(orbitCamera([0,0,0],yaw,lat,d),cameraPosition("pole",yaw,lat,d)),"global "+yaw);
+ // a south-pole site: frame is orthonormal with up = the surface normal
+ const ll=(la,lo)=>[Math.cos(la*Math.PI/180)*Math.cos(lo*Math.PI/180),Math.sin(la*Math.PI/180),-Math.cos(la*Math.PI/180)*Math.sin(lo*Math.PI/180)];
+ for(const t of [ll(-89.5,0),ll(-84.8,29),[0,-1,0],[0,1,0],ll(10,200)]){
+  const f=orbitFrame(t);
+  for(const v of [f.up,f.north,f.east])assert.ok(Math.abs(len(v)-1)<1e-9);
+  assert.ok(Math.abs(dot(f.up,f.north))<1e-9&&Math.abs(dot(f.up,f.east))<1e-9&&Math.abs(dot(f.north,f.east))<1e-9);
+  assert.ok(close(f.up,t.map(v=>v/len(t))));
+  // pitch is the elevation above the local horizon, dist the distance to the target
+  for(const yaw of [0,1,3,-2])for(const pitch of [MIN_PITCH,FOCUS_PITCH,MAX_PITCH]){
+   const c=orbitCamera(t,yaw,pitch,FOCUS_RANGE),o=sub(c,t);
+   assert.ok(Math.abs(len(o)-FOCUS_RANGE)<1e-9);
+   assert.ok(Math.abs(Math.asin(dot(o,f.up)/len(o))*180/Math.PI-pitch)<1e-6);
+   assert.ok(Math.abs(yawToward(t,o)-Math.atan2(Math.sin(yaw),Math.cos(yaw)))<1e-9,"yawToward inverts the yaw");
+  }
+ }
+ // never inside the Moon: any yaw/pitch/dist (clamped), and garbage in -> finite out
+ const t=ll(-88.6,20);
+ for(const yaw of [0,1,2,4,6])for(const pitch of [-90,-10,0,5,45,120])for(const d of [0,0.001,0.05,0.3,9,1e9]){
+  const c=orbitCamera(t,yaw,pitch,d);assert.ok(len(c)>=MIN_CAMERA_RADIUS-1e-12,"inside the Moon "+[yaw,pitch,d]);
+  assert.ok(len(sub(c,t))<=MAX_RANGE+1e-9);
+ }
+ for(const bad of [[NaN,NaN,NaN],null,undefined,[Infinity,0,0]])for(const args of [[bad,0,40,0.4],[t,NaN,NaN,NaN],[t,Infinity,-Infinity,undefined]]){
+  const c=orbitCamera(...args);assert.ok(c.every(Number.isFinite),"NaN-safe");assert.ok(len(c)>=MIN_CAMERA_RADIUS-1e-12);
+ }
+ assert.equal(clampRange(0),MIN_RANGE);assert.equal(clampRange(1e9),MAX_RANGE);assert.equal(clampRange(NaN),FOCUS_RANGE);
+ assert.equal(clampPitch(0),MIN_PITCH);assert.equal(clampPitch(99),MAX_PITCH);assert.equal(clampPitch(NaN),FOCUS_PITCH);
+ // tween: global far view -> close orbit; the camera never cuts through the Moon, the up vector turns smoothly
+ const from={position:cameraPosition("globe",0.4,-12,7.5),target:[0,0,0],up:[0,1,0]};
+ const to={position:orbitCamera(t,2,FOCUS_PITCH,0.35),target:t,up:orbitFrame(t).up};
+ assert.ok(close(tweenPose(from,to,0).position,from.position)&&close(tweenPose(from,to,1).position,to.position,1e-9));
+ assert.ok(close(tweenPose(from,to,1).up,to.up,1e-9)&&close(tweenPose(from,to,1).target,t));
+ for(let e=0;e<=1;e+=0.05){const p=tweenPose(from,to,e);assert.ok(len(p.position)>=MIN_CAMERA_RADIUS-1e-12);assert.ok(Math.abs(len(p.up)-1)<1e-9,"up stays a unit vector, even across a 180° roll");}
+ const flip=slerpUnit([0,1,0],[0,-1,0],0.5,[0,0,1]);assert.ok(Math.abs(len(flip)-1)<1e-9&&Math.abs(flip[2])<1e-9,"antiparallel: turns around the hint axis");
+ assert.ok(close(slerpUnit([1,0,0],[0,1,0],0.5),[Math.SQRT1_2,Math.SQRT1_2,0]));
+ const {portraitRange}=backdrop;
+ assert.equal(portraitRange(0.4,1.6),0.4);assert.ok(Math.abs(portraitRange(0.4,0.25)-0.64)<1e-9,"capped at x1.6");assert.ok(portraitRange(0.4,0.46)>0.55);
+ assert.equal(portraitRange(NaN,NaN),FOCUS_RANGE);assert.equal(portraitRange(9,0.3),MAX_RANGE);
+ // near plane follows the height above the surface; far views keep the old 0.02
+ assert.equal(nearPlane([0,0,7.5]),0.02);assert.ok(nearPlane([0,-1.03,0])<0.01);assert.ok(nearPlane([0,0,0])>0&&nearPlane([NaN,0,0])>0);
+ // pin horizon test from a camera off the origin: camera->pin vs the pin's normal
+ const pin=ll(-89,0).map(v=>v*1.004),cam=orbitCamera(ll(-88.6,20),0,FOCUS_PITCH,FOCUS_RANGE);
+ assert.equal(facesCamera(pin,cam),true);
+ assert.equal(facesCamera(ll(60,180),cam),false,"far side is hidden");
+ assert.equal(facesCamera(pin,pin),false);assert.equal(facesCamera(pin,[NaN,NaN,NaN]),false);
+});
+
 test("only empty background turns the Moon: controls, text and maps keep their own pointer",()=>{
  const el=({matches=[],text=""}={})=>({closest:sel=>matches.some(m=>sel.split(",").includes(m))?{}:null,childNodes:text?[{nodeType:3,textContent:text}]:[{nodeType:3,textContent:"  "}]});
  assert.equal(isBackgroundTarget(null),false);
@@ -143,10 +194,11 @@ test("backdrop source: three.js only on demand, same pinned version as the viewe
  const src=await read("moon-hd/backdrop.js"),scene=await read("moon-hd/scene.js"),app=await read("moon-hd/app.js"),lab=await read("lab/scene.js");
  assert.doesNotMatch(src,/^\s*import\s.*from\s/m,"no static import: nothing is fetched before the page content");
  assert.match(src,/import\("\.\/scene\.js"\)/);
- const version=s=>[...s.matchAll(/https:\/\/cdn\.jsdelivr\.net\/npm\/three@([0-9.]+)\//g)].map(m=>m[1]);
- assert.deepEqual([...new Set([...version(scene),...version(app),...version(lab)])],["0.181.0"]);
- assert.ok(version(scene).length>=1);
- assert.doesNotMatch(src+scene,/https?:\/\/(?!cdn\.jsdelivr\.net\/npm\/three@0\.181\.0\/)[a-z]/,"no other remote origin");
+ // One vendored three.js (web/vendor/three, 0.181.0) for viewer, lab and backdrop: no CDN, one THREE instance.
+ const vendored=s=>[...s.matchAll(/vendor\/three\//g)].length;
+ assert.ok(vendored(scene)>=1&&vendored(app)>=1&&vendored(lab)>=1,"viewer, scene and lab import web/vendor/three");
+ assert.match(await read("vendor/three/three.core.min.js"),/"181"/,"three.js r181 (0.181.0)");
+ assert.doesNotMatch(src+scene+app+lab,/https?:\/\/[a-z]/,"no remote origin at all");
  assert.doesNotMatch(src,/console\.|alert\(|throw /,"fails silently");
  assert.match(src,/webglcontextlost/);assert.match(src,/prefers-reduced-motion/);assert.match(src,/visibilitychange/);assert.match(src,/IntersectionObserver/);
  assert.match(src,/aria-hidden/);
@@ -223,4 +275,14 @@ test("local preview serves the backdrop module, its stylesheet and the shared sc
  // Pages keep the strict style policy except the cockpit, which already allowed inline CSS before the backdrop.
  for(const page of ["/","/moonproof/","/moonproof/evidence.html","/classic.html"])
   assert.match((await fetch(base+page,{method:"HEAD"})).headers.get("content-security-policy"),/style-src 'self'(;|$)/,page);
+});
+
+test("overlapping pin labels: higher priority keeps its label, the other hides (dot stays)",()=>{
+ const {declutterLabels}=backdrop;
+ const a={id:"a",x:0,y:0,w:100,h:20,priority:0},b={id:"b",x:50,y:5,w:100,h:20,priority:1},c={id:"c",x:300,y:0,w:80,h:20,priority:0};
+ assert.deepEqual([...declutterLabels([a,b,c])],["a"],"b (with series) wins over a; c is clear");
+ assert.deepEqual([...declutterLabels([{...a,priority:3},b])],["b"],"the selected site always keeps its label");
+ assert.deepEqual([...declutterLabels([a,{...a,id:"d",x:a.x+a.w+10}])],[],"side by side with a gap: both shown");
+ assert.deepEqual([...declutterLabels([{...a,w:NaN}])],["a"],"unmeasured box is hidden, never throws");
+ assert.equal(declutterLabels([]).size,0);
 });
