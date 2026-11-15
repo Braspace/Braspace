@@ -9,7 +9,7 @@ BRASPACE (MoonProof) has four decoupled layers:
 1. **Web (`web/`)**: static HTML/JS/CSS served by GitHub Pages or, locally, by `web/dev-server.mjs`. Main shell (`index.html`, `moon3d.js`: Explore, Compare, Recover, Science & Engineering, Evidence & Learn), MoonProof v3 screens (`moonproof/`), Mission Studio (`studio/`), Polar Landing Lab (`lab.html`, `lab/`), Onboard Cockpit (`onboard/cockpit.html`) and the polar map demo (`polar-map-demo.html`).
 2. **Mission API (`api/`, Go)**: HTTP server on `:8080` (`braspace.mission.v1`). Contract in `api/openapi.json`, reference in [`API.md`](API.md) and [`MISSION_API.md`](MISSION_API.md).
 3. **Visibility engine (`engine/`, Rust)**: `braspace-lunar-engine`, a CLI subprocess called by the Go API (ADR-0001).
-4. **Offline science and data (`science/`, `scripts/`, `data/`)**: Python pipeline for NASA LOLA (`LDEM_80S_80M`), NAIF SPICE and the PGDA/Horizons benchmarks. Its output is committed as static JSON/BIN under `web/data/` and `api/sitedata/`. `scripts/verify_lola.py` checks the raster size, SHA-256 and little-endian `LSB_INTEGER` decoding against `data/manifest.json`; `tests/test_data_contract.py` covers the manifest and claim boundaries.
+4. **Offline science and data (`science/`, `scripts/`, `data/`)**: Python pipeline for NASA LOLA (`LDEM_80S_80M`), NAIF SPICE and the PGDA/Horizons benchmarks. Its output is committed as static JSON/BIN under `web/data/` and `api/sitedata/`. `api/cmd/verifylola` (Go) checks the raster size, SHA-256 and little-endian `LSB_INTEGER` decoding against `data/manifest.json`; its Go tests cover the manifest and claim boundaries.
 
 ## Runtime topology
 

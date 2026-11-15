@@ -1,6 +1,6 @@
 # BS-038 — LOLA data handoff to Go and Rust owners
 
-Source: `data/manifest.json`; verify local bytes with `python3 scripts/verify_lola.py /path/to/ldem_80s_80m.img`. The binary stays outside Git. The selected product is PDS `LRO-L-LOLA-4-GDR-V1.0`, version V2.0; source URL, 115,520,000-byte size and SHA-256 are pinned in the manifest. The PDS `.LBL` is the interpretation authority.
+Source: `data/manifest.json`; verify local bytes with `go -C api run ./cmd/verifylola /path/to/ldem_80s_80m.img`. The binary stays outside Git. The selected product is PDS `LRO-L-LOLA-4-GDR-V1.0`, version V2.0; source URL, 115,520,000-byte size and SHA-256 are pinned in the manifest. The PDS `.LBL` is the interpretation authority.
 
 Rust owner: read exactly 7600 × 7600 signed little-endian 16-bit values, row major, with 15,200 bytes per line. Convert `height_m = DN × 0.5`; add 1,737,400 m only when planetary radius is required. Geolocate with the label's polar stereographic parameters, including pixel registration and projection offsets. Establish no-data/coverage handling and compare transformed control points independently before producing a skyline. Ray tracing must include lunar curvature, observer height, azimuth sampling and an error budget.
 
