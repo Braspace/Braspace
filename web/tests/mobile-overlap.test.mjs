@@ -9,7 +9,8 @@ const phone = css => css.slice(css.indexOf("@media (max-width: 860px)"));
 
 test("shell bottom nav is near-opaque and respects the iPhone safe area", () => {
   const css = phone(read("shell/shell.css"));
-  assert.match(css, /\.bottomnav \{ background: rgba\(12, 15, 18, \.9\d*\)/);
+  assert.match(css, /\.bottomnav\.glass \{ background: #0b0e11; -webkit-backdrop-filter: none; backdrop-filter: none; \}/);
+  assert.match(css, /\.bottomnav::before \{[^}]*bottom: 100%; height: 24px/);
   assert.match(css, /bottom: calc\(10px \+ env\(safe-area-inset-bottom/);
   assert.match(css, /\.foot \{ padding-bottom: calc\(96px \+ env\(safe-area-inset-bottom/);
 });
