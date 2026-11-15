@@ -448,7 +448,8 @@ func TestRealEngineAgreesWithContract(t *testing.T) {
 	real := &missionAPI{store: store, engine: newEngineClient(abs)}
 	mux := http.NewServeMux()
 	real.register(mux)
-	fake, _ := testAPI(t, "ok")
+	// Same catalog on both sides: testAPI swaps in the no-data fixture store.
+	fake, _ := productionTestAPI(t, "ok")
 	a, b := do(mux, "POST", "/api/compare", compareBody), do(fake, "POST", "/api/compare", compareBody)
 	if a.Code != 200 {
 		t.Fatalf("real engine: %d %s", a.Code, a.Body.String())
