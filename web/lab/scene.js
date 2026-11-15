@@ -151,12 +151,25 @@ export class Viewer {
     this.orbit.enabled = true; this.orbit.anim = null; // a fly-to from another scale must not leak into this scene
   }
 
-  addLabel(text, position, { cls = "", normal = null, onClick = null } = {}) {
+  addLabel(text, position, { cls = "", normal = null, onClick = null, num = null, id = null } = {}) {
     const el = document.createElement(onClick ? "button" : "div");
-    el.className = "label " + cls; el.textContent = text;
+    el.className = "label " + cls;
+    if (num != null) {
+      // numbered site marker (design kit): black disc with number + white name pill
+      const mk = document.createElement("span"); mk.className = "mk"; mk.textContent = String(num);
+      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = text;
+      el.append(mk, nm); el.setAttribute("aria-label", `Site ${num}: ${text}`);
+    } else el.textContent = text;
+    if (id) el.dataset.id = id;
+    if (el.dataset.id && el.dataset.id === this.selectedSite) el.classList.add("sel");
     if (onClick) { el.type = "button"; el.addEventListener("click", onClick); }
     this.labelLayer.appendChild(el);
     const l = { el, position, normal }; this.labels.push(l); return l;
+  }
+
+  setSelectedSite(id) {
+    this.selectedSite = id;
+    for (const l of this.labels) if (l.el.dataset.id) l.el.classList.toggle("sel", l.el.dataset.id === id);
   }
 
   frame() {
@@ -197,7 +210,7 @@ export class Viewer {
       const p = toGlobe(latLonToBodyFixed(s.lat, s.lon, R_REF + (s.site_height_m || 0)));
       const dot = new THREE.Mesh(new THREE.SphereGeometry(6, 12, 8), new THREE.MeshBasicMaterial({ color: 0x3ee3c2 }));
       dot.position.copy(p); scene.add(dot);
-      this.addLabel(s.name, p, { cls: "site", normal: p.clone().normalize(), onClick: () => onSelectSite?.(s.id) });
+      this.addLabel(s.name, p, { cls: "site", normal: p.clone().normalize(), onClick: () => onSelectSite?.(s.id), num: sites.indexOf(s) + 1, id: s.id });
     }
     for (const f of features) {
       const p = toGlobe(latLonToBodyFixed(f.lat, f.lon, R_REF));
@@ -273,7 +286,7 @@ export class Viewer {
         ring.push(toRegion(latLonToBodyFixed(lat, lon, R_REF + hh)));
       }
       scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ring), new THREE.LineBasicMaterial({ color: 0x3ee3c2, transparent: true, opacity: 0.85 })));
-      this.addLabel(s.name, top, { cls: "site", onClick: () => onSelectSite?.(s.id) });
+      this.addLabel(s.name, top, { cls: "site", onClick: () => onSelectSite?.(s.id), num: sites.indexOf(s) + 1, id: s.id });
     }
     for (const f of features) {
       const h = (grid.height(f.stereo_x_m, f.stereo_y_m) || 0) * exaggeration;

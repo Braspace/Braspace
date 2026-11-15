@@ -375,6 +375,21 @@
       "redistribution_status": "project_derived_from_nasa_pds",
       "scientific_role": "visualization_only",
       "review_note": "Source LDEM_80S_80M.IMG SHA-256 e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc checked against data/manifest.json before rendering. Shading light is synthetic, not a real illumination state. PRELIMINARY; not AI-generated."
+    },
+    {
+      "asset_id": "iau-usgs-moon-nomenclature-south-pole",
+      "category": "polar_feature_names",
+      "source_page": "https://planetarynames.wr.usgs.gov/",
+      "file_url": "web/moonproof/data/features.json",
+      "file_id": "features.json",
+      "format": "JSON",
+      "bytes": 5852,
+      "sha256": "126d1918965a73e0379ede8b650afa2295a13e48fce7c47c0ef7e4bdcd584309",
+      "author_credit": "IAU Gazetteer of Planetary Nomenclature, USGS Astrogeology Science Center. Source file MOON_nomenclature_center_pts.zip (metadata pubdate 2012-10-02, public domain), accessed 2026-11-14 UTC.",
+      "allowed_use": "Official names and centre coordinates (east-positive) used as map labels only; each feature carries its USGS Feature URL.",
+      "redistribution_status": "public_domain_source_cited",
+      "scientific_role": "labels_only",
+      "review_note": "35 features at centre latitude <= -84 (Crater and Mons; Lacus and Satellite Feature excluded). Names and coordinates as published; no physical value derived. Not independently validated by BRASPACE."
     }
   ]
 }

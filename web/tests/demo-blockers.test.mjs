@@ -7,7 +7,7 @@ import vm from "node:vm";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const app=await readFile(path.join(root,"app.js"),"utf-8");
-const html=await readFile(path.join(root,"index.html"),"utf-8");
+const html=await readFile(path.join(root,"classic.html"),"utf-8");
 const css=await readFile(path.join(root,"styles.css"),"utf-8");
 
 // Minimal DOM: just enough to run app.js functions without a browser.

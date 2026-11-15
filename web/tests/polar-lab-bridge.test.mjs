@@ -9,7 +9,7 @@ const origin="http://127.0.0.1:"+server.address().port;
 after(()=>new Promise(resolve=>server.close(resolve)));
 
 test("Heloísa lab, linked from classic MoonProof, serves same-origin NASA assets",async()=>{
- const home=await (await fetch(origin+"/")).text();
+ const home=await (await fetch(origin+"/classic.html")).text();
  assert.match(home,/href="\.\/lab\.html"/);
  const paths=[
   ["/lab.html","text/html"],["/lab/app.js","text/javascript"],

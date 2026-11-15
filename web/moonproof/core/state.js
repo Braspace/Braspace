@@ -13,6 +13,10 @@ export function parseState(search = globalThis.location?.search || "") {
     layer: null, task: q.get("task") || null, lang: q.get("lang") || null, ...DEFAULT_RULES };
   for (const k of NUM) if (q.has(k)) { const v = Number(q.get(k)); if (Number.isFinite(v) && v > 0) s[k] = k === "hours" ? Math.max(1, Math.round(v)) : v; }
   if (s.start && Number.isNaN(Date.parse(s.start))) s.start = null;
+  // AUD-15: series are hourly; a fractional window or a start off the hour would count samples that do not
+  // match the declared duration. Accept whole hours only, and start on the hour (UTC), like the Go API grid.
+  if (s.hours != null && !Number.isInteger(s.hours)) s.hours = null;
+  if (s.start && Date.parse(s.start) % 3600000 !== 0) s.start = null;
   if (!(s.task in TASKS)) s.task = null;
   const l = q.get("layer");
   s.layer = LAYERS.includes(l) ? l : (s.task ? TASKS[s.task] : "answer");
