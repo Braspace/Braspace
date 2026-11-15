@@ -104,5 +104,11 @@ panel (b964c27). Chromium QA failed on `main`; now the exact tab list is asserte
 
 **Still open**: GitHub Actions blocked by org billing; science aggregates not regenerated after the solar-disc fix;
 nonsense vector query returns nearest neighbours (P1); production compose must run `vector-ingest -lexical -apply`
-(see "Deploy prerequisite"); cockpit floating "Calcular energia" button covers the "+72 h" card value (P2, visual);
-dashboard stale-response fix is in #307, not here; 13 Go files not gofmt-clean.
+(see "Deploy prerequisite"); dashboard stale-response fix is in #307, not here.
+
+**Follow-up checks (same round)**
+- gofmt: 12 Go files formatted; go/scanner token streams identical before/after (layout and import order only);
+  the Dockerfile test stage now fails with the list of unformatted files (verified failing and passing).
+- Cockpit floating "Calcular energia" button: suspected overlap was a full-page-screenshot artifact (fixed element
+  frozen in the first viewport). Measured in Chrome at 1440×900, 1920×1080 and 1366×768 on 5 tabs scrolled to the
+  end: it covers no text or control. ≤860 px it is already static. No change.
