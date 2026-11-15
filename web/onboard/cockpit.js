@@ -1743,6 +1743,73 @@
     return apiPanelFrame("API · Relatório do lugar (/api/onboard/site-report)", "Um lugar, um candidato. Só para lugares com série.", button, body);
   }
 
+  // ---------- Navigation: can the lander get a satellite fix? (synthetic, see nav.js) ----------
+  const NAV = OnboardNav;
+  const NAV_LIMITS = [
+    [6, "GDOP ≤ 6 · uso terrestre"],
+    [50, "GDOP ≤ 50 · LuGRE a 15 raios"],
+    [1000, "GDOP ≤ 1000 · LuGRE na superfície"]
+  ];
+  VIEWS.navegacao = () => {
+    const site = M.SITES[S.site];
+    if (!site) return [h("section", { class: "panel" }, h("h2", { text: "Navegação por satélite" }),
+      h("p", { class: "note", text: "Escolha um lugar com modelo local para ver a disponibilidade." }))];
+    const base = NAV.track({ startMs: startMs(), stepMin: S.stepMin, count: count(), lat: site.lat, lon: site.lon });
+    if (!base.length) return [noDataState("Navegação por satélite")];
+    const limit = S.navGdop || 50;
+    const tr = base.map(s => Object.assign({}, s, { nav_available: s.satellites >= NAV.PREMISES.minSatellites && s.gdop <= limit }));
+    const sum = NAV.summary(tr, S.stepMin);
+    const runs = NAV.outages(tr, S.stepMin);
+    const avail = runsOf(tr, "nav_available", true);
+    const total = Math.max(1, tr.length);
+    const at = i => fmt(startMs() + i * S.stepMin * 60e3);
+    const pct = i => (i / total * 100).toFixed(3) + "%";
+    const width = (a, b) => ((b - a + 1) / total * 100).toFixed(3) + "%";
+    const share = v => (v * 100).toFixed(1) + " %";
+    const gdopTxt = v => Number.isFinite(v) ? f1(v, 0) : "sem solução";
+
+    const summary = h("section", { class: "panel span2" },
+      h("div", { class: "grid four" },
+        h("div", {}, h("div", { class: "label", text: "Disponibilidade (limite escolhido)" }), h("strong", { class: "num", text: share(sum.availability) })),
+        h("div", {}, h("div", { class: "label", text: "Menos satélites visíveis" }), h("strong", { class: "num", text: String(sum.minSatellites) })),
+        h("div", {}, h("div", { class: "label", text: "GDOP mediano" }), h("strong", { class: "num", text: gdopTxt(sum.medianGdop) })),
+        h("div", {}, h("div", { class: "label", text: "Maior interrupção" }), h("strong", { class: "num", text: f1(sum.longestOutageH) + " h" }))));
+
+    const limits = h("section", { class: "panel" },
+      h("h2", { text: "Limite de GDOP" }),
+      h("div", { class: "seg", role: "group", "aria-label": "Limite de GDOP" },
+        NAV_LIMITS.map(([g, lab]) => h("button", { type: "button", "aria-pressed": limit === g ? "true" : "false",
+          onclick: () => { S.navGdop = g; renderTab(); } }, lab))),
+      h("p", { class: "note", style: "margin-top:10px", text: "Mesmo cenário, três critérios. Quanto maior o limite, mais tempo há solução, e menor é a precisão esperada." }),
+      h("div", { class: "scroll", style: "margin-top:8px" }, h("table", { class: "table" },
+        h("thead", {}, h("tr", {}, h("th", { text: "critério" }), h("th", { class: "n", text: "tempo com solução" }))),
+        h("tbody", {}, NAV_LIMITS.map(([g, lab]) => h("tr", {}, h("td", { text: lab }), h("td", { class: "n", text: share(NAV.availabilityAt(base, g)) })))))));
+
+    const timeline = h("section", { class: "panel span2" },
+      h("h2", { text: "Linha do tempo · disponibilidade" }),
+      h("div", { class: "tl" },
+        h("div", { class: "tl-row" },
+          h("span", { class: "tl-label", text: "Solução" }),
+          h("div", { class: "tl-track", role: "img", "aria-label": "Solução: " + avail.length + " janela(s)" },
+            avail.map(([a, b]) => h("span", { class: "tl-seg", title: at(a) + " até " + at(b), style: "left:" + pct(a) + ";width:" + width(a, b) + ";background:var(--green)" })))),
+      ),
+      h("div", { class: "tl-axis dim" }, h("span", { text: at(0) }), h("span", { text: at(tr.length - 1) })),
+      h("p", { class: "note", text: "Verde: há satélites suficientes e GDOP dentro do limite escolhido. Espaços vazios: sem solução." }));
+
+    const outTable = runs.length === 0
+      ? h("p", { class: "note", text: "Sem interrupções no limite escolhido." })
+      : h("div", { class: "scroll" }, h("table", { class: "table" },
+          h("thead", {}, h("tr", {}, h("th", { text: "início (UTC)" }), h("th", { text: "fim (UTC)" }), h("th", { class: "n", text: "horas" }))),
+          h("tbody", {}, runs.slice(0, 200).map(r => h("tr", {}, h("td", { text: at(r.from) }), h("td", { text: at(r.to) }), h("td", { class: "n", text: f1(r.hours) }))))));
+    const outages = h("section", { class: "panel span2" },
+      h("h2", { text: "Interrupções de navegação" }),
+      outTable,
+      h("p", { class: "note", text: "Premissas, não validadas: constelação genérica de 24 satélites (6 planos), libração aproximada, máscara de 5°, mínimo de 4 satélites. Não modela sinais de lóbulo lateral, que o LuGRE captou abaixo de cerca de 33 dB-Hz." }),
+      edu("O GDOP mede a geometria dos satélites vistos da Lua. Os satélites GPS ficam quase na mesma direção, então a geometria é ruim e a posição, imprecisa. O LuGRE calculou posição na superfície, mas com erros de centenas de metros a quilômetros."));
+
+    return [summary, limits, timeline, outages];
+  };
+
   const API_EXTRA = {
     replan: () => [delayPanel(), nearbyPanel()],
     visual: () => [comparePanel(), mediaPanel(), layersPanel()],
@@ -1883,8 +1950,8 @@
 
   // ---------- v3: routes #/bordo/<section>?site=  (same router helpers as the shell) ----------
   const RT = window.MoonproofRouter;
-  const TAB_NAMES = ["visao", "entrada","geometria", "horizonte", "janelas", "energia", "vida", "replan", "visual", "sens", "historico", "lanc", "status"];
-  const TAB_TITLE = { visao: "Visão geral", entrada: "Parâmetros", geometria: "Geometria", horizonte: "Horizonte", janelas: "Janelas", energia: "Energia", vida: "Vida",
+  const TAB_NAMES = ["visao", "entrada","geometria", "horizonte", "janelas", "navegacao", "energia", "vida", "replan", "visual", "sens", "historico", "lanc", "status"];
+  const TAB_TITLE = { visao: "Visão geral", entrada: "Parâmetros", geometria: "Geometria", horizonte: "Horizonte", janelas: "Janelas", navegacao: "Navegação", energia: "Energia", vida: "Vida",
     replan: "Replanejar", visual: "Visual", sens: "Sensibilidade", historico: "Registro", lanc: "Lançamentos", status: "Status" };
   function routeQuery() { return RT ? RT.parseHash(location.hash).query : {}; }
   function tabFromHash() {
