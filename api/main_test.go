@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -46,15 +44,8 @@ func TestHealthAndUnavailable(t *testing.T) {
 	}
 }
 func TestRealProcessContractWithStub(t *testing.T) {
-	if os.Getenv("GOOS") == "windows" {
-		t.Skip("POSIX script")
-	}
-	file := filepath.Join(t.TempDir(), "engine")
 	output := `{"site_id":"demo-synthetic","epoch_utc":"2026-11-14T12:00:00Z","science_status":"UNVERIFIED_INPUTS","sun_horizon_deg":0,"earth_horizon_deg":0,"sun_margin_deg":2,"earth_margin_deg":-1,"sun_visible":true,"earth_visible":false,"simultaneous_visibility":false}`
-	script := "#!/bin/sh\nprintf '%s\\n' '" + output + "'\n"
-	if err := os.WriteFile(file, []byte(script), 0700); err != nil {
-		t.Fatal(err)
-	}
+	file := stdoutEngine(t, output+"\n")
 	req := httptest.NewRequest("POST", "/v1/visibility", bytes.NewBufferString(validBody))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
@@ -73,13 +64,9 @@ func TestCapabilitiesStateScientificLimits(t *testing.T) {
 }
 
 func TestDirectEndpointRejectsForgedGeometry(t *testing.T) {
-	if os.PathSeparator == '/' {
-		binary := filepath.Join(t.TempDir(), "fake-engine")
+	{
 		forged := `{"site_id":"demo-synthetic","epoch_utc":"2026-11-14T12:00:00Z","science_status":"UNVERIFIED_INPUTS","sun_horizon_deg":0,"earth_horizon_deg":0,"sun_margin_deg":2,"earth_margin_deg":-1,"sun_visible":false,"earth_visible":false,"simultaneous_visibility":false}`
-		script := "#!/bin/sh\nprintf '%s\\n' '" + forged + "'\n"
-		if err := os.WriteFile(binary, []byte(script), 0700); err != nil {
-			t.Fatal(err)
-		}
+		binary := stdoutEngine(t, forged+"\n")
 		req := httptest.NewRequest("POST", "/v1/visibility", strings.NewReader(validBody))
 		req.Header.Set("Content-Type", "application/json")
 		rec := httptest.NewRecorder()
