@@ -6,17 +6,18 @@ BRASPACE / MoonProof is an educational and engineering prototype for evaluating 
 
 ---
 
-## Live Demo & API
+## Live Product & API
 
-Verified on **2026-11-14** (`HTTP 200`):
+Checked on **2026-11-15** in production (edge of the Cloudflare Worker):
 
-- **Web App (GitHub Pages):** https://braspace.github.io/
-  - **MoonProof (the product):** https://braspace-moonproof.almeida-me.workers.dev/moonproof/ — Polar Lab, Onboard, Studio, Classic and the old shell are archived in `archive/web-legacy/` (2026-11-15).
-- **Public API:** https://braspace-api.srv1898743.hstgr.cloud
-  - Health: https://braspace-api.srv1898743.hstgr.cloud/api/health
-  - Readiness: https://braspace-api.srv1898743.hstgr.cloud/readyz
-  - Capabilities: https://braspace-api.srv1898743.hstgr.cloud/v1/capabilities
-  - Site Catalog: https://braspace-api.srv1898743.hstgr.cloud/api/sites
+- **MoonProof, the product:** https://braspace-moonproof.almeida-me.workers.dev/moonproof/
+  - It is the only product surface. Classic, Polar Lab, Onboard, Studio, Dashboard and the old shell are archived in `archive/web-legacy/` (#321). `/` redirects to `/moonproof/`.
+  - The same Worker proxies `/api/*`, `/v1/*`, `/healthz` and `/readyz` to the Go API on the same origin (`deploy/cloudflare/`, allowlist = `api/openapi.json`). There is no CORS in the browser.
+- **Public API (direct):** https://braspace-api.srv1898743.hstgr.cloud
+  - `/api/health`, `/readyz`, `/v1/capabilities`, `/api/sites`, `/api/vector/status`; full contract in [`api/openapi.json`](api/openapi.json).
+- **Production backend:** release [`v2026.11.15-prod-2b62474`](https://github.com/Braspace/Braspace/releases/tag/v2026.11.15-prod-2b62474). `/healthz` reports the exact `build_commit`.
+- **Live status, release runbook and who owns what:** [`docs/harness/STATUS.md`](docs/harness/STATUS.md), [`docs/harness/HANDOFF.md`](docs/harness/HANDOFF.md), [`docs/harness/OWNERS.md`](docs/harness/OWNERS.md).
+- GitHub Pages (`braspace.github.io`) is no longer the product entry; it returned 404 on 2026-11-15.
 
 > **Scientific honesty:** `/readyz` reports `"science_status": "UNVERIFIED_INPUTS"` and `/v1/capabilities` reports `"scientifically_validated": false`.
 
@@ -28,7 +29,7 @@ Verified on **2026-11-14** (`HTTP 200`):
 |---|---|---|---|
 | **NASA LOLA (`LDEM_80S_80M`) + NAIF SPICE** | `api/sitedata/series/{connecting-ridge,malapert-massif,mons-mouton-im2,nobile-rim-1,peak-near-shackleton}.json` & `web/data/sites/*`, `web/data/terrain/*` | **PRELIMINARY** (not flight-validated) | Offline pipeline (`science/`) computes terrain horizon and Sun/Earth angles. |
 | **Synthetic demo series** | `api/sitedata/series/synthetic-demo-{a,b}.json` | **SYNTHETIC** | Labelled synthetic time series for end-to-end testing and UI demos. |
-| **Onboard battery / crew consumables** | `api/onboard/`, `api/consumables.go` & `web/onboard/` | **SIMULATION** | Educational mission computer model; not flight-certified. O2/food rates are placeholders pending a check against NASA BVAD. |
+| **Onboard battery / crew consumables** | `api/onboard/`, `api/consumables.go` & the MoonProof Cockpit (`web/moonproof/cockpit.html`) | **SIMULATION** | Educational mission computer model; not flight-certified. O2/food rates are placeholders pending a check against NASA BVAD. |
 | **NASA PGDA & JPL Horizons** | `web/data/validation/validation_{pgda,horizons}.json` | **BENCHMARK** | Reference comparison datasets for offline science checks. |
 | **NASA LROC / SVS** | `web/data/moon/lroc_color_2k.jpg` & layer proxy | **VISUAL ASSET** | See [`docs/ASSET_LICENSE_MATRIX.md`](docs/ASSET_LICENSE_MATRIX.md). |
 
@@ -38,12 +39,15 @@ Verified on **2026-11-14** (`HTTP 200`):
 
 ```mermaid
 flowchart LR
-    Browser["Static Web App<br/>(web/, GitHub Pages)"] -->|HTTPS JSON| API["Go API Server<br/>(api/, :8080)"]
-    API -->|stdin/stdout JSON| Engine["Rust Visibility Engine<br/>(engine/, braspace-lunar-engine)"]
-    API -->|SQL| DB[("PostgreSQL 16 + pgvector<br/>(compose.db.yaml)")]
-    Science["Python Science Pipeline<br/>(science/, LOLA + SPICE)"] -.->|generates offline JSON/BIN| API
-    Science -.->|generates offline JSON/BIN| Browser
+    Browser["MoonProof<br/>(web/moonproof/, Preact TSX + Three.js)"] -->|same origin| Worker["Cloudflare Worker<br/>(deploy/cloudflare/: assets + /api proxy)"]
+    Worker -->|HTTPS JSON| API["Go API<br/>(api/, braspace.mission.v1)"]
+    API -->|stdin/stdout JSON, exact schema| Engine["Rust visibility engine<br/>(engine/, braspace-lunar-engine)"]
+    API -->|SQL| DB[("PostgreSQL + pgvector<br/>(prod: pgvector/pg17)")]
+    Science["Science pipeline<br/>(science/ + api/naif, LOLA + SPICE)"] -.->|offline series + SHA-256 manifests| API
 ```
+
+- **pgvector** only retrieves provenance metadata. It never computes physics. `/api/vector/status` reports the index state: `disabled`, `schema_unavailable`, `empty`, `index_ready`, `model_mismatch`, `legacy_unverified` or `db_down`. Search serves only rows from the current audited ingest manifest; older rows without a manifest are kept but quarantined.
+- **Series grid:** a start or duration off the series grid (hourly) is rejected with `GRID_NOT_ALIGNED` and never rounded ([`docs/harness/GRID_SEMANTICS_EVIDENCE.md`](docs/harness/GRID_SEMANTICS_EVIDENCE.md)).
 
 ---
 
@@ -86,10 +90,33 @@ curl -fsS http://127.0.0.1:8080/api/health
 
 ## Testing
 
-All suites below were run natively on branch `integration/studio-full-20261114` (HEAD `67542db`, 2026-11-14). The Docker `--target test` run is not part of this evidence.
+GitHub Actions does not run at the moment (an organization billing block). The release gate is the same script that the workflow calls, run on the team machine:
 
-| Suite | Command | Result |
+```bash
+scripts/ci-local.sh --browser
+```
+
+It runs these steps:
+
+- Worker proxy contract
+- `docker build --target test`: Go vet + race, Rust `cargo test --locked`, web lint/tests, science
+- Release image
+- Compose (API + PostgreSQL + ingest), endpoints and replay
+- Cockpit ↔ Go/Rust/PostgreSQL contract (`scripts/cockpit-backend-contract.mjs`)
+- Public smoke
+- Go tests against PostgreSQL and against **real pgvector**
+- Chromium e2e
+
+Last results (2026-11-15):
+
+| Gate | Where | Result |
 |---|---|---|
+| `scripts/ci-local.sh --browser` | backend release candidate `4e2853a` (#374) | **GREEN 12/12** |
+| `scripts/cockpit-backend-contract.mjs` with `BRASPACE_EXPECT_COMMIT` | production, through the Worker (`2b62474`) | **49/49 PASS** |
+
+More in [`docs/TESTING.md`](docs/TESTING.md).
+
+---|---|---|
 | **Web + MoonProof + Onboard (Node test runner)** | `cd web && node --test tests/*.test.mjs moonproof/tests/*.test.mjs onboard/test/*.mjs` | 264 passed, 0 failed, 1 skipped |
 | **Web lint** | `npm --prefix web run lint` | exit 0 |
 | **Go API** | `cd api && go vet ./... && go test -race -count=1 ./...` | `api` & `api/onboard` pass |
