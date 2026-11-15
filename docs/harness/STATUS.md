@@ -16,9 +16,9 @@ Horas em BRT (America/Sao_Paulo). Horas UTC entre parênteses quando informadas 
 
 ## API em produção (harness, `/docker/braspace`)
 
-- Imagem: `5f06ee30aa2c-sha` (main `5f06ee3`, #404), publicada às 14:47 BRT (17:47Z) com `swap-api.sh`, sem downtime.
-- Backup antes do deploy: `backup/pre-5f06ee30aa2c-sha-*.dump`, gerado pelo próprio script.
-- Rollback: `./swap-api.sh 2b6247498db4-sha`. Depois disso, `41dedbb4705b-sha`.
+- Imagem: `482aa03c656c-sha` (main `482aa03`, #415: séries LOLA+SPICE dos 9 locais que faltavam, 16/16 locais com série), publicada às 15:25 BRT (18:25Z) com `swap-api.sh`, sem downtime.
+- Backup antes do deploy: `backup/pre-482aa03c656c-sha-20261115-182458.dump`.
+- Rollback: `./swap-api.sh 5f06ee30aa2c-sha`. Depois disso, `2b6247498db4-sha`.
 
 ## Verificado ao vivo pela borda
 
@@ -147,3 +147,16 @@ Estado do pgvector depois do deploy: `index_ready`, 4 auditados com manifesto `8
   O log fica em `~/.local/state/braspace/prod-watch.log`. Quando o estado muda (ok → falha ou falha → ok), sai uma notificação no desktop. Um 429 conta como `INCONCLUSIVE`, não como falha.
 - **`braspace-backup.timer`** (diário, 06:00 UTC) roda `deploy/ops/pull-backup.sh`. Ele faz um `pg_dump -Fc` novo pela Tailscale, confere com `pg_restore -l` e guarda as 7 cópias mais recentes em `~/backups/braspace/`, com `.sha256`. Antes disso, os dumps ficavam só em `/docker/braspace/backup`, na mesma VPS do banco.
 - Instalação idempotente: `deploy/ops/install.sh`. Para ver: `systemctl --user list-timers 'braspace-*'` e `journalctl --user -u braspace-prod-watch`.
+
+## Deploy da API `482aa03c656c-sha` — 15/11/2026 18:25Z, EXO-X1
+
+- **Conteúdo (#415):** séries LOLA+SPICE PRELIMINARY dos 9 locais de catálogo que apareciam como N/D. Agora `sites_with_series` é 16 (14 PRELIMINARY e 2 SYNTHETIC). Não houve migration: só mudou o conteúdo do catálogo e das séries, aplicado pelo `ingest`.
+- **Ensaio:** rodei a imagem num dump novo da produção (`deploy/ops/pull-backup.sh`), com o mesmo `mem_limit` de 256m:
+  - `ingest` e `vector-ingest` saíram com exit 0;
+  - `/api/health` mostrou 16/16;
+  - `sky` respondeu 200 nos locais novos;
+  - o uso de RAM ficou em 57 MiB.
+- **Troca:** `swap-api.sh` com um watcher na borda, **177/177 respostas 200** durante a troca.
+- **Verificado depois do deploy:**
+  - contrato com `BRASPACE_EXPECT_COMMIT=482aa03…`: 49/49 pela borda e 49/49 direto, agora exigindo cálculo no servidor nos 16 locais;
+  - `smoke-publico.sh` passou.
