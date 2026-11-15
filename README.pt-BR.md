@@ -69,6 +69,13 @@ Design de @lisanogueira (Heloísa), implementado sobre o core comum (`core/`: to
 
 Sirva com `cd web && node dev-server.mjs` (defina `BRASPACE_WEB_PORT` se a 5173 estiver ocupada) e abra `/moonproof/`.
 
+### Uma Lua, todas as telas (runtime)
+
+- **Explorar a Lua ↔ Mostrar painéis** em todas as telas: o Moon HD do Joel (`web/moon-hd/backdrop.ts`) atrás dos painéis ou em tela cheia, com os locais do catálogo (`GET /api/sites`) como pins; a câmera orbita o local escolhido em perspectiva. Telas de mapa mantêm o relevo LOLA e só carregam o 3D quando pedido.
+- **Cockpit:** lander ilustrativo estilo Artemis (`web/moon-hd/artemis.ts`) sobre o polo sul na mesma cena — o mesmo modelo do Landing Lab gamificado. Não é telemetria.
+- **Densidade** (`web/moonproof/core/density.css`) e painéis recolhíveis dentro do design system da Heloísa; alvos de toque ≥ 44 px; Lighthouse A11y/SEO 100.
+- Detalhes, API pública `window.moonBackdrop` e roteiro de deploy do Worker: [`docs/MOONPROOF_FRONT_RUNTIME.md`](docs/MOONPROOF_FRONT_RUNTIME.md).
+
 ---
 
 ## Como Rodar Localmente
