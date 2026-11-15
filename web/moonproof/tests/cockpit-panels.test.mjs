@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {PANEL_IDS, togglePanel, layoutState, requestSharedMoon} from '../screens/cockpit-panels.js';
+import {PANEL_IDS, togglePanel, layoutState, requestSharedMoon, exitSharedMoon} from '../screens/cockpit-panels.js';
 test('all nine panels can be independently closed and restored without mutating state',()=>{
   const old=new Set(); let next=old;
   for(const panel of PANEL_IDS) next=togglePanel(next,panel);
@@ -41,7 +41,7 @@ test('Moon-only deferred open never overrides a user who restored the panels',()
   const hadDocument=Object.hasOwn(globalThis,'document');
   const oldDocument=globalThis.document, oldTimeout=globalThis.setTimeout;
   let schedule, clicks=0, wanted=true, available=false;
-  globalThis.document={readyState:'complete',querySelector:()=> available ? {disabled:false,click:()=>{clicks++;}} : null};
+  globalThis.document={readyState:'complete',documentElement:{classList:{contains:()=>false}},querySelector:()=> available ? {disabled:false,click:()=>{clicks++;}} : null};
   globalThis.setTimeout=callback=>{schedule=callback;return 1;};
   try{
     assert.equal(requestSharedMoon(()=>wanted),false,'not yet ready');
@@ -62,7 +62,7 @@ test('Moon-only/restore/Moon-only invalidates a stale earlier timer (ABA sequenc
   const hadDocument=Object.hasOwn(globalThis,'document');
   const oldDocument=globalThis.document, oldTimeout=globalThis.setTimeout;
   const pending=[];let clicks=0,requestRevision=0,hidden=false,available=false;
-  globalThis.document={readyState:'complete',querySelector:()=>available?{disabled:false,click:()=>{clicks++;}}:null};
+  globalThis.document={readyState:'complete',documentElement:{classList:{contains:()=>false}},querySelector:()=>available?{disabled:false,click:()=>{clicks++;}}:null};
   globalThis.setTimeout=callback=>{pending.push(callback);return pending.length;};
   try{
     hidden=true;const first=++requestRevision;
@@ -81,4 +81,51 @@ test('Moon-only/restore/Moon-only invalidates a stale earlier timer (ABA sequenc
     globalThis.setTimeout=oldTimeout;
     if(hadDocument)globalThis.document=oldDocument;else delete globalThis.document;
   }
+});
+
+test('restore closes only the active shared Moon immersive view',()=>{
+ const had=Object.hasOwn(globalThis,'document'),before=globalThis.document;
+ let active=false, clicks=0;
+ const button={disabled:false,click:()=>{clicks++;active=false;}};
+ globalThis.document={
+   documentElement:{classList:{contains:key=>key==='moon-explore-on'&&active}},
+   querySelector:selector=>selector==='.moon-ui.is-explore .moon-open'?button:null
+ };
+ try{
+   assert.equal(exitSharedMoon(),false,'closed background must never be toggled open');
+   assert.equal(clicks,0);
+   active=true;
+   assert.equal(exitSharedMoon(),true);
+   assert.equal(clicks,1);
+   assert.equal(active,false);
+   active=true;button.disabled=true;
+   assert.equal(exitSharedMoon(),false,'do not bypass disabled loading controls');
+   assert.equal(clicks,1);
+ }finally{
+   if(had)globalThis.document=before;else delete globalThis.document;
+ }
+});
+test('Moon-only does not accidentally turn off an already active shared scene',()=>{
+ const had=Object.hasOwn(globalThis,'document'),before=globalThis.document;
+ let clicks=0;
+ globalThis.document={
+   readyState:'complete',
+   documentElement:{classList:{contains:key=>key==='moon-explore-on'}},
+   querySelector:()=>({disabled:false,click:()=>clicks++})
+ };
+ try{
+   assert.equal(requestSharedMoon(),true);
+   assert.equal(clicks,0,'existing immersive view must not be toggled closed');
+ }finally{
+   if(had)globalThis.document=before;else delete globalThis.document;
+ }
+});
+test('controller invalidates pending Moon opens on each restore path and on disposal',()=>{
+ const ts=readFileSync(new URL('../screens/cockpit-panels.tsx',import.meta.url),'utf8');
+ assert.match(ts,/closeWhenReady = !!document\.querySelector/);
+ assert.match(ts,/window\.addEventListener\("moon-backdrop:ready", onMoonReady\)/);
+ assert.match(ts,/window\.removeEventListener\("moon-backdrop:ready", onMoonReady\)/);
+ assert.match(ts,/if \(wasMoonOnly\) restoreMoon\(\)/);
+ assert.match(ts,/hidden = new Set\(previous\); restoreMoon\(\)/);
+ assert.match(ts,/hidden = new Set\(\); restoreMoon\(\)/);
 });
