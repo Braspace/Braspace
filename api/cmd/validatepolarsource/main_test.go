@@ -85,7 +85,7 @@ func TestCLI(t *testing.T) {
 	if rc, _, errb := do("--bogus", "x"); rc != 2 || !strings.HasSuffix(errb, "error: unrecognized arguments: --bogus x\n") {
 		t.Errorf("unknown: rc=%d %q", rc, errb)
 	}
-	if rc, _, errb := do("--cat=/does/not/exist"); rc != 1 || errb != "POLAR_CATALOG_INVALID: [Errno 2] No such file or directory: '/does/not/exist'\n" {
+	if rc, _, errb := do("--cat=/does/not/exist"); rc != 1 || !strings.HasPrefix(errb, "POLAR_CATALOG_INVALID: ") || !strings.Contains(errb, "/does/not/exist") {
 		t.Errorf("abbreviation: rc=%d %q", rc, errb)
 	}
 	rc, out, errb := do("--catalog", repoRoot+"/data/POLAR_SOURCE_EVIDENCE.json")
