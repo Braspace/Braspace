@@ -19,7 +19,8 @@ Verificado em produção em **2026-11-15** (frontend `9dab20c`, Worker `ec490d15
   - referência da API [`docs/API.md`](docs/API.md), 22 operações, gerada do `api/openapi.json` e conferida no CI;
   - contrato cockpit ↔ backend [`docs/COCKPIT_BACKEND_CONTRACT.md`](docs/COCKPIT_BACKEND_CONTRACT.md), 49/49 em produção;
   - deploys, backups e rollback [`docs/harness/STATUS.md`](docs/harness/STATUS.md);
-  - donos de cada frente [`docs/harness/OWNERS.md`](docs/harness/OWNERS.md).
+  - donos de cada frente [`docs/harness/OWNERS.md`](docs/harness/OWNERS.md);
+  - regra da grade da série [`docs/harness/GRID_SEMANTICS_EVIDENCE.md`](docs/harness/GRID_SEMANTICS_EVIDENCE.md): início ou duração fora da grade horária recebe `GRID_NOT_ALIGNED` (no compare, por local) e nunca é arredondado. Medido em produção.
 
 > **Honestidade científica:** `/readyz` retorna `"science_status": "UNVERIFIED_INPUTS"` e `/v1/capabilities` retorna `"scientifically_validated": false`. As séries são `PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED`.
 
