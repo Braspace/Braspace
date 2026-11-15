@@ -121,3 +121,13 @@ confirmed values. JPL Horizons cross-checks still cover only the original five s
 **Tests.** Handler tests that cover the "real site without series" path (DATA_NOT_AVAILABLE, 404 NO_SERIES_DATA,
 N/D) now use an explicit fixture (`api/nodata_fixture_test.go`) instead of relying on Haworth having no data.
 API memory with 16 series: RSS 117.5 MB under load (was 54–63 MB with 7), against the 256 MB container limit.
+
+### Regeneração reprodutível (#157)
+
+`cmd/threesitepipeline` e `science/build_web_assets.py` respeitam `SOURCE_DATE_EPOCH` (reproducible-builds.org). Para regenerar sem diff de carimbo, use o carimbo já commitado:
+
+```bash
+export SOURCE_DATE_EPOCH=$(python3 -c 'import json,datetime;print(int(datetime.datetime.strptime(json.load(open("science/results/summary.json"))["generated_utc"],"%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc).timestamp()))')
+```
+
+Sem a variável, `summary.json` leva a hora atual, como antes, e `web/data/sites.json` herda o carimbo de `summary.json`. `TestReproducesCommittedSummary` fixa o carimbo commitado e exige `summary.json` idêntico byte a byte.

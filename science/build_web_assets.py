@@ -20,10 +20,23 @@ import datetime as dt
 import hashlib
 import json
 import math
+import os
 import pathlib
 import re
 
 import numpy as np
+
+
+def generated_utc(summary: dict, environ=os.environ) -> str:
+    """Stamp for sites.json, reproducible (#157): SOURCE_DATE_EPOCH if set, else the
+    summary.json stamp the series came from, so the same inputs give the same bytes."""
+    v = environ.get("SOURCE_DATE_EPOCH", "").strip()
+    if v:
+        if not v.isdigit():
+            raise SystemExit(f"SOURCE_DATE_EPOCH={v!r} is not a non-negative integer of seconds")
+        return dt.datetime.fromtimestamp(int(v), dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return summary.get("generated_utc") or dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
 
 R = 1737400.0
 LOLA_SHA = "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc"
@@ -271,7 +284,7 @@ def main():
                          "landing_site": False})
 
     (a.out / "sites.json").write_text(json.dumps({
-        "generated_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_utc": generated_utc(summary),
         "science_status": "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED",
         "note": "Site coordinates are catalogue feature centres, not certified touchdown points.",
         "series_window": summary["window"], "sites": sites_index, "features": features,
