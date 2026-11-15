@@ -2,6 +2,7 @@
 import { t, setLang, pickLang, apply, lang } from "./i18n.js";
 import { getState, setState, hrefTo, LAYERS } from "./state.js";
 import { sealEl } from "./layers.js";
+import { loadSites, sunCaveat } from "./data.js";
 import { icon as svgIcon, ICON_NAMES } from "./icons.js";
 
 export const SCREENS = [
@@ -62,6 +63,9 @@ export function mountShell({ screen, context = null, onLang } = {}) {
       mo.observe(document.body, { childList: true, subtree: true }); }
   }
   let cur = context;
+  // Site catalogue, only to flag a site whose sunlight figures are an upper bound (data.js sunCaveat).
+  let catalogue = null;
+  loadSites().then(doc => { catalogue = doc; renderCtx(); }).catch(() => {});
   const active = currentNav(screen);
   function render() {
     const st = getState();
@@ -95,6 +99,14 @@ export function mountShell({ screen, context = null, onLang } = {}) {
     for (const l of LAYERS) { const o = new Option(t("layer." + l), l, false, l === st.layer); sel.append(o); }
     sel.onchange = () => { setState({ layer: sel.value }); };
     lab.append(sel);
+    const caveat = sunCaveat(catalogue?.sites.find(s => s.id === st.site));
+    if (caveat) {
+      const chip = document.createElement("span"); chip.className = "mp-caveat"; chip.tabIndex = 0;
+      chip.textContent = t("ctx.sunCap");
+      chip.title = t("ctx.sunCapWhy", { ours: caveat.ours.toFixed(1), pgda: caveat.pgda.toFixed(1), diff: caveat.diff.toFixed(1) });
+      chip.setAttribute("aria-label", chip.textContent + ". " + chip.title);
+      parts.push(chip);
+    }
     ctx.replaceChildren(...parts, seal, net, lab);
     if (cur.action) ctx.append(pill(cur.action.label, { href: cur.action.href, cls: "is-primary" }));
   }
