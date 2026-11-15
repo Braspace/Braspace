@@ -8,6 +8,8 @@ import { sealEl } from "../core/layers.js";
 import { register, t } from "../core/i18n.js";
 import { getState, setState, hrefTo, DEFAULT_RULES } from "../core/state.js";
 import { qrSvg } from "./qr.js";
+import { buildHash } from "./scenario-calc.js";
+import { classroomWindows } from "./class-scenarios.js";
 
 register({
   en: {
@@ -107,10 +109,11 @@ holdReady();
 mountShell({ screen: "compare", context: null, onLang: draw });
 const doc = await loadSites();
 interface Scenario { stereo_x_m: number; stereo_y_m: number; n?: string | number }
-const scenarios = doc.sites.slice(0, 3) as unknown as Scenario[];
+const chosenWindows = classroomWindows(doc.sites, location.hash, getState());
+const scenarios = chosenWindows.map(s => s.site) as unknown as Scenario[];
 interface Grid { nx: number; ny: number; dx: number; x0: number; y0: number; data: ArrayLike<number> }
 const grid = (await loadRegion()) as Grid;
-await mountTerrain(document.getElementById("terrain")!, { sites: doc.sites.map((s) => { const i = scenarios.indexOf(s as unknown as Scenario); return i >= 0 ? { ...s, n: String.fromCharCode(65 + i) } : s; }), selected: getState().site, labels: false });
+await mountTerrain(document.getElementById("terrain")!, { sites: doc.sites.map((s) => { const letters = chosenWindows.flatMap((w, i) => w.site.id === s.id ? [String.fromCharCode(65 + i)] : []).join("/"); return letters ? { ...s, n: letters } : s; }), selected: getState().site, labels: false });
 
 type Switch = "allowSite" | "allowDate" | "allowProof" | "allowRules" | "allowLab";
 type Layer3 = "answer" | "why" | "proof";
@@ -140,6 +143,7 @@ function shareUrl() {
   u.searchParams.set("allowProof", cfg.allowProof ? "1" : "0");
   u.searchParams.set("allowRules", cfg.allowRules ? "1" : "0");
   u.searchParams.set("allowLab", cfg.allowLab ? "1" : "0");
+  u.hash = buildHash({ sc: chosenWindows.map(w => ({ site: w.site.id, start: w.start, hours: w.hours })) });
   return u.toString();
 }
 
