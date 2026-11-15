@@ -15,14 +15,16 @@ permissions:
 jobs:
   model:
     name: terrain-horizon-projection-tests
-    runs-on: ubuntu-latest
+    # CI_RUNS_ON selects the runner (self-hosted exo-x1 while hosted minutes are blocked by billing; see ci.yml).
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
+        if: runner.environment == 'github-hosted'
         with:
           python-version: "3.12"
       - name: Syntax check
-        run: python -m py_compile science/lola_horizon.py
+        run: python3 -m py_compile science/lola_horizon.py
       - name: Test projection, geometry and failure modes
-        run: python -m unittest discover -s science/tests -v
+        run: python3 -m unittest discover -s science/tests -v

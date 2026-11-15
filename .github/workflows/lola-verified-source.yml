@@ -14,11 +14,13 @@ permissions:
 jobs:
   source-evidence:
     name: Real NASA DEM source verification and preliminary skyline
-    runs-on: ubuntu-latest
+    # CI_RUNS_ON selects the runner (self-hosted exo-x1 while hosted minutes are blocked by billing; see ci.yml).
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 22
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
+        if: runner.environment == 'github-hosted'
         with:
           python-version: "3.12"
       - name: Download original NASA LOLA binary and label into temporary runner directory

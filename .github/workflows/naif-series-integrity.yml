@@ -18,7 +18,8 @@ permissions:
 jobs:
   provenance:
     name: Pinned NASA artifact and false-claim regression
-    runs-on: ubuntu-latest
+    # CI_RUNS_ON selects the runner (self-hosted exo-x1 while hosted minutes are blocked by billing; see ci.yml).
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
