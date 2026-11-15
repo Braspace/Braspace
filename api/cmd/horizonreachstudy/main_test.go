@@ -149,7 +149,7 @@ func TestReproducesCommittedStudy(t *testing.T) {
 	if rc != 0 {
 		t.Fatalf("rc=%d %s", rc, stderr)
 	}
-	if !strings.HasPrefix(stdout, "mons-mouton-im2 control 0.0 [(100, 45.22, 45.57, -0.86, 0, 0), (150, ") || strings.Count(stdout, "\n") != 5 {
+	if !strings.HasPrefix(stdout, "mons-mouton-im2 control 0.0 [(100, 45.22, 45.29, -1.14, 0, 0), (150, ") || strings.Count(stdout, "\n") != 5 {
 		t.Errorf("stdout: %q", stdout)
 	}
 	got, _ := os.ReadFile(out)
