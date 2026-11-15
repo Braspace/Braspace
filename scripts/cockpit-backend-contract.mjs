@@ -7,6 +7,10 @@
 //
 //   BRASPACE_COCKPIT_API=http://127.0.0.1:8080 node scripts/cockpit-backend-contract.mjs
 //   BRASPACE_COCKPIT_ORIGIN=https://… adds Origin on every request (same-origin Worker check).
+//   BRASPACE_COCKPIT_PACE_MS=150 waits between requests: production sits behind Traefik ratelimit (20 req/s, burst 40,
+//     per client IP), and a full run is ~60 requests. A 429 is reported as RATE_LIMITED, never as a contract failure.
+//   BRASPACE_EXPECT_COMMIT=<sha> requires /healthz build_commit to be that commit (catches images built without
+//     BRASPACE_GIT_SHA, which report "unknown").
 // Exit code 0 = every check passed; 1 = at least one failed (each failure is printed with its route and payload).
 import assert from "node:assert/strict";
 import { siteEvaluateBody, evaluateBody, runScenario, chargeTrace, H1_PROFILE } from "../web/moonproof/screens/cockpit-model.js";
@@ -14,6 +18,10 @@ import { crewRequest, readCrewAnswer, readEnergy, sensitivityVariants, CREW_DEFA
 
 const BASE = (process.env.BRASPACE_COCKPIT_API || "http://127.0.0.1:8080").replace(/\/$/, "");
 const ORIGIN = process.env.BRASPACE_COCKPIT_ORIGIN || "";
+const PACE_MS = Math.max(0, Number(process.env.BRASPACE_COCKPIT_PACE_MS || 0));
+const EXPECT_COMMIT = (process.env.BRASPACE_EXPECT_COMMIT || "").trim().toLowerCase();
+let rateLimited = 0;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const VALID_SCIENCE = new Set(["PRELIMINARY", "SYNTHETIC", "UNVERIFIED_INPUTS", "SIMULATION", "ESTIMATED"]);
 const results = [];
 
@@ -22,11 +30,13 @@ async function call(path, { method = "GET", body, as = "json", timeoutMs = 30000
   const headers = { Accept: as === "text" ? "text/html" : "application/json" };
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (ORIGIN) headers.Origin = ORIGIN;
+  if (PACE_MS) await sleep(PACE_MS);
   const t0 = Date.now();
   try {
     const r = await fetch(BASE + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs), redirect: "manual" });
     const type = r.headers.get("content-type") || "";
     const raw = await r.text();
+    if (r.status === 429) rateLimited++;
     let data = raw;
     if (as !== "text" && type.includes("json")) { try { data = JSON.parse(raw); } catch { data = null; } }
     return { ok: r.ok, status: r.status, type, data, ms: Date.now() - t0, error: r.ok ? undefined : (data?.error?.code || data?.code || r.status), headers: r.headers };
@@ -47,6 +57,8 @@ await check("GET /readyz → ready, science UNVERIFIED_INPUTS (cockpit apiOnline
 });
 await check("GET /healthz → build_commit present", async () => {
   const r = await call("/healthz"); assert.equal(r.status, 200); assert.ok(typeof r.data.build_commit === "string", "build_commit");
+  if (EXPECT_COMMIT) assert.ok(String(r.data.build_commit).toLowerCase().startsWith(EXPECT_COMMIT) && /^[0-9a-f]{40}$/.test(r.data.build_commit),
+    `build_commit ${r.data.build_commit} ≠ expected ${EXPECT_COMMIT} (image built without BRASPACE_GIT_SHA?)`);
   return `build ${String(r.data.build_commit).slice(0, 12)}`;
 });
 await check("GET /v1/capabilities → never scientifically_validated", async () => {
@@ -183,4 +195,5 @@ if (vs.data?.enabled && vs.data?.available) {
 const fail = results.filter((r) => !r.ok);
 for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.name}${r.note ? "  — " + r.note : ""}`);
 console.log(`\ncockpit-backend-contract: ${results.length - fail.length}/${results.length} PASS against ${BASE}${ORIGIN ? " (Origin " + ORIGIN + ")" : ""}`);
-process.exit(fail.length ? 1 : 0);
+if (rateLimited) console.log(`RATE_LIMITED: ${rateLimited} responses were 429 — the run is inconclusive, not a contract failure. Re-run with BRASPACE_COCKPIT_PACE_MS=150.`);
+process.exit(rateLimited ? 2 : fail.length ? 1 : 0);
