@@ -11,21 +11,20 @@ Usa **dados sintéticos**. Não é software de voo e não é ferramenta aprovada
 | `sim.js` | Gerador sintético de visibilidade do Sol e da Terra (mesmo modelo do protótipo) |
 | `request.js` | Montagem e validação do pedido, com os mesmos limites da API |
 | `app.js` | Editor de cenários, chamada à API, resultado e gráfico de carga |
-| `dev-server.py` | Servidor local: serve os arquivos e encaminha `/api/*` para a API Go |
 | `test/front.test.mjs` | Testes unitários e teste de integração opcional |
 
 ## Como rodar
 
 1. Suba a API Go em `127.0.0.1:8080` (com Docker `docker compose up --build -d`, ou `go run .` em `api/`).
-2. Na pasta `web/onboard`, rode:
+2. Na raiz do repositório, rode o servidor do front (o mesmo de todo o `web/`):
 
    ```sh
-   python dev-server.py --port 8090
+   BRASPACE_API_PORT=8080 BRASPACE_WEB_PORT=8090 node web/dev-server.mjs
    ```
 
-3. Abra `http://127.0.0.1:8090` e clique em **Simular**.
+3. Abra `http://127.0.0.1:8090/onboard/` e clique em **Simular**.
 
-O `dev-server.py` existe para evitar CORS: a API não envia cabeçalhos CORS.
+O `web/dev-server.mjs` serve os arquivos e encaminha `/api/*`, `/healthz`, `/readyz` e `/v1/*` para a API Go, o que evita CORS: a API não envia cabeçalhos CORS.
 
 ## Testes
 

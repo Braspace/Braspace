@@ -18,11 +18,11 @@ test("the rule is data-driven: only sites over the PGDA tolerance are flagged, a
 });
 
 // The web stage of the Docker gate copies web/ only; there the science gate pins the same values itself.
-const gateFile = new URL("../../../science/tests/test_reference_tolerances.py", import.meta.url);
+const gateFile = new URL("../../../api/cmd/validatehorizons/reference_tolerances_test.go", import.meta.url);
 test("same tolerance and same set of sites as the science gate", { skip: !existsSync(gateFile) && "science/ not in this build context" }, () => {
   const gate = readFileSync(gateFile, "utf8");
-  assert.match(gate, /PGDA_SUN_TOLERANCE_PP = 5\.0/);
-  assert.match(gate, /PGDA_SUN_OUTSIDE = \{"peak-near-shackleton"\}/);
+  assert.match(gate, /pgdaSunTolerancePP = 5\.0/);
+  assert.match(gate, /pgdaSunOutside = \[\]string\{"peak-near-shackleton"\}/);
 });
 
 test("no flag without both numbers, at the tolerance, or when PGDA shows more sunlight than we do", () => {
