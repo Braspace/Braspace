@@ -34,13 +34,13 @@ test("AUD-17: a landing attempt exports as versioned JSON marked as local simula
 import { readFile } from "node:fs/promises";
 const src = f => readFile(new URL("../screens/" + f, import.meta.url), "utf8");
 test("AUD-12/13: replan search horizon does not depend on the mission length, and coverage/source is shown", async () => {
-  const r = await src("recover.js");
+  const r = await src("recover.tsx");
   assert.doesNotMatch(r, /searchDays:\s*Math\.floor\(sc\.hours/);
   assert.match(r, /const SEARCH_DAYS = \d+;/);
   assert.match(r, /t\("rec\.coverage"/);
 });
 test("AUD-03: a free point's light block is labelled as the PGDA long-term mean", async () => {
-  const e = await src("explore.js");
+  const e = await src("explore.tsx");
   assert.match(e, /point \? t\("ex\.pgdaLong"\)/);
 });
 test("AUD-19: SCIENTIFIC_ACCEPTANCE states built/validated/published and promotes nothing to validated", async () => {

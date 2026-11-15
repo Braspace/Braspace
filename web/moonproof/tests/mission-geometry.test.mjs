@@ -22,8 +22,8 @@ test("compass: 8-point index from an azimuth, null when the azimuth is missing (
   for (const [az, i] of cases) assert.equal(compassIndex(az), i, String(az));
 });
 test("compass: azimuth and direction come from the stored series (cur.geo), no fixed value in code or html", async () => {
-  const js = await read("screens/mission.js");
-  const block = js.slice(js.indexOf('const comp = el("div", "mc-compass")'), js.indexOf("right.append(comp)"));
+  const js = await read("screens/mission.tsx");
+  const block = js.slice(js.indexOf("// Earth compass"), js.indexOf("dock(s); frame();"));
   assert.ok(block.length > 100, "compass block found");
   assert.match(block, /cur\.geo\?\.earthAz/); assert.match(block, /compassIndex\(az\)/);
   assert.match(block, /ci == null \? nd\(\)/, "missing direction renders N/D dash");
@@ -59,8 +59,8 @@ test("geometry: shrunken controls keep a real touch area of at least 44px (::aft
   }
 });
 test("dock order follows the board: previous, next, site selector, zoom out, zoom in", async () => {
-  const js = await read("screens/mission.js");
-  const row = js.slice(js.indexOf("row.append("), js.indexOf("d.replaceChildren(hint, row)"));
-  const order = ["mc.prev", "mc.next", "sel,", "mc.zout", "mc.zin"].map(k => row.indexOf(k));
+  const js = await read("screens/mission.tsx");
+  const row = js.slice(js.indexOf('<div class="mc-dock-row">'), js.indexOf("</>));", js.indexOf('<div class="mc-dock-row">')));
+  const order = ["mc.prev", "mc.next", "<select", "mc.zout", "mc.zin"].map(k => row.indexOf(k));
   assert.ok(order.every(i => i > -1) && order.every((v, i, a) => !i || v > a[i - 1]), String(order));
 });
