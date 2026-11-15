@@ -4,6 +4,7 @@
 //           npx --prefix web playwright install chromium
 //           node web/browser/e2e.mjs
 import {chromium} from "playwright";
+import {verifyCockpitPanels} from "./cockpit-panels.e2e.mjs";
 import {spawn} from "node:child_process";
 import {mkdir} from "node:fs/promises";
 import path from "node:path";
@@ -62,6 +63,7 @@ try{
  await open(desktop,"/moonproof/cockpit.html","#player");
  if(onboard){const r=await onboard;assert(r.status()===200||r.status()===422,"onboard API status "+r.status());}
  assert(await desktop.locator('a[href*="onboard/"]').count()===0,"cockpit must not link the archived onboard panel");
+ await verifyCockpitPanels(desktop);
  await desktop.screenshot({path:path.join(out,"moonproof-cockpit.png")});
 
  for(const [page,sel] of [["compare","#left"],["recover","#right"],["evidence","#sources"],["plan","#plan-table"],["rules","#rules-core"],["present","#present-question"],["activity","#act-steps"],["debrief","#actions a, .deb-none"]])
