@@ -56,7 +56,7 @@ export function loadSites(): Promise<SitesData> {
 }
 
 export function siteSeries(site: Site): Promise<Series> {
-  if (!seriesCache.has(site.id)) seriesCache.set(site.id, SiteSeries.load("./data/" + site.series));
+  if (!seriesCache.has(site.id)) seriesCache.set(site.id, SiteSeries.load("./data/" + site.series) as unknown as Promise<Series>); // meta carries science_status/provenance that lab/data types as unknown extras
   return seriesCache.get(site.id) as Promise<Series>;
 }
 export function siteTile(site: Site): Promise<unknown> {

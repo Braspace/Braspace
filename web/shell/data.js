@@ -22,7 +22,7 @@ export function loadSites() {
 }
 export function siteSeries(site) {
     if (!seriesCache.has(site.id))
-        seriesCache.set(site.id, SiteSeries.load("./data/" + site.series));
+        seriesCache.set(site.id, SiteSeries.load("./data/" + site.series)); // meta carries science_status/provenance that lab/data types as unknown extras
     return seriesCache.get(site.id);
 }
 export function siteTile(site) {
