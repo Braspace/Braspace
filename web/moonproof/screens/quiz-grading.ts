@@ -5,7 +5,7 @@ export function evaluateQuestion(question: number, metrics: readonly QuizMetric[
   const needsNight = question !== 3;
   const needsEarth = question !== 2;
   const verdicts = metrics.map(m => {
-    const requirements = [
+    const requirements: [number | null | undefined, number][] = [
       ...(needsNight ? [[m.longestDarkH?.value, limits.night]] : []),
       ...(needsEarth ? [[m.longestBlackoutH?.value, limits.blackout]] : [])
     ];
