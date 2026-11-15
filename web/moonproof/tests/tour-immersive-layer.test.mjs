@@ -7,8 +7,8 @@ const read = relative => readFile(new URL(relative, import.meta.url), "utf8");
 // Compare the actual layer values used by the shared Three.js backdrop and guided tour.
 // A visually present button can be pointer-inaccessible when a fullscreen canvas sits above it.
 function zIndex(css, selector) {
-  const rule = css.split("}").find(block => block.trimStart().startsWith(selector + "{") ||
-    block.trimStart().startsWith(selector + " {"));
+  const rule = css.split("\n").find(line => line.trimStart().startsWith(selector + "{") ||
+    line.trimStart().startsWith(selector + " {"));
   assert.ok(rule, `missing CSS rule: ${selector}`);
   const value = /\bz-index\s*:\s*(\d+)/.exec(rule);
   assert.ok(value, `missing z-index for: ${selector}`);
