@@ -49,7 +49,7 @@ BRASPACE_COCKPIT_API=http://127.0.0.1:8080 node scripts/cockpit-backend-contract
 BRASPACE_COCKPIT_API=https://braspace-moonproof.almeida-me.workers.dev node scripts/cockpit-backend-contract.mjs
 ```
 
-`scripts/ci-local.sh` runs it after `compose up` (step "cockpit ↔ Go/Rust/Postgres contract").
+`scripts/ci-local.sh` runs it after `compose up` (step "cockpit ↔ Go/Rust/Postgres contract"). Lane owners: `docs/harness/OWNERS.md`.
 
 ## Evidence (15/11/2026)
 
