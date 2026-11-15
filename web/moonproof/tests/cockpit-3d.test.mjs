@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { polarSiteCoordinates, siteReliefHeight, clampDistance, siteChoices, visibleMarker } from '../screens/cockpit-3d.js';
+import { polarSiteCoordinates, siteReliefHeight, clampDistance, siteChoices, visibleMarker, SCENE_LAYOUT_SELECTORS, cockpitOverlayBounds, shouldRestoreSceneFocus } from '../screens/cockpit-3d.js';
 import { latLonToStereo, makeGrid } from '../../moon-hd/polar-math.js';
 
 test('site anchors prefer registered stereo metres, use Joel polar conversion only if needed', () => {
@@ -57,4 +57,37 @@ test('only full visible marker hit areas are interactive; side panels, menus and
   const cockpit = readFileSync(new URL('../screens/cockpit-3d.tsx', import.meta.url), 'utf8');
   assert.match(cockpit, /attributeFilter: \["data-ck-hidden"\]/);
   assert.match(cockpit, /if \(focused\) ui.querySelector<HTMLSelectElement>\("\.mp-cockpit-3d-site"\)\?\.focus\(\)/);
+});
+
+test('mobile navigation occludes lunar markers, but clipped sheet children do not cover the exposed Moon', () => {
+  const viewport = { left: 0, right: 390, top: 0, bottom: 844 };
+  const nav = { left: 8, right: 382, top: 780, bottom: 836 };
+  const sheet = { left: 8, right: 382, top: 530, bottom: 710 };
+  // A child scrolled upward inside overflow:auto must not be treated as visible outside its sheet.
+  const child = { left: 16, right: 374, top: 200, bottom: 690 };
+  assert.ok(SCENE_LAYOUT_SELECTORS.split(',').includes('.mp-bottomnav'));
+  const visible = cockpitOverlayBounds([
+    { kind: 'sheet', rect: sheet }, { kind: 'sheet-child', rect: child }, { kind: 'other', rect: nav },
+  ]);
+  assert.deepEqual(visible, [sheet, nav]);
+  assert.equal(visibleMarker({left:150,right:194,top:240,bottom:284}, viewport, visible), true);
+  assert.equal(visibleMarker({left:150,right:194,top:790,bottom:834}, viewport, visible), false);
+  assert.equal(visibleMarker({left:150,right:194,top:650,bottom:694}, viewport, visible), false);
+  // Desktop sheet display:contents has no box; independent fixed rails still occlude.
+  assert.deepEqual(cockpitOverlayBounds([
+    { kind:'sheet', rect:{left:0,right:0,top:0,bottom:0} }, {kind:'sheet-child',rect:child},
+  ]), [child]);
+});
+
+test('asynchronous 3D exit returns a removed camera/marker focus to the persistent scene selector only', () => {
+  const retired = { closest: selector => selector === '.mp-cockpit-3d-marker,.mp-cockpit-3d-camera' ? {} : null };
+  const persistent = { closest: () => null };
+  assert.equal(shouldRestoreSceneFocus(true,true,retired),true);
+  assert.equal(shouldRestoreSceneFocus(true,false,retired),false);
+  assert.equal(shouldRestoreSceneFocus(false,true,retired),false);
+  assert.equal(shouldRestoreSceneFocus(true,true,persistent),false);
+  assert.equal(shouldRestoreSceneFocus(true,true,null),false);
+  const cockpit = readFileSync(new URL('../screens/cockpit-3d.tsx', import.meta.url), 'utf8');
+  assert.match(cockpit,/const restore = !disposed && .*ui\.contains\(active\).*shouldRestoreSceneFocus/);
+  assert.match(cockpit,/paint\(\);\s*if \(restore\) ui\.querySelector<HTMLSelectElement>\("\.mp-cockpit-3d-site"\)\?\.focus\(\);/);
 });

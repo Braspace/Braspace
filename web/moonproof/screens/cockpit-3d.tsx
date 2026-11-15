@@ -45,6 +45,21 @@ export function visibleMarker(marker: Bounds, viewport: Bounds, occlusions: read
     !occlusions.some(box => marker.left < box.right && marker.right > box.left && marker.top < box.bottom && marker.bottom > box.top);
 }
 
+export const SCENE_LAYOUT_SELECTORS = "#left,#right,#sheet,.mp-top,.mp-context,.mp-bottomnav,#player,.mp-links,#ck-panel-controls";
+type SceneOverlay<T extends Bounds> = { rect: T; kind: "sheet" | "sheet-child" | "other" };
+
+/** Mobile's scrolling sheet clips its children; desktop's display:contents sheet has no box. */
+export function cockpitOverlayBounds<T extends Bounds>(boxes: readonly SceneOverlay<T>[]): T[] {
+  const hasArea = ({ rect }: SceneOverlay<T>) => rect.right > rect.left && rect.bottom > rect.top;
+  const sheetVisible = boxes.some(box => box.kind === "sheet" && hasArea(box));
+  return boxes.filter(box => hasArea(box) && !(sheetVisible && box.kind === "sheet-child")).map(box => box.rect);
+}
+
+/** The scene can lose WebGL asynchronously while a keyboard user is on a retiring control. */
+export function shouldRestoreSceneFocus(ready: boolean, leavingReady: boolean, active: Pick<Element, "closest"> | null): boolean {
+  return ready && leavingReady && !!active?.closest(".mp-cockpit-3d-marker,.mp-cockpit-3d-camera");
+}
+
 const BASE = new URL("../../data/moonhd/", import.meta.url).href;
 type Resources = { renderer: Three; scene: Three; camera: Three; cap: CapScene; ship: Three; T: Three; canvas: HTMLCanvasElement; textures: Set<Three> };
 function release(r: Partial<Resources>) {
@@ -98,9 +113,12 @@ body[data-cockpit-view=3d] .mp-ck-lines,body[data-cockpit-view=3d] .mp-bodyic,bo
 `;
   document.head.append(style);
   function change(modeNext: Mode) {
+    const active = document.activeElement;
+    const restore = !disposed && !!active && ui.contains(active) && shouldRestoreSceneFocus(mode === "ready", modeNext !== "ready", active);
     mode = modeNext; host.dataset.mode = mode; document.body.dataset.cockpitView = mode === "ready" ? "3d" : "map";
     const fallback = document.getElementById("terrain"); if (fallback) fallback.inert = mode === "ready";
     paint();
+    if (restore) ui.querySelector<HTMLSelectElement>(".mp-cockpit-3d-site")?.focus();
   }
   function selectSite(id: string) {
     if (!choiceIds.has(id)) return;
@@ -119,17 +137,21 @@ body[data-cockpit-view=3d] .mp-ck-lines,body[data-cockpit-view=3d] .mp-bodyic,bo
         <span class="mp-cockpit-3d-status" role="status">{mode === "loading" ? tr("Carregando Moon HD de Joel…", "Loading Joel’s Moon HD…") : outside ? tr("Local fora do relevo 3D · use o mapa LOLA 2D", "Site outside 3D relief · use the LOLA 2D map") : ready ? tr("NASA LRO/LOLA · nave Artemis ilustrativa, escala e luz visuais", "NASA LRO/LOLA · illustrative Artemis lander; visual scale and light") : mode === "unavailable" ? tr("3D indisponível; mapa LOLA 2D preservado", "3D unavailable; LOLA 2D map retained") : tr("Mapa georreferenciado LOLA 2D", "LOLA georeferenced 2D map")}</span>
       </div></>, ui); positionControls();
   }
-  const layoutSelectors = "#left,#right,#sheet,.mp-top,.mp-context,#player,.mp-links,#ck-panel-controls";
   function point(s: SceneSite) {
     const r = resources, xy = polarSiteCoordinates(s); if (!r || !xy) return null;
     const height = siteReliefHeight(r.cap.innerGrid, r.cap.wideGrid, ...xy); if (height === null || !Number.isFinite(height)) return null;
     return new r.T.Vector3(...localToScene(stereoToLocal(...xy, height)));
   }
+  function layoutBoxes(): DOMRect[] {
+    const sheet = document.getElementById("sheet");
+    return cockpitOverlayBounds([...document.querySelectorAll(SCENE_LAYOUT_SELECTORS)]
+      .filter(e => getComputedStyle(e).visibility !== "hidden" && e.getClientRects().length > 0)
+      .map(e => ({ rect: e.getBoundingClientRect(), kind: e === sheet ? "sheet" : sheet?.contains(e) ? "sheet-child" : "other" })));
+  }
   // Frame the selected site in the area unobscured by collapsible cockpit panels rather than under them.
   function frameBounds(W: number, H: number) {
     let left = 0, right = W, top = 0, bottom = H;
-    for (const e of document.querySelectorAll(layoutSelectors)) {
-      const box = e.getBoundingClientRect(); if (!box.width || !box.height || getComputedStyle(e).visibility === "hidden") continue;
+    for (const box of layoutBoxes()) {
       if (box.right < W * .44 && box.height > H * .2) left = Math.max(left, box.right);
       else if (box.left > W * .56 && box.height > H * .2) right = Math.min(right, box.left);
       else if (box.top > H * .32 && box.width > W * .45) bottom = Math.min(bottom, box.top);
@@ -138,9 +160,9 @@ body[data-cockpit-view=3d] .mp-ck-lines,body[data-cockpit-view=3d] .mp-bodyic,bo
     return { left, right, top, bottom };
   }
   function overlays(): DOMRect[] {
-    return [...document.querySelectorAll(`${layoutSelectors},.ck-panel-options,.mp-cockpit-3d-controls,.mp-cockpit-3d-camera-menu`)]
+    return [...layoutBoxes(), ...[...document.querySelectorAll(".ck-panel-options,.mp-cockpit-3d-controls,.mp-cockpit-3d-camera-menu")]
       .filter(e => getComputedStyle(e).visibility !== "hidden" && e.getClientRects().length > 0)
-      .map(e => e.getBoundingClientRect()).filter(e => e.width > 0 && e.height > 0);
+      .map(e => e.getBoundingClientRect()).filter(e => e.width > 0 && e.height > 0)];
   }
   function hideMarker(el: HTMLButtonElement) {
     const focused = document.activeElement === el;
@@ -226,7 +248,7 @@ body[data-cockpit-view=3d] .mp-ck-lines,body[data-cockpit-view=3d] .mp-bodyic,bo
   canvasHost.addEventListener("wheel", e => { e.preventDefault(); zoom(Math.exp(Math.max(-1, Math.min(1, e.deltaY * .002)))); }, { passive: false });
   const layoutChanged = () => { positionControls(); draw(); };
   const observer = new ResizeObserver(layoutChanged); observer.observe(host);
-  for (const e of document.querySelectorAll(layoutSelectors)) observer.observe(e);
+  for (const e of document.querySelectorAll(SCENE_LAYOUT_SELECTORS)) observer.observe(e);
   const layout = new MutationObserver(layoutChanged); layout.observe(document.body, { attributes: true, attributeFilter: ["data-ck-hidden"] });
   document.addEventListener("toggle", layoutChanged, true);
   const language = new MutationObserver(() => { paint(); draw(); }); language.observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
