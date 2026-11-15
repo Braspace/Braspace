@@ -1,6 +1,10 @@
 // Question-specific, fail-closed classroom quiz grading. Never equate missing NASA data with "wrong".
 export type QuizMetric = { longestDarkH: { value: number | null | undefined }; longestBlackoutH: { value: number | null | undefined } };
 export type QuizAnswer = { verdicts: (boolean | null)[]; correctIds: string[]; status: "ready" | "unknown" };
+/** A failed scientific lookup has no numeric evidence; never turn it into zero or a false answer. */
+export function unavailableQuizMetric(): QuizMetric {
+  return { longestDarkH: { value: null }, longestBlackoutH: { value: null } };
+}
 export function evaluateQuestion(question: number, metrics: readonly QuizMetric[], limits: { night: number; blackout: number }): QuizAnswer {
   if (!metrics.length) return { verdicts: [], correctIds: [], status: "unknown" };
   const needsNight = question !== 3;
