@@ -138,3 +138,14 @@ export function rankSites(entries, t0, hours, { minSunPct = 0, maxBlackoutH = In
     return { site, w, violations, score: w.bothPct - (violations.length ? 1000 : 0) };
   }).sort((a, b) => b.score - a.score);
 }
+
+// Handoff from the SPA (#site=&t=&d=). Unknown site or out-of-coverage time keeps the default, never guesses (BR-02).
+export function parseEntryHash(hash, sites, start, end) {
+  const q = new URLSearchParams(String(hash || "").replace(/^#/, ""));
+  const out = {};
+  const id = q.get("site"); if (id && sites.some(s => s.id === id)) out.siteId = id;
+  const raw = q.get("t");
+  if (raw) { const t = Date.parse(raw.length === 10 ? raw + "T00:00Z" : /Z|[+-]\d\d:?\d\d$/.test(raw) ? raw : raw + "Z"); if (Number.isFinite(t)) out.t = Math.min(Math.max(Math.floor(t / HOUR_MS) * HOUR_MS, start), end); }
+  const d = Number(q.get("d")); if (d > 0) out.compareH = d * 24;
+  return out;
+}

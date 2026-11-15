@@ -40,7 +40,7 @@ const routes = [
   { path: "/evidencias", title: "Fontes e limitações", render: view("evidencias") },
   // Board and 3D lab live on their own pages; replace() keeps the back button working (no redirect loop).
   { path: "/bordo", prefix: true, title: "Painel de bordo", external: ctx => location.replace(bordoURL("onboard/cockpit.html", ctx.parts, ctx.query)) },
-  { path: "/terreno", title: "Terreno 3D", external: ctx => location.replace("lab.html" + (ctx.site ? "#site=" + encodeURIComponent(ctx.site) : "")) },
+  { path: "/terreno", title: "Terreno 3D", external: ctx => { const q = new URLSearchParams(); if (ctx.site) q.set("site", ctx.site); if (ctx.query.t) q.set("t", ctx.query.t); if (ctx.query.d) q.set("d", ctx.query.d); location.replace("lab.html" + (q.size ? "#" + q : "")); } },
   { path: "*", notFound: true, title: "Página não encontrada", render: (outlet) => {
     outlet.append(h("section", { class: "glass card" }, h("h1", { class: "title-l", "data-route-title": "", text: "Página não encontrada" }),
       h("p", { class: "t2", text: "Este endereço não existe nesta versão." }), h("a", { class: "btnA", href: "#/", text: "Voltar para a escolha" })));
