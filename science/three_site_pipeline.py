@@ -93,8 +93,8 @@ def disc_fraction(margin_deg: float, radius_deg: float) -> float:
     if margin_deg <= -radius_deg:
         return 0.0
     d = -margin_deg / radius_deg  # distance of horizon line above centre, in radii
-    hidden = (math.acos(d) - d * math.sqrt(1 - d * d)) / math.pi
-    return 1.0 - hidden
+    # Circular segment above the horizon (not its hidden complement).
+    return (math.acos(d) - d * math.sqrt(1 - d * d)) / math.pi
 
 
 def runs(flags: list[bool], value: bool) -> list[int]:

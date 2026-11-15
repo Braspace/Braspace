@@ -157,8 +157,8 @@ type assetCache struct {
 	client *http.Client
 	mu     sync.Mutex
 	data   map[string][]byte
-	// dir holds verified model files named <sha256>.glb. A file only gets that
-	// name after its size and checksum matched, so a cache hit is trusted.
+	// dir holds model files named <sha256>.glb. Cache hits are rechecked:
+	// a matching filename or byte count alone is not integrity evidence.
 	dir     string
 	fetchMu sync.Mutex // one model download at a time: no thundering herd on first use
 }
@@ -244,16 +244,47 @@ func (a *assetCache) get(ctx context.Context, l *layer) ([]byte, error) {
 	return b, nil
 }
 
+// openVerifiedModel checks the actual file descriptor that would be served.
+// Reject links and non-regular files and hash with bounded memory.
+func openVerifiedModel(name string, l *layer) (*os.File, error) {
+	fi, err := os.Lstat(name)
+	if err != nil || !fi.Mode().IsRegular() || fi.Size() != l.Bytes {
+		return nil, errAssetUnavailable
+	}
+	f, err := os.Open(name)
+	if err != nil {
+		return nil, errAssetUnavailable
+	}
+	opened, err := f.Stat()
+	if err != nil || !opened.Mode().IsRegular() || !os.SameFile(fi, opened) {
+		f.Close()
+		return nil, errAssetUnavailable
+	}
+	h := sha256.New()
+	n, err := io.Copy(h, io.LimitReader(f, l.Bytes+1))
+	if err != nil || n != l.Bytes || hex.EncodeToString(h.Sum(nil)) != l.SHA256 {
+		f.Close()
+		return nil, errAssetUnavailable
+	}
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		f.Close()
+		return nil, errAssetUnavailable
+	}
+	return f, nil
+}
+
 // modelPath returns the verified disk copy of a model layer, downloading it
 // on first use. Memory use is one 32 KiB copy buffer, not the file size.
 func (a *assetCache) modelPath(ctx context.Context, l *layer) (string, error) {
 	final := filepath.Join(a.dir, l.SHA256+".glb")
-	if fi, err := os.Stat(final); err == nil && fi.Size() == l.Bytes {
+	if f, err := openVerifiedModel(final, l); err == nil {
+		f.Close()
 		return final, nil
 	}
 	a.fetchMu.Lock()
 	defer a.fetchMu.Unlock()
-	if fi, err := os.Stat(final); err == nil && fi.Size() == l.Bytes {
+	if f, err := openVerifiedModel(final, l); err == nil {
+		f.Close()
 		return final, nil // another request finished the download while we waited
 	}
 	if err := os.MkdirAll(a.dir, 0o755); err != nil {
@@ -360,7 +391,7 @@ func (l *layersAPI) asset(w http.ResponseWriter, r *http.Request) {
 			unavailable()
 			return
 		}
-		f, err := os.Open(path)
+		f, err := openVerifiedModel(path, ly)
 		if err != nil {
 			unavailable()
 			return

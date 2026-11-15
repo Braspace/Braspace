@@ -21,7 +21,7 @@ test("homepage is a five-module MoonProof scientific-honesty shell",async()=>{
 });
 
 test("JavaScript and CSS are served as MIME-safe same-origin files",async()=>{
- const entries=[["/app.js","text/javascript"],["/moon3d.js","text/javascript"],["/styles.css","text/css"]];
+ const entries=[["/app.js","text/javascript"],["/moon3d.js","text/javascript"],["/styles.css","text/css"],["/vector-embed.js","text/javascript"]];
  for(const [route,kind]of entries){
   const r=await fetch(base+route),body=await r.text();
   assert.equal(r.status,200,route);

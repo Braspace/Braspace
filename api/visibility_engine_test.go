@@ -60,6 +60,19 @@ func TestVisibilityRejectsUnknownEngineFields(t *testing.T) {
 	}
 }
 
+func TestVisibilityRejectsNullEngineScalars(t *testing.T) {
+	for _, field := range []string{`"sun_horizon_deg":0`, `"earth_horizon_deg":0`, `"earth_visible":false`, `"simultaneous_visibility":false`} {
+		t.Run(field, func(t *testing.T) {
+			key := strings.SplitN(field, ":", 2)[0]
+			payload := strings.Replace(okEngineJSON, field, key+":null", 1) + "}"
+			rec := visibilityVia(t, scriptEngine(t, "printf '%s\\n' '"+payload+"'"))
+			if rec.Code != http.StatusBadGateway {
+				t.Fatalf("null engine scalar must fail closed: %d %s", rec.Code, rec.Body.String())
+			}
+		})
+	}
+}
+
 func TestVisibilityCapsEngineOutput(t *testing.T) {
 	// ~200 KB of valid-looking padding after the contract: must be refused, not buffered.
 	rec := visibilityVia(t, scriptEngine(t, "printf '%s' '"+okEngineJSON+",\"source_warning\":\"'; head -c 200000 /dev/zero | tr '\\\\0' 'x'; printf '\"}\\n'"))

@@ -234,7 +234,7 @@ func parseEngineResult(req visibilityRequest, payload []byte) (engineResult, err
 	for _, key := range []string{"site_id", "epoch_utc", "science_status",
 		"sun_horizon_deg", "earth_horizon_deg", "sun_margin_deg",
 		"earth_margin_deg", "sun_visible", "earth_visible", "simultaneous_visibility"} {
-		if _, present := raw[key]; !present {
+		if value, present := raw[key]; !present || bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
 			return engineResult{}, errEngineContract
 		}
 	}
