@@ -7,6 +7,7 @@ import { readFile } from "node:fs/promises";
 const css = await readFile(new URL("../screens/cockpit.css", import.meta.url), "utf8");
 const js = await readFile(new URL("../screens/cockpit.tsx", import.meta.url), "utf8");
 const html = await readFile(new URL("../cockpit.html", import.meta.url), "utf8");
+const compact = await readFile(new URL("../screens/cockpit-panels.css", import.meta.url), "utf8");
 const desktop = css.slice(css.indexOf("@media (min-width:701px){\n  .mp-ck-left,.mp-ck-right"));
 const has = (re, msg) => assert.match(desktop, re, msg);
 
@@ -38,4 +39,17 @@ test("battery ring is a real 152 px disc and the satellites follow the board ord
 test("phone keeps its own layout: the timeline wrapper vanishes below 701 px; no link to the archived onboard panel", () => {
   assert.match(css, /\.mp-tl\{display:contents\}/);
   assert.doesNotMatch(js, /\.\.\/onboard\//);
+});
+
+test("compact cockpit overrides legacy board dimensions without global scaling", () => {
+  assert.match(compact, /width:clamp\(190px,19vw,270px\)/);
+  assert.match(compact, /\.mp-stat\{width:132px!important;height:132px!important/);
+  assert.match(compact, /\.mp-player \.mp-tl\{[^}]*height:44px/);
+  assert.match(compact, /\.mp-pill\{min-height:44px;min-width:44px;font-size:12px/);
+  assert.match(compact, /\.mp-cockpit-3d-controls button\{[^}]*min-height:44px;min-width:44px/);
+  assert.doesNotMatch(compact, /\bzoom\s*:|transform\s*:\s*scale\(/);
+  for (const width of [701, 768, 1024, 1440, 1920]) {
+    const rail = Math.max(190, Math.min(width * .19, 270));
+    assert.ok(width - 2 * (rail + 16) >= width * .40, `center at ${width}px`);
+  }
 });

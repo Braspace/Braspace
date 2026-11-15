@@ -20,19 +20,102 @@ body[data-ck-hidden~="faults"] #right>.mp-glass:not(.ck-crew),body[data-ck-hidde
 body[data-ck-scenario] #left,body[data-ck-scenario] #right,body[data-ck-scenario] #sheet,body[data-ck-scenario] #player,body[data-ck-scenario] .mp-ck-lines,body[data-ck-scenario] .mp-bodyic,body[data-ck-scenario] .mp-ck-tag{visibility:hidden}
 /* Group positions use actual context/toolbar geometry rather than hard-coded viewport heights. */
 @media(min-width:701px){
-  body:has(#ck-panel-controls) .mp-ck-left,body:has(#ck-panel-controls) .mp-ck-right{top:var(--ck-panels-top,194px);width:clamp(235px,25vw,330px);max-height:calc(100dvh - var(--ck-panels-top,194px) - 84px);gap:8px}
+  body:has(#ck-panel-controls) .mp-ck-left,body:has(#ck-panel-controls) .mp-ck-right{top:var(--ck-panels-top,176px);width:clamp(190px,19vw,270px);max-height:max(0px,calc(100dvh - var(--ck-panels-top,176px) - 72px));gap:8px}
   body:has(#ck-panel-controls) .mp-top .mp-nav{min-width:0;overflow-x:auto;scrollbar-width:none}
   body:has(#ck-panel-controls) .mp-top .mp-nav .mp-pill{flex:none}
   body:has(#ck-panel-controls) .mp-player{max-width:calc(100vw - 24px)}
-  body:has(#ck-panel-controls) .mp-tl{min-width:0;width:clamp(160px,26vw,378px)}
-  body:has(#ck-panel-controls) .mp-links{bottom:88px;z-index:11}
+  body:has(#ck-panel-controls) .mp-tl{min-width:0;width:clamp(160px,22vw,286px)}
+  body:has(#ck-panel-controls) .mp-links{bottom:72px;z-index:11}
 }
 @media(max-width:700px){
   #ck-panel-controls{top:var(--ck-context-end,150px)}
-  body:has(#ck-panel-controls) #sheet{height:min(var(--sheet-h,42vh),max(96px,calc(100dvh - var(--ck-panels-top,200px) - 138px)))}
-  body[data-ck-hide-timeline] #sheet{bottom:76px}
-  body:has(#ck-panel-controls) .mp-links{display:block;bottom:124px;left:auto;right:10px;z-index:14}
-  body:has(#ck-panel-controls) #sheet:not([hidden])~.mp-links{bottom:auto;top:var(--ck-panels-top,200px)}
-  body:has(#ck-panel-controls) .mp-links .mp-pill{min-height:44px;max-width:calc(100vw - 20px);white-space:normal}
+  body:has(#ck-panel-controls) #sheet{--sheet-h:34vh;height:min(var(--sheet-h),max(96px,calc(100dvh - var(--ck-panels-top,200px) - 126px)));bottom:120px}
+  body:has(#ck-panel-controls)[data-ck-hide-timeline] #sheet{bottom:66px}
+  /* The optional report shares the panel-toolbar row, never the 3D camera controls. */
+  body:has(#ck-panel-controls):not([data-ck-hide-report]) #ck-panel-controls{left:8px;transform:none;max-width:calc(100vw - 120px)}
+  body:has(#ck-panel-controls):not([data-ck-hide-report]) .ck-panel-options{left:0;transform:none;width:min(300px,calc(100vw - 16px))}
+  body:has(#ck-panel-controls) .mp-links{display:block;top:calc(var(--ck-panels-top,200px) - 52px);bottom:auto;left:auto;right:8px;z-index:14}
+  body:has(#ck-panel-controls) .mp-links .mp-pill{min-height:44px;width:104px;padding:4px 6px;font-size:11.5px;line-height:1.15;white-space:normal}
+}
+/* Cockpit-only density: retain the original palette, typefaces, glass, seals and rounded
+   geometry while tightening the 100%-zoom composition. Never scale the entire UI. */
+body:has(#ck-panel-controls){--margin:16px;--fs-body:12.5px;--fs-card-title:13px;--fs-label:12px;--gap:8px;--r-card:18px;--r-inner:13px;--s1:5px;--s2:8px;--s3:13px;font-size:var(--fs-body)}
+body:has(#ck-panel-controls) .mp-pill{min-height:44px;min-width:44px;font-size:12px;padding:0 9px;gap:5px}
+body:has(#ck-panel-controls) .mp-pill svg{width:15px;height:15px}
+body:has(#ck-panel-controls) .mp-pill.is-round,body:has(#ck-panel-controls) .mp-round{width:44px;padding:0}
+body:has(#ck-panel-controls) .mp-top{top:12px;height:44px;gap:8px}
+body:has(#ck-panel-controls) .mp-brand{width:auto;flex:none;font-size:16px;gap:5px}
+body:has(#ck-panel-controls) .mp-logo{width:24px;height:24px;box-shadow:inset -6px 0 0 var(--jade)}
+body:has(#ck-panel-controls) .mp-nav{justify-content:flex-start;gap:5px}
+body:has(#ck-panel-controls) .mp-nav-right{flex:none;gap:5px}
+body:has(#ck-panel-controls) .mp-context{top:64px;min-height:44px;gap:5px;padding:3px 6px 3px 10px}
+body:has(#ck-panel-controls) .mp-context select{min-height:44px;min-width:44px;max-width:100%;padding:0 8px}
+body:has(#ck-panel-controls) .mp-caveat{font-size:11px;padding:2px 6px}
+body:has(#ck-panel-controls) .ck-panel-toolbar{gap:5px}
+body:has(#ck-panel-controls) .ck-panel-toolbar .mp-pill{padding:0 9px;font-size:12px}
+body:has(#ck-panel-controls) .ck-panel-options{gap:5px;padding:8px;border-radius:18px;max-height:max(96px,calc(100dvh - var(--ck-panels-top,200px) - 12px))}
+body:has(#ck-panel-controls) .mp-ck-left,body:has(#ck-panel-controls) .mp-ck-right{min-width:0;align-content:start;gap:8px;padding-bottom:4px;overscroll-behavior:contain}
+body:has(#ck-panel-controls) .mp-ck-left .mp-card,body:has(#ck-panel-controls) .mp-ck-right .mp-card,body:has(#ck-panel-controls) .mp-ck-right .mp-glass{padding:13px;margin:0;min-height:0;min-width:0}
+body:has(#ck-panel-controls) .mp-ck-title{margin:0!important;padding:0}
+body:has(#ck-panel-controls) .mp-ck-left .mp-stat{width:132px!important;height:132px!important;transform:none!important;margin:25px auto!important;aspect-ratio:1}
+body:has(#ck-panel-controls) .mp-ck-left .mp-stat-core{inset:24px}
+body:has(#ck-panel-controls) .mp-ck-left .mp-stat-core .mp-num{font-size:21px}
+body:has(#ck-panel-controls) .mp-ck-left .mp-stat-core small{font-size:10px}
+body:has(#ck-panel-controls) .mp-ck-left .mp-sat{width:42px;height:42px;margin:-21px 0 0 -21px}
+body:has(#ck-panel-controls) .mp-ck-left .mp-sat[data-pos="0"]{top:0;left:50%}
+body:has(#ck-panel-controls) .mp-ck-left .mp-sat[data-pos="1"]{top:50%;left:100%}
+body:has(#ck-panel-controls) .mp-ck-left .mp-sat[data-pos="2"]{top:100%;left:50%}
+body:has(#ck-panel-controls) .mp-ck-left .mp-sat[data-pos="3"]{top:50%;left:0}
+body:has(#ck-panel-controls) .mp-ck-left .mp-sat span{font-size:9px;max-width:40px;line-height:1.1;white-space:normal;overflow-wrap:anywhere}
+body:has(#ck-panel-controls) .mp-visrow{gap:5px}
+body:has(#ck-panel-controls) .mp-vis{padding:0 10px;min-height:36px;font-size:12px}
+body:has(#ck-panel-controls) .mp-ck-left .mp-layer{width:auto;min-height:0;padding:13px}
+body:has(#ck-panel-controls) .mp-ck-left .mp-layer-head h3{font-size:13px}
+body:has(#ck-panel-controls) .mp-ck-left .mp-layer-answer,body:has(#ck-panel-controls) .mp-ck-left .mp-layer-answer .mp-label{font-size:12px;line-height:1.35}
+body:has(#ck-panel-controls) .mp-ck-left .mp-days{height:34px}
+body:has(#ck-panel-controls) .mp-ck-left .mp-layer .mp-chips{position:static;margin:8px 0 0;flex-wrap:wrap;gap:5px}
+body:has(#ck-panel-controls) .mp-ck-left .mp-chip{min-height:44px;min-width:44px;font-size:12px;padding:0 8px}
+body:has(#ck-panel-controls) .mp-rule{padding:5px 0;font-size:12px;gap:5px}
+body:has(#ck-panel-controls) .mp-rule>span:first-child{min-width:0;overflow-wrap:anywhere}
+body:has(#ck-panel-controls) .mp-rule .st{font-size:11px;padding:3px 8px}
+body:has(#ck-panel-controls) .mp-ck-right .mp-link{display:inline-flex;align-items:center;min-height:44px;min-width:44px}
+body:has(#ck-panel-controls) .mp-alert{gap:8px}
+body:has(#ck-panel-controls) .mp-alert-ic{width:28px;height:28px}
+body:has(#ck-panel-controls) .mp-alert h3{font-size:13px}
+body:has(#ck-panel-controls) .mp-alert p{font-size:12px;line-height:1.35}
+body:has(#ck-panel-controls) .mp-alert-act{flex-wrap:wrap;gap:5px}
+body:has(#ck-panel-controls) .mp-alert .mp-pill.is-white,body:has(#ck-panel-controls) .mp-faults .mp-pill{min-height:44px;min-width:44px;font-size:12px;padding:0 8px;white-space:normal}
+body:has(#ck-panel-controls) .mp-alert .mp-pill::after,body:has(#ck-panel-controls) .mp-faults .mp-pill::after{content:none}
+body:has(#ck-panel-controls) .ck-crew-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+body:has(#ck-panel-controls) .ck-crew-form input{min-width:0;min-height:44px;width:100%;font:inherit}
+body:has(#ck-panel-controls) .ck-crew-table{font-size:12px;overflow-wrap:anywhere}
+body:has(#ck-panel-controls) .ck-crew-tools{gap:5px}
+body:has(#ck-panel-controls) .mp-marker,body:has(#ck-panel-controls) .mp-marker[aria-pressed="true"]{width:44px;height:44px;margin:-22px 0 0 -22px;font-size:13px}
+body:has(#ck-panel-controls) .mp-marker-label{top:47px;font-size:12px;padding:4px 8px}
+body:has(#ck-panel-controls) .mp-player{bottom:16px;gap:5px}
+body:has(#ck-panel-controls) .mp-player select{min-height:44px;height:44px;min-width:44px;font-size:12px}
+body:has(#ck-panel-controls) .mp-tl .mp-time{font-size:12px}
+body:has(#ck-panel-controls) .mp-cockpit-3d-controls{padding:4px 6px;gap:4px}
+body:has(#ck-panel-controls) .mp-cockpit-3d-controls button{font-size:12px;min-height:44px;min-width:44px}
+@media(min-width:701px){
+  body:has(#ck-panel-controls) .mp-ck-right .mp-alert[hidden]+.mp-glass{margin-top:0}
+  body:has(#ck-panel-controls) .mp-player .mp-tl{gap:8px;height:44px;padding:0 10px}
+  body:has(#ck-panel-controls) .mp-player select{width:76px;padding:0 25px 0 10px;background-position:right 8px center}
+}
+@media(max-width:700px){
+  body:has(#ck-panel-controls){--margin:8px}
+  body:has(#ck-panel-controls) .mp-top{top:8px;left:8px;right:8px;height:auto;min-height:50px;padding:2px 5px 2px 9px}
+  body:has(#ck-panel-controls) .mp-context{top:62px;left:8px;right:8px;padding:5px 8px;gap:4px 6px}
+  body:has(#ck-panel-controls) .mp-context .mp-ctx-text{white-space:normal;line-height:1.25;overflow-wrap:anywhere}
+  body:has(#ck-panel-controls) .mp-context a,body:has(#ck-panel-controls) .mp-context .mp-pill{min-height:44px;height:auto;padding:0 9px}
+  body:has(#ck-panel-controls) .mp-bottomnav{left:8px;right:8px;bottom:8px;padding:4px;gap:2px}
+  body:has(#ck-panel-controls) .mp-bottomnav .mp-pill{min-width:44px;min-height:44px;font-size:10.5px;padding:3px 2px;gap:2px}
+  body:has(#ck-panel-controls) .mp-player{bottom:66px;gap:5px;padding:4px 5px}
+  body:has(#ck-panel-controls) .mp-player select{padding:0 8px}
+  body:has(#ck-panel-controls) .mp-sheet{padding:0 8px 8px}
+  body:has(#ck-panel-controls) .mp-ck-left,body:has(#ck-panel-controls) .mp-ck-right{margin-bottom:8px}
+  body:has(#ck-panel-controls) .mp-time{min-width:0;font-size:11px}
+  body:has(#ck-panel-controls) .mp-player input[type=range]{min-width:44px}
+  body:has(#ck-panel-controls) .mp-player .mp-label{font-size:10.5px}
 }
 @media(prefers-reduced-motion:reduce){.ck-panel-toolbar *{transition:none!important;animation:none!important}}
