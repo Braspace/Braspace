@@ -70,7 +70,8 @@ async function paint() {
   overlay.width = W * dpr; overlay.height = H * dpr;
   const g = overlay.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
   // Same projection as the relief under it (core/terrain.js), so the layer lines up with the craters.
-  const src = await layerImage(layer), mpp = terrain.mpp || terrain.view.span / Math.min(W, H);
+  if (!terrain.ready) { pin.hidden = true; return; } // map not framed yet (zero-size viewport): nothing to line up with
+  const src = await layerImage(layer), mpp = terrain.mpp;
   const [x0, y0] = terrain.toPx(grid.x0, grid.y0 + (grid.ny - 1) * grid.dx), w = grid.nx * grid.dx / mpp, h = grid.ny * grid.dx / mpp;
   g.imageSmoothingEnabled = false; g.drawImage(src, x0, y0, w, h);
   // Soft edge where the data ends (the layer only covers its grid; no data is invented past it).

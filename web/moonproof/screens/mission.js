@@ -41,7 +41,9 @@ function frame() {
 
 // Dotted Sun and Earth lines from the site along their local azimuth, labelled with the margin over the terrain horizon.
 function rays() {
-  const svg = $("rays"); svg.replaceChildren(); if (!cur) return;
+  const svg = $("rays"); svg.replaceChildren();
+  // No projection yet (page opened hidden or at zero size): draw nothing rather than lines at "Infinity".
+  if (!cur || !terrain.ready) { for (const id of ["ray-sun", "ray-earth"]) $(id).hidden = true; return; }
   const s = site(), W = innerWidth, Hh = innerHeight, [px, py] = terrain.toPx(s.stereo_x_m, s.stereo_y_m);
   svg.setAttribute("viewBox", `0 0 ${W} ${Hh}`);
   const g = cur.geo; if (!g) return;
