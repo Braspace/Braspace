@@ -819,7 +819,7 @@
                 "required": [
                   "lat",
                   "lon",
-                  "start_utc"
+                  "start_utc", "duration_hours", "step_minutes"
                 ],
                 "properties": {
                   "lat": {
