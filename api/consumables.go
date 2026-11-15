@@ -37,10 +37,19 @@ func (c *crewSpec) validate() error {
 	case strings.TrimSpace(c.RateSource) == "" || len(c.RateSource) > 300:
 		return errf(http.StatusUnprocessableEntity, "INVALID_CREW", "crew.rate_source must cite where the consumption rates come from")
 	}
+	// Extremely small positive IEEE-754 values may generate zero rates or
+	// non-finite autonomy. Reject before calculation/JSON serialization.
+	for _, x := range [][2]float64{{c.O2StockKg, c.O2KgPerPersonDay}, {c.FoodStockKg, c.FoodKgPerPersonDay}} {
+		rate := float64(c.Size) * x[1] / 24
+		if rate <= 0 || !finite(rate) || !finite(round6(x[0]/rate)) {
+			return errf(http.StatusUnprocessableEntity, "INVALID_CREW", "crew rates and stocks must yield representable autonomy")
+		}
+	}
 	return nil
 }
 
 type consumableReport struct {
+	exactMarginHours  float64
 	Resource          string  `json:"resource"`
 	Unit              string  `json:"unit"`
 	RateKgPerHour     float64 `json:"rate_kg_per_hour"`
@@ -75,7 +84,9 @@ func consumables(c *crewSpec, start time.Time, hours, delayHours float64) consum
 	}{{"oxygen", "OXYGEN", c.O2StockKg, c.O2KgPerPersonDay}, {"food", "FOOD", c.FoodStockKg, c.FoodKgPerPersonDay}} {
 		rate := float64(c.Size) * r.perPD / 24
 		delayUse := 0.0
+		exhaustedWaiting := false
 		if c.AboardDuringDelay {
+			exhaustedWaiting = rate*delayHours > r.stock
 			delayUse = math.Min(r.stock, rate*delayHours)
 		}
 		stock := r.stock - delayUse
@@ -84,9 +95,17 @@ func consumables(c *crewSpec, start time.Time, hours, delayHours float64) consum
 		item := consumableReport{
 			Resource: r.name, Unit: "kg", RateKgPerHour: round6(rate), UsedDuringDelayKg: round6(delayUse),
 			StockAtStartKg: round6(stock), RequiredKg: round6(rate * hours), RemainingAtEndKg: round6(math.Max(0, stock-rate*hours)),
-			AutonomyHours: round6(autonomy), MarginHours: round6(margin), Status: "OK",
+			AutonomyHours: round6(autonomy), MarginHours: round6(margin), exactMarginHours: margin, Status: "OK",
 		}
 		switch {
+		case exhaustedWaiting:
+			// Runs out before the window starts: launch time + stock / rate.
+			launch := start.Add(-time.Duration(delayHours * float64(time.Hour)))
+			at := launch.Add(time.Duration(r.stock / rate * float64(time.Hour))).UTC().Format(time.RFC3339)
+			item.DepletionUTC, item.Status = &at, "DEPLETED_DURING_DELAY"
+			res.Risks = append(res.Risks, onboard.Risk{Category: r.label + "_DEPLETION", Severity: "CRITICAL", Measured: round6(r.stock / rate), Allowed: round6(delayHours + hours), Unit: "h",
+				Explanation: fmt.Sprintf("%s runs out %.1f h into the %.0f h delay, before the window starts, at the declared consumption rate.", r.name, r.stock/rate, delayHours)})
+			res.Status = "CRITICAL"
 		case margin < 0:
 			at := start.Add(time.Duration(autonomy * float64(time.Hour))).UTC().Format(time.RFC3339)
 			item.DepletionUTC, item.Status = &at, "DEPLETED_BEFORE_END"
@@ -115,9 +134,9 @@ func consumableChecks(c *crewSpec, res, baseline *consumablesResult) []constrain
 	var out []constraintCheck
 	for i, it := range res.Items {
 		cc := constraintCheck{Criterion: it.Resource + "_margin_hours", Unit: "h", Comparator: ">=", Limit: c.ReserveHours,
-			Value: it.MarginHours, Margin: round6(it.MarginHours - c.ReserveHours), Passed: it.MarginHours >= c.ReserveHours}
+			Value: it.exactMarginHours, Margin: it.exactMarginHours - c.ReserveHours, Passed: it.Status == "OK"}
 		if baseline != nil && i < len(baseline.Items) {
-			b := baseline.Items[i].MarginHours
+			b := baseline.Items[i].exactMarginHours
 			cc.BaselineValue = &b
 		}
 		out = append(out, cc)

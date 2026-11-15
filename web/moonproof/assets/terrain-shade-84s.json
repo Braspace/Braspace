@@ -1,0 +1,65 @@
+{
+  "schema": "braspace.terrain-background.v1",
+  "product": "BRASPACE screen-background terrain derived from NASA LOLA (visual context; not illumination, not visibility)",
+  "image": "terrain-shade-84s.webp",
+  "image_bytes": 80972,
+  "webp_quality": 82,
+  "width_px": 944,
+  "height_px": 944,
+  "meters_per_pixel": 400.0,
+  "latitude_edge_deg": -84.0,
+  "bounds": {
+    "lat_min_deg": -90.0,
+    "lat_max_deg_inscribed_circle": -84.0,
+    "square_half_width_m": 188800.0
+  },
+  "style": "shade",
+  "shading": {
+    "azimuth_deg": 315.0,
+    "altitude_deg": 7.0,
+    "z_factor": 1.6,
+    "tone_gamma": 0.5,
+    "model": "Lambertian hillshade of the DEM",
+    "note": "shading light is synthetic, not a real illumination state",
+    "vignette": "radial darkening baked in (cosmetic)",
+    "palette": "grey with blue-black shadows"
+  },
+  "projection": {
+    "type": "polar stereographic (spherical), true scale at the pole",
+    "center_latitude_deg": -90.0,
+    "center_longitude_deg": 0.0,
+    "reference_radius_m": 1737400.0,
+    "frame": "MEAN EARTH/POLAR AXIS OF DE421"
+  },
+  "transform": {
+    "pixel_convention": "zero-indexed image coordinates, col to the right, row downwards; integer col/row is a pixel centre, pixel edges at +-0.5",
+    "pole_pixel": [
+      471.5,
+      471.5
+    ],
+    "meters_per_pixel": 400.0,
+    "forward": "rho = 2*R*tan(radians(90+lat)/2); x = rho*sin(radians(lon)); y = rho*cos(radians(lon)); col = pole_col + x/meters_per_pixel; row = pole_row - y/meters_per_pixel",
+    "inverse": "x = (col-pole_col)*meters_per_pixel; y = (pole_row-row)*meters_per_pixel; rho = hypot(x,y); lat = degrees(2*atan(rho/(2*R))) - 90; lon = degrees(atan2(x,y))",
+    "orientation": "0°E up, 90°E right, 180°E down, 90°W left (viewed from above the south pole)",
+    "dem_pixel_of_image_pixel": "dem_col = 5*col + 1442.0, same for row (zero-indexed LDEM_80S_80M pixel centres)"
+  },
+  "source": {
+    "product": "LDEM_80S_80M.IMG",
+    "pds_dataset_id": "LRO-L-LOLA-4-GDR-V1.0",
+    "url": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img/ldem_80s_80m.img",
+    "sha256": "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc",
+    "sha256_checked": true,
+    "resampling": "80 m/px -> 400 m/px by 5x5 mean",
+    "dem_crop_zero_indexed": {
+      "first_col": 1440,
+      "first_row": 1440,
+      "size": 4720
+    }
+  },
+  "credit": "Elevation: NASA/GSFC/LOLA (LRO LOLA LDEM_80S_80M). Rendering: BRASPACE.",
+  "generator": "science/render_terrain_backgrounds.py",
+  "generated_utc": "2026-11-14T23:00:00Z",
+  "data_status": "PRELIMINARY",
+  "science_status": "NOT_A_SCIENCE_RESULT (visual context only)",
+  "ai_generated": false
+}

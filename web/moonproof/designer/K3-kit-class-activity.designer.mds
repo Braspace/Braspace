@@ -1,0 +1,68 @@
+# K3-kit-class-activity · Kit Aula · Montar atividade
+
+**Pergunta que a tela responde**
+Como o professor configura uma atividade com cenários reais, define o que os alunos podem alterar e compartilha com a turma?
+
+**Quem usa e em que camada abre**
+- Público-alvo: professores ("Dar uma aula").
+- Camada em que abre: **2 Por quê** (configurando em qual camada — `1 Resposta`, `2 Por quê` ou `3 Prova` — os alunos vão abrir).
+
+**Layout**
+- **Desktop (1440×900):**
+  - **Topo:** Barra de navegação global (`Comparar` ativo em jade; `Aula` ativo em branco à direita). Esta tela **não** tem barra de contexto (a prancha V3Atividade não a desenha): a página monta o shell com `context: null`.
+  - **Geometria medida no DOM da prancha (1440×900):** painéis a partir de y=97 e margem lateral de 29 px; colunas 320 / 552 / 510 (a prancha sobrepõe passos e prévia em 19 px, aqui os passos terminam onde a prévia começa); passos ~417 px de altura, prévia ~422, permissões ~445; barra de compartilhar y=743, 1062×129, botões de 47 px de altura.
+  - **Coluna esquerda (320 px, vidro):** Cartão `Kit Aula — Montar atividade` com stepper de 4 passos (círculos de 30 px) (`1 Escolher cenários ✓`, `2 O que os alunos podem mexer`, `3 Pergunta e resposta`, `4 Compartilhar`) e caixa `Dica de uso em aula`.
+  - **Coluna central:** Cartão `Como os alunos vão ver` com seletor `Notebook` | `Celular`, quadro de 300 px com o relevo LOLA real ajustado aos 3 cenários, marcadores de 36 px (numerados como `n` do `sites.json`), selo de origem, chip branco `Prévia do aluno`, vidro com a pergunta, e abas `Abrem em: 1 Resposta · 2 Por quê · 3 Prova` (`role="tablist"`, 28 px; camadas já percorridas em `rgba(46,196,160,.16)`/`#7FE6CB`, ativa em jade).
+  - **Coluna direita:** **cartão preto sólido** (`.mp-card`, sombra `0 18px 40px`) `Passo 2 · o que pode mexer` com marca `alunos` e 5 linhas de duas linhas (título + subtítulo) com interruptor `role="switch"` + `aria-checked` (44×26, bolinha de 20 px por `::after`): `Trocar de local`, `Trocar a data` (subtítulo mostra a data do estado), `Ver a camada Prova`, `Mudar as regras` (limites `DEFAULT_RULES`, "assumed limit"), `Abrir o Landing Lab`; e seção `Notas do professor · só você vê`.
+  - **Rodapé:** Barra horizontal `Passo 4 · compartilhar com a turma` com QR code REAL (84×84 em caixa `#F2F4F5`, padding 6, raio 10) gerado em `screens/qr.js` a partir da URL de compartilhamento, a própria URL (texto), a nota `Alunos entram sem conta · você acompanha as respostas aqui`, botão `Copiar link` e CTA `Apresentar no projetor`.
+- **Celular (390×844):**
+  - Passos, prévia, toggles e compartilhamento empilhados em coluna única sem rolagem lateral (sem sobreposição entre cards).
+
+**Componentes**
+- `StepperAtividade`: 4 etapas clicáveis.
+- `PreviaAluno`: simulador visual `Notebook`/`Celular` + seletor de camada inicial.
+- `PainelPermissoesAluno`: 5 toggles + notas do professor.
+- `BarraCompartilharTurma`: QR code local + URL + `Copiar link` + `Apresentar no projetor`.
+
+**Textos**
+| pt-BR | en |
+|---|---|
+| Kit Aula · Montar atividade | Class Kit · Build activity |
+| Escolher cenários / O que os alunos podem mexer | Choose scenarios / What students can change |
+| Pergunta e resposta / Compartilhar | Question & answer / Share |
+| Como os alunos vão ver / Notebook / Celular | How students will see / Laptop / Mobile |
+| Prévia do aluno / Abrem em: | Student preview / Opens in: |
+| Notas do professor · só você vê | Teacher notes · only you see |
+| Copiar link / Apresentar no projetor | Copy link / Present on projector |
+
+**Dados**
+| Elemento | Fonte exata (arquivo ou rota e campo) | Selo | O que mostrar sem dado |
+|---|---|---|---|
+| Cenários A, B, C | `web/data/sites.json` (`sites[].id`, `name`, `lat`, `lon`) | `PRE` | `—` |
+| URL de compartilhamento e QR Code | `window.location.href` com parâmetros da atividade na query string (`core/state.js`); o QR codifica exatamente esse texto (`screens/qr.js`: byte mode, correção L, versões 1–40, máscara automática) | — | omite o QR se a URL passar de 2953 bytes; o link continua |
+| Relevo da prévia | `web/data/region/south_pole_400m` (`loadRegion`, sombreado `shadeValue`) | — | quadro escuro sem relevo |
+
+**Interações**
+- Alternar toggles atualiza a prévia do aluno e a query string de compartilhamento.
+- Clicar `Copiar link` copia a URL real da atividade.
+- Clicar `Apresentar no projetor` abre `present.html` (`K2-kit-class-present`).
+
+**Ligações**
+- `present.html` (`K2-kit-class-present`), `compare.html` (`C-comparar`).
+
+**Diferenças entre o desenho e a tela real**
+1. **Nenhum número fixo:** datas e regras são configuráveis pelo estado.
+2. **Selo `VAL`:** não usado.
+3. **Locais reais:** usa sítios de `web/data/sites.json`.
+4. **Bateria:** notas mencionam simplificação do modelo (`SIM`).
+5. **Regras:** `60 h` e `72 h` rotulados como "assumed limit".
+6. **Sem domínio inventado:** `moonproof.app/a/LUA-7K2` NÃO existe; usa a própria URL da página com query string e QR code gerado no navegador sem serviço externo. O QR do desenho é ilustrativo; o da tela é decodificável e leva à URL real. Com URL longa o símbolo tem ~41–69 módulos: a 84 px a leitura por câmera depende de tela nítida.
+9. **"Você acompanha as respostas aqui":** texto pedido pela coordenação; não existe coleta de respostas dos alunos no código (sem rota de API). Texto de intenção, não de recurso entregue.
+7. **Dado real:** referenciado na camada Prova.
+8. **Landing Lab:** toggle opcional para abrir `landing.html`.
+
+**Critérios de aceite**
+- Nenhum `moonproof.app` no código; QR code gerado localmente e decodificado de volta para a URL real (`web/tests/activity-qr-switch.test.mjs`).
+- Interruptores com `role="switch"`/`aria-checked`; abas com `role="tab"`/`aria-selected` e setas.
+- Toggles alteram a prévia e a URL gerada.
+- Sem sobreposição de cards em `1440×900` e `390×844`.

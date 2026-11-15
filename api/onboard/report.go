@@ -7,6 +7,7 @@ package onboard
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/Braspace/Braspace/api/internal/jsoncontract"
 	"html/template"
 	"io"
 	"mime"
@@ -70,6 +71,41 @@ Educational scenario simulation only. Sun and Earth visibility values, site name
 {{if .LaboratoryCandidateID}}<strong>{{.LaboratoryCandidateID}}</strong> (assumed constraints only){{else}}<span class="unknown">NONE — no supplied scenario satisfies all assumed constraints</span>{{end}}</p>
 <p><span class="label">NASA flight recommendation:</span> NONE — unverified evidence.</p>
 </section>
+{{with .Appendix}}
+<section>
+<h2>Crew consumables and combined decision</h2>
+<p><span class="label">Visibility source:</span> {{.VisibilitySource}}</p>
+<p><span class="label">Combined decision (energy + comms + consumables):</span>
+{{if .CombinedCandidateID}}<strong>{{.CombinedCandidateID}}</strong> meets every assumed limit{{else}}<span class="unknown">NONE — no candidate meets energy, comms and consumable limits together</span>{{end}}</p>
+<p><span class="label">Consumption rate source:</span> {{if .RateSource}}{{.RateSource}}{{else}}<span class="unknown">no crew declared — consumables UNKNOWN</span>{{end}}</p>
+{{range .Candidates}}
+<article class="card">
+<h3>{{.ID}} — {{.SiteID}} · {{if .Admissible}}meets all assumed limits{{else}}<span class="unknown">breaches assumed limits</span>{{end}}</h3>
+<p><span class="label">Series:</span> {{.ScienceStatus}} · <span class="mono">{{.Provenance}}</span></p>
+<table>
+<caption>Consumables over the window (status {{.ConsumablesStatus}})</caption>
+<thead><tr><th>Resource</th><th>Stock at start (kg)</th><th>Used while waiting (kg)</th><th>Needed (kg)</th><th>Autonomy (h)</th><th>Margin (h)</th><th>Runs out (UTC)</th><th>Status</th></tr></thead>
+<tbody>
+{{range .Consumables}}
+<tr><td>{{.Resource}}</td><td>{{.StockAtStartKg}}</td><td>{{.UsedDuringDelayKg}}</td><td>{{.RequiredKg}}</td><td>{{.AutonomyHours}}</td><td>{{.MarginHours}}</td><td>{{if .DepletionUTC}}{{.DepletionUTC}}{{else}}after window{{end}}</td><td>{{.Status}}</td></tr>
+{{else}}
+<tr><td colspan="8">No crew declared.</td></tr>
+{{end}}
+</tbody>
+</table>
+{{if .Risks}}
+<table>
+<caption>Consumable risks</caption>
+<thead><tr><th>Category</th><th>Severity</th><th>Measured</th><th>Allowed / trigger</th><th>Why it matters</th></tr></thead>
+<tbody>
+{{range .Risks}}<tr><td>{{.Category}}</td><td>{{.Severity}}</td><td>{{.Measured}} {{.Unit}}</td><td>{{.Allowed}} {{.Unit}}</td><td>{{.Explanation}}</td></tr>{{end}}
+</tbody>
+</table>
+{{end}}
+</article>
+{{end}}
+</section>
+{{end}}
 <section>
 <h2>Scenario comparisons and operational risk register</h2>
 {{range .Options}}
@@ -123,9 +159,46 @@ Educational scenario simulation only. Sun and Earth visibility values, site name
 <p><strong>Review checklist:</strong> Compare every numeric value with the corresponding <span class="mono">/api/onboard/evaluate</span> JSON response; verify risk thresholds and science status; cite primary NASA/LROC/JPL assets when actually integrated.</p>
 <p>This self-contained HTML document can be saved as PDF using your browser's Print → Save as PDF feature. No external network resource, JavaScript, logo, tracking or third-party script is required.</p>
 </footer>
-</body></html>`;
+</body></html>`
 
 var missionReport = template.Must(template.New("mission-report").Parse(reportTemplate))
+
+// ReportAppendix adds crew consumables and the combined decision to the
+// report. It is optional: /api/onboard/report renders without it.
+type ReportAppendix struct {
+	VisibilitySource    string
+	CombinedCandidateID string
+	RateSource          string
+	Candidates          []AppendixCandidate
+}
+
+type AppendixCandidate struct {
+	ID, SiteID, ScienceStatus, Provenance, ConsumablesStatus string
+	Admissible                                               bool
+	Consumables                                              []ConsumableRow
+	Risks                                                    []Risk
+}
+
+type ConsumableRow struct {
+	Resource, Status                                                          string
+	StockAtStartKg, UsedDuringDelayKg, RequiredKg, AutonomyHours, MarginHours float64
+	DepletionUTC                                                              string
+}
+
+type reportView struct {
+	Response
+	Appendix *ReportAppendix
+}
+
+// RenderReport renders the printable report for an evaluated response,
+// optionally with the consumables appendix.
+func RenderReport(resp Response, appendix *ReportAppendix) ([]byte, error) {
+	var buf bytes.Buffer
+	if err := missionReport.Execute(&buf, reportView{Response: resp, Appendix: appendix}); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
 
 // ReportHandler computes a fresh report from the exact same onboard request as
 // /api/onboard/evaluate. It returns standalone print-friendly HTML.
@@ -142,6 +215,10 @@ func ReportHandler() http.Handler {
 		raw, err := io.ReadAll(io.LimitReader(r.Body, MaxRequestBytes+1))
 		if err != nil || len(raw) > MaxRequestBytes {
 			http.Error(w, "maximum request size exceeded", http.StatusRequestEntityTooLarge)
+			return
+		}
+		if err := jsoncontract.Check(raw); err != nil {
+			http.Error(w, "invalid JSON document", http.StatusBadRequest)
 			return
 		}
 		dec := json.NewDecoder(bytes.NewReader(raw))
@@ -161,14 +238,14 @@ func ReportHandler() http.Handler {
 			http.Error(w, "invalid mission scenario", http.StatusUnprocessableEntity)
 			return
 		}
-		var buf bytes.Buffer
-		if err := missionReport.Execute(&buf, out); err != nil {
+		page, err := RenderReport(out, nil)
+		if err != nil {
 			http.Error(w, "report generation failed", http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Content-Disposition", "inline; filename=\"braspace-mission-report.html\"")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(buf.Bytes())
+		_, _ = w.Write(page)
 	})
 }

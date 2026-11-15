@@ -1,0 +1,145 @@
+/* B · Explorar layout (screen-owned). */
+.ex-overlay{position:absolute;inset:0;width:100%;height:100%;opacity:.86;cursor:crosshair;transition:opacity .2s}
+.ex-pin{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:3px solid var(--jade);background:rgba(4,17,13,.6);pointer-events:none;box-shadow:0 0 0 6px rgba(46,196,160,.25)}
+.ex-left{position:fixed;z-index:10;left:var(--margin);top:136px;width:310px;max-height:calc(100vh - 160px);overflow:auto;display:flex;flex-direction:column;gap:13px;padding:8px 0 0;margin-top:-7px;background:none;border:0;border-radius:0;backdrop-filter:none;-webkit-backdrop-filter:none;scrollbar-width:none}
+.ex-left p{margin:0}
+.ex-left>p.mp-label{font-size:13px;font-weight:400;line-height:19px;text-shadow:0 0 6px #000,0 1px 2px #000}
+.ex-tabs{display:flex;gap:5px}
+.ex-tabs .mp-pill{position:relative;min-height:30px;height:30px;padding:0 13px;font-size:13px;font-weight:600}
+.ex-tabs .mp-pill[aria-pressed="true"]{font-weight:700}
+/* visual 30 px, touch area 44 px */
+.ex-tabs .mp-pill::after{content:"";position:absolute;inset:-8px -4px}
+.ex-list{display:flex;flex-direction:column;gap:8px}
+.ex-radio{display:flex;align-items:center;gap:13px;min-height:46px;padding:0 21px 0 13px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(12,15,18,.6);cursor:pointer;text-align:left;font-weight:700;transition:background .18s}
+.ex-radio[aria-checked="true"],.ex-radio[aria-pressed="true"]{background:var(--jade);color:var(--jade-text);border-color:transparent}
+.ex-dot{width:16px;height:16px;border-radius:50%;border:2px solid currentColor;flex:none}
+.ex-radio[aria-checked="true"] .ex-dot{background:currentColor;box-shadow:inset 0 0 0 3px var(--jade)}
+.ex-swatch{margin-left:auto;width:40px;height:10px;border-radius:5px;flex:none}
+.ex-radio .mp-seal{margin-left:-6px}
+.ex-legend{padding:13px 21px;margin-top:2px;box-shadow:none} /* the column clips (overflow:auto): a card shadow would show as a hard-edged box */
+.ex-legend-head{display:flex;align-items:center;gap:8px}.ex-legend-head .mp-label{margin-left:auto}
+.ex-ramp{height:14px;border-radius:7px;margin:8px 0 5px}
+.ex-scale{display:flex;justify-content:space-between;color:var(--text-2)}
+.ex-legend p{margin:8px 0 0;font-size:11.5px;font-weight:400}.ex-src{overflow-wrap:anywhere;font-size:11px}
+.ex-srcbox{margin-top:5px}.ex-srcbox summary{cursor:pointer;font-size:11.5px;list-style-position:inside}
+.ex-right{position:fixed;z-index:10;right:var(--margin);top:136px;bottom:24px;width:360px;overflow:auto;display:flex;flex-direction:column;gap:5px;scrollbar-width:none}
+.ex-right .mp-card{width:100%}
+.ex-site-head{display:flex;align-items:center;gap:13px}.ex-site-head h3{margin:0;font-size:16px}.ex-site-head p{margin:2px 0 0;color:var(--text-2)}
+.ex-close{margin-left:auto;min-width:44px;padding:0;justify-content:center}
+.ex-n{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--card);border:2px solid #fff;font-weight:800;flex:none}
+.ex-n.is-sel{background:var(--jade);color:var(--jade-text);border-color:transparent}
+.ex-site h4{margin:13px 0 5px}.ex-jade{color:var(--jade)}
+.ex-rows{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.ex-rows th{text-align:left;font-weight:600;color:var(--text-2);padding:5px 0}
+.ex-rows td{text-align:right;font-weight:800;padding:5px 0}
+.ex-horizon{width:100%;height:auto;background:#0b0e12;border-radius:18px;display:block}
+.ex-actions{display:flex;gap:8px;margin-top:13px}.ex-actions .is-primary{flex:1;justify-content:center}
+.ex-dock-row{display:flex;gap:8px;align-items:center}
+.ex-dock-row .mp-pill{min-width:var(--touch);justify-content:center;padding:0 13px}
+.ex-dock-row .ex-round{width:var(--touch);padding:0;font-size:18px}
+.ex-sel{appearance:none;-webkit-appearance:none;width:173px;max-width:none;min-height:48px;font:inherit;font-size:15px;font-weight:700;padding:0 38px 0 21px!important;text-overflow:ellipsis;overflow:hidden;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 15 15' fill='none' stroke='%2304110D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 5.5l4.5 4.5L12 5.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;background-size:15px}
+.ex-scalebar{box-sizing:border-box;width:152px;min-height:50px;justify-content:flex-start;padding:0 13px!important;font-size:13px;font-weight:600;cursor:default}
+.ex-coord{box-sizing:border-box;display:flex;align-items:center;width:172px;min-height:50px;padding:0 13px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:var(--glass);-webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter)}
+.ex-coord input{flex:1;min-width:0;height:48px;border:0;background:transparent;color:var(--text);font-size:11px;padding:0;text-overflow:ellipsis}
+.ex-coord input:focus-visible{outline:none}
+.ex-coord:focus-within{border-color:var(--jade);box-shadow:0 0 0 2px var(--jade)}
+.ex-chips,.ex-sheet{display:none}
+@media (max-width:1180px){.ex-coord{display:none}}
+@media (max-width:700px){
+  .ex-left,.ex-right{display:none}
+  .ex-chips{display:flex;position:fixed;z-index:12;top:118px;left:var(--margin);right:var(--margin);gap:8px;overflow-x:auto;scrollbar-width:none}
+  .ex-chips .mp-pill{flex:none}
+  .ex-sheet{display:block;position:fixed;z-index:12;left:8px;right:8px;bottom:74px;height:44vh;overflow:auto;border-radius:26px;background:rgba(12,15,18,.86);backdrop-filter:blur(22px) saturate(1.2);-webkit-backdrop-filter:blur(22px) saturate(1.2);border:1px solid rgba(255,255,255,.08);padding:0 13px 13px}
+  #sheet-body{display:flex;flex-direction:column;gap:13px}
+  #sheet-body .mp-card{width:100%;padding:13px}
+  .mc-dock{display:none}
+}
+@media (min-width:701px){ .ex-right{bottom:118px} .ex-left{max-height:calc(100vh - 254px)} }
+@media (min-width:701px) and (max-width:1300px){ .ex-left,.ex-right{top:120px} .ex-right{width:290px} .ex-left{width:250px} .ex-left{max-height:calc(100vh - 238px)} }
+#card-horizon .mp-layer-answer{font-size:15px;font-weight:700}
+/* M1 · Explorar no celular (390x844). Design: Mobile.dc.html. Screen-level overrides only; core is untouched.
+   Shell gives the top bar (12..66), the context bar (74..128) and the bottom nav (766..832). Touch targets >= 44 px. */
+@media (max-width:700px){
+  /* layer pills: one row under the context bar, scroll sideways, never widen the page */
+  .ex-chips{top:128px;left:12px;right:12px;gap:8px;padding:0 2px;overflow-x:auto;overflow-y:hidden;max-width:calc(100vw - 24px);box-sizing:border-box;scroll-snap-type:x proximity;overscroll-behavior-x:contain}
+  .ex-chips .mp-pill{min-height:44px;min-width:44px;padding:0 13px;font-size:13px;font-weight:600;scroll-snap-align:start;background:rgba(12,15,18,.6)}
+  .ex-chips .mp-pill[aria-pressed="true"]{background:var(--jade);font-weight:700}
+  /* context bar: the sheet already has "Comparar" (same link), so the long CTA gives its room back to the site name */
+  .mp-context .mp-pill{display:none}
+  .mp-context{box-sizing:border-box;padding-right:13px}
+  /* map: only the selected marker is named (jade label), a little larger */
+  .mp-marker:not([aria-pressed="true"]) .mp-marker-label{display:none}
+  .mp-marker[aria-pressed="true"]{width:48px;height:48px;margin:-24px 0 0 -24px}
+  .mp-marker[aria-pressed="true"] .mp-marker-label{top:56px;max-width:min(240px,64vw);overflow:hidden;text-overflow:ellipsis}
+  /* sheet: sits 12 px above the bottom nav; default height keeps its top below half the screen so the map frames around it */
+  .ex-sheet{box-sizing:border-box;left:12px;right:12px;bottom:90px;height:38vh;max-height:calc(100vh - 230px);border-radius:30px;background:rgba(12,15,18,.78);padding:0 13px 0;overscroll-behavior:contain}
+  .ex-sheet .mc-handle{height:44px;margin-bottom:-14px;min-height:44px;background:linear-gradient(rgba(14,17,20,.96) 62%,transparent)}
+  #sheet-body{gap:8px;padding:13px 0 13px}
+  #sheet-body .mp-card{padding:0;background:transparent;border:0;border-radius:0}
+  /* action row right under the tiles (design order), the horizon card follows below it */
+  #sheet-body #card-horizon{position:relative;padding:60px 0 0;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+  #sheet-body #card-horizon .mp-layer-head{padding-top:13px;border-top:1px solid var(--line)}
+  /* site head: number 34 / name 17 800 / coordinates mono */
+  #m-card-site .ex-site-head{gap:8px}
+  #m-card-site .ex-site-head h3{font-size:17px;font-weight:800}
+  #m-card-site .ex-site-head .mp-coord{font-size:11.5px}
+  /* Sol / Terra / Maior noite as three tiles (value over label), as in the design */
+  #m-card-site h4{margin:13px 0 8px}
+  #m-card-site .ex-rows,#m-card-site .ex-rows tbody{display:block}
+  #m-card-site .ex-rows tbody{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  #m-card-site .ex-rows tr{display:flex;flex-direction:column-reverse;align-items:center;justify-content:center;gap:2px;min-width:0;padding:8px 5px;border-radius:18px;background:rgba(255,255,255,.07);text-align:center}
+  #m-card-site .ex-rows th{padding:0;text-align:center;font-size:11px;font-weight:700;color:var(--text-2);overflow-wrap:anywhere}
+  #m-card-site .ex-rows td{padding:0;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:22px;font-weight:800;line-height:1.1}
+  #m-card-site .ex-rows .mp-seal{height:20px;padding:0 5px;font-size:10.5px}
+  /* layer chips inside the card (Resposta / Por que / Prova) and the action row */
+  #sheet-body .mp-chip{min-height:44px;min-width:44px;padding:0 13px;font-size:13px}
+  #sheet-body .mp-chips{flex-wrap:wrap}
+  #sheet-body .ex-horizon{max-width:100%}
+  #sheet-body #card-horizon .ex-actions{position:absolute;top:0;left:0;right:0;margin:0;gap:8px}
+  #sheet-body #card-horizon .ex-actions .mp-pill{min-height:48px;font-size:15px;font-weight:700}
+  #sheet-body #card-horizon .ex-actions .is-sim{flex:none;min-width:96px}
+}
+/* Fidelity audit (items 9, 15). */
+@media (min-width:1301px){.ex-left,.ex-right{top:150px}.ex-left{width:300px}.ex-right{width:352px}}
+@media (max-width:700px){.ex-sheet{background:var(--glass);border-radius:30px;bottom:92px;padding:8px 13px 13px}}
+.ex-scalebar i{display:inline-block;height:4px;border:2px solid #F2F4F5;border-top:0;margin-right:5px;flex:none}
+.ex-glass-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.glass-in{display:flex;flex-direction:column;gap:5px;padding:13px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)}
+.glass-in b{font-size:22px;font-weight:800;line-height:1}.glass-in span{font-size:11px;font-weight:700;color:var(--text-2)}
+.glass-in .mp-seal{align-self:flex-start}
+/* UX audit: the grip strip painted an opaque dark band across the top of the glass sheet. */
+@media (max-width:700px){.ex-sheet .mc-handle{background:transparent}}
+/* UX audit: the right column stopped at bottom:118 to clear the dock and cut the 1-2-3 layer chips of "What you see".
+   The dock is now one 720 px row (design: 360-1080 px, bottom 28 px, top at 822 px at 900 px high), so the column ends 6 px above it. */
+@media (min-width:1301px){.ex-right{bottom:84px}}
+
+/* Geometry pass (desktop, measured on the Heloisa board at 1440x900: Explorer.dc.html). */
+@media (min-width:701px){
+  /* bottom bar: scale, prev, next, site selector, zoom out, zoom in, coordinates; the tap hint sits 14 px above */
+  .mc-dock{bottom:28px;gap:13px}
+  .mc-dock .mc-hint{display:inline-flex;align-items:center;min-height:36px;padding:0 13px}
+  .ex-dock-row{min-height:50px}
+  /* site card: 352 px, padding 20 */
+  .ex-right #card-site{padding:21px}
+  .ex-right #card-site .ex-rows th,.ex-right #card-site .ex-rows td{padding:5px 0}
+  /* "What you see from here": chart first, then the sentence and the two actions; the 1-2-3 depth chips close the card.
+     The section titles stay in the accessibility tree (visually hidden). */
+  .ex-right #card-horizon{display:flex;flex-direction:column;gap:8px;width:calc(100% - 4px);margin-left:auto}
+  #card-horizon>.mp-layer-head{order:1}
+  #card-horizon>section:nth-of-type(1){order:2}
+  #card-horizon>.mp-layer-answer{order:3}
+  #card-horizon>.ex-actions{order:4}
+  #card-horizon>section:nth-of-type(2){order:5}
+  #card-horizon>.mp-chips{order:6}
+  #card-horizon>section{border-top:0;padding-top:0;margin-top:0}
+  #card-horizon>section h4{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);margin:0}
+  #card-horizon>.mp-layer-answer{margin:0;font-size:13px;font-weight:400;line-height:19px;letter-spacing:0;color:var(--text-2)}
+  #card-horizon .ex-horizon{border-radius:16px;background:rgba(0,0,0,.35)}
+  #card-horizon>.ex-actions{margin-top:0;align-items:center}
+  #card-horizon .ex-actions .is-primary{flex:1 1 0;min-height:44px}
+  #card-horizon .ex-actions .is-sim{flex:none;min-width:113px;min-height:46px}
+  #card-horizon>.mp-chips{margin-top:0}
+  /* chips: 36 px drawn, 44 px touch (core/components.css .mp-chip::after already does that) */
+}
+.ex-media h3{margin:0 0 8px;font-size:15px}.ex-media-link{color:var(--jade);font-weight:700;text-decoration:underline}

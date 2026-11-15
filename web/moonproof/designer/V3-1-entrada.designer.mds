@@ -1,0 +1,42 @@
+# V3-1 · Entrada por tarefa
+
+**Pergunta que a tela responde:** o que você quer fazer hoje?
+
+**Quem usa e em que camada abre:** todo visitante na primeira abertura (`/moonproof/`). A escolha só grava `task` e `layer` na URL; não muda dado nem esconde ferramenta.
+
+**Layout:** desktop — cabeçalho (marca à esquerda; idioma e "Pular" à direita), pílula de sobretítulo, título 60/800, subtítulo, três cartões lado a lado (o escolhido em Jade), dica em pílula embaixo. Celular (390 px) — cartões empilhados, sem rolagem lateral.
+
+**Componentes**
+- Cartão de tarefa (`a.mp-task`): ícone, título, público, 3 itens ✓, "Abre em: <camada>". Estado `aria-current=true` = Jade (padrão: Explorar, ou o `task` da URL; foco também marca).
+- Link "Pular" → `mission.html` com o cenário atual.
+- Botão de idioma (en ↔ pt-BR).
+
+**Textos** (pt-BR / en)
+- "Lunar Landing Site Navigator · polo sul da Lua" / "Lunar Landing Site Navigator · lunar south pole"
+- "O que você quer fazer hoje?" / "What do you want to do today?"
+- "Todos usam a mesma ferramenta e os mesmos dados. Sua escolha só muda o quanto aparece de início e quais ferramentas ficam à mão." / "Everyone uses the same tool and the same data. Your choice only changes how much shows at first and which tools are at hand."
+- Explorar a Lua / Explore the Moon — Curiosos, estudantes, visitantes / Curious people, students, visitors — Respostas diretas, sem jargão; Tour de 3 passos na primeira vez; Landing Lab para testar um pouso — Abre em: Resposta
+- Dar uma aula / Teach a class — Professores e educadores — Apresentar no projetor, uma pergunta por vez; Montar atividade com link ou QR; Notas do professor e missões guiadas — Abre em: Por quê
+- Planejar uma missão / Plan a mission — Planejadores e pesquisadores — Regras editáveis e comparação de cenários; Tabelas com unidade e incerteza; Exportar CSV, JSON e link reproduzível — Abre em: Prova
+- "Dá para trocar a qualquer momento nos botões Aula e Planejar do topo." / "You can switch at any time with the Class and Plan buttons at the top."
+- Pular / Skip
+
+**Dados**
+| elemento | fonte | selo | sem dado |
+|---|---|---|---|
+| (nenhum número nesta tela) | — | — | — |
+
+**Interações:** clique ou Enter num cartão → `mission.html?task=<t>&layer=<camada>`; Tab percorre os três cartões (foco visível); botão de idioma troca todos os textos e grava `lang`.
+
+**Ligações:** `mission.html` (A) com `task`=explore→`answer`, class→`why`, plan→`proof`. Os kits Aula/Planejar ficam no topo de todas as telas (`core/shell.js`).
+
+**Diferenças entre o desenho e a tela real**
+- Fundo: o desenho usa foto/render de crateras; aqui só os brilhos azul e amarelo em gradiente sobre o fundo `#07090C` (sem imagem de terceiros nem render procedural).
+- Botão de idioma acrescentado ao lado de "Pular" (contrato: idioma sempre trocável).
+- "Tour de 3 passos" e "missões guiadas" são promessas das telas seguintes; não existem nesta entrega.
+
+**Critérios de aceite**
+- [ ] os três cartões levam à URL com `task` e `layer` certos (`tests/core-state.test.mjs` cobre o mapeamento).
+- [ ] todos os textos existem em en e pt-BR com as mesmas chaves.
+- [ ] 1440×900 sem rolagem para ver os três cartões; 390×844 sem rolagem lateral.
+- [ ] nenhuma escolha muda a interface sozinha além da camada inicial.

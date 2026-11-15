@@ -1,0 +1,37 @@
+# V3-camadas · Regras: núcleo, camadas e kits
+
+**Pergunta que a tela responde:** como o produto se organiza: o que sempre aparece (núcleo), como todo cartão se abre (Resposta, Por quê, Prova) e o que Aula e Planejamento acrescentam?
+
+**Quem usa e em que camada abre:** quem quer entender as regras de produto (equipe, avaliadores, professores curiosos). É página de documento: não há terreno ao fundo e não muda o cenário. Em `rules.html`; o nav destaca **Evidências** (pedido de mapeamento pendente, ver diferenças).
+
+**Layout**
+- Desktop 1440: título 54/800 "Um núcleo, três camadas, dois kits." + subtítulo; linha de 4 cartões do núcleo; o mesmo cartão "Maior noite" em três colunas (camadas 1, 2, 3) com legenda; dois cartões de kit (Aula, Planejamento); embaixo, à esquerda a tabela "Quem abre em quê" e à direita as regras do sistema (4 ✓ jade, 2 ✕ vermelho).
+- Celular 390: tudo em uma coluna; a tabela rola dentro do próprio cartão (sem rolagem lateral da página); nav inferior do shell.
+
+**Componentes:** `createLayerCard` (3 instâncias, cada uma com seus chips), `sealEl` (legenda de selos no núcleo), `barEl` + `dailySun` (camada Por quê), links `hrefTo` para `present.html`, `activity.html`, `plan.html` e `mission.html`.
+
+**Textos:** chaves `rules.*` em `screens/rules.js` (en e pt-BR com as mesmas chaves). A frase do design "Toda tela tem as três camadas / Um vocabulário só / Kits somam, não substituem / Estado sempre visível / Nada de modos globais / Nada de adivinhar o usuário" está preservada.
+
+**Dados**
+| elemento | fonte | selo | sem dado |
+|---|---|---|---|
+| maior noite do exemplo | `windowMetrics(...).longestDarkH` (série horária de `web/data/sites/<id>.bin`) | `sealFor(status)` (hoje PRE) | "—" + N/D e texto "Sem dado para esta janela." |
+| limite assumido | `getState().night` (padrão editável, rotulado "limite assumido") | n/a | n/a |
+| barra por dia | `dailySun` da mesma janela | idem | sem barra |
+| número de locais do núcleo | `loadSites().sites.length` | n/a | "—" |
+| Prova (definição, passo, janela, fonte, SHA-256, estado) | `detail` e `status` do valor | idem | "—" |
+
+**Interações:** chips 1/2/3 abrem cada cartão no lugar; idioma do shell troca todos os textos; links de tarefa levam a `mission.html` com `task` e `layer` corretos; botões dos kits abrem Apresentar, Atividade e Planejar.
+
+**Diferenças entre o desenho e a tela real**
+- O desenho mostra o cartão com números ilustrativos (46 h, 14 h de sobra, VAL, LOLA 20 m/px, a41c9e2). Aqui tudo vem do dado real: o selo é PRE e a noite é a da janela atual; nenhum número do desenho entra no código.
+- Acrescentados (o desenho só tem camadas, tabela e regras): seção "O núcleo" e seção "Os kits" (pedido de produto).
+- O desenho usa a bateria (60 h) como limite; aqui o limite é o "limite assumido" de noite máxima (`DEFAULT_RULES.night`), editável no Kit Planejamento.
+- Cartões de camada são vidro com chips (componente do core), sem o cartão preto da camada 3.
+- "Tour" e "notas/missões guiadas" não aparecem na tabela: ainda não existem.
+
+**Critérios de aceite**
+- [ ] 1440×900 e 390×844 sem rolagem horizontal e sem erro de console.
+- [ ] en e pt-BR com chaves iguais.
+- [ ] selos só via `sealFor`/`createLayerCard`; valor ausente = "—" e N/D.
+- [ ] `tests/core-no-design-numbers.test.mjs` passa.

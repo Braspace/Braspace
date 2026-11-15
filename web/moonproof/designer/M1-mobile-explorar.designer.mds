@@ -1,0 +1,66 @@
+# M1 · Explorar no celular (390×844)
+
+Fonte do desenho: `Mobile.dc.html` (Heloísa). Tela real: `web/moonproof/explore.html` + `screens/explore.js` + `screens/explore.css` (bloco `@media (max-width:700px)`), sobre `core/` (barra superior, barra de contexto e barra de navegação inferior vêm do `shell.js`). Os números do desenho são **ilustrativos** e não entram no código.
+
+## Pergunta que a tela responde
+**pt-BR:** O que há neste local, quanto de luz e de contato com a Terra ele tem, e para onde vou daqui (comparar ou pousar)?
+**en:** What is at this site, how much light and Earth contact does it have, and where do I go from here (compare or land)?
+
+## Quem usa e em que camada abre
+Público geral no celular. Abre na camada **1 · Resposta** do cartão "O que se vê daqui" (a camada vem do estado `layer`, nunca é escolhida pela tela). O visitante que quer "Por quê" ou "Prova" usa os três botões do cartão, todos com alvo de 44 px.
+
+## Layout (≤ 700 px; medido em 390×844)
+De cima para baixo, em px da janela:
+1. **Barra superior** (shell, 12–66): marca, `?` (legenda dos selos) e idioma. Equivale ao cabeçalho do desenho (logo + título).
+2. **Barra de contexto** (shell, 74–120): `<número> · <sítio> • <data> • <dias>` + selo. Equivale ao cabeçalho de duas linhas do desenho. O botão "Adicionar à comparação" fica **oculto** no celular porque a folha tem "Comparar" com o mesmo destino (`compare.html`, cenário preservado).
+3. **Pílulas de camada** (128–172): uma linha, rolagem lateral, alvo ≥ 44 px, sem estourar a largura da página. Ativa em Jade `#2EC4A0` com texto escuro; inativas em vidro.
+4. **Mapa** (tela cheia atrás de tudo): relevo sombreado do polo sul pintado com a camada ativa, marcadores numerados e rota pontilhada quando existir. O sítio selecionado fica no centro da área livre entre as pílulas e a folha.
+5. **Folha inferior** (sobe até 12 px acima da barra de navegação; altura inicial 38 % da janela; arrastável pela alça de 44 px ou por ↑/↓): ficha do sítio, trio de números, botões, cartão do horizonte.
+6. **Barra de navegação inferior** (shell, 766–832): cinco módulos (Explorar, Comparar, Replanejar, Cockpit, Provas), Explorar em Jade.
+
+## Regiões do desenho e como foram tratadas
+| Região no desenho | Na tela real | Estado |
+|---|---|---|
+| Fundo de relevo lunar (imagem) | Terreno do `core/terrain.js` (hillshade LOLA) + pintura da camada | dado real; o desenho usava imagem ilustrativa |
+| Cabeçalho (logo, "Polo Sul · Shackleton", data · dias, selo `ILUSTR.`, ajuda) | Barra superior + barra de contexto do shell; selo vem de `sealFor(doc.status)` (`PRE`/`SIM`) | adaptado: o selo `ILUSTR.` não existe, o selo real é o do dado |
+| Pílulas de camada (Altitude, Natural, Sol médio, Terra) | `#chips`: Altitude, Cor natural, Luz do Sol média, Terra à vista (declividade fica só no desktop) | rótulos longos rolam de lado; pedido de rótulos curtos no `mission-i18n.js` |
+| Marcadores numerados (selecionado 48 px com anel Jade, outro 40 px) | `.mp-marker`: selecionado 48 px com anel e brilho Jade; os demais 44 px (alvo de toque) | fiel; rótulo só no selecionado, em Jade |
+| Rótulo do sítio selecionado (pílula Jade sob o marcador) | `.mp-marker-label` do selecionado, até 64 vw com reticências | fiel |
+| Folha: alça | `.mc-handle`, 44 px de alvo, barra de 5 px | fiel; arrasta por ponteiro e teclado |
+| Folha: número do sítio, nome (17/800), coordenadas em mono | `.ex-site-head`: círculo Jade 34 px, nome, `lat · lon` formatado por `coordText` | dado real de `sites.json` |
+| Trio Sol / Terra / maior noite (cartões de vidro, valor 22/800 sobre rótulo) | `.ex-rows` de `#m-card-site` em três cartões: Sol visível, Terra visível, Maior noite, cada um com seu selo | dado real de `windowMetrics`; ausente = texto `t("nd")` (traço longo) + `N/D` |
+| Pílula branca "Bateria H1 aguenta · folga" | **não implementada nesta tela** | ilustrativa: a energia vive em A (`mission.html`) e é SIM; aqui o lugar é do cartão "O que se vê daqui" |
+| Botões "Comparar" (Jade) e "Simular pouso" (lilás, só ícone) | `.ex-actions`: "Comparar" Jade e "Pousar" em contorno lilás, 48 px, logo abaixo do trio | fiel; lilás só como contorno (regra do `components.css`) |
+| Barra de navegação inferior (5 módulos, ativo em Jade) | `.mp-bottomnav` do shell | idêntica em estrutura |
+
+## Componentes e tokens
+- Tipografia **Manrope** (self-hosted em `fonts/`); números tabulares.
+- Jade `--jade` para o ativo e para o CTA; pílulas brancas (`--pill`) só onde o `core` já as usa; cartões pretos (`--card`) para blocos de número; vidro (`--glass` + `backdrop-filter`) na folha e nas pílulas; lilás (`--sim`) só para o Landing Lab.
+- Alvos de toque **≥ 44 px** em tudo que é interativo (`--touch`): pílulas de camada, alça da folha, botões "Comparar"/"Pousar" (48), botões de camada do cartão (44), marcadores (44/48).
+- Sem rolagem lateral da página: `scrollWidth` = 390. A única rolagem horizontal é a faixa de pílulas (contida no próprio elemento).
+
+## Estados
+- **Normal:** sítio selecionado no centro da área livre, folha com ficha + trio + botões; o cartão do horizonte continua abaixo (rola dentro da folha).
+- **Dado ausente:** valor `t("nd")` (traço longo) e selo `N/D`, nunca 0 (maior noite de 0 h só aparece se o dado disser 0).
+- **API offline:** a tela mantém os dados estáticos; o `ctx.online` do shell mostra "offline · pré-calculado" (rótulo escondido no celular por falta de espaço; o selo permanece).
+- **Ponto criado por toque no mapa:** a ficha vira "ponto novo" com `×` (44 px), valores do PGDA no ponto e `N/D` onde não há fonte. A dica "Toque no terreno…" e a caixa de coordenadas ficam só no desktop (o dock é ocultado no celular).
+- **Camada sem arquivo (ex.: PGDA ausente):** o mapa fica sem pintura e a pílula continua selecionável; nada é inventado.
+- **Idioma:** `pt-BR` e `en` pelo `i18n.js`; nenhum texto novo foi criado nesta tela.
+
+## O que é ilustrativo e o que é dado real
+- **Ilustrativo (do desenho, não vai ao código):** imagem de fundo, "Polo Sul · Shackleton", data e duração do cabeçalho, código do sítio, coordenadas, os três percentuais e a maior noite do trio, e a pílula de bateria.
+- **Dado real:** tudo o que aparece na tela vem de `web/data/sites.json`, `web/data/sites/<id>.json` e das camadas LOLA/PGDA por `data.js`; selos só por `sealFor`. Hoje o selo é `PRE` (`PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED`); `VAL` não aparece.
+- Visibilidade da Terra é geométrica, não garante enlace de rádio; luz do Sol não é modelo de energia validado.
+
+## Interações
+- Toque numa pílula de camada: repinta o terreno e atualiza a camada ativa. Toque num marcador: seleciona o sítio. Toque no terreno: cria ponto.
+- Arrastar a alça (ou ↑/↓ com foco nela): muda a altura da folha (entre 110 px e a janela menos 180 px).
+- "Comparar" → `compare.html` com o cenário na URL; "Pousar" → `landing.html`.
+
+## Pedidos fora do arquivo de CSS (não feitos aqui)
+1. `screens/explore.js`, função `frame()`, ramo do celular: o deslocamento manual do centro soma-se ao centramento da área livre do `core/terrain.js` e empurra o marcador selecionado para trás da barra de contexto. Basta `terrain.view.cx = tx; terrain.view.cy = ty;` (o `core/terrain.js` já centraliza na área livre, que conta a folha e as pílulas).
+2. `screens/mission-i18n.js`: chaves de rótulo curto das camadas para as pílulas (Altitude, Natural, Sol médio, Terra), como no desenho.
+3. Opcional, `core/shell.js`: no celular a barra de contexto pode mostrar nome do sítio em uma linha e data/dias em outra, como no desenho.
+
+## Ligações
+`mission.html` (A), `explore.html` (B desktop), `compare.html` (C), `landing.html` (F), `recover.html` (D), `cockpit.html` (E), `evidence.html` (H).

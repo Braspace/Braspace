@@ -1,0 +1,22 @@
+<!doctype html>
+<html data-moon-preview="map" lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>moonproof · Mission Control</title>
+<link rel="stylesheet" href="core/tokens.css"><link rel="stylesheet" href="core/components.css"><link rel="stylesheet" href="screens/mission.css">
+<script type="module" src="screens/mission.js"></script>
+<link rel="stylesheet" href="../moon-hd/preview.css">
+<script type="module" src="../moon-hd/backdrop.js" data-moon-backdrop="globe" data-moon-lazy></script>
+</head>
+<body>
+<div id="terrain"></div>
+<svg class="mc-rays" id="rays" aria-hidden="true"></svg>
+<span class="mc-ray-label" id="ray-sun" hidden></span><span class="mc-ray-label" id="ray-earth" hidden></span>
+<div class="mc-panels" id="panels">
+<button class="mc-handle" id="handle" type="button" aria-label="resize"></button>
+<aside class="mc-left" id="left"></aside>
+<aside class="mc-right" id="right"></aside>
+</div>
+<div class="mc-dock" id="dock"></div>
+</body>
+</html>

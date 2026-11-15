@@ -2,7 +2,7 @@
   "api_version": "braspace.mission.v1",
   "limitations": [
     "Visibility is geometric line of sight to the Sun and Earth centers against the stored terrain horizon; Sun disc width, refraction, eclipses, RF link budget and DSN scheduling are not modelled.",
-    "Durations have a resolution of one series step; windows start and end on grid epochs.",
+    "Windows must start on a series grid epoch and last a whole multiple of the series step; anything else is reported as GRID_NOT_ALIGNED, never rounded.",
     "Results are only as accurate as the stored horizon and ephemeris series; check science_status and provenance per site.",
     "Constraint thresholds are caller-declared assumptions, not mission requirements."
   ],
@@ -34,8 +34,8 @@
           "unit": "h",
           "comparator": "\u003e=",
           "limit": 12,
-          "value": 13.714286,
-          "margin": 1.714286,
+          "value": 13.714285714285722,
+          "margin": 1.7142857142857224,
           "passed": true
         },
         {
@@ -43,8 +43,8 @@
           "unit": "h",
           "comparator": "\u003e=",
           "limit": 12,
-          "value": 16.636364,
-          "margin": 4.636364,
+          "value": 16.63636363636364,
+          "margin": 4.63636363636364,
           "passed": true
         },
         {
@@ -186,9 +186,9 @@
           "unit": "h",
           "comparator": "\u003e=",
           "limit": 12,
-          "value": -10.285714,
-          "baseline_value": 13.714286,
-          "margin": -22.285714,
+          "value": -10.285714285714278,
+          "baseline_value": 13.714285714285722,
+          "margin": -22.285714285714278,
           "passed": false
         },
         {
@@ -196,9 +196,9 @@
           "unit": "h",
           "comparator": "\u003e=",
           "limit": 12,
-          "value": -7.363636,
-          "baseline_value": 16.636364,
-          "margin": -19.363636,
+          "value": -7.36363636363636,
+          "baseline_value": 16.63636363636364,
+          "margin": -19.36363636363636,
           "passed": false
         },
         {
@@ -238,9 +238,9 @@
           "unit": "h",
           "comparator": "\u003e=",
           "limit": 12,
-          "value": -10.285714,
-          "baseline_value": 13.714286,
-          "margin": -22.285714,
+          "value": -10.285714285714278,
+          "baseline_value": 13.714285714285722,
+          "margin": -22.285714285714278,
           "passed": false
         },
         {
@@ -248,9 +248,9 @@
           "unit": "h",
           "comparator": "\u003e=",
           "limit": 12,
-          "value": -7.363636,
-          "baseline_value": 16.636364,
-          "margin": -19.363636,
+          "value": -7.36363636363636,
+          "baseline_value": 16.63636363636364,
+          "margin": -19.36363636363636,
           "passed": false
         }
       ],
@@ -345,9 +345,9 @@
           "unit": "h",
           "comparator": "\u003e=",
           "limit": 12,
-          "value": -34.285714,
-          "baseline_value": 13.714286,
-          "margin": -46.285714,
+          "value": -34.28571428571427,
+          "baseline_value": 13.714285714285722,
+          "margin": -46.28571428571427,
           "passed": false
         },
         {
@@ -355,9 +355,9 @@
           "unit": "h",
           "comparator": "\u003e=",
           "limit": 12,
-          "value": -31.363636,
-          "baseline_value": 16.636364,
-          "margin": -43.363636,
+          "value": -31.363636363636367,
+          "baseline_value": 16.63636363636364,
+          "margin": -43.36363636363637,
           "passed": false
         },
         {
@@ -397,9 +397,9 @@
           "unit": "h",
           "comparator": "\u003e=",
           "limit": 12,
-          "value": -34.285714,
-          "baseline_value": 13.714286,
-          "margin": -46.285714,
+          "value": -34.28571428571427,
+          "baseline_value": 13.714285714285722,
+          "margin": -46.28571428571427,
           "passed": false
         },
         {
@@ -407,9 +407,9 @@
           "unit": "h",
           "comparator": "\u003e=",
           "limit": 12,
-          "value": -31.363636,
-          "baseline_value": 16.636364,
-          "margin": -43.363636,
+          "value": -31.363636363636367,
+          "baseline_value": 16.63636363636364,
+          "margin": -43.36363636363637,
           "passed": false
         }
       ],
@@ -504,9 +504,9 @@
           "unit": "h",
           "comparator": "\u003e=",
           "limit": 12,
-          "value": 13.714286,
-          "baseline_value": 13.714286,
-          "margin": 1.714286,
+          "value": 13.714285714285722,
+          "baseline_value": 13.714285714285722,
+          "margin": 1.7142857142857224,
           "passed": true
         },
         {
@@ -514,9 +514,9 @@
           "unit": "h",
           "comparator": "\u003e=",
           "limit": 12,
-          "value": 16.636364,
-          "baseline_value": 16.636364,
-          "margin": 4.636364,
+          "value": 16.63636363636364,
+          "baseline_value": 16.63636363636364,
+          "margin": 4.63636363636364,
           "passed": true
         },
         {
@@ -629,9 +629,9 @@
           "unit": "h",
           "comparator": "\u003e=",
           "limit": 12,
-          "value": 13.714286,
-          "baseline_value": 13.714286,
-          "margin": 1.714286,
+          "value": 13.714285714285722,
+          "baseline_value": 13.714285714285722,
+          "margin": 1.7142857142857224,
           "passed": true
         },
         {
@@ -639,9 +639,9 @@
           "unit": "h",
           "comparator": "\u003e=",
           "limit": 12,
-          "value": 16.636364,
-          "baseline_value": 16.636364,
-          "margin": 4.636364,
+          "value": 16.63636363636364,
+          "baseline_value": 16.63636363636364,
+          "margin": 4.63636363636364,
           "passed": true
         },
         {
@@ -780,6 +780,7 @@
     "name": "Synthetic demo site A",
     "kind": "synthetic_test_fixture",
     "series_file": "series/synthetic-demo-a.json",
+    "series_sha256": "dc6a64a7b64a7633dcf0e079723b0626dcff17f88d88e4f56f4fa9b4bcbd0c28",
     "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location.",
     "series": {
       "start_utc": "2026-11-01T00:00:00Z",

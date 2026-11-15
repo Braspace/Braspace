@@ -1,0 +1,15 @@
+# v3 · Kit Planejamento
+
+**Origem visual:** Heloísa · BRASPACE MoonProof — Telas · https://claude.ai/artifact/QV5ykVW5q9HvyZsH68SPf1
+
+## Estrutura de tela, componentes e ações
+Regras editáveis: noite, comunicação, reserva, altura de mastro, inclinação (só quando backend suporta). Comparar hipóteses, consultar tabela com unidade/incerteza/fonte, exportar CSV/JSON/PDF e link reproduzível.
+
+## Tradução segura para implementação
+Apenas limites suportados pelo schema podem ser enviados. Não prometer memória durável, PDF ou deep link reprodutível sem implementação e versão.
+
+## Estados e validação
+- Placeholder, erro, sem série e offline precisam ser distintos; zero nunca substitui ausente.
+- Fontes científicas com units/UTC/frame/resolução e selo textual; dados do mockup são ILUSTRATIVOS.
+- Accessibility: foco visível, legenda de tabela, alvos de 44px, reduced motion e mobile responsivo.
+- Revisão pela autora de UX antes de declarar equivalência visual ao artefato.

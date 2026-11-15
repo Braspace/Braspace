@@ -55,9 +55,15 @@ func TestConsumablesDelayAboard(t *testing.T) {
 	if waiting.Items[0].Status != "DEPLETED_BEFORE_END" || notAboard.Items[0].Status != "OK" {
 		t.Fatal("waiting aboard must consume the stock before the window")
 	}
+	// 1 kg at 0.07 kg/h lasts 14.29 h of a 48 h wait: depletes during the delay.
 	empty := consumables(crew(1, 100, 0, true), t0, 72, 48)
-	if empty.Items[0].StockAtStartKg != 0 || *empty.Items[0].DepletionUTC != t0.Format(time.RFC3339) {
-		t.Fatalf("stock used up during the delay depletes at window start: %+v", empty.Items[0])
+	rate := 0.07
+	want := t0.Add(-48 * time.Hour).Add(time.Duration(1 / rate * float64(time.Hour))).UTC().Format(time.RFC3339)
+	if empty.Items[0].Status != "DEPLETED_DURING_DELAY" || empty.Items[0].StockAtStartKg != 0 || *empty.Items[0].DepletionUTC != want {
+		t.Fatalf("stock used up during the delay: %+v (want depletion %s)", empty.Items[0], want)
+	}
+	if !strings.Contains(empty.Risks[0].Explanation, "before the window starts") {
+		t.Fatalf("explanation: %s", empty.Risks[0].Explanation)
 	}
 }
 
@@ -127,9 +133,9 @@ func TestSiteOnboardRejectsMissingOrPartialData(t *testing.T) {
 		name, body, code string
 		status           int
 	}{
-		{"site without series", r(`"site_id": "synthetic-demo-b"`, `"site_id": "malapert-massif"`), "DATA_NOT_AVAILABLE", 422},
+		{"site without series", r(`"site_id": "synthetic-demo-b"`, `"site_id": "haworth"`), "DATA_NOT_AVAILABLE", 422},
 		{"past series end", r(`"delay_hours": 48`, `"delay_hours": 700`), "OUTSIDE_COVERAGE", 422},
-		{"over onboard sample limit", r(`"duration_hours": 72`, `"duration_hours": 500`), "WINDOW_TOO_LONG", 422},
+		{"over 30-day mission limit", r(`"duration_hours": 72`, `"duration_hours": 721`), "INVALID_DURATION", 422},
 		{"unknown site", r(`"site_id": "synthetic-demo-b"`, `"site_id": "atlantis"`), "SITE_NOT_FOUND", 404},
 		{"duplicate id", r(`"id": "B-planned"`, `"id": "A-planned"`), "INVALID_CANDIDATES", 422},
 		{"crew without rate source", r(`"rate_source": "Example`, `"rate_source": " ", "x": "`), "INVALID_JSON", 400},
@@ -154,8 +160,8 @@ func TestSiteOnboardGridMismatch(t *testing.T) {
 	b, _ := embeddedSiteData.ReadFile("sitedata/series/synthetic-demo-b.json")
 	b30 := strings.Replace(string(b), `"step_seconds":3600`, `"step_seconds":1800`, 1)
 	cat := `{"schema":"braspace.site-catalog.v1","note":"","sites":[
-		{"id":"synthetic-demo-a","name":"A","kind":"synthetic_test_fixture","series_file":"a.json"},
-		{"id":"synthetic-demo-b","name":"B","kind":"synthetic_test_fixture","series_file":"b.json"}]}`
+		{"id":"synthetic-demo-a","name":"A","kind":"synthetic_test_fixture","series_file":"a.json","series_sha256":"` + sha256Hex(a) + `"},
+		{"id":"synthetic-demo-b","name":"B","kind":"synthetic_test_fixture","series_file":"b.json","series_sha256":"` + sha256Hex([]byte(b30)) + `"}]}`
 	st, err := loadStore(fstest.MapFS{"catalog.json": {Data: []byte(cat)}, "a.json": {Data: a}, "b.json": {Data: []byte(b30)}})
 	if err != nil {
 		t.Fatal(err)
@@ -211,5 +217,38 @@ func TestDelayScenarioWithResources(t *testing.T) {
 		if rec := do(h, "POST", "/api/scenarios/delay", b); rec.Code != 422 {
 			t.Errorf("%s: %d %s", name, rec.Code, rec.Body.String())
 		}
+	}
+}
+
+// A 30-day mission (720 h) at the hourly series step must be evaluated in
+// full, not refused or cut to 480 h; one sample more stays explicitly refused.
+func TestSiteOnboardFullThirtyDayWindow(t *testing.T) {
+	h, _ := testAPI(t, "ok")
+	base := readExample(t, "onboard-site-evaluate.request.json")
+	// Start 2026-11-01 so that +48 h + 720 h stays inside the 2026-11-01..2027-01-01 series.
+	base = strings.Replace(base, `"start_utc": "2026-12-01T00:00:00Z"`, `"start_utc": "2026-11-01T00:00:00Z"`, 1)
+	body := strings.Replace(base, `"duration_hours": 72`, `"duration_hours": 720`, 1)
+	rec := do(h, "POST", "/api/onboard/site-evaluate", body)
+	if rec.Code != 200 {
+		t.Fatalf("720 h window refused: %d %.300s", rec.Code, rec.Body.String())
+	}
+	var out struct {
+		Onboard struct {
+			Options []struct {
+				Timeline []json.RawMessage `json:"timeline"`
+			} `json:"options"`
+		} `json:"onboard"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil || len(out.Onboard.Options) == 0 {
+		t.Fatalf("decode: %v", err)
+	}
+	for i, o := range out.Onboard.Options {
+		if len(o.Timeline) != 720 {
+			t.Fatalf("option %d evaluated %d of 720 h", i, len(o.Timeline))
+		}
+	}
+	over := strings.Replace(base, `"duration_hours": 72`, `"duration_hours": 721`, 1)
+	if rec := do(h, "POST", "/api/onboard/site-evaluate", over); rec.Code != 422 || decode(t, rec)["code"] != "INVALID_DURATION" {
+		t.Fatalf("721 h must be refused explicitly: %d %.200s", rec.Code, rec.Body.String())
 	}
 }

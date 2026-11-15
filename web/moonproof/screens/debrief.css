@@ -1,0 +1,75 @@
+.deb{overflow:hidden;--ok:#63C66E;--warn:#F29A45;--bad:#FF7A80;color:#F2F4F5;font-feature-settings:"tnum" 1;font-variant-numeric:tabular-nums}
+.deb-map{position:fixed;inset:0;width:100%;height:100%;display:block;background:var(--bg)}
+/* side vignettes over the map, as in the design */
+.deb::after{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(5,6,8,.55) 0%,rgba(5,6,8,0) 30%,rgba(5,6,8,0) 70%,rgba(5,6,8,.55) 100%),linear-gradient(180deg,rgba(5,6,8,.55) 0%,rgba(5,6,8,0) 18%,rgba(5,6,8,0) 80%,rgba(5,6,8,.6) 100%)}
+.deb .mp-context{min-height:46px;padding:0 8px 0 21px;gap:13px;font-size:14px;color:#B7C0C9}
+.deb .mp-context b{font-weight:700;color:#F2F4F5}
+.deb-dot{color:#8E99A6}
+.deb-change{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 13px;border-radius:999px;background:rgba(255,255,255,.08);color:#E6EAEE;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap}
+.deb .mp-context .mp-seal{height:30px;padding:0 13px;font-size:12px;border-radius:999px}
+.deb-left,.deb-right{position:fixed;z-index:10;top:150px;bottom:28px;display:flex;flex-direction:column;gap:13px;overflow:auto;scrollbar-width:none}
+.deb-left{left:28px;width:330px}.deb-right{right:28px;width:320px}
+.deb-card{background:rgba(12,15,18,.58);backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);border:1px solid rgba(255,255,255,.1);border-radius:var(--r-card);padding:21px;flex:none}
+.deb-card.black{background:var(--card);border-color:rgba(255,255,255,.06);box-shadow:0 18px 40px rgba(0,0,0,.45);-webkit-backdrop-filter:none;backdrop-filter:none}
+.deb-card h2,.deb-card h3{margin:0 0 8px;font-size:16px;font-weight:700;letter-spacing:-.005em}
+.deb-card>.mp-label{color:#8E99A6;margin-bottom:8px}
+.deb-how{display:flex;gap:13px;align-items:center;margin-bottom:8px}
+.deb-ic{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:22px;background:var(--ok);color:#04110D}
+.deb-ic[data-k=bad]{background:var(--fail);color:#fff}.deb-ic[data-k=warn]{background:var(--warn);color:#1a1000}.deb-ic[data-k=nd]{background:var(--unknown);color:#000}
+.deb-verdict{font-size:21px;font-weight:800;line-height:26px;margin:0}
+.deb-sum{margin:0;color:#B7C0C9;font-size:14px;line-height:21px}
+.deb-pills{display:grid;gap:8px;margin-top:5px}
+.deb-pill{display:flex;align-items:center;gap:8px;background:#F2F4F5;color:#0A0D10;border-radius:var(--r-pill);height:46px;padding:0 21px 0 13px;font-size:14px;font-weight:600}
+.deb-pill svg{flex:none}
+.deb-pill .lb{flex:none;font-size:14px;font-weight:600;color:#0A0D10}
+.deb-pill .v{margin-left:auto;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.deb-st,.deb-rules .tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font:700 10.5px/20px var(--font);letter-spacing:.06em;white-space:nowrap;border:1px solid var(--ok);background:var(--ok);color:#04110D}
+.deb-st[data-s=low],.deb-rules .tag[data-s=low]{background:var(--warn);border-color:var(--warn);color:#1A0E02}
+.deb-st[data-s=fail],.deb-rules .tag[data-s=fail]{background:var(--fail);border-color:var(--fail-text);color:#fff}
+.deb-st[data-s=nd],.deb-rules .tag[data-s=nd]{background:repeating-linear-gradient(45deg,rgba(128,140,153,.25) 0 1px,transparent 1px 5px);border:1px dashed #808C99;color:#3a424b}
+.deb-rules .tag[data-s=nd]{color:#B7C0C9}
+.deb-chart{margin-top:auto;padding:21px}
+.deb-chart h3{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;margin:0 0 8px}
+.deb-chart h3 .mp-label{font-size:12px;font-weight:500;color:#8E99A6}
+.deb-chart>.mp-label{font-size:12px;font-weight:500;color:#8E99A6;margin:8px 0 0}
+.deb-bars{display:flex;align-items:flex-end;gap:3px;height:46px;margin:0}
+.deb-bars i{flex:1;background:#F2F4F5;border-radius:2px;min-height:2px}
+.deb-bars i.peak{background:var(--warn)}
+.deb-rules{padding:21px}
+.deb-rules h3{display:flex;justify-content:space-between;align-items:center;margin:0 0 8px}
+.deb-rules ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.deb-rules li{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;padding:5px 0;color:#B7C0C9}
+.deb-rules>.mp-label{font-size:12px;font-weight:500;color:#8E99A6;margin:8px 0 0}
+.deb-count{color:var(--jade);font-size:13px;font-weight:700}
+.deb-next h3{margin:0 0 13px}
+.deb-next ol{margin:0;padding:0;list-style:none;display:grid;gap:13px;counter-reset:n}
+.deb-next li{display:flex;gap:13px;counter-increment:n;align-items:flex-start;font-size:14px;line-height:20px}
+.deb-next li::before{content:counter(n);flex:none;width:28px;height:28px;border-radius:50%;background:var(--jade);color:var(--jade-text);display:grid;place-items:center;font-weight:800;font-size:13px}
+.deb-next li b{font-weight:700}
+.deb-next a{color:#7FE6CB}
+.deb-actions{position:fixed;z-index:12;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.deb-actions .mp-pill{min-height:48px;padding:0 21px;font-size:15px;font-weight:600;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14)}
+.deb-actions .mp-pill.is-primary{background:var(--jade);color:var(--jade-text);padding:0 21px;font-weight:700;border-color:transparent}
+.deb-none{position:fixed;z-index:10;left:50%;top:50%;transform:translate(-50%,-50%);width:min(460px,calc(100vw - 28px));text-align:center}
+.deb-none .mp-pill{margin-top:13px;display:inline-flex}
+.deb-hist{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}.deb-hist th,.deb-hist td{padding:5px 5px;text-align:left;border-top:1px solid var(--line)}
+.deb-proof{font-size:12.5px;color:var(--text-2);display:grid;gap:5px;margin:8px 0 0}
+.deb-cap{position:fixed;z-index:5;pointer-events:none;font-weight:700;font-size:12.5px;padding:3px 8px;border-radius:999px;background:var(--pill);color:var(--pill-text);white-space:nowrap}
+@media (max-width:700px){
+  .deb-map{height:42vh}
+  .deb-left,.deb-right{position:static;width:auto;overflow:visible;margin:0 var(--margin)}
+  .deb{overflow:auto}
+  .deb-left{margin-top:calc(42vh + 8px)}
+  .deb-right{margin-top:var(--gap)}
+  .deb-actions{position:static;transform:none;margin:var(--gap) var(--margin) 80px}
+}
+
+.deb-rules h3,.deb-chart h3{gap:13px}
+.deb-actions{max-width:calc(100vw - 2*var(--margin));flex-wrap:nowrap}
+.deb-actions .mp-pill{max-width:340px;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:700px){.deb-actions{flex-wrap:wrap}}
+.deb-rules h3,.deb-chart h3{display:flex;justify-content:space-between;align-items:baseline}
+.deb-actions .mp-pill{max-width:min(420px,40vw)}
+.deb-actions .mp-pill:last-child{max-width:min(520px,44vw)}
+/* UX audit: at phone width the "no attempt yet" card sat over the empty right column/sheet; that column hides while it shows. */
+@media (max-width:700px){body:has(.deb-none) .deb-right,body:has(.deb-none) .mp-sheet,body:has(.deb-none) [data-mp-sheet]{display:none}}

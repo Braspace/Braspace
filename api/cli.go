@@ -15,12 +15,20 @@ const cliUsage = `usage: api <command> [flags]   (DATABASE_URL must be set)
   migrate                         apply database migrations
   ingest [-data DIR] [-manifest FILE]  migrate, then load catalog, series and NASA manifest
   verify [-data DIR] [-manifest FILE]  compare database contents with the source files
+  vector-ingest (-input FILE | -lexical) [-apply]   validate or import reviewed layer metadata embeddings
 
 Without -data the embedded api/sitedata is used.
 `
 
 // runCLI handles the database subcommands; it returns a process exit code.
 func runCLI(args []string) int {
+	if len(args) == 0 {
+		fmt.Fprint(os.Stderr, cliUsage)
+		return 2
+	}
+	if args[0] == "vector-ingest" {
+		return runVectorIngestCLI(args[1:])
+	}
 	fset := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	dataDir := fset.String("data", "", "site data directory (catalog.json + series)")
 	manifestPath := fset.String("manifest", "", "NASA source manifest (data/manifest.json)")
@@ -73,9 +81,6 @@ func runCLI(args []string) int {
 		var rep *readbackReport
 		rep, err = verifyReadback(ctx, db, fsys, manifest)
 		out = rep
-		if err == nil && !rep.OK {
-			defer os.Exit(1)
-		}
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s failed: %v\n", cmd, err)
@@ -84,5 +89,8 @@ func runCLI(args []string) int {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	_ = enc.Encode(out)
+	if rep, ok := out.(*readbackReport); ok && !rep.OK {
+		return 1
+	}
 	return 0
 }

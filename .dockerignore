@@ -1,10 +1,14 @@
 .git
 .github
-docs
-data
+docs/*
+!docs/ASSET_LICENSE_MATRIX.md
+!docs/SCIENTIFIC_ACCEPTANCE.md
 *.md
 !README.md
+!docs/ASSET_LICENSE_MATRIX.md
 **/target
 **/.env
 **/.env.*
 .DS_Store
+!docs/SCIENTIFIC_ACCEPTANCE.md
+!docs/SOLAR_ANGLE_VS_POWER.md

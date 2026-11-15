@@ -14,7 +14,10 @@
         "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R23",
         "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
         "source_accuracy_m": "5-10"
-      }
+      },
+      "series_file": "series/malapert-massif.json",
+      "series_sha256": "d9feecea52126d18dede7759fa7abf5b988f27317a4d0363094e30042b4661b7",
+      "note": "PRELIMINARY series derived from NASA LOLA + NAIF SPICE (science/export_api_series.py); not independently validated."
     },
     {
       "id": "haworth",
@@ -42,7 +45,10 @@
         "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R06",
         "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
         "source_accuracy_m": "5-10"
-      }
+      },
+      "series_file": "series/nobile-rim-1.json",
+      "series_sha256": "a1f1affc000b95238cdefc29e6b8c3439af78668ca99db9ff8c37fad35624343",
+      "note": "PRELIMINARY series derived from NASA LOLA + NAIF SPICE (science/export_api_series.py); not independently validated."
     },
     {
       "id": "nobile-rim-2",
@@ -70,7 +76,10 @@
         "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R07",
         "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
         "source_accuracy_m": "5-10"
-      }
+      },
+      "series_file": "series/peak-near-shackleton.json",
+      "series_sha256": "e376f90b2f43d7f34a60cedd2bf7dd4ed82bac67f5b2b46a6719771b275aab91",
+      "note": "PRELIMINARY series derived from NASA LOLA + NAIF SPICE (science/export_api_series.py); not independently validated."
     },
     {
       "id": "connecting-ridge",
@@ -84,7 +93,10 @@
         "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R01",
         "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
         "source_accuracy_m": "5-10"
-      }
+      },
+      "series_file": "series/connecting-ridge.json",
+      "series_sha256": "f35980f7b835596ddc8ced47593c3dafbbe1b054ca676800c8015a12e5dbbe07",
+      "note": "PRELIMINARY series derived from NASA LOLA + NAIF SPICE (science/export_api_series.py); not independently validated."
     },
     {
       "id": "connecting-ridge-extension",
@@ -185,6 +197,23 @@
       }
     },
     {
+      "id": "mons-mouton-im2",
+      "name": "Mons Mouton (IM-2 Athena target)",
+      "kind": "landing_target_candidate_region",
+      "coordinate": {
+        "latitude_deg": -84.78,
+        "longitude_deg": 29.13,
+        "role": "feature_center",
+        "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
+        "source": "LROC image 1401, IM-2 intended landing site (approx.) https://www.lroc.asu.edu/images/1401",
+        "inventory": "web/data/sites.json (Polar Lab catalogue)",
+        "source_accuracy_m": "approximate"
+      },
+      "series_file": "series/mons-mouton-im2.json",
+      "series_sha256": "4fa9edb8737a7b9f932403fc615a037542b2df5435326732db4aadcf761a13bd",
+      "note": "PRELIMINARY series derived from NASA LOLA + NAIF SPICE (science/export_api_series.py); not independently validated."
+    },
+    {
       "id": "synthetic-demo-a",
       "name": "Synthetic demo site A",
       "kind": "synthetic_test_fixture",
@@ -192,7 +221,8 @@
         "synthetic-demo-b"
       ],
       "series_file": "series/synthetic-demo-a.json",
-      "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location."
+      "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location.",
+      "series_sha256": "dc6a64a7b64a7633dcf0e079723b0626dcff17f88d88e4f56f4fa9b4bcbd0c28"
     },
     {
       "id": "synthetic-demo-b",
@@ -202,7 +232,8 @@
         "synthetic-demo-a"
       ],
       "series_file": "series/synthetic-demo-b.json",
-      "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location."
+      "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location.",
+      "series_sha256": "207a6179327701a31539ad3e689fec9c1adbe50383c9cb366e91e2d2201ae633"
     }
   ]
 }

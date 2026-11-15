@@ -1,0 +1,73 @@
+{
+  "reference": "NASA GSFC PGDA AVGVISIB_75S_120M_201608 (+_EARTH), Mazarico et al. 2011, bilinear at site",
+  "caveats": [
+    "PGDA averages a much longer period than the 2025-2028 pipeline window.",
+    "PGDA Earth counts any visible part of the disc; the pipeline counts the Earth centre (lower bound).",
+    "PGDA uses its own horizon computation and DEM; this is an independent but not identical reference."
+  ],
+  "pgda": {
+    "sun": {
+      "product": "AVGVISIB_75S_120M_201608",
+      "sha256": "a354543b62871227a5066077f5ac61ed7e8dabd5268eb5a5aa4b147aa5bba61e",
+      "label_sha256": "1b597f85822c20e349469c9499e7bd85a48efc3a23b9dd9d82b658e59192883c",
+      "url": "http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_75S_120M_201608.IMG",
+      "resolution_m": 120.0,
+      "scaling_factor": 4e-05
+    },
+    "earth": {
+      "product": "AVGVISIB_75S_120M_201608_EARTH",
+      "sha256": "443ad251a480dea19e96417dfcfe1cb87a91eb02ee158b262d78abe899258fff",
+      "label_sha256": "86eabf4611eaf18c4e9b170b205d517b014ec9e694bc93c80d693caf7c0ca015",
+      "url": "http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_75S_120M_201608_EARTH.IMG",
+      "resolution_m": 120.0,
+      "scaling_factor": 4e-05
+    }
+  },
+  "results": [
+    {
+      "site": "mons-mouton-im2",
+      "pipeline_mean_solar_disc_pct": 45.29,
+      "pgda_avg_solar_disc_pct": 46.43,
+      "diff_sun_pp": -1.14,
+      "pipeline_earth_centre_pct": 81.03,
+      "pgda_avg_earth_any_part_pct": 92.06,
+      "diff_earth_pp": -11.03
+    },
+    {
+      "site": "malapert-massif",
+      "pipeline_mean_solar_disc_pct": 38.49,
+      "pgda_avg_solar_disc_pct": 34.97,
+      "diff_sun_pp": 3.52,
+      "pipeline_earth_centre_pct": 48.83,
+      "pgda_avg_earth_any_part_pct": 52.75,
+      "diff_earth_pp": -3.92
+    },
+    {
+      "site": "nobile-rim-1",
+      "pipeline_mean_solar_disc_pct": 31.19,
+      "pgda_avg_solar_disc_pct": 30.85,
+      "diff_sun_pp": 0.34,
+      "pipeline_earth_centre_pct": 31.98,
+      "pgda_avg_earth_any_part_pct": 35.83,
+      "diff_earth_pp": -3.85
+    },
+    {
+      "site": "connecting-ridge",
+      "pipeline_mean_solar_disc_pct": 53.0,
+      "pgda_avg_solar_disc_pct": 50.65,
+      "diff_sun_pp": 2.35,
+      "pipeline_earth_centre_pct": 44.82,
+      "pgda_avg_earth_any_part_pct": 43.74,
+      "diff_earth_pp": 1.08
+    },
+    {
+      "site": "peak-near-shackleton",
+      "pipeline_mean_solar_disc_pct": 80.43,
+      "pgda_avg_solar_disc_pct": 71.89,
+      "diff_sun_pp": 8.54,
+      "pipeline_earth_centre_pct": 58.88,
+      "pgda_avg_earth_any_part_pct": 57.26,
+      "diff_earth_pp": 1.62
+    }
+  ]
+}

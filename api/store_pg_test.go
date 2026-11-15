@@ -105,10 +105,19 @@ func TestDBIngestReadbackAndManifest(t *testing.T) {
 	if _, err := ingest(ctx, db, embeddedFS(t), nil); err != nil {
 		t.Fatal(err)
 	}
+	// Expected rows come from the source data, so adding real series keeps this valid.
+	src, err := loadStore(embeddedFS(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := 0
+	for _, ser := range src.series {
+		want += len(ser.Samples)
+	}
 	var n int
 	_ = db.QueryRow(ctx, `SELECT count(*) FROM ephemeris_samples`).Scan(&n)
-	if n != 2928 {
-		t.Fatalf("ephemeris rows after re-ingest = %d", n)
+	if n != want {
+		t.Fatalf("ephemeris rows after re-ingest = %d, want %d (one row per source sample)", n, want)
 	}
 }
 
@@ -151,6 +160,15 @@ func TestDBDetectsTamperingAndGaps(t *testing.T) {
 		t.Fatal("verify must fail after tampering")
 	}
 
+	// Catalog fields are not covered by series hashes; verify must still catch them.
+	db = ingested(t)
+	if _, err := db.Exec(ctx, `UPDATE sites SET latitude_deg = -80 WHERE id = 'malapert-massif'`); err != nil {
+		t.Fatal(err)
+	}
+	if rep, _ := verifyReadback(ctx, db, embeddedFS(t), nil); rep.OK || !strings.Contains(strings.Join(rep.Problems, " "), "catalog differs") {
+		t.Fatalf("edited coordinate must fail verify: %+v", rep)
+	}
+
 	db = ingested(t)
 	if _, err := db.Exec(ctx, `DELETE FROM ephemeris_samples WHERE site_id = 'synthetic-demo-b' AND idx = 500`); err != nil {
 		t.Fatal(err)
@@ -168,6 +186,7 @@ func TestDBConstraints(t *testing.T) {
 		`INSERT INTO sites (id, ordinal, name, kind, latitude_deg, longitude_deg) VALUES ('no-source', 98, 'x', 'k', -89, 0)`,
 		`UPDATE site_series SET frame = 'J2000'`,
 		`UPDATE site_series SET science_status = 'TRUST_ME'`,
+		`UPDATE site_series SET science_status = 'VALIDATED'`,
 		`UPDATE ephemeris_samples SET sun_elevation_deg = 120 WHERE idx = 0`,
 	}
 	for _, q := range bad {

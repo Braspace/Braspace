@@ -1,0 +1,290 @@
+/* Kit Aula · Apresentar: projector scale (design V3Apresentar, 1440x900). Desktop rules first, mobile overrides in the @media blocks below. */
+body.mp-present { font-variant-numeric: tabular-nums; }
+/* Edge gradients over the terrain (design: dark sides and top/bottom). Markers sit in the middle, untouched. */
+.mp-present #terrain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(5,6,8,.6) 0%, rgba(5,6,8,0) 30%, rgba(5,6,8,0) 70%, rgba(5,6,8,.6) 100%),
+    linear-gradient(180deg, rgba(5,6,8,.55) 0%, rgba(5,6,8,0) 18%, rgba(5,6,8,0) 80%, rgba(5,6,8,.6) 100%);
+}
+/* Terrain markers A/B/C: solid black disc, 64px (the shared marker is 46px). */
+.mp-present .mp-marker {
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  background: var(--card, #050607);
+  border: 2px solid #F2F4F5;
+  box-shadow: 0 18px 40px rgba(0,0,0,.45);
+  font: 800 15px var(--font);
+}
+.mp-present .mp-marker-label { display: none; }
+.mp-present .mp-marker[aria-pressed="true"] {
+  border-color: var(--jade);
+  box-shadow: 0 0 0 4px rgba(46,196,160,.35), 0 0 0 10px rgba(46,196,160,.12);
+}
+
+.mp-present-top {
+  position: fixed;
+  top: 26px;
+  left: 32px;
+  right: 32px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  z-index: 20;
+}
+.mp-present-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 19px;
+  font-weight: 800;
+}
+.mp-present-brand strong { font-weight: 800; }
+.mp-pill-white {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 13px;
+  border-radius: var(--r-pill);
+  background: var(--pill-white, #F2F4F5);
+  color: var(--pill-ink, #0A0D10);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.mp-present-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.mp-progress { display: flex; gap: 5px; }
+.mp-progress-seg {
+  width: 28px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,.25);
+}
+.mp-progress-seg.is-done { background: var(--jade); }
+.mp-btn-exit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 21px;
+  border-radius: var(--r-pill);
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,.14);
+  font: 600 15px var(--font);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Blocks are direct children of body and position:fixed so terrain.js frames its free area around them. */
+.mp-present-q {
+  position: fixed;
+  left: 40px;
+  top: 110px;
+  width: min(760px, calc(100vw - 440px));
+  z-index: 15;
+}
+.mp-q-idx {
+  color: #7FE6CB;
+  font-size: 20px;
+  font-weight: 700;
+}
+.mp-present-q h1 {
+  margin: 8px 0 0;
+  font-size: 56px;
+  line-height: 62px;
+  font-weight: 800;
+  letter-spacing: -.025em;
+}
+.mp-present-q p {
+  margin: 13px 0 0;
+  max-width: 680px;
+  color: var(--text-2, #B7C0C9);
+  font-size: 24px;
+  line-height: 34px;
+  font-weight: 500;
+}
+.mp-present-side {
+  position: fixed;
+  right: 40px;
+  top: 120px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  z-index: 15;
+}
+.mp-timer-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 21px 21px;
+  border-radius: 26px;
+  cursor: pointer;
+  text-align: left;
+}
+.mp-timer-label {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-2, #B7C0C9);
+}
+.mp-timer-val {
+  font-size: 44px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.mp-privacy-card {
+  width: 300px;
+  display: flex;
+  gap: 8px;
+  padding: 13px 13px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-2, #B7C0C9);
+}
+.mp-privacy-card svg { flex: none; }
+.mp-present-bottom {
+  position: fixed;
+  left: 40px;
+  right: 40px;
+  bottom: 40px;
+  display: flex;
+  align-items: stretch;
+  gap: 21px;
+  z-index: 15;
+}
+.mp-present-cards {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 21px;
+}
+.mp-sc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 21px 21px;
+  transition: box-shadow var(--t-fast, 160ms);
+}
+.mp-sc-card.is-winner { box-shadow: 0 0 0 2px var(--jade); }
+.mp-sc-card.is-fail { box-shadow: 0 0 0 2px var(--fail); }
+.mp-sc-head { display: flex; align-items: center; gap: 13px; }
+.mp-sc-letter {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card, #050607);
+  border: 2px solid #F2F4F5;
+  box-shadow: 0 18px 40px rgba(0,0,0,.45);
+  font-size: 24px;
+  font-weight: 800;
+}
+.mp-sc-title { display: flex; flex-direction: column; min-width: 0; }
+.mp-sc-name { font-size: 22px; font-weight: 800; }
+.mp-sc-site {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3, #8E99A6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mp-sc-seal { margin-left: auto; }
+.mp-sc-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.mp-sc-row svg { flex: none; }
+.mp-sc-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-2, #B7C0C9);
+}
+.mp-sc-val {
+  flex: none;
+  font-size: 40px;
+  font-weight: 800;
+}
+.mp-present-actions {
+  width: 250px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 13px;
+}
+.mp-btn-jade {
+  height: 72px;
+  padding: 0 21px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--jade);
+  color: var(--jade-ink, #04110D);
+  font: 700 20px var(--font);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.mp-btn-outline {
+  height: 56px;
+  padding: 0 21px;
+  border-radius: var(--r-pill);
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,.14);
+  font: 600 17px var(--font);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+@media (max-width: 1200px) {
+  .mp-present-q h1 { font-size: 44px; line-height: 50px; }
+  .mp-present-q p { font-size: 20px; line-height: 28px; }
+  .mp-sc-val { font-size: 32px; }
+  .mp-sc-label { font-size: 17px; }
+  .mp-present-bottom { flex-wrap: wrap; }
+  .mp-present-cards { flex: 1 1 100%; }
+  .mp-present-actions { width: 100%; flex-direction: row; }
+  .mp-present-actions button { flex: 1; }
+}
+@media (max-width: 900px) {
+  .mp-present-top { position: relative; top: auto; left: auto; right: auto; margin: 13px 13px 0; flex-wrap: wrap; }
+  .mp-present-brand { flex-wrap: wrap; min-width: 0; row-gap: 5px; }
+  .mp-present-q, .mp-present-side, .mp-present-bottom { position: relative; left: auto; right: auto; top: auto; bottom: auto; width: auto; margin: 13px; }
+  .mp-present-q { margin-top: 21px; }
+  .mp-present-q h1 { font-size: 34px; line-height: 40px; }
+  .mp-present-q p { font-size: 17px; line-height: 24px; }
+  .mp-q-idx { font-size: 16px; }
+  .mp-present-side { align-items: stretch; gap: 8px; }
+  .mp-privacy-card { width: auto; }
+  .mp-present-bottom { flex-direction: column; }
+  .mp-present-cards { grid-template-columns: minmax(0, 1fr); gap: 13px; flex: none; }
+  .mp-present-actions { width: auto; flex-direction: column; }
+  .mp-present-actions button { flex: none; }
+  .mp-present-top, .mp-present-q { padding: 8px 13px; border-radius: 22px; background: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+  .mp-present #terrain::after { display: none; }
+}
+/* BR94 round 4: scenario cards taller (design 203 px, 70 px under the last row), less opaque glass, thicker marker rings. */
+@media (min-width: 901px) {
+  .mp-sc-card { min-height: 203px; padding-bottom: 34px; background: rgba(12,15,18,.5); }
+  .mp-present .mp-marker { width: 46px; height: 46px; margin: -23px 0 0 -23px; border-width: 3px; font-size: 14px; }
+  .mp-present .mp-marker[aria-pressed="true"] { box-shadow: none; border-color: #F2F4F5; }
+}

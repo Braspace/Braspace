@@ -2,7 +2,7 @@
   "api_version": "braspace.mission.v1",
   "limitations": [
     "Visibility is geometric line of sight to the Sun and Earth centers against the stored terrain horizon; Sun disc width, refraction, eclipses, RF link budget and DSN scheduling are not modelled.",
-    "Durations have a resolution of one series step; windows start and end on grid epochs.",
+    "Windows must start on a series grid epoch and last a whole multiple of the series step; anything else is reported as GRID_NOT_ALIGNED, never rounded.",
     "Results are only as accurate as the stored horizon and ephemeris series; check science_status and provenance per site.",
     "Constraint thresholds are caller-declared assumptions, not mission requirements."
   ],
@@ -15,13 +15,13 @@
     "site_ids": [
       "synthetic-demo-a",
       "synthetic-demo-b",
-      "malapert-massif"
+      "haworth"
     ],
     "start_utc": "2026-12-01T00:00:00Z",
     "duration_hours": 72,
     "include_series": false
   },
-  "request_sha256": "87bb28c33544ed8349118f57697be29df0f55d3d5744fedb98772560bfe0805f",
+  "request_sha256": "f924b2ea2f0d14c1d513eb354265ac46220b81fa63c44b4cf1e9ff0ffa094fd5",
   "results": [
     {
       "site": {
@@ -29,6 +29,7 @@
         "name": "Synthetic demo site A",
         "kind": "synthetic_test_fixture",
         "series_file": "series/synthetic-demo-a.json",
+        "series_sha256": "dc6a64a7b64a7633dcf0e079723b0626dcff17f88d88e4f56f4fa9b4bcbd0c28",
         "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location.",
         "series": {
           "start_utc": "2026-11-01T00:00:00Z",
@@ -92,6 +93,7 @@
         "name": "Synthetic demo site B",
         "kind": "synthetic_test_fixture",
         "series_file": "series/synthetic-demo-b.json",
+        "series_sha256": "207a6179327701a31539ad3e689fec9c1adbe50383c9cb366e91e2d2201ae633",
         "note": "Synthetic fixture for software tests and UI development. Not NASA data and not a lunar location.",
         "series": {
           "start_utc": "2026-11-01T00:00:00Z",
@@ -151,15 +153,15 @@
     },
     {
       "site": {
-        "id": "malapert-massif",
-        "name": "Malapert Massif",
+        "id": "haworth",
+        "name": "Haworth",
         "kind": "artemis_iii_candidate_region",
         "coordinate": {
-          "latitude_deg": -85.9948,
-          "longitude_deg": -0.23578,
+          "latitude_deg": -86.7639,
+          "longitude_deg": -22.777,
           "role": "feature_center",
           "frame": "MOON_ME (DE421 mean Earth/polar axis), planetocentric, east-positive",
-          "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row R23",
+          "source": "NASA Lunar Surface Data Book ACD-50044 Rev. A, Appendix A2, row Haworth",
           "inventory": "data/LUNAR_SOUTH_POLE_SITES.md (BS-005)",
           "source_accuracy_m": "5-10"
         }

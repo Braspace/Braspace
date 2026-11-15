@@ -1,0 +1,40 @@
+// Public UI integration smoke: actual browser, real configured API, no mocks.
+import assert from "node:assert/strict";
+import {chromium} from "playwright";
+const front=(process.env.FRONT||"https://braspace.github.io").replace(/\/$/,"");
+const api=(process.env.API||"https://braspace-api.srv1898743.hstgr.cloud").replace(/\/$/,"");
+const browser=await chromium.launch({headless:true});
+const page=await browser.newPage();
+const errors=[];
+page.on("pageerror",error=>errors.push(error.message));
+const apiResponse=(path,method="GET")=>page.waitForResponse(r=>r.url().startsWith(api+path)&&r.request().method()===method&&r.status()===200,{timeout:30000});
+try {
+ const catalog=apiResponse("/api/sites");
+ await page.goto(front+"/studio/");
+ await catalog;
+ await page.waitForFunction(()=>document.querySelector("#connection")?.textContent?.includes("connected"),null,{timeout:30000});
+ await page.locator('[data-screen="explore"]').click();
+ const sky=apiResponse("/api/sites/"+await page.locator("#site").inputValue()+"/sky");
+ await page.locator("#load-sky").click(); await sky;
+ await page.waitForFunction(()=>document.querySelector("#feedback")?.textContent?.includes("stored samples"),null,{timeout:30000});
+ await page.locator('[data-screen="compare"]').click();
+ await page.locator("#site-two").selectOption("nobile-rim-1");
+ const compare=apiResponse("/api/compare","POST");
+ await page.locator("#run-compare").click();
+ assert.equal((await (await compare).json()).scientifically_validated,false);
+ await page.waitForFunction(()=>document.querySelector("#feedback")?.textContent?.includes("compared"),null,{timeout:30000});
+ await page.locator('[data-screen="recover"]').click();
+ await page.locator("#dark-limit").fill("12"); await page.locator("#earth-limit").fill("24");
+ const recover=apiResponse("/api/scenarios/delay","POST");
+ await page.locator("#run-recover").click();
+ assert.equal((await (await recover).json()).scientifically_validated,false);
+ await page.waitForFunction(()=>document.querySelector("#feedback")?.textContent?.includes("Replanning response received"),null,{timeout:30000});
+ const health=apiResponse("/api/health");
+ await page.goto(front+"/onboard/cockpit.html"); await health;
+ await page.waitForFunction(()=>document.querySelector("#badges")?.textContent?.includes("readyz: ready")||document.body.innerText.includes("ENGINE READY"),null,{timeout:30000});
+ const energy=page.waitForResponse(r=>r.url().startsWith(api+"/api/onboard/")&&r.request().method()==="POST"&&r.status()===200,{timeout:30000});
+ await page.locator("#fab").click(); await energy;
+ await page.waitForFunction(()=>document.body.innerText.includes("UNVERIFIED_INPUTS")&&document.body.innerText.includes("Carga mínima"),null,{timeout:30000});
+ assert.deepEqual(errors,[],"browser JS errors");
+ console.log("PASS live browser: catalogue, sky, compare, replan, onboard energy (not flight-certified)");
+} finally {await browser.close();}

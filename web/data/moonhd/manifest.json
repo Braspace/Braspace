@@ -1,0 +1,219 @@
+{
+ "schema": "braspace.moon-hd.v1",
+ "science_status": "VISUAL_PRODUCT_NOT_INDEPENDENTLY_VALIDATED",
+ "nasa_certified": false,
+ "generator": "science/build_moon_hd_assets.py",
+ "color": {
+  "projection": "equirectangular, centre 0 E, north up (SVS 4720)",
+  "sizes": {
+   "color_8k.jpg": [
+    8192,
+    4096
+   ],
+   "color_4k.jpg": [
+    4096,
+    2048
+   ]
+  }
+ },
+ "relief": {
+  "height_min_m": -8981.5,
+  "height_max_m": 10685.5,
+  "height_reference": "metres above the 1,737,400 m sphere",
+  "height_map": "height_4k.jpg, 8 bit: one grey level is 77 m",
+  "normal_map": "tangent space: R east, G north, B up",
+  "normal_exaggeration": 6.0,
+  "source_resolution": "16 pixels per degree (about 1.9 km at the equator)"
+ },
+ "stars": {
+  "projection": "equirectangular celestial sphere (ICRF right ascension / declination), SVS 4851",
+  "use": "decorative background; its orientation relative to the Moon is not registered"
+ },
+ "south_pole": {
+  "schema": "braspace.terrain-grid.v1",
+  "file": "south_pole_80m.bin",
+  "nx": 2048,
+  "ny": 2048,
+  "spacing_m": 80.0,
+  "origin_x_m": -81880.0,
+  "origin_y_m": -81880.0,
+  "scale_m": 0.5,
+  "offset_m": 0.0,
+  "coordinates": "south polar stereographic x/y (m), true scale at pole, R=1737400 m; row 0 = min y; values at pixel centres",
+  "height_reference": "metres above the 1,737,400 m reference sphere",
+  "method": "centre crop of LDEM_80S_80M at native resolution, no resampling",
+  "min_m": -4377.5,
+  "max_m": 3336.0,
+  "frame": "MEAN EARTH/POLAR AXIS OF DE421"
+ },
+ "south_pole_wide": {
+  "schema": "braspace.terrain-grid.v1",
+  "file": "south_pole_320m.bin",
+  "nx": 1900,
+  "ny": 1900,
+  "spacing_m": 320.0,
+  "origin_x_m": -303840.0,
+  "origin_y_m": -303840.0,
+  "scale_m": 0.5,
+  "offset_m": 0.0,
+  "coordinates": "south polar stereographic x/y (m), true scale at pole, R=1737400 m; row 0 = min y; values at block centres",
+  "height_reference": "metres above the 1,737,400 m reference sphere",
+  "method": "4x4 block mean of LDEM_80S_80M pixels (native 80 m), rounded to the 0.5 m DN",
+  "min_m": -7287.5,
+  "max_m": 7022.5,
+  "frame": "MEAN EARTH/POLAR AXIS OF DE421"
+ },
+ "features": {
+  "file": "features.json",
+  "count": 50,
+  "source": "Gazetteer of Planetary Nomenclature, IAU/USGS, MOON_nomenclature_center_pts (public domain)",
+  "filter": "Adopted by IAU; Crater >= 20.0 km or Mons at latitude <= -80.5; every Mare and Oceanus"
+ },
+ "earth": {
+  "file": "earth_2k.jpg",
+  "projection": "equirectangular, centre 0 E, north up",
+  "content": "cloud-free monthly composite (December 2004) with shaded relief; not the weather or the season of the clock time"
+ },
+ "earth_orientation": {
+  "file": "earth_orientation.bin",
+  "start_utc": "2025-01-01T00:00:00Z",
+  "step_seconds": 3600,
+  "count": 35064,
+  "layout": "int16 x*32767 | y | z | w, little-endian; rotates IAU_EARTH vectors into MOON_ME_DE440_ME421",
+  "earth_frame": "IAU_EARTH (pck00010.tpc)",
+  "light_time": "ignored (about 0.005 deg of Earth rotation)"
+ },
+ "ephemeris": {
+  "file": "ephemeris.bin",
+  "start_utc": "2025-01-01T00:00:00Z",
+  "step_seconds": 3600,
+  "count": 35064,
+  "layout": "int16 sun_lat*100 | uint16 sun_lon*100 | int16 earth_lat*100 | uint16 earth_lon*100, little-endian",
+  "quantisation_deg": 0.01,
+  "spice_frame": "MOON_ME_DE440_ME421",
+  "aberration_correction": "LT+S, observer at the Moon centre (spkpos)",
+  "point_targets": "Sun and Earth centres",
+  "sun_lat_range_deg": [
+   -1.576,
+   1.586
+  ],
+  "earth_lat_range_deg": [
+   -6.856,
+   6.856
+  ],
+  "earth_lon_range_deg": [
+   -7.936,
+   8.052
+  ]
+ },
+ "sources": {
+  "lroc_color": {
+   "url": "https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_poles_8k.tif",
+   "sha256": "4af8b0cd4d50c30851359d98e7e72040240dd8d03256b58b345b5b76e9edb4ef",
+   "bytes": 50641970
+  },
+  "ldem_16": {
+   "url": "https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/ldem_16.tif",
+   "sha256": "1ea42bf44f7e9d694f79c3afa7145f97fbf06cc67372067d9fe73dce43bad796",
+   "bytes": 66378634
+  },
+  "starmap": {
+   "url": "https://svs.gsfc.nasa.gov/vis/a000000/a004800/a004851/starmap_2020_4k.exr",
+   "sha256": "69b841cd048c2ef35543eb1c5819b322530e78aa4b0cab97ec1de3ef56a4ddcd",
+   "bytes": 35997085
+  },
+  "nomenclature": {
+   "url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.zip",
+   "sha256": "bcb1a37a195babb159ee1f720a6c64d03842de87d10a7ba7d754f8873477606b",
+   "bytes": 23845070
+  },
+  "blue_marble": {
+   "url": "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/bmng/bmng-topography-bathymetry/december/world.topo.bathy.200412.3x5400x2700.jpg",
+   "sha256": "a9f0088972dee0254610af851c4d6838ca3f2cf79176987e0a5713e2c15ec042",
+   "bytes": 2566770
+  },
+  "pck00010.tpc": {
+   "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00010.tpc",
+   "sha256": "59468328349aa730d18bf1f8d7e86efe6e40b75dfb921908f99321b3a7a701d2",
+   "bytes": 126143
+  },
+  "ldem_80s_80m": {
+   "url": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img/ldem_80s_80m.img",
+   "sha256": "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc",
+   "bytes": 115520000
+  },
+  "naif0012.tls": {
+   "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls",
+   "sha256": "678e32bdb5a744117a467cd9601cd6b373f0e9bc9bbde1371d5eee39600a039b",
+   "bytes": 5257
+  },
+  "de440s.bsp": {
+   "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
+   "sha256": "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2",
+   "bytes": 32726016
+  },
+  "moon_pa_de440_200625.bpc": {
+   "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/moon_pa_de440_200625.bpc",
+   "sha256": "60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f",
+   "bytes": 12863488
+  },
+  "moon_de440_250416.tf": {
+   "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/satellites/moon_de440_250416.tf",
+   "sha256": "a47c71e9c9f33796bdafb2c9d69a7ee447b6016ecad80f71cd6f3e479f9cf768",
+   "bytes": 19478
+  }
+ },
+ "credits": [
+  "NASA's Scientific Visualization Studio (CGI Moon Kit, SVS 4720; Deep Star Maps 2020, SVS 4851)",
+  "NASA LRO/LOLA Science Team (LDEM_80S_80M, PDS Geosciences Node)",
+  "NASA/JPL NAIF (SPICE kernels, DE440)",
+  "IAU/USGS Gazetteer of Planetary Nomenclature (feature names)",
+  "NASA Earth Observatory, Blue Marble Next Generation (Earth texture)"
+ ],
+ "files": {
+  "color_4k.jpg": {
+   "sha256": "4d579d6e85e1f81e95ec8b9922f6fde251ec3ba8e63c8f3ce30c002abd99203c",
+   "bytes": 1598122
+  },
+  "color_8k.jpg": {
+   "sha256": "5b8c60f57ef2b4f9c27b1eb3e73d2a9c472458dcd7a7c5f4e561ed8214aa3056",
+   "bytes": 6287612
+  },
+  "earth_2k.jpg": {
+   "sha256": "5189fd3cebb90cf48495ae98aa92d6c695be9c776a9b3b7ab003ef6102834d97",
+   "bytes": 395621
+  },
+  "earth_orientation.bin": {
+   "sha256": "80449193e0376819eacf35178c9632cde6e304c53c9254fb2afe7d62ec307073",
+   "bytes": 280512
+  },
+  "ephemeris.bin": {
+   "sha256": "bb2e7661e9de2c250543b237b5021692af4840a4abb32f0598c554774ad6044d",
+   "bytes": 280512
+  },
+  "features.json": {
+   "sha256": "62361ecd3b0002b2be9c4efe9526df6ec0203e4bd1fca882b093ce36e7276826",
+   "bytes": 9198
+  },
+  "height_4k.jpg": {
+   "sha256": "1b427d5c427dd58b74fdb85ff7ba3abfd2e7872d92c598818c969cd6064b7388",
+   "bytes": 1502375
+  },
+  "normal_4k.jpg": {
+   "sha256": "c8c7ab2e69edb179dabc5237bfd7476bdcffb591e943e0d85b9931a2ebee4837",
+   "bytes": 4598768
+  },
+  "south_pole_320m.bin": {
+   "sha256": "2c44c11438246c878d82841047b859fcd394eccac0b61ca64a21746a5c1d0299",
+   "bytes": 7220000
+  },
+  "south_pole_80m.bin": {
+   "sha256": "a1244e43cb392feb55aa63ee2289de5a7a098847f2511ce5fba2fcafceccf23c",
+   "bytes": 8388608
+  },
+  "stars_4k.jpg": {
+   "sha256": "4328f598aade1a7fb868dd62d382d317e2fd214f1520d0faf0d155e8944f7bda",
+   "bytes": 2367182
+  }
+ }
+}

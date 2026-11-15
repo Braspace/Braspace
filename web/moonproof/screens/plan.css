@@ -1,0 +1,221 @@
+/* Desktop geometry follows the V3ComparePlan board at 1440x900: rules card 382 wide from y=150, export card 368x260 on the right, metrics table anchored to the bottom. */
+.mp-plan-layout {
+  position: fixed;
+  inset: 150px 28px 28px 28px;
+  display: grid;
+  grid-template-columns: 382px 1fr 368px;
+  grid-template-rows: 260px 1fr;
+  gap: 13px 5px;
+  pointer-events: none;
+  z-index: 15;
+}
+/* Solid black cards (design .solid): rules and metrics table. */
+.mp-plan-rules, .mp-plan-table {
+  background: var(--card, #050607);
+  border: 1px solid rgba(255,255,255,.06);
+  box-shadow: 0 18px 40px rgba(0,0,0,.45);
+}
+.mp-plan-rules {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: start;
+  max-height: 100%;
+  padding: 21px;
+  pointer-events: auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.mp-plan-export {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: start;
+  padding: 21px;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mp-plan-table {
+  grid-column: 2 / span 2;
+  grid-row: 2;
+  padding: 8px 8px 5px;
+  pointer-events: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  align-self: end;
+  max-height: 100%;
+}
+.mp-plan-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+}
+.mp-plan-rules .mp-plan-head { margin-bottom: 5px; }
+.mp-plan-rules > .mp-note { margin-top: 5px; }
+.mp-plan-table .mp-plan-head { padding: 8px 13px 5px; }
+.mp-plan-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -.005em;
+}
+.mp-plan-tag {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--jade);
+}
+.mp-rule-row {
+  display: grid;
+  grid-template-columns: 1fr 70px 22px;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.mp-rule-row > span:last-child { font-size: 12.5px; color: var(--text-dim, #8E99A6); }
+.mp-rule-row input {
+  box-sizing: border-box;
+  width: 70px;
+  height: 40px;
+  padding: 0 5px;
+  text-align: center;
+  border-radius: 999px;
+  border: 1px solid #5E6C7D;
+  background: rgba(255,255,255,.06);
+  color: #F2F4F5;
+  font: 700 14px/1 var(--font);
+  font-variant-numeric: tabular-nums;
+  color-scheme: dark;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.mp-rule-row input::-webkit-outer-spin-button, .mp-rule-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.mp-plan-sep { height: 1px; background: rgba(255,255,255,.08); margin: 8px 0; flex: none; }
+/* The two choices are plain text with a chevron (no pill), aligned with the number fields above. */
+.mp-rule-select {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 27px;
+  padding-right: 30px;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.mp-rule-select select {
+  box-sizing: border-box;
+  height: 27px;
+  padding: 0 21px 0 5px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%23F2F4F5' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 4px center;
+  color: #F2F4F5;
+  font: 500 14px/1 var(--font);
+  text-align: right;
+  color-scheme: dark;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.mp-btn-jade {
+  background: var(--jade);
+  color: var(--jade-ink, var(--jade-text));
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 0 21px;
+  height: 48px;
+  flex: none;
+  font: 700 15px/1 var(--font);
+  cursor: pointer;
+  margin-top: 8px;
+}
+.mp-btn-white {
+  background: var(--pill-white, var(--pill));
+  color: var(--pill-ink, var(--pill-text));
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 0 21px 0 13px;
+  height: 38px;
+  font: 600 14px/1 var(--font);
+  cursor: pointer;
+}
+.mp-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.mp-url-box {
+  background: rgba(255,255,255,.07);
+  border-radius: 18px;
+  padding: 8px 13px;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11.5px;
+  line-height: 17px;
+  color: var(--text-2);
+  word-break: break-all;
+}
+.mp-version { display: flex; align-items: center; gap: 8px; }
+.mp-version b { font: 600 12px var(--mono); color: var(--text-2); }
+.mp-table-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+}
+.mp-metrics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+.mp-metrics-table th, .mp-metrics-table td {
+  padding: 8px 13px;
+  text-align: right;
+  white-space: nowrap;
+}
+.mp-metrics-table tbody tr { border-top: 1px solid rgba(255,255,255,.06); }
+.mp-metrics-table th:first-child, .mp-metrics-table td:first-child { text-align: left; }
+.mp-metrics-table th {
+  padding-top: 8px; padding-bottom: 8px;
+  color: var(--text-dim, #8E99A6);
+  font-weight: 700;
+  font-size: 12px;
+}
+.mp-col-letter { display: block; font-size: 13px; color: var(--text-2); }
+.mp-col-site { display: block; max-width: 130px; margin-left: auto; overflow: hidden; text-overflow: ellipsis; font-size: 10.5px; font-weight: 600; }
+.mp-metrics-table td:first-child { font-weight: 600; }
+.mp-metrics-table td:nth-child(n+3):nth-child(-n+5), .mp-metrics-table td:nth-child(7) { font-weight: 700; }
+.mp-metrics-table td:nth-child(2) { color: var(--text-dim, #8E99A6); }
+.mp-metrics-table td:nth-child(6), .mp-metrics-table td:nth-child(8) { color: var(--text-2); }
+.mp-metrics-table td:nth-child(8) { font-family: var(--mono); }
+.mp-val-bad { color: var(--bad, #FF7A80); font-weight: 700; }
+.mp-val-best { color: var(--jade); font-weight: 700; }
+.mp-note { font-size: 12px; color: var(--text-dim, #8E99A6); margin: 0; }
+
+@media (min-height: 900px) and (min-width: 901px) {
+  .mp-plan-table { min-height: 415px; }
+}
+@media (max-width: 900px) {
+  .mp-plan-layout {
+    position: relative; /* static dropped z-index 15: the fixed #terrain canvas covered the rule labels */
+    inset: auto;
+    margin: 76px 13px 84px 13px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+  .mp-plan-rules, .mp-plan-export, .mp-plan-table {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .mp-rule-select { min-height: 44px; }
+  .mp-rule-select select { height: 44px; }
+}
+
+/* Rules that do not change the numbers carry a small "no effect" tag (the reason is in its title and read by screen readers). */
+.mp-rule-info { font-style: normal; font-size: 11px; font-weight: 600; padding: 1px 8px; margin-left: 5px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); color: var(--text-dim, #8E99A6); white-space: nowrap; cursor: help; }
+.mp-plan-status { padding: 2px 13px 5px; }

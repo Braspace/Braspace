@@ -1,0 +1,82 @@
+# E-cockpit · Cockpit (Operação simulada, regras e falhas)
+
+## Pergunta que a tela responde
+**pt-BR:** Como o módulo se comporta hora a hora e o que acontece se algo falhar?  
+**en:** How does the lander behave hour by hour and what happens if something fails?
+
+## Quem usa e em que camada abre
+- **Operadores / Educadores / Planejadores:** abre em **1 · Resposta** (estado atual do módulo + regras), com **2 · Por quê** (gráfico `Horas de Sol por dia`) e **3 · Prova** (proveniência e parâmetros da simulação `SIM`).
+
+## Layout
+- **Desktop (1440×900):**
+  - Fundo *full-bleed*: mapa lunar com marcador do módulo no centro e vetores para Sol e Terra.
+  - **Topo:** Barra de navegação (`Cockpit` ativo em Jade) + barra de contexto (`Operação simulada · <sítio> • dia N • HH:MM • perfil H1`, selo `PRE`/`SIM`, `Alterar`, selo `SIMULAÇÃO` roxo).
+  - **Coluna esquerda:** Medidor radial de bateria (`62% bateria` + 4 satélites: `próx. noite`, `piso`, `autonomia`, `folga`), 2 pílulas brancas (`Sol visível`, `Terra visível`), cartão `Horas de Sol por dia` (14 barras `D0`..`D13`).
+  - **Coluna direita:** Cartão `Regras da missão` (6 regras com selos `Atende` / `Em risco` / `Sem dado` + link `De onde vêm essas regras?`), cartão de alerta (`Pôr do Sol em X h` + `Entendi`), cartão `Testar um problema` (4 botões de falha `SIM`).
+  - **Rodapé central:** Player da simulação (Reiniciar, Pausar/Play, slider `D02 15:48`..`D14`, velocidade `6 h/s`).
+- **Celular (390×844):**
+  - Mapa no topo; folha inferior com medidor, regras e player; barra de navegação inferior fixa.
+
+## Componentes
+- **Medidor radial de bateria:** Centro Jade com `% bateria` + 4 satélites (`próx. noite`, `piso`, `autonomia`, `folga`).
+- **Pílulas de visibilidade (2 brancas):** `Sol visível` (`sim/não · elevação°`) e `Terra visível` (`sim/não · elevação°`).
+- **Cartão `Horas de Sol por dia`:** 14 barras verticais com destaque amarelo no dia atual (`hoje`) e rodapé `Próxima noite`.
+- **Cartão `Regras da missão`:** Lista de regras com selos `Atende` (verde), `Em risco` (âmbar) e `Sem dado` (`N/D`).
+- **Cartão de alerta operacional:** Borda âmbar, ícone `!`, título, ação recomendada, botão `Entendi`.
+- **Cartão `Testar um problema`:** Selo `SIM`, 4 pílulas de injeção de falha (`Painel a 50%`, `Bateria −20%`, `Atraso +24 h`, `Sem antena`).
+- **Player temporal:** Reiniciar, Play/Pause, slider de tempo, seletor de velocidade (`1 h/s`, `6 h/s`, `24 h/s`).
+
+## Textos
+| Elemento | pt-BR | en |
+|---|---|---|
+| Barra de contexto | Operação simulada · perfil H1 · SIMULAÇÃO | Simulated operation · profile H1 · SIMULATION |
+| Bateria | Como está o módulo agora? · bateria · próx. noite · piso · autonomia · folga | How is the lander right now? · battery · next night · floor · autonomy · margin |
+| Visibilidade | Sol visível · Terra visível | Sun visible · Earth visible |
+| Gráfico | Horas de Sol por dia · hoje · Próxima noite | Sun hours per day · today · Next night |
+| Regras | Regras da missão · Atende · Em risco · Sem dado · De onde vêm essas regras? | Mission rules · Pass · At risk · No data · Where do these rules come from? |
+| Alerta | Pôr do Sol em · Entendi | Sunset in · Got it |
+| Falhas | Testar um problema · Painel a 50% · Bateria −20% · Atraso +24 h · Sem antena | Test a problem · Panel at 50% · Battery −20% · Delay +24 h · No antenna |
+
+## Dados
+| Elemento | Fonte exata (arquivo ou rota + campo) | Selo | Sem dado |
+|---|---|---|---|
+| Visibilidade Sol/Terra por hora | `web/data/sites/<id>.json` (série horária) ou `GET /api/sites/{id}/sky` | `PRE` / `SIM` | `—` (`N/D`) |
+| Bateria, autonomia, folga | `POST /api/onboard/evaluate` (simulação no cliente ao avançar o slider) | `SIM` | `—` (`N/D`) |
+| Sobreviver ao frio | sem fonte: N/D | `N/D` | `Sem dado` (`N/D`) |
+
+## Interações
+- **Clique:** Play/Pause anima o slider temporal; clicar em falha (`Painel a 50%`, etc.) aplica o efeito na simulação; `De onde vêm essas regras?` abre `evidence.html`.
+- **Teclado:** `Espaço` pausa/retoma quando o player está focado; `←`/`→` avança/recua horas no slider.
+
+## Ligações
+- `evidence.html` (H · Evidências — via `De onde vêm essas regras?`), `explore.html` (B), `compare.html` (C), `recover.html` (D), `landing.html` (F).
+
+## Diferenças entre o desenho e a tela real
+1. **Sem números fixos:** `62%`, `46h`, `60h`, `+14h`, `1,8°`, `4,2°` são calculados da série real + modelo H1.
+2. **Selo `VAL` proibido:** O desenho mostra `VAL` no cartão `Horas de Sol por dia`; na tela real o selo é `PRE` (série LOLA+SPICE) ou `SIM` (série sintética).
+3. **Locais reais:** Sítios de `web/data/sites.json`.
+4. **Bateria H1 e falhas:** Tudo marcado como `SIM`.
+5. **Regras:** Rotuladas como `assumed limit`.
+6. **Sem domínio inventado:** Query string local.
+7. **Dado real e resolução:** LOLA 80 m/px.
+8. **Landing Lab:** Link na navegação.
+
+## Critérios de aceite
+- [ ] Slider temporal e Play/Pause atualizam bateria, visibilidade e alertas sem erro no console.
+- [ ] Selo `VAL` nunca aparece (usa `PRE` ou `SIM`).
+- [ ] Regra `Sobreviver ao frio` mostra `Sem dado` (`N/D`).
+- [ ] Responsivo em 1440×900 e 390×844 sem rolagem lateral.
+
+## Correções feitas pela implementação (BR79)
+- **Origem de cada número:** luz (horas de Sol por dia, próxima noite, Sol/Terra visíveis, noite e perda da Terra) vem da série horária gravada em `web/data/sites/<id>.bin`, selo `PRE`. Bateria, autonomia, folga e as regras de bateria e dias de operação vêm do traço `timeline[].charge_wh` de `POST /api/onboard/site-evaluate` (série da API) ou, quando o local não tem série na API (os 13 reais hoje), de `POST /api/onboard/evaluate` com os booleanos da série gravada. Selo `SIM`. Sem resposta da API: `—` e `N/D`.
+- **Perfil H1** (capacidade, carga inicial, geração solar, carga constante) é declarado em `cockpit-model.js` (`H1_PROFILE`) e listado na camada Prova. Piso, noite e perda da Terra são limites assumidos editáveis pela URL; dias de operação e nascentes são limites assumidos fixos do desenho, rotulados `limite assumido`.
+- **"Testar um problema":** painel a 50%, bateria −20%, atraso +24 h e sem antena recalculam pela API. Atraso soma 24 h ao início enviado (`delay_hours` na rota do local, início deslocado na outra); sem antena zera `earth_visible` em todas as amostras.
+- **Alerta:** o próximo pôr do Sol vem de `next_transitions.sun` de `GET /api/sites/{id}/sky` quando o local tem série na API; senão da série gravada, com a fonte escrita no cartão.
+- **Sobreviver ao frio:** sem fonte, `Sem dado` + `N/D`, sempre.
+- **Selo `VAL` e "ILUSTRATIVO" do desenho:** não existem. Barra de contexto traz `SIM` (a operação é simulação), o cartão de horas de Sol traz `PRE`.
+- **Satélites do círculo:** próx. noite no topo, autonomia à direita, folga embaixo, piso à esquerda, como no desenho (ordem do núcleo: sentido horário a partir do topo). Anel de 152 px, satélites de 44 px a 79 px do centro.
+- **Geometria medida por DOM (1440×900, `audit-geom`, IoU médio com a prancha 0,43 → 0,84):** cartões de Regras 372×304, alerta 368×135 (ícone + `Entendi` 76×30, a fonte do dado ao lado do botão), `Testar um problema` 368×144 com as 4 falhas em pílulas de 34 px (101/104/100/97 de largura, em 2 linhas; o aviso de API fora do ar ocupa o espaço livre da 2ª linha), Sol/Terra visíveis 330×46, `Horas de Sol por dia` 330×169 (as abas Resposta/Por quê/Prova penduram abaixo do cartão), player em 4 peças (reiniciar 44, play 44, linha do tempo 378×50, velocidade 86×48). Pílulas menores que 44 px mantêm área de toque de 44 px (`::after`). Medidas valem só ≥ 701 px; o celular não mudou. Testes: `tests/cockpit-geometry.test.mjs`.
+- **Fora do que o cockpit controla:** a barra de navegação (8 itens contra 6 do desenho) e a barra de contexto (site, dia, dias, selo, rede, "Abrir em", perfil, SIMULAÇÃO) são do `core/shell.js`; a do desenho tem 744×48 com `Alterar`, a real passa de 1100 px. No desktop o botão `Abrir o painel de bordo` saiu da barra (já existe no canto inferior esquerdo); no celular continua na barra.
+- **Relógio:** a simulação anda em horas inteiras para a leitura (série e traço são horários); o valor contínuo fica só no player.
+- **Link para o painel de bordo do João Victor:** botão `Abrir o painel de bordo` aponta para `../onboard/`. Não o substitui.
+- Local: o cartão mostra o local escolhido na URL (`site=`); trocar de local reinicia o relógio.

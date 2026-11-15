@@ -1,0 +1,60 @@
+name: NAIF SPICE look angle evidence
+on:
+  push:
+    branches:
+      - feat/lola-southpole-horizon-science-20261114
+    paths:
+      - "science/**"
+      - "api/naif/**"
+      - "api/spicelunar/**"
+      - "api/cmd/spicelunarangles/**"
+      - ".github/workflows/lola-naif-spice.yml"
+  pull_request:
+    paths:
+      - "science/**"
+      - "api/naif/**"
+      - "api/spicelunar/**"
+      - "api/cmd/spicelunarangles/**"
+      - ".github/workflows/lola-naif-spice.yml"
+permissions:
+  contents: read
+jobs:
+  naif:
+    name: NAIF kernel calculation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+      - name: Get official NASA JPL NAIF kernels (temporary only)
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/naif" evidence
+          base="https://naif.jpl.nasa.gov/pub/naif/generic_kernels"
+          curl -fLSs --retry 3 --max-time 240 "$base/lsk/naif0012.tls" -o "$RUNNER_TEMP/naif/naif0012.tls"
+          curl -fLSs --retry 3 --max-time 540 "$base/spk/planets/de440s.bsp" -o "$RUNNER_TEMP/naif/de440s.bsp"
+          curl -fLSs --retry 3 --max-time 420 "$base/pck/moon_pa_de440_200625.bpc" -o "$RUNNER_TEMP/naif/moon_pa_de440_200625.bpc"
+          curl -fLSs --retry 3 --max-time 240 "$base/fk/satellites/moon_de440_250416.tf" -o "$RUNNER_TEMP/naif/moon_de440_250416.tf"
+          curl -fLSs --retry 3 --max-time 240 "$base/pck/pck00010.tpc" -o "$RUNNER_TEMP/naif/pck00010.tpc"
+          test -s "$RUNNER_TEMP/naif/de440s.bsp"
+      - name: Generate unvalidated NASA sourced Sun and Earth angles
+        run: |
+          set -euo pipefail
+          go -C api run ./cmd/spicelunarangles --horizon ../science/evidence/connecting-ridge-LOLA-PRELIMINARY.json --kernels-dir "$RUNNER_TEMP/naif" --start-utc "2026-11-15T00:00:00Z" --hours 72 --step-minutes 60 --output-series ../evidence/connecting-ridge-NAIF-PRELIMINARY.series.json --output-metadata ../evidence/connecting-ridge-NAIF-PRELIMINARY.metadata.json
+          python3 -c 'import json; s=json.load(open("evidence/connecting-ridge-NAIF-PRELIMINARY.series.json")); m=json.load(open("evidence/connecting-ridge-NAIF-PRELIMINARY.metadata.json")); assert s["science_status"]=="UNVERIFIED" and len(s["samples"])==72 and len(s["terrain_horizon"])==36; assert m["validated_against_independent_reference"] is False; assert s==json.load(open("api/sitedata/series/connecting-ridge-NAIF-PRELIMINARY.json")), "Committed candidate differs from the JPL/NAIF source calculation"; print("MATCH: committed 72h series reproduces PDS/NAIF computation; unverified scientifically")'
+          cmp evidence/connecting-ridge-NAIF-PRELIMINARY.series.json api/sitedata/series/connecting-ridge-NAIF-PRELIMINARY.json
+          cmp evidence/connecting-ridge-NAIF-PRELIMINARY.metadata.json science/evidence/connecting-ridge-NAIF-PRELIMINARY.metadata.json
+      - name: Compare api/naif with the spiceypy fixtures (real kernels; the Go tests verify each kernel's SHA-256)
+        env:
+          NAIF_KERNEL_DIR: ${{ runner.temp }}/naif
+        run: go -C api test -count=1 ./naif ./spicelunar ./cmd/spicelunarangles
+      - name: Upload derived series only (no kernels)
+        uses: actions/upload-artifact@v4
+        with:
+          name: connecting-ridge-naif-preliminary-72h
+          path: evidence/*.json
+          retention-days: 14
+          if-no-files-found: error

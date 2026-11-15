@@ -1,0 +1,21 @@
+{
+ "schema": "braspace.terrain-grid.v1",
+ "nx": 401,
+ "ny": 401,
+ "spacing_m": 40.0,
+ "origin_x_m": -8000.0,
+ "origin_y_m": -8000.0,
+ "scale_m": 0.25,
+ "offset_m": 0.0,
+ "nodata": -32768,
+ "coordinates": "site-local East-North-Up tangent plane (m); origin on the DEM surface at the site",
+ "height_reference": "metres above the site tangent plane (lunar curvature included)",
+ "site_height_m": 5945.0,
+ "native_resolution_m": 80,
+ "method": "bilinear interpolation of LDEM_80S_80M at 40 m spacing; features smaller than ~160 m are not represented",
+ "source": "NASA LRO/LOLA LDEM_80S_80M.IMG V2.0",
+ "source_sha256": "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc",
+ "frame": "MEAN EARTH/POLAR AXIS OF DE421",
+ "sha256": "92f516c17ce5e89a0bf13eda7074794e8ff9916a8938dec580bba65c11d74860",
+ "bytes": 321602
+}

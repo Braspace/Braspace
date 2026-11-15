@@ -1,0 +1,34 @@
+name: Polar source provenance integrity
+
+on:
+  pull_request:
+    paths:
+      - "data/POLAR_SOURCE_EVIDENCE.json"
+      - "docs/POLAR_DATA_INGESTION.md"
+      - "api/cmd/validatepolarsource/**"
+      - "api/internal/pyjson/**"
+      - ".github/workflows/polar-source-evidence.yml"
+  push:
+    branches: [main]
+    paths:
+      - "data/POLAR_SOURCE_EVIDENCE.json"
+      - "api/cmd/validatepolarsource/**"
+      - "api/internal/pyjson/**"
+
+permissions:
+  contents: read
+
+jobs:
+  provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+      - name: Check catalog integrity (not scientific validation)
+        run: go -C api run ./cmd/validatepolarsource
+      - name: Fail-closed regression tests
+        run: go -C api test -count=1 ./cmd/validatepolarsource ./internal/pyjson

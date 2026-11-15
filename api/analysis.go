@@ -24,6 +24,7 @@ type seriesPoint struct {
 // metrics treat each sample as constant over [t, t+step); durations therefore
 // have a resolution of one step.
 type metrics struct {
+	exact                    *metrics
 	SampleCount              int     `json:"sample_count"`
 	StepHours                float64 `json:"step_hours"`
 	SunVisibleFraction       float64 `json:"sun_visible_fraction"`
@@ -82,18 +83,27 @@ func analyze(s *siteSeries, from int, res []engineResult, includeSeries bool) ev
 	ev.SunWindows = windows(s, from, sun)
 	ev.EarthWindows = windows(s, from, earth)
 	ev.BothWindows = windows(s, from, both)
-	ev.Metrics = metrics{
+	exact := metrics{
 		SampleCount:              n,
 		StepHours:                stepH,
-		SunVisibleFraction:       round6(float64(sunN) / float64(n)),
-		EarthVisibleFraction:     round6(float64(earthN) / float64(n)),
-		SimultaneousFraction:     round6(float64(bothN) / float64(n)),
-		LongestDarkHours:         round6(float64(longestRun(sun, false)) * stepH),
-		LongestCommGapHours:      round6(float64(longestRun(earth, false)) * stepH),
+		SunVisibleFraction:       float64(sunN) / float64(n),
+		EarthVisibleFraction:     float64(earthN) / float64(n),
+		SimultaneousFraction:     float64(bothN) / float64(n),
+		LongestDarkHours:         float64(longestRun(sun, false)) * stepH,
+		LongestCommGapHours:      float64(longestRun(earth, false)) * stepH,
 		MinSunMarginDeg:          round6(minSun),
 		MinEarthMarginDeg:        round6(minEarth),
 		SunVisibilityWindowCount: len(ev.SunWindows),
 	}
+	// Keep the public display precision stable, but evaluate science
+	// constraints using the original sample counts and durations.
+	ev.Metrics = exact
+	ev.Metrics.exact = &exact
+	ev.Metrics.SunVisibleFraction = round6(exact.SunVisibleFraction)
+	ev.Metrics.EarthVisibleFraction = round6(exact.EarthVisibleFraction)
+	ev.Metrics.SimultaneousFraction = round6(exact.SimultaneousFraction)
+	ev.Metrics.LongestDarkHours = round6(exact.LongestDarkHours)
+	ev.Metrics.LongestCommGapHours = round6(exact.LongestCommGapHours)
 	return ev
 }
 
@@ -161,6 +171,12 @@ func (c missionConstraints) empty() bool {
 // constraint holds and negative by the amount it is breached.
 func (c missionConstraints) check(m metrics, baseline *metrics) []constraintCheck {
 	var out []constraintCheck
+	if m.exact != nil {
+		m = *m.exact
+	}
+	if baseline != nil && baseline.exact != nil {
+		baseline = baseline.exact
+	}
 	add := func(limit *float64, name, unit, cmp string, pick func(metrics) float64) {
 		if limit == nil {
 			return
@@ -170,7 +186,7 @@ func (c missionConstraints) check(m metrics, baseline *metrics) []constraintChec
 		if cmp == ">=" {
 			margin = v - *limit
 		}
-		cc := constraintCheck{Criterion: name, Unit: unit, Comparator: cmp, Limit: *limit, Value: v, Margin: round6(margin), Passed: margin >= 0}
+		cc := constraintCheck{Criterion: name, Unit: unit, Comparator: cmp, Limit: *limit, Value: v, Margin: margin, Passed: margin >= 0}
 		if baseline != nil {
 			b := pick(*baseline)
 			cc.BaselineValue = &b
