@@ -82,13 +82,15 @@ function round(svg, label, fn) { const b = el("button", "lab-round"); b.innerHTM
 // Preserve the same-origin source screen when leaving the educational simulator.
 // A direct link has no referrer, so Compare remains the explicit fallback.
 function returnHref() {
-  const fallback = hrefTo("compare.html");
-  try {
-    const u = new URL(document.referrer);
-    const page = u.pathname.split("/").pop() || "";
-    if (u.origin === location.origin && ["compare.html", "explore.html", "recover.html", "mission.html", "plan.html", "activity.html", "present.html"].includes(page)) return page + u.search + u.hash;
-  } catch { /* no usable referrer */ }
-  return fallback;
+    const fallback = hrefTo("compare.html");
+    try {
+        const u = new URL(document.referrer);
+        const page = u.pathname.split("/").pop() || "";
+        if (u.origin === location.origin && ["compare.html", "explore.html", "recover.html", "mission.html", "plan.html", "activity.html", "present.html"].includes(page))
+            return page + u.search + u.hash;
+    }
+    catch { /* no usable referrer */ }
+    return fallback;
 }
 function build() {
     document.documentElement.lang = lang();
