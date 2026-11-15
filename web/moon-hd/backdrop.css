@@ -13,3 +13,60 @@ html.moon-backdrop-on #terrain { visibility: hidden; }
 /* Debrief: the trajectory canvas stays on top; only its empty areas show the Moon. */
 html.moon-backdrop-on .deb-map { background: transparent; }
 @media (prefers-reduced-motion: reduce) { .moon-backdrop { transition: none; } }
+
+/* ---- Interactive Moon (drag the empty background, wheel/pinch zoom, "Explorar a Lua" explore mode) ---- */
+html.moon-backdrop-on body { cursor: default; }
+html.moon-dragging, html.moon-dragging * { cursor: grabbing !important; user-select: none !important; }
+/* Lazy pages (functional map background): the Moon only exists in explore mode. */
+.moon-backdrop.is-lazy:not(.is-explore) { visibility: hidden; }
+.moon-backdrop.is-explore { z-index: 2147483000; pointer-events: auto; cursor: grab; touch-action: none; opacity: 1; }
+.moon-backdrop.is-explore::after { background: radial-gradient(ellipse at center, rgba(5,6,8,0) 55%, rgba(5,6,8,.55)); }
+html.moon-explore-on { overflow: hidden; }
+.moon-ui { position: fixed; left: max(16px, env(safe-area-inset-left)); bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 2147483001;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; max-width: calc(100vw - 32px); font: 500 13px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.moon-btn { appearance: none; border: 1px solid rgba(255,255,255,.22); background: rgba(10,13,18,.78); color: #f2f4f7; border-radius: 999px;
+  padding: 9px 14px; min-height: 40px; min-width: 40px; cursor: pointer; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); font: inherit; }
+.moon-btn:hover { background: rgba(30,36,46,.9); border-color: rgba(46,196,160,.7); }
+.moon-btn:focus-visible { outline: 2px solid #2EC4A0; outline-offset: 2px; }
+.moon-btn[disabled] { opacity: .7; cursor: default; }
+.moon-open[aria-pressed="true"] { border-color: #2EC4A0; }
+.moon-tools, .moon-hint { display: none; }
+.moon-ui.is-explore .moon-tools { display: flex; gap: 6px; }
+.moon-ui.is-explore .moon-hint { display: block; flex-basis: 100%; margin: 0 0 2px; color: rgba(242,244,247,.8); text-shadow: 0 1px 2px #000; }
+.moon-tools .moon-btn { padding: 0; width: 40px; font-size: 18px; }
+/* Phones: clear the bottom navigation bar of the MoonProof shell. */
+@media (max-width: 720px) { .moon-ui { bottom: calc(84px + env(safe-area-inset-bottom)); } .moon-ui:not(.is-explore) .moon-open { padding: 8px 12px; } }
+@media print { .moon-ui, .moon-backdrop { display: none !important; } }
+
+/* ---- Sites on the 3D Moon (from GET /api/sites): dots behind the panels, labelled buttons in explore mode ---- */
+.moon-pins { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.moon-pin { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 6px; margin: 0; padding: 0; border: 0; background: none;
+  color: #f2f4f7; font: 600 12px/1.1 system-ui, -apple-system, "Segoe UI", sans-serif; white-space: nowrap; cursor: pointer; pointer-events: none;
+  transform-origin: 0 0; will-change: transform; }
+.moon-pin.is-off { visibility: hidden; }
+.moon-pin i { flex: none; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px rgba(5,6,8,.6), 0 0 10px rgba(255,255,255,.5); }
+.moon-pin.has-series i { background: #2EC4A0; box-shadow: 0 0 0 2px rgba(5,6,8,.6), 0 0 12px rgba(46,196,160,.8); }
+.moon-pin[aria-pressed="true"] i { width: 14px; height: 14px; margin: -7px 0 0 -7px; background: #ffd166; box-shadow: 0 0 0 3px rgba(255,209,102,.35), 0 0 16px rgba(255,209,102,.9); }
+.moon-pin span { display: none; padding: 4px 9px; border-radius: 999px; background: rgba(10,13,18,.78); border: 1px solid rgba(255,255,255,.16);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); transform: translateY(-50%); margin-top: -1px; }
+.moon-backdrop.is-explore .moon-pin { pointer-events: auto; }
+.moon-backdrop.is-explore .moon-pin span, .moon-pin[aria-pressed="true"] span { display: inline-block; }
+.moon-backdrop.is-explore .moon-pin:hover span, .moon-pin:focus-visible span { border-color: #2EC4A0; }
+.moon-pin:focus-visible { outline: none; }
+.moon-pin:focus-visible i { outline: 2px solid #2EC4A0; outline-offset: 3px; }
+/* the veil sits above the canvas but below the pins */
+.moon-backdrop::after { z-index: 0; pointer-events: none; }
+.moon-backdrop:not(.is-explore) .moon-pin { opacity: .75; }
+@media (max-width: 720px) { .moon-backdrop.is-explore .moon-pin span { font-size: 11px; padding: 3px 7px; } }
+
+/* Phones/tablets: the "Explorar a Lua" pill sat bottom-left over time bars, sheets and export buttons (QA 15/11).
+   Below 1024 px it becomes a round icon button on the right edge, vertically centred (sheets and docks live at the
+   bottom, the top bar at the top); explore mode keeps the full labelled controls at the bottom. */
+@media (max-width: 1023px) {
+  .moon-ui:not(.is-explore) { left: auto; right: max(8px, env(safe-area-inset-right)); bottom: auto; top: 50%; transform: translateY(-50%); }
+  .moon-ui:not(.is-explore) .moon-open { width: 44px; height: 44px; min-width: 44px; padding: 0; overflow: hidden; color: transparent; font-size: 0; position: relative; }
+  .moon-ui:not(.is-explore) .moon-open::before { content: ""; position: absolute; inset: 11px; border-radius: 50%; border: 2px solid #f2f4f7; box-shadow: inset -7px 0 0 #2EC4A0; }
+  .moon-ui.is-explore { bottom: calc(16px + env(safe-area-inset-bottom)); }
+}
+/* Desktop: bottom-right (bottom-left holds the cockpit links / mission cards; QA 15/11). */
+@media (min-width: 1024px) { .moon-ui:not(.is-explore) { left: auto; right: max(16px, env(safe-area-inset-right)); } }

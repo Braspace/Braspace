@@ -1,0 +1,15 @@
+/* Density (Gustavo, 15/11: "a tela fica muito melhor em 75% do que em 100%... grande demais, poluído").
+   Same Heloísa design system — tokens, proportions and per-screen measurements untouched — drawn smaller:
+   CSS `zoom` on the OUTERMOST UI containers only (top bar, context, panels, docks, sheets, player, Moon controls).
+   Terrain, maps, rays, markers and the 3D Moon are NOT zoomed: their JS positions things in viewport pixels.
+   `:not(:where(...) *)` keeps nested containers from being zoomed twice. Phones keep 1 (already compact). */
+:root{--mp-density:1}
+@media (min-width:701px) and (max-width:1023px){:root{--mp-density:.9}}
+@media (min-width:1024px){:root{--mp-density:.8}}
+:where(.mp-top,.mp-context,.mp-help-pop,.mc-panels,.mc-dock,.ex-chips,.ex-left,.ex-right,.ex-sheet,.mp-sheet,.mp-scn-dock,
+  #time,.mp-plan-layout,.mp-links,.mp-player,.mp-ev,.mp-rules,.deb-left,.deb-right,.deb-actions,.deb-card,
+  .mp-present-top,.mp-present-q,.mp-present-side,.mp-present-bottom,.lab-bar,.lab-strip,.lab-tape,.lab-bottom,.lab-help,
+  .mp-act-layout,.mp-entry-top,.mp-entry main,.moon-ui):not(:where(.mp-top,.mp-context,.mp-help-pop,.mc-panels,.mc-dock,.ex-chips,.ex-left,.ex-right,.ex-sheet,.mp-sheet,.mp-scn-dock,
+  #time,.mp-plan-layout,.mp-links,.mp-player,.mp-ev,.mp-rules,.deb-left,.deb-right,.deb-actions,.deb-card,
+  .mp-present-top,.mp-present-q,.mp-present-side,.mp-present-bottom,.lab-bar,.lab-strip,.lab-tape,.lab-bottom,.lab-help,
+  .mp-act-layout,.mp-entry-top,.mp-entry main,.moon-ui) *){zoom:var(--mp-density)}
