@@ -3,7 +3,7 @@
 // BR91: the relief is shaded per DEVICE pixel (bilinear heights, devicePixelRatio) instead of
 // stretching an 850×850 bitmap, and the view keeps the chosen site in the FREE area of the
 // screen (viewport minus the fixed panels laid over the map).
-import { loadRegion } from "./data.js";
+import { loadRegion, loadRegionHeader } from "./data.js";
 import { t } from "./i18n.js";
 // Read at load: core/state rewrites the query string once the screen starts.
 const RELIEF_2D = typeof location !== "undefined" && new URLSearchParams(location.search).get("relief") === "2d";
@@ -128,10 +128,14 @@ function loadFeatures() {
         .then((d) => (d.features || []).map(f => { const [x, y] = southStereoForward(f.lat, f.lon_e); return { name: f.name, type: f.type, d: f.diameter_km, stereo_x_m: x, stereo_y_m: y }; }))
         .catch(() => []);
 }
-export async function mountTerrain(container, { sites = [], selected = null, route = [], onSelect, labels = true } = {}) {
+export async function mountTerrain(container, { sites = [], selected = null, route = [], onSelect, labels = true, progressive = false, onDraw } = {}) {
     container.classList.add("mp-terrain");
-    Object.assign(container.style, { position: "fixed", inset: "0", overflow: "hidden", background: "var(--bg)" });
-    const grid = (await loadRegion());
+    // No background yet: until a relief is drawn the page's decorative poster (moon-hd/preview.css) shows through,
+    // instead of a black box. The heights (1.4 MB) load in parallel; only the ~1 KB header is awaited here.
+    Object.assign(container.style, { position: "fixed", inset: "0", overflow: "hidden" });
+    const head = await loadRegionHeader();
+    const geo = { nx: head.nx, dx: head.spacing_m, x0: head.origin_x_m, y0: head.origin_y_m };
+    let grid = null;
     const cv = document.createElement("canvas");
     cv.setAttribute("role", "img");
     cv.setAttribute("aria-label", t("terrain.label"));
@@ -144,28 +148,38 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
     container.append(cv, labelsEl, layer);
     // Joel Moon HD relief (same LOLA grids as the 3D viewer, 80 m near the pole) under the 2D canvas, in the
     // same stereographic projection, so markers, rays and routes stay where they are. Hardware WebGL only;
-    // ?relief=2d, no WebGL or a lost context keep the original LOLA 400 m hillshade.
+    // ?relief=2d, no WebGL or a lost context keep the original LOLA 400 m hillshade. Phones get the 320 m grid
+    // only (the existing wideOnly level of detail): the 80 m grid is 8.4 MB.
     let hd = null;
     container.dataset.relief = "lola-2d";
     if (!RELIEF_2D)
         import("../../moon-hd/stereo-relief.js")
-            .then(m => m.mountStereoRelief(container, cv, () => { hd = null; container.dataset.relief = "lola-2d"; reliefKey = ""; draw(); }))
+            .then(m => m.mountStereoRelief(container, cv, () => { hd = null; container.dataset.relief = "lola-2d"; reliefKey = ""; draw(); }, { wideOnly: typeof matchMedia === "function" && matchMedia("(max-width:700px)").matches }))
             .then(r => { if (r) {
             hd = r;
             container.dataset.relief = "moonhd";
             draw();
         } })
             .catch(() => { });
+    // The 2D hillshade needs the heights: draw as soon as they arrive (a failed load keeps the poster, no map).
+    const gridP = loadRegion().then(g => { grid = g; reliefKey = ""; draw(); });
+    if (!progressive)
+        await gridP;
+    else
+        gridP.catch(() => { container.dataset.relief = "none"; });
     // view: centre (metres) and span (metres across the free area's short side).
     const xs = sites.map(s => s.stereo_x_m), ys = sites.map(s => s.stereo_y_m);
     const view = { cx: xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0, cy: ys.length ? (Math.min(...ys) + Math.max(...ys)) / 2 : 0,
-        span: xs.length ? Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * 1.6 + 30000 : grid.nx * grid.dx };
-    // Crater and mons names on the map (IAU/USGS, web/moonproof/data/features.json, label only).
-    const features = labels ? await loadFeatures() : [];
-    container.dataset.features = String(features.length);
+        span: xs.length ? Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * 1.6 + 30000 : geo.nx * geo.dx };
+    // Crater and mons names on the map (IAU/USGS, web/moonproof/data/features.json, label only), added when they arrive.
+    let features = [];
+    container.dataset.features = "0";
+    const featuresP = labels ? loadFeatures().then(f => { features = f; container.dataset.features = String(f.length); draw(); }) : null;
+    if (!progressive)
+        await featuresP;
     let lastMpp = 0, lastSx = 0, lastSy = 0, lastW = 0, lastH = 0;
     let sel = selected, focus = selected, free = null, relief = null, reliefKey = "";
-    const ext = grid.nx * grid.dx;
+    const ext = geo.nx * geo.dx;
     function frame(W, H) {
         const fr = free = freeArea(W, H, overlayRects(container));
         const fw = fr.r - fr.l, fh = fr.b - fr.t;
@@ -179,8 +193,8 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
         const place = (m) => {
             const hw = W * m / 2, hh = H * m / 2;
             let x = view.cx - (fcx - W / 2) * m, y = view.cy + (fcy - H / 2) * m;
-            x = Math.min(grid.x0 + ext - hw, Math.max(grid.x0 + hw, x));
-            y = Math.min(grid.y0 + ext - hh, Math.max(grid.y0 + hh, y));
+            x = Math.min(geo.x0 + ext - hw, Math.max(geo.x0 + hw, x));
+            y = Math.min(geo.y0 + ext - hh, Math.max(geo.y0 + hh, y));
             const px = W / 2 + (view.cx - x) / m, py = H / 2 - (view.cy - y) / m;
             return { x, y, ok: px >= fr.l && px <= fr.r && py >= fr.t && py <= fr.b };
         };
@@ -196,6 +210,10 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
         const W = container.clientWidth, H = container.clientHeight, dpr = Math.min(3, devicePixelRatio || 1);
         if (!W || !H)
             return;
+        // Nothing georeferenced is drawn before a relief exists: markers over the decorative poster would read as a map.
+        if (!grid && !hd)
+            return;
+        container.style.background = "var(--bg)";
         const { mpp, sx, sy } = frame(W, H);
         lastMpp = mpp;
         lastSx = sx;
@@ -216,7 +234,7 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
         }
         else {
             const key = [w, h, sx.toFixed(1), sy.toFixed(1), mpp.toFixed(4)].join();
-            if (key !== reliefKey) {
+            if (key !== reliefKey && grid) {
                 relief = renderRelief(grid, w, h, sx - W * mpp / 2, sy + H * mpp / 2, mpp / dpr);
                 reliefKey = key;
             }
@@ -257,6 +275,7 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
             b.append(lab);
             return b;
         }));
+        onDraw?.();
         // A marker under a panel is hidden (not focusable): the site stays reachable by the ‹ › selector.
         requestAnimationFrame(() => {
             for (const b of layer.children) {
@@ -281,7 +300,7 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
             container.dataset.labels = String(placed.length);
         });
     }
-    const api = { el: container, grid, view,
+    const api = { el: container, get grid() { return grid; }, view,
         select(id) { sel = id; focus = id; const s = sites.find(x => x.id === id); if (s) {
             view.cx = s.stereo_x_m;
             view.cy = s.stereo_y_m;

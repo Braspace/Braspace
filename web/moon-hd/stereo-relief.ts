@@ -16,7 +16,8 @@ export interface StereoRelief {
 // (x toward 0°E = screen up, z toward 90°E = screen right, y = up out of the map).
 const KEY: [number, number, number] = [0.52, 0.58, -0.62];
 
-export async function mountStereoRelief(parent: HTMLElement, before: Element | null, onLost: () => void): Promise<StereoRelief | null> {
+/** opts.wideOnly: draw the cap from the 320 m grid alone (createCap's existing lighter level of detail, used on phones). */
+export async function mountStereoRelief(parent: HTMLElement, before: Element | null, onLost: () => void, opts: { wideOnly?: boolean } = {}): Promise<StereoRelief | null> {
   const probe = probeWebGL(() => document.createElement("canvas"));
   if (!probe) return null;
   const { canvas, gl } = probe;
@@ -46,7 +47,7 @@ export async function mountStereoRelief(parent: HTMLElement, before: Element | n
     // Same ×2.2 slope exaggeration as the 2D hillshade (core/terrain shadeValue): on a flat map it only
     // steepens the shading normals; positions stay in true stereographic metres.
     moon.shared.relief.value = 2.2;
-    const cap = await S.createCap({ renderer, base, manifest, moon, segments: 384, steps: 1, wideOnly: false });
+    const cap = await S.createCap({ renderer, base, manifest, moon, segments: 384, steps: 1, wideOnly: !!opts.wideOnly });
     if (dead) { cap.mesh.geometry.dispose(); cap.mesh.material.dispose(); throw new Error("stereo relief ended"); }
     cap.mesh.material.dispose();
     const material = S.stereoCapMaterial(cap);
