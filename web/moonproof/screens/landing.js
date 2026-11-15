@@ -7,7 +7,7 @@ import { createSim, advance, telemetry, thrustDirection, DEFAULT_VEHICLE, MOON_R
 import { mountShell } from "../core/shell.js";
 import { loadSites, loadSeries, sealFor, apiOnline, DATA_BASE } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
-import { register, t, fmtNum, lang } from "../core/i18n.js";
+import { register, t, fmtNum, lang, setLang } from "../core/i18n.js";
 import { getState, setState, hrefTo } from "../core/state.js";
 import { TEXTS } from "./landing-texts.js";
 import { ASSUMED, GUIDE, localGravity, brakeHeight, guidedStep, alertFor, recommendedThrottle, fuelSeconds, fuelFrac, buildAttempt, saveAttempt, loadAttempts } from "./landing-model.js";
@@ -55,6 +55,9 @@ function seg(items, cur, onPick, label, icon) {
   for (const [v, k] of items) { const b = el("button", "", t(k)); if (icon && v === cur) b.insertAdjacentHTML("afterbegin", ico(icon, 14)); b.type = "button"; b.setAttribute("aria-pressed", String(v === cur)); b.onclick = () => onPick(v); w.append(b); }
   return w;
 }
+// The global top bar is hidden in the lab, so the language switch lives in the lab bar (same state key as the shell).
+function langBtn() { const b = el("button", "lab-round lab-lang", t("nav.lang.short")); b.type = "button"; b.setAttribute("aria-label", t("nav.lang"));
+  b.onclick = () => { const l = lang() === "en" ? "pt-BR" : "en"; setState({ lang: l }); setLang(l); build(); update(true); }; return b; }
 function round(svg, label, fn) { const b = el("button", "lab-round"); b.innerHTML = svg; b.type = "button"; b.setAttribute("aria-label", label); b.onclick = fn; return b; }
 function build() {
   document.documentElement.lang = lang();
@@ -70,7 +73,7 @@ function build() {
   $("bar").replaceChildren(back, el("i", "div"), ttl, ...(chip ? [chip] : []), meta, ...(chip ? [] : [sealSim]),
     seg([["guided", "lab.mode.guided"], ["free", "lab.mode.free"]], L.mode, v => { L.mode = v; build(); update(true); }, t("lab.mode")),
     seg(CAMS, L.cam, v => setCam(v), t("lab.cam"), ICO.cam),
-    ui.pause, round(ico(ICO.restart), t("lab.restart") + " (R)", start), round(ico(ICO.help), t("lab.help"), openHelp));
+    ui.pause, round(ico(ICO.restart), t("lab.restart") + " (R)", start), round(ico(ICO.help), t("lab.help"), openHelp), langBtn());
   // strip: phase + alert
   ui.phase = el("div", "lab-chip"); ui.clock = el("span", "mp-coord");
   ui.alert = el("div", "lab-chip lab-alert"); ui.alert.hidden = true; ui.alert.setAttribute("role", "alert");
@@ -188,10 +191,9 @@ async function start() {
   L.fuel0 = L.sim.s[6] - vehicle.dryMass; L.startAlt = telemetry(L.sim).altitudeAGL;
   L.throttleCmd = 0; L.keys = {}; L.running = true; L.step = 1; L.saved = null; L.paused = L.mode === "guided"; // guided starts at step 1, paused
   clearTimeout(L.openT);
-  L.viewer?.addLander(); L.viewer?.startFollow(); if (L.viewer) L.viewer.camMode = L.cam; L.viewer?.setSiteSky?.(...skyEnu());
+  L.viewer?.addLander(); L.viewer?.startFollow(); if (L.viewer) L.viewer.camMode = L.cam; if (L.skyEnu) L.viewer?.setSiteSky?.(...L.skyEnu);
   build(); drawTicks(); update(true);
 }
-function skyEnu() { return [null, null]; }
 function frame(dt) {
   if (!L.running || !L.sim) return;
   const k = L.keys, rate = THROTTLE_RATE * dt;
@@ -334,7 +336,7 @@ if (!okLoad) { renderEmpty(); build(); } else {
     const s = site();
     L.viewer.showSite({ tile: L.tile, horizon: L.series.horizon, layer: "natural", sunEnu: null, earthEnu: null });
     const sky = L.series.at(L.simTime);
-    if (sky) { const { azElToEnu } = await import("../../lab/coords.js"); L.viewer.setSiteSky(azElToEnu(sky.sunAz, sky.sunEl), azElToEnu(sky.earthAz, sky.earthEl)); }
+    if (sky) { const { azElToEnu } = await import("../../lab/coords.js"); L.skyEnu = [azElToEnu(sky.sunAz, sky.sunEl), azElToEnu(sky.earthAz, sky.earthEl)]; L.viewer.setSiteSky(...L.skyEnu); }
     if (L.viewer.target) { const lbl = THREE ? L.viewer.addLabel(t("lab.zone", { d: fmt(2 * ASSUMED.zoneRadiusM) }), new THREE.Vector3(ASSUMED.zoneRadiusM + 4, (L.tile.height(0, 0) || 0) + 1, 0), { cls: "zone" }) : null; L.zoneLabel = lbl; }
   } catch (e) { $("live").textContent = t("lab.nowebgl"); L.viewer = null; L.noGl = true; L.rafStop = false; (function loop(prev) { requestAnimationFrame(now => { frame(Math.min(0.5, (now - prev) / 1000)); loop(now); }); })(performance.now()); }
   await start();

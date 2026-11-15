@@ -1,0 +1,407 @@
+{
+ "source": "Gazetteer of Planetary Nomenclature, IAU/USGS, MOON_nomenclature_center_pts (public domain)",
+ "filter": "Adopted by IAU; Crater >= 20.0 km or Mons at latitude <= -80.5; every Mare and Oceanus",
+ "note": "feature centres, used as labels only",
+ "features": [
+  {
+   "name": "Amundsen",
+   "type": "Crater",
+   "lat": -84.4398,
+   "lon": 83.0691,
+   "diameter_km": 103.39,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/247"
+  },
+  {
+   "name": "Ashbrook",
+   "type": "Crater",
+   "lat": -81.1043,
+   "lon": -110.575,
+   "diameter_km": 157.68,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/422"
+  },
+  {
+   "name": "Burbidge",
+   "type": "Crater",
+   "lat": -86.35,
+   "lon": 48.6,
+   "diameter_km": 21.0,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/16250"
+  },
+  {
+   "name": "Cabeus",
+   "type": "Crater",
+   "lat": -85.3303,
+   "lon": -42.1327,
+   "diameter_km": 100.58,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/953"
+  },
+  {
+   "name": "Faustini",
+   "type": "Crater",
+   "lat": -87.1832,
+   "lon": 84.3099,
+   "diameter_km": 42.48,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/1919"
+  },
+  {
+   "name": "Haworth",
+   "type": "Crater",
+   "lat": -87.45,
+   "lon": -5.17,
+   "diameter_km": 51.42,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/14502"
+  },
+  {
+   "name": "Henson",
+   "type": "Crater",
+   "lat": -88.57,
+   "lon": -130.63,
+   "diameter_km": 43.0,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/16004"
+  },
+  {
+   "name": "Hédervári",
+   "type": "Crater",
+   "lat": -81.7719,
+   "lon": 85.6005,
+   "diameter_km": 74.14,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/2620"
+  },
+  {
+   "name": "Idel'son",
+   "type": "Crater",
+   "lat": -81.3478,
+   "lon": 112.6939,
+   "diameter_km": 59.82,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/2650"
+  },
+  {
+   "name": "Kocher",
+   "type": "Crater",
+   "lat": -84.4671,
+   "lon": -134.0244,
+   "diameter_km": 24.03,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/14535"
+  },
+  {
+   "name": "Malapert",
+   "type": "Crater",
+   "lat": -84.9998,
+   "lon": 11.4031,
+   "diameter_km": 72.38,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3603"
+  },
+  {
+   "name": "Nefed'ev",
+   "type": "Crater",
+   "lat": -81.0719,
+   "lon": 135.7723,
+   "diameter_km": 52.94,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/14538"
+  },
+  {
+   "name": "Nobile",
+   "type": "Crater",
+   "lat": -85.2752,
+   "lon": 53.2725,
+   "diameter_km": 79.27,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/4321"
+  },
+  {
+   "name": "Oberbeck",
+   "type": "Crater",
+   "lat": -83.55,
+   "lon": 68.14,
+   "diameter_km": 58.0,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/16449"
+  },
+  {
+   "name": "Scott",
+   "type": "Crater",
+   "lat": -82.3532,
+   "lon": 48.5154,
+   "diameter_km": 107.82,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/5395"
+  },
+  {
+   "name": "Shackleton",
+   "type": "Crater",
+   "lat": -89.67,
+   "lon": 129.78,
+   "diameter_km": 20.92,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/5450"
+  },
+  {
+   "name": "Shoemaker",
+   "type": "Crater",
+   "lat": -88.137,
+   "lon": 45.911,
+   "diameter_km": 51.82,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/5494"
+  },
+  {
+   "name": "Slater",
+   "type": "Crater",
+   "lat": -88.0792,
+   "lon": 111.2881,
+   "diameter_km": 25.12,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/15325"
+  },
+  {
+   "name": "Sverdrup",
+   "type": "Crater",
+   "lat": -88.3209,
+   "lon": -153.3875,
+   "diameter_km": 32.83,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/5782"
+  },
+  {
+   "name": "Whitaker",
+   "type": "Crater",
+   "lat": -84.67,
+   "lon": 0.69,
+   "diameter_km": 20.0,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/16395"
+  },
+  {
+   "name": "Wiechert",
+   "type": "Crater",
+   "lat": -84.0334,
+   "lon": 164.701,
+   "diameter_km": 40.82,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/6541"
+  },
+  {
+   "name": "de Gerlache",
+   "type": "Crater",
+   "lat": -88.4849,
+   "lon": -88.3447,
+   "diameter_km": 32.71,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/1439"
+  },
+  {
+   "name": "Mare Anguis",
+   "type": "Mare",
+   "lat": 22.4268,
+   "lon": 67.5753,
+   "diameter_km": 145.99,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3664"
+  },
+  {
+   "name": "Mare Australe",
+   "type": "Mare",
+   "lat": -47.7705,
+   "lon": 91.9854,
+   "diameter_km": 996.84,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3665"
+  },
+  {
+   "name": "Mare Cognitum",
+   "type": "Mare",
+   "lat": -10.5308,
+   "lon": -22.3144,
+   "diameter_km": 350.01,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3670"
+  },
+  {
+   "name": "Mare Crisium",
+   "type": "Mare",
+   "lat": 16.1774,
+   "lon": 59.1037,
+   "diameter_km": 555.92,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3671"
+  },
+  {
+   "name": "Mare Fecunditatis",
+   "type": "Mare",
+   "lat": -7.835,
+   "lon": 53.6691,
+   "diameter_km": 840.35,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3673"
+  },
+  {
+   "name": "Mare Frigoris",
+   "type": "Mare",
+   "lat": 57.5923,
+   "lon": -0.0064,
+   "diameter_km": 1446.41,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3674"
+  },
+  {
+   "name": "Mare Humboldtianum",
+   "type": "Mare",
+   "lat": 56.9221,
+   "lon": 81.5428,
+   "diameter_km": 230.78,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3676"
+  },
+  {
+   "name": "Mare Humorum",
+   "type": "Mare",
+   "lat": -24.4785,
+   "lon": -38.5716,
+   "diameter_km": 419.67,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3677"
+  },
+  {
+   "name": "Mare Imbrium",
+   "type": "Mare",
+   "lat": 34.7244,
+   "lon": -14.9086,
+   "diameter_km": 1145.53,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3678"
+  },
+  {
+   "name": "Mare Ingenii",
+   "type": "Mare",
+   "lat": -33.2458,
+   "lon": 164.8268,
+   "diameter_km": 282.2,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3679"
+  },
+  {
+   "name": "Mare Insularum",
+   "type": "Mare",
+   "lat": 7.792,
+   "lon": -30.6402,
+   "diameter_km": 511.93,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3680"
+  },
+  {
+   "name": "Mare Marginis",
+   "type": "Mare",
+   "lat": 12.7019,
+   "lon": 86.5153,
+   "diameter_km": 357.63,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3681"
+  },
+  {
+   "name": "Mare Moscoviense",
+   "type": "Mare",
+   "lat": 27.2816,
+   "lon": 148.1225,
+   "diameter_km": 275.57,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3682"
+  },
+  {
+   "name": "Mare Nectaris",
+   "type": "Mare",
+   "lat": -15.1852,
+   "lon": 34.6021,
+   "diameter_km": 339.39,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3683"
+  },
+  {
+   "name": "Mare Nubium",
+   "type": "Mare",
+   "lat": -20.5894,
+   "lon": -17.2872,
+   "diameter_km": 714.5,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3684"
+  },
+  {
+   "name": "Mare Orientale",
+   "type": "Mare",
+   "lat": -19.8655,
+   "lon": -94.6703,
+   "diameter_km": 294.16,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3685"
+  },
+  {
+   "name": "Mare Serenitatis",
+   "type": "Mare",
+   "lat": 27.2879,
+   "lon": 18.3596,
+   "diameter_km": 674.28,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3686"
+  },
+  {
+   "name": "Mare Smythii",
+   "type": "Mare",
+   "lat": -1.7088,
+   "lon": 87.0495,
+   "diameter_km": 373.97,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3689"
+  },
+  {
+   "name": "Mare Spumans",
+   "type": "Mare",
+   "lat": 1.3023,
+   "lon": 65.3033,
+   "diameter_km": 143.13,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3690"
+  },
+  {
+   "name": "Mare Tranquillitatis",
+   "type": "Mare",
+   "lat": 8.3487,
+   "lon": 30.8346,
+   "diameter_km": 875.75,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3691"
+  },
+  {
+   "name": "Mare Undarum",
+   "type": "Mare",
+   "lat": 7.4912,
+   "lon": 68.6589,
+   "diameter_km": 244.84,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3693"
+  },
+  {
+   "name": "Mare Vaporum",
+   "type": "Mare",
+   "lat": 13.2,
+   "lon": 4.09,
+   "diameter_km": 242.46,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/3694"
+  },
+  {
+   "name": "Mons Amundsen",
+   "type": "Mons",
+   "lat": -82.57,
+   "lon": 75.71,
+   "diameter_km": 38.0,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/16397"
+  },
+  {
+   "name": "Mons Cabeus",
+   "type": "Mons",
+   "lat": -83.67,
+   "lon": -36.16,
+   "diameter_km": 43.0,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/16396"
+  },
+  {
+   "name": "Mons Kocher",
+   "type": "Mons",
+   "lat": -85.46,
+   "lon": -118.06,
+   "diameter_km": 67.0,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/16394"
+  },
+  {
+   "name": "Mons Malapert",
+   "type": "Mons",
+   "lat": -85.98,
+   "lon": -1.67,
+   "diameter_km": 67.0,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/16338"
+  },
+  {
+   "name": "Mons Mouton",
+   "type": "Mons",
+   "lat": -84.6,
+   "lon": 31.0,
+   "diameter_km": 130.0,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/16070"
+  },
+  {
+   "name": "Oceanus Procellarum",
+   "type": "Oceanus",
+   "lat": 20.6714,
+   "lon": -56.6774,
+   "diameter_km": 2592.24,
+   "url": "https://planetarynames.wr.usgs.gov/Feature/4395"
+  }
+ ]
+}

@@ -1,14 +1,18 @@
 import { mountShell } from "../core/shell.js";
+import { holdReady, markReady } from "../core/ready.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, windowMetrics, api, sealFor } from "../core/data.js";
+import { loadSites, loadSeries, siteMetric, api, sealFor } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
 import { register, t, fmtNum } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo, DEFAULT_RULES } from "../core/state.js";
-import { parseRules, shareUrl, shortVersion } from "./plan-model.js";
+import { parseRules, shareUrl, shortVersion, ruleEffects, compareScenarios, compareBody, compareOutcome, computePlan, violates, hourlyRows, seriesStepH, observerHeightM,
+  csvDocument, jsonDocument, passportHtml } from "./plan-model.js";
 import { pickVersion, parseConfigCommit } from "./evidence-model.js";
+import { H1_PROFILE, runScenario } from "./cockpit-model.js";
 
 register({
   en: {
+    "plan.h1": "Planning Kit",
     "plan.title": "Mission rules",
     "plan.editable": "editable · assumed limit",
     "plan.night": "Max night",
@@ -21,11 +25,42 @@ register({
     "plan.sunLimb": "upper limb",
     "plan.step": "Calculation step",
     "plan.recalc": "Recalculate 3 scenarios",
-    "plan.ruleNote": "Changing a rule creates a new scenario; the original stays saved.",
+    "plan.ruleNote": "Changing a rule recalculates the table. Nothing is saved: the link below reopens the calculation with these rules.",
+    "plan.noEffect": "no effect",
+    "plan.applied": "applied in the calculation",
+    "plan.infoMast": "No effect on this calculation: the stored series was computed for an observer at {h} m; another mast height needs a new terrain run.",
+    "plan.infoSun": "No effect on this calculation: the stored series uses the center of the Sun's disk; the upper limb needs a new run.",
+    "plan.infoSlope": "No effect on this calculation: no site in the data has slope, so the row shows no data.",
+    "plan.ctxScenarios": "{n} scenarios",
+    "plan.openEvidence": "Open in Evidence",
+    "plan.apiRejected": "The API refused this window ({e}). The values below come from the local series.",
+    "plan.apiPartial": "The API has no data for: {s}. The values below come from the local series.",
+    "plan.apiOffline": "API offline: the values come from the local series and the battery margin needs the API.",
+    "plan.batteryNd": "Battery margin: the API gave no simulation for this window.",
+    "plan.uncTip": "One calculation step (grid resolution). It does not include model uncertainty, which is not quantified.",
+    "plan.csvWarn": "No hourly series for this window (outside the computed range)",
+    "plan.popup": "The browser blocked the print window; the passport was saved as an HTML file you can open and print.",
+    "plan.pTitle": "Planning passport",
+    "plan.pHow": "Use the browser print dialog and choose Save as PDF. This page is not a certified document.",
+    "plan.pGenerated": "Generated",
+    "plan.pLink": "Link",
+    "plan.pRules": "Rules and assumed limits",
+    "plan.pValue": "Value",
+    "plan.pEffect": "Effect",
+    "plan.pScenarios": "Scenarios",
+    "plan.pLimits": "Limits",
+    "plan.pPower": "Power profile (assumed, battery margin only)",
+    "plan.pPowerValue": "capacity {cap} Wh · initial charge {ini} Wh · solar {sol} W · load {load} W",
+    "plan.pOrigin": "Data origin",
+    "plan.lim1": "The data is preliminary and has no independent verification.",
+    "plan.lim2": "Visibility is geometric (Sun and Earth above the local horizon); it is not a radio link and not a power model.",
+    "plan.lim3": "Rules are assumed limits chosen by the user, not mission requirements.",
+    "plan.lim4": "The battery margin comes from a simulation with a hypothetical power profile; it is not flight software.",
+    "plan.scenario": "Scenario {L}",
     "plan.exportTitle": "Export & reproduce",
     "plan.csv": "CSV · hourly",
     "plan.json": "JSON",
-    "plan.pdf": "PDF Passport",
+    "plan.print": "Print / save as PDF",
     "plan.version": "Plan version",
     "plan.urlNote": "The link reopens this exact calculation with the same rules and version.",
     "plan.tableTitle": "All metrics · Proof layer",
@@ -47,6 +82,7 @@ register({
     "plan.noSource": "no source"
   },
   "pt-BR": {
+    "plan.h1": "Kit Planejamento",
     "plan.title": "Regras da missão",
     "plan.editable": "editáveis · limite assumido",
     "plan.night": "Noite máxima",
@@ -59,11 +95,42 @@ register({
     "plan.sunLimb": "borda superior",
     "plan.step": "Passo de cálculo",
     "plan.recalc": "Recalcular 3 cenários",
-    "plan.ruleNote": "Mudar uma regra gera um cenário novo; o original fica salvo.",
+    "plan.ruleNote": "Mudar uma regra recalcula a tabela. Nada é salvo: o link abaixo reabre o cálculo com estas regras.",
+    "plan.noEffect": "sem efeito",
+    "plan.applied": "aplicada no cálculo",
+    "plan.infoMast": "Sem efeito neste cálculo: a série gravada foi calculada para um observador a {h} m; outra altura de mastro exige novo cálculo do relevo.",
+    "plan.infoSun": "Sem efeito neste cálculo: a série gravada usa o centro do disco do Sol; a borda superior exige novo cálculo.",
+    "plan.infoSlope": "Sem efeito neste cálculo: nenhum local dos dados tem declividade, então a linha fica sem dado.",
+    "plan.ctxScenarios": "{n} cenários",
+    "plan.openEvidence": "Abrir em Evidência",
+    "plan.apiRejected": "A API recusou esta janela ({e}). Os valores abaixo vêm da série local.",
+    "plan.apiPartial": "A API não tem dados para: {s}. Os valores abaixo vêm da série local.",
+    "plan.apiOffline": "API offline: os valores vêm da série local e a folga da bateria precisa da API.",
+    "plan.batteryNd": "Folga da bateria: a API não devolveu simulação para esta janela.",
+    "plan.uncTip": "Um passo de cálculo (resolução da grade). Não inclui a incerteza do modelo, que não foi quantificada.",
+    "plan.csvWarn": "Sem série horária para esta janela (fora do intervalo calculado)",
+    "plan.popup": "O navegador bloqueou a janela de impressão; o passaporte foi salvo como arquivo HTML que você pode abrir e imprimir.",
+    "plan.pTitle": "Passaporte do plano",
+    "plan.pHow": "Use a janela de impressão do navegador e escolha Salvar como PDF. Esta página não é documento certificado.",
+    "plan.pGenerated": "Gerado em",
+    "plan.pLink": "Link",
+    "plan.pRules": "Regras e limites assumidos",
+    "plan.pValue": "Valor",
+    "plan.pEffect": "Efeito",
+    "plan.pScenarios": "Cenários",
+    "plan.pLimits": "Limites",
+    "plan.pPower": "Perfil de energia (assumido, só para a folga da bateria)",
+    "plan.pPowerValue": "capacidade {cap} Wh · carga inicial {ini} Wh · solar {sol} W · consumo {load} W",
+    "plan.pOrigin": "Origem dos dados",
+    "plan.lim1": "Os dados são preliminares e não foram validados de forma independente.",
+    "plan.lim2": "A visibilidade é geométrica (Sol e Terra acima do horizonte local); não é enlace de rádio nem modelo de energia.",
+    "plan.lim3": "As regras são limites assumidos pelo usuário, não requisitos de missão.",
+    "plan.lim4": "A folga da bateria vem de uma simulação com perfil de energia hipotético; não é software de voo.",
+    "plan.scenario": "Cenário {L}",
     "plan.exportTitle": "Exportar e reproduzir",
     "plan.csv": "CSV · hora a hora",
     "plan.json": "JSON",
-    "plan.pdf": "Passaporte PDF",
+    "plan.print": "Imprimir / salvar como PDF",
     "plan.version": "Versão do plano",
     "plan.urlNote": "O link reabre exatamente este cálculo, com as mesmas regras e a mesma versão.",
     "plan.tableTitle": "Todas as métricas · camada Prova",
@@ -86,12 +153,18 @@ register({
   }
 });
 
+
 const shell = mountShell({ screen: "compare", onLang: draw });
+holdReady();
 const doc = await loadSites();
-const scenarios = doc.sites.slice(0, 3);
+const siteOf = (id) => doc.sites.find((s) => s.id === id);
+// The three scenarios are the ones Compare shows (#sc= in the link, else its derived defaults), each with its own site, start and duration.
+const st0 = getState();
+const scenarios = compareScenarios({ hash: location.hash, sites: doc.sites, start: st0.start, hours: st0.hours || 14 * 24, windowStart: doc.window.start_utc });
+const seriesList = await Promise.all(scenarios.map((sc) => loadSeries(siteOf(sc.site)).catch(() => null)));
 const terrain = await mountTerrain(document.getElementById("terrain"), {
   sites: doc.sites,
-  selected: getState().site || scenarios[1]?.id,
+  selected: getState().site || scenarios[1]?.site || scenarios[0]?.site,
   onSelect: (id) => setState({ site: id })
 });
 
@@ -116,103 +189,72 @@ function downloadFile(filename, content, mime) {
   URL.revokeObjectURL(a.href);
 }
 
-async function computeRows() {
-  const st = getState();
-  const hours = st.hours || 336;
-  const live = await api("/api/compare", {
-    method: "POST",
-    body: { sites: scenarios.map((s) => s.id), start: st.start, hours }
-  });
-  const metrics = await Promise.all(scenarios.map((s) => windowMetrics(doc, s, st.start, hours)));
-  const evals = await Promise.all(
-    scenarios.map((s) =>
-      api("/api/onboard/site-evaluate", {
-        method: "POST",
-        body: { site_id: s.id, max_night_h: rulesDraft.night, max_blackout_h: rulesDraft.blackout, battery_floor_pct: rulesDraft.battery }
-      })
-    )
-  );
+// One computation per set of rules (the language switch and terrain clicks only redraw). Energy inputs: the declared hypothetical profile + the battery-floor rule.
+let memo = { key: "", val: null };
+function compute() {
+  const key = JSON.stringify(rulesDraft);
+  if (memo.key === key) return memo.val;
+  const first = scenarios[0];
+  const sameWindow = scenarios.filter((sc) => sc.start === first.start && sc.hours === first.hours).map((sc) => sc.site);
+  const body = compareBody({ siteIds: sameWindow, startIso: first.start, hours: first.hours });
+  const entries = scenarios.map((sc, i) => ({ site: siteOf(sc.site), start: sc.start, hours: sc.hours, series: seriesList[i] }));
+  const val = (async () => {
+    const outcome = compareOutcome(body ? await api("/api/compare", { method: "POST", body }) : null);
+    const calc = await computePlan({ status: doc.status, entries, rules: rulesDraft, power: { ...H1_PROFILE }, call: api, run: runScenario,
+      online: outcome.state !== "offline", slopeOf: (s) => siteMetric(doc, s, "slope_deg", "°").value });
+    return { outcome, calc, entries };
+  })();
+  memo = { key, val };
+  return val;
+}
 
-  const rows = [
-    {
-      label: t("plan.mNight"), unit: "h",
-      vals: metrics.map((m) => m.longestDarkH.value),
-      rule: `≤ ${rulesDraft.night}`,
-      check: (v) => v <= rulesDraft.night,
-      best: "min",
-      margin: metrics[1]?.longestDarkH.value != null ? rulesDraft.night - metrics[1].longestDarkH.value : null,
-      unc: "±1", status: doc.status
-    },
-    {
-      label: t("plan.mBlackout"), unit: "h",
-      vals: metrics.map((m) => m.longestBlackoutH.value),
-      rule: `≤ ${rulesDraft.blackout}`,
-      check: (v) => v <= rulesDraft.blackout,
-      best: "min",
-      margin: metrics[1]?.longestBlackoutH.value != null ? rulesDraft.blackout - metrics[1].longestBlackoutH.value : null,
-      unc: "±1", status: doc.status
-    },
-    {
-      label: t("plan.mSun"), unit: "%",
-      vals: metrics.map((m) => m.sunPct.value),
-      rule: t("nd"), check: null, best: "max", margin: null,
-      unc: "±0.3", status: doc.status
-    },
-    {
-      label: t("plan.mEarth"), unit: "%",
-      vals: metrics.map((m) => m.earthPct.value),
-      rule: t("nd"), check: null, best: "max", margin: null,
-      unc: "±0.3", status: doc.status
-    },
-    {
-      label: t("plan.mBattery"), unit: "h",
-      vals: evals.map((e) => (e.ok && e.data?.battery_margin_h != null ? e.data.battery_margin_h : null)),
-      rule: `≥ 0`,
-      check: (v) => v >= 0,
-      best: "max",
-      margin: evals[1]?.ok && evals[1].data?.battery_margin_h != null ? evals[1].data.battery_margin_h : null,
-      unc: "SIM", status: "SYNTHETIC"
-    },
-    {
-      label: t("plan.mSlope"), unit: "°",
-      vals: scenarios.map((s) => s.metrics?.slope_deg ?? null),
-      rule: `≤ ${rulesDraft.slope}`,
-      check: (v) => v <= rulesDraft.slope,
-      best: "min",
-      margin: scenarios[1]?.metrics?.slope_deg != null ? rulesDraft.slope - scenarios[1].metrics.slope_deg : null,
-      unc: "DEM", status: doc.status
-    },
-    {
-      label: t("plan.mRough"), unit: t("nd"),
-      vals: [null, null, null],
-      rule: t("nd"), check: null, best: null, margin: null,
-      unc: t("plan.noSource"), status: "NOT_COMPUTED"
-    }
-  ];
-  return { live, metrics, rows };
+const ROW_LABEL = { night: "plan.mNight", blackout: "plan.mBlackout", sun: "plan.mSun", earth: "plan.mEarth", battery: "plan.mBattery", slope: "plan.mSlope", rough: "plan.mRough" };
+const num = (v) => fmtNum(v, Number.isInteger(v) ? 0 : 1);
+/** Strings and classes of one row, shared by the table and the printable passport. */
+function view(r) {
+  const nd = t("nd"), digits = r.id === "battery" ? 1 : 0;
+  const valid = r.vals.filter((v) => v != null);
+  const bestVal = r.best && valid.length ? (r.best === "min" ? Math.min(...valid) : Math.max(...valid)) : null;
+  const cells = r.vals.map((v) => (v == null ? { text: nd, cls: "" }
+    : { text: fmtNum(v, digits), cls: violates(r, v) ? "mp-val-bad" : v === bestVal ? "mp-val-best" : "" }));
+  return {
+    label: t(ROW_LABEL[r.id]), unit: r.unit == null ? nd : r.unit === "deg" ? "°" : r.unit, cells,
+    rule: r.limit ? `${r.limit.kind === "max" ? "≤" : "≥"} ${num(r.limit.value)}` : nd,
+    margin: r.margin == null ? nd : (r.margin >= 0 ? `+${fmtNum(r.margin, digits)}` : fmtNum(r.margin, digits)),
+    unc: r.unc?.value == null ? nd : `±${num(r.unc.value)}`,
+    seal: sealFor(r.status)
+  };
 }
 
 async function draw() {
-  const st = getState();
-  const { live, metrics, rows } = await computeRows();
+  document.getElementById("plan-h1").textContent = t("plan.h1");
+  document.title = `MoonProof · ${t("plan.h1")}`;
+  const { outcome, calc, entries } = await compute();
+  const effects = ruleEffects({ hasSlopeData: calc.hasSlopeData });
+  const firstSeries = seriesList.find(Boolean);
+  const first = scenarios[0];
   shell.setContext({
-    site: `${scenarios.length} cenários`,
-    date: (st.start || "2027-03-14T06:00:00Z").slice(0, 10),
-    days: fmtNum((st.hours || 336) / 24),
+    site: t("plan.ctxScenarios", { n: fmtNum(scenarios.length) }),
+    date: (first.start || "").slice(0, 10) || t("nd"),
+    days: fmtNum(first.hours / 24),
     seal: sealFor(doc.status),
-    online: live.ok,
-    action: { label: t("plan.pdf"), href: hrefTo("evidence.html") }
+    online: outcome.state === "ok" || outcome.state === "partial",
+    action: { label: t("plan.openEvidence"), href: hrefTo("evidence.html") }
   });
 
+  // A rule that does not change the numbers says so: a short tag, the reason for hover, and the same text for screen readers.
+  const infoText = { mast: t("plan.infoMast", { h: num(observerHeightM(firstSeries)) }), sunMode: t("plan.infoSun"), slope: t("plan.infoSlope") };
+  const info = (k) => (effects[k] === "info" ? ` <em class="mp-rule-info" title="${infoText[k]}">${t("plan.noEffect")}</em><span class="sr-only">${infoText[k]}</span>` : "");
   const rulesEl = document.getElementById("plan-rules");
   rulesEl.innerHTML = `
     <div class="mp-plan-head"><h2>${t("plan.title")}</h2><span class="mp-plan-tag">${t("plan.editable")}</span></div>
     <label class="mp-rule-row"><span>${t("plan.night")}</span><input id="r-night" type="number" value="${rulesDraft.night}"><span>h</span></label>
     <label class="mp-rule-row"><span>${t("plan.blackout")}</span><input id="r-blackout" type="number" value="${rulesDraft.blackout}"><span>h</span></label>
     <label class="mp-rule-row"><span>${t("plan.battery")}</span><input id="r-battery" type="number" value="${rulesDraft.battery}"><span>%</span></label>
-    <label class="mp-rule-row"><span>${t("plan.mast")}</span><input id="r-mast" type="number" value="${rulesDraft.mast}"><span>m</span></label>
-    <label class="mp-rule-row"><span>${t("plan.slope")}</span><input id="r-slope" type="number" value="${rulesDraft.slope}"><span>°</span></label>
-    <label class="mp-rule-select"><span>${t("plan.sunMode")}</span>
+    <label class="mp-rule-row"><span>${t("plan.mast")}${info("mast")}</span><input id="r-mast" type="number" value="${rulesDraft.mast}"><span>m</span></label>
+    <label class="mp-rule-row"><span>${t("plan.slope")}${info("slope")}</span><input id="r-slope" type="number" value="${rulesDraft.slope}"><span>°</span></label>
+    <div class="mp-plan-sep" role="presentation"></div>
+    <label class="mp-rule-select"><span>${t("plan.sunMode")}${info("sunMode")}</span>
       <select id="r-sun">
         <option value="center" ${rulesDraft.sunMode === "center" ? "selected" : ""}>${t("plan.sunCenter")}</option>
         <option value="limb" ${rulesDraft.sunMode === "limb" ? "selected" : ""}>${t("plan.sunLimb")}</option>
@@ -239,41 +281,39 @@ async function draw() {
     setState({ night: rulesDraft.night, blackout: rulesDraft.blackout, battery: rulesDraft.battery, layer: "proof" });
   });
 
-  // The page URL itself carries the scenario, rules= and v=, so a reload reproduces this calculation.
+  // The page URL itself carries the scenario, rules= and v=, so a reload reproduces this calculation (nothing is stored).
   const shareHref = shareUrl(location.href, rulesDraft, version?.value);
   history.replaceState(null, "", new URL(shareHref).search + location.hash);
   const exportEl = document.getElementById("plan-export");
   exportEl.innerHTML = `
-    <div class="mp-plan-head"><h2>${t("plan.exportTitle")}</h2></div>
+    <div class="mp-plan-head"><h2>${t("plan.exportTitle")}</h2><p class="mp-note mp-version"><span>${t("plan.version")}</span> <b>${shortVersion(version?.value) ?? t("nd")}</b><span class="mp-version-seal"></span></p></div>
     <div class="mp-export-actions">
       <button id="btn-csv" class="mp-btn-white" type="button">${t("plan.csv")}</button>
       <button id="btn-json" class="mp-btn-white" type="button">${t("plan.json")}</button>
-      <button id="btn-pdf" class="mp-btn-white" type="button">${t("plan.pdf")}</button>
+      <button id="btn-pdf" class="mp-btn-white" type="button">${t("plan.print")}</button>
     </div>
     <div class="mp-url-box" id="plan-url">${shareHref}</div>
-    <p class="mp-note mp-version"><span>${t("plan.version")}</span> <b>${shortVersion(version?.value) ?? t("nd")}</b><span class="mp-version-seal"></span></p>
     <p class="mp-note">${t("plan.urlNote")}</p>
   `;
 
   if (!version) exportEl.querySelector(".mp-version-seal").appendChild(sealEl("N/D"));
+
+  // Exports use the real hourly series of each scenario at the series step, whatever the calculation step.
+  const serStep = seriesStepH(firstSeries);
+  const exportScenarios = () => entries.map((e) => ({ siteId: e.site.id, siteName: e.site.name, start: e.start, hours: e.hours,
+    sha256: e.series?.meta?.series?.sha256 ?? null, rows: e.series ? hourlyRows(e.series, Date.parse(e.start), e.hours, seriesStepH(e.series)) : null }));
   exportEl.querySelector("#btn-csv").addEventListener("click", () => {
-    const header = "site,hour_idx,sun,earth";
-    const lines = [header];
-    metrics.forEach((m, idx) => {
-      const s = scenarios[idx];
-      (m.series || []).slice(0, 48).forEach((pt, h) => {
-        lines.push(`${s.id},${h},${pt.sun ?? ""},${pt.earth ?? ""}`);
-      });
-    });
-    downloadFile("moonproof-plan.csv", lines.join("\n"), "text/csv");
+    downloadFile("moonproof-plan.csv", csvDocument({ scenarios: exportScenarios(), stepH: serStep, status: doc.status, nd: "N/D", warning: t("plan.csvWarn") }), "text/csv");
   });
   exportEl.querySelector("#btn-json").addEventListener("click", () => {
-    downloadFile("moonproof-plan.json", JSON.stringify({ rules: rulesDraft, scenarios: scenarios.map((s) => s.id), rows }, null, 2), "application/json");
+    const out = jsonDocument({ rules: { ...rulesDraft }, effects, power: { ...H1_PROFILE }, scenarios: exportScenarios(), rows: calc.rows, calcStepH: calc.stepH,
+      seriesStep: serStep, status: doc.status, version: version?.value, link: shareHref, generatedAt: new Date().toISOString(), warning: t("plan.csvWarn") });
+    downloadFile("moonproof-plan.json", JSON.stringify(out, null, 2), "application/json");
   });
-  exportEl.querySelector("#btn-pdf").addEventListener("click", () => {
-    window.open(hrefTo("evidence.html") + "&print=1", "_blank", "noopener");
-  });
+  exportEl.querySelector("#btn-pdf").addEventListener("click", () => printPassport(shareHref));
 
+  const sites = new Set(entries.map((e) => e.site.id));
+  const colSub = (e) => `${e.site.n} · ${e.site.name}${sites.size < entries.length ? ` · ${e.start.slice(0, 10)}` : ""}`;
   const tableEl = document.getElementById("plan-table");
   tableEl.innerHTML = `
     <div class="mp-plan-head"><h2>${t("plan.tableTitle")}</h2><span class="mp-note">${t("plan.legend")}</span></div>
@@ -282,7 +322,7 @@ async function draw() {
         <thead>
           <tr>
             <th>${t("plan.colMetric")}</th><th>${t("plan.colUnit")}</th>
-            ${scenarios.map((s, i) => `<th scope="col" title="${s.n} · ${s.name}"><span class="mp-col-letter">${String.fromCharCode(65 + i)}</span><small class="mp-col-site">${s.n} · ${s.name}</small></th>`).join("")}
+            ${entries.map((e, i) => `<th scope="col" title="${e.site.n} · ${e.site.name} · ${e.start.slice(0, 10)} · ${fmtNum(e.hours)} h"><span class="mp-col-letter">${String.fromCharCode(65 + i)}</span><small class="mp-col-site">${colSub(e)}</small></th>`).join("")}
             <th>${t("plan.colRule")}</th><th>${t("plan.colMargin")}</th>
             <th>${t("plan.colUnc")}</th><th>${t("plan.colOrigin")}</th>
           </tr>
@@ -291,24 +331,47 @@ async function draw() {
       </table>
     </div>
   `;
+  const batteryRow = calc.rows.find((r) => r.id === "battery");
+  const note = outcome.state === "rejected" ? t("plan.apiRejected", { e: outcome.error || t("nd") })
+    : outcome.state === "partial" ? t("plan.apiPartial", { s: outcome.unavailable.join(", ") || t("nd") })
+    : outcome.state === "offline" ? t("plan.apiOffline")
+    : batteryRow.vals.some((v) => v != null) ? "" : t("plan.batteryNd");
+  if (note) {
+    const p = document.createElement("p");
+    p.className = "mp-note mp-plan-status"; p.setAttribute("role", "status"); p.textContent = note;
+    tableEl.querySelector(".mp-plan-head").after(p);
+  }
   const tbody = tableEl.querySelector("#plan-tbody");
-  for (const r of rows) {
+  for (const r of calc.rows) {
+    const v = view(r);
     const tr = document.createElement("tr");
-    const validVals = r.vals.filter((v) => v != null);
-    const bestVal = r.best && validVals.length ? (r.best === "min" ? Math.min(...validVals) : Math.max(...validVals)) : null;
-    const cells = r.vals.map((v) => {
-      if (v == null) return `<td>${t("nd")}</td>`;
-      const bad = r.check && !r.check(v);
-      const best = !bad && bestVal != null && v === bestVal;
-      const cls = bad ? "mp-val-bad" : best ? "mp-val-best" : "";
-      return `<td class="${cls}">${fmtNum(v)}</td>`;
-    }).join("");
-    const marginText = r.margin == null ? t("nd") : (r.margin >= 0 ? `+${fmtNum(r.margin)}` : fmtNum(r.margin));
-    tr.innerHTML = `<td>${r.label}</td><td>${r.unit}</td>${cells}<td>${r.rule}</td><td>${marginText}</td><td>${r.unc}</td><td class="mp-seal-cell"></td>`;
-    tr.querySelector(".mp-seal-cell").appendChild(sealEl(sealFor(r.status)));
+    tr.innerHTML = `<td>${v.label}</td><td>${v.unit}</td>${v.cells.map((c) => `<td class="${c.cls}">${c.text}</td>`).join("")}<td>${v.rule}</td><td>${v.margin}</td><td title="${t("plan.uncTip")}">${v.unc}</td><td class="mp-seal-cell"></td>`;
+    tr.querySelector(".mp-seal-cell").appendChild(sealEl(v.seal));
     tbody.appendChild(tr);
+  }
+
+  // Printable passport: a local HTML page for the browser's print dialog ("Save as PDF"). No server, no PDF engine.
+  function printPassport(link) {
+    const unitOf = { night: "h", blackout: "h", battery: "%", mast: "m", slope: "°" };
+    const effectText = (k) => (effects[k] === "info" ? infoText[k] ?? t("plan.noEffect") : t("plan.applied"));
+    const rules = ["night", "blackout", "battery", "mast", "slope"].map((k) => ({ label: t("plan." + k), value: `${num(rulesDraft[k])} ${unitOf[k]}`, effect: effectText(k) }));
+    rules.push({ label: t("plan.sunMode"), value: t(rulesDraft.sunMode === "limb" ? "plan.sunLimb" : "plan.sunCenter"), effect: effectText("sunMode") });
+    rules.push({ label: t("plan.step"), value: `${num(rulesDraft.step)} h`, effect: effectText("step") });
+    rules.push({ label: t("plan.pPower"), value: t("plan.pPowerValue", { cap: fmtNum(H1_PROFILE.battery_capacity_wh), ini: fmtNum(H1_PROFILE.initial_charge_wh), sol: fmtNum(H1_PROFILE.solar_generation_w), load: fmtNum(H1_PROFILE.load_w) }), effect: t("plan.applied") });
+    const L = { title: t("plan.pTitle"), how: t("plan.pHow"), print: t("plan.print"), version: t("plan.version"), generated: t("plan.pGenerated"), origin: t("plan.pOrigin"), link: t("plan.pLink"),
+      rules: t("plan.pRules"), value: t("plan.pValue"), effect: t("plan.pEffect"), scenarios: t("plan.pScenarios"), limits: t("plan.pLimits"),
+      colMetric: t("plan.colMetric"), colUnit: t("plan.colUnit"), colRule: t("plan.colRule"), colMargin: t("plan.colMargin"), colUnc: t("plan.colUnc"), colOrigin: t("plan.colOrigin") };
+    const html = passportHtml({ lang: document.documentElement.lang || "en", L, version: shortVersion(version?.value) ?? t("nd"), link, generatedAt: new Date().toISOString(),
+      origin: `${sealFor(doc.status)} · ${doc.status ?? t("nd")}`, rules,
+      columns: entries.map((e, i) => ({ head: String.fromCharCode(65 + i), sub: `${e.site.n} · ${e.site.name} · ${e.start.slice(0, 10)} · ${fmtNum(e.hours)} h` })),
+      rows: calc.rows.map((r) => { const v = view(r); return { label: v.label, unit: v.unit, cells: v.cells.map((c) => c.text), rule: v.rule, margin: v.margin, unc: v.unc, seal: v.seal }; }),
+      limits: [t("plan.lim1"), t("plan.lim2"), t("plan.lim3"), t("plan.lim4")] });
+    const w = window.open("", "_blank");
+    if (!w) { downloadFile("moonproof-plan-passport.html", html, "text/html"); window.alert(t("plan.popup")); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+    w.focus(); setTimeout(() => w.print(), 300);
   }
 }
 
 onState(() => draw());
-draw();
+draw().finally(markReady);

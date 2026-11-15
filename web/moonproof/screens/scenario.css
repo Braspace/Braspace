@@ -142,3 +142,12 @@
   .mp-actions .mp-pill.is-sim{background:rgba(5,6,7,.7);color:#F2F4F5;border:1px solid rgba(255,255,255,.28)}
   .mp-diff .grp small{font-size:12px}
 }
+
+/* UX audit: at 375-390 px the fixed dock measured 418 px and cut its first and last buttons. */
+@media (max-width:700px){
+  .mp-scn-dock{max-width:calc(100vw - 16px);box-sizing:border-box;flex-wrap:nowrap}
+  .mp-scn-dock>*{flex:0 1 auto;min-width:0}
+  .mp-scn-dock .mp-pill:not(select){min-width:44px;padding:0 10px}
+  .mp-scn-dock select.mp-pill{min-width:0;flex:1 1 120px;text-overflow:ellipsis}
+}
+.mp-nearby{margin-top:13px;border-top:1px solid var(--line);padding-top:8px}.mp-nearby-row{margin:4px 0;font-size:13px}.mp-nearby-row .is-ok{color:var(--jade)}.mp-nearby-row .is-fail{color:var(--fail-text)}

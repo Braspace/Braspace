@@ -2,7 +2,9 @@
    Reference: ref/front/heloisa-telas A-mission-control, S-design-system, M1 (design @lisanogueira). */
 .mp-pill{display:inline-flex;align-items:center;justify-content:center;gap:var(--s1);min-height:var(--touch);padding:0 18px;border-radius:var(--r-pill);border:1px solid var(--line-2);background:var(--glass);-webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);color:var(--text);font-weight:500;font-size:14px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background-color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease),transform var(--t-fast) var(--ease)}
 .mp-pill:active{transform:scale(.98)}
-.mp-pill svg{flex:none}
+/* Shared icons (core/icons.js) carry width/height 24: pills size them here. */
+.mp-pill svg{flex:none;width:17px;height:17px}
+.mp-pill.is-round svg{width:20px;height:20px}
 .mp-pill.is-round{width:var(--touch);padding:0;font-size:18px}
 .mp-pill:hover{border-color:rgba(255,255,255,.32)}
 .mp-pill[aria-current="page"],.mp-pill[aria-pressed="true"],.mp-pill.is-primary{background:var(--jade);color:var(--jade-text);border-color:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
@@ -20,7 +22,7 @@
 .mp-seal[data-seal="EST"]{border-style:dashed}
 .mp-seal[data-seal="SIM"]{border-color:var(--sim);color:var(--sim);background:repeating-linear-gradient(135deg,rgba(180,140,242,.22) 0 3px,transparent 3px 6px)}
 .mp-seal[data-seal="N/D"]{border-color:var(--unknown);color:var(--unknown);background:repeating-linear-gradient(135deg,rgba(128,140,153,.2) 0 3px,transparent 3px 6px)}
-.mp-seal[data-seal="FALHA"]{background:var(--fail);border-color:var(--fail);color:#fff}
+.mp-seal[data-seal="FALHA"]{background:var(--fail);border-color:var(--fail-text);color:#fff}
 .mp-seal[data-seal="FALHA"]::before{content:"✕ "}
 /* Long origin states break only at "_" (layers.js inserts <wbr>), never mid-word. */
 .mp-proof td.mp-state{overflow-wrap:normal;word-break:normal}
@@ -89,6 +91,10 @@
 .mp-marker[aria-pressed="true"]{border-color:var(--jade);box-shadow:0 0 0 7px rgba(46,196,160,.25),0 0 30px rgba(46,196,160,.6)}
 .mp-marker-label{position:absolute;top:52px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:12.5px;font-weight:700;padding:4px 11px;border-radius:var(--r-pill);background:rgba(5,6,7,.8);pointer-events:none}
 .mp-marker[aria-pressed="true"] .mp-marker-label{background:var(--jade);color:var(--jade-text)}
+/* IAU/USGS crater and mons names over the terrain (core/terrain.js): plain text, no box, never clickable. */
+.mp-terrain-labels{position:absolute;inset:0;pointer-events:none}
+.mp-feature{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:12.5px;font-weight:500;color:rgba(242,244,245,.82);text-shadow:0 1px 3px rgba(0,0,0,.85)}
+.mp-feature[data-type="Mons"]{font-style:italic}
 .mp-help-pop{position:fixed;z-index:30;top:calc(var(--margin) + var(--touch) + 8px);right:var(--margin);width:300px;padding:var(--s2) var(--s3);animation:mp-in var(--t) var(--ease)}
 .mp-help-pop p{margin:var(--s1) 0;display:flex;align-items:center;gap:var(--s1);color:var(--text-2);font-size:13px}
 /* Fidelity audit A/B/Entry (items 5-13, 15), measured against the @lisanogueira canvas. */
@@ -135,3 +141,19 @@ button,input,select,textarea{font:inherit;color:inherit}
 .mp-entry-skip{padding:0 12px}
 .mp-sat span,.mp-stat small{font-size:max(10px,1em)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}}
+/* Contrast audit (14/11): the declared .58 glass measured 0.44 on the boards; over light relief that
+   left secondary text at 2.3:1. Glass is now .72 (4.7:1 worst case); failure text uses a lighter red;
+   the FALHA seal's fill passes 4.5:1 with white text. */
+.mp-seal[data-seal="FALHA"]{background:var(--fail-fill);border-color:var(--fail-fill)}
+/* UX audit: a panel marked [data-mp-sheet] that already lives inside a screen's own phone sheet
+   (Mission .mc-panels, Cockpit .mp-sheet, Explore .ex-sheet) must not become a second fixed sheet on top. */
+@media (max-width:700px){
+  :is(.mp-sheet,.mc-panels,.ex-sheet) [data-mp-sheet]{position:static!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;width:auto!important;height:auto!important;max-height:none!important;overflow:visible;background:transparent;border:0;border-radius:0}
+  :is(.mp-sheet,.mc-panels,.ex-sheet) [data-mp-sheet]>.mp-sheet-grip{display:none!important}
+}
+.mp-pill.is-disabled{opacity:.45;pointer-events:none;cursor:not-allowed}
+/* CLS audit (14/11): panels are filled by JS after the first frame. Hide the page (visibility is
+   ignored by layout-shift) until core/ready.js marks it ready; the 2 s animation reveals it anyway
+   if a script fails. The reduced-motion rule above zeroes duration, not delay. */
+html:not(.mp-ready) body{visibility:hidden;animation:mp-reveal 0s 2s forwards}
+@keyframes mp-reveal{to{visibility:visible}}

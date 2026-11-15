@@ -108,8 +108,11 @@ func TestSkySampleCap(t *testing.T) {
 	if rec.Code != 422 || decode(t, rec)["code"] != "WINDOW_TOO_LONG" {
 		t.Fatalf("%d %.200s", rec.Code, rec.Body.String())
 	}
-	rec = do(h, "GET", "/api/sites/synthetic-demo-a/sky?hours=24&step=120", "")
-	if rec.Code != 200 || len(decode(t, rec)["samples"].([]any)) != 720 {
+	// A coarser step brings the same window under the limit. 180 samples, not 720: every sample starts the
+	// fake engine (a shell script, about 26 ms each), and 720 of them took 19.1 s alone and more than the
+	// 20 s request deadline under -race, which failed the build gate on a loaded machine.
+	rec = do(h, "GET", "/api/sites/synthetic-demo-a/sky?hours=24&step=480", "")
+	if rec.Code != 200 || len(decode(t, rec)["samples"].([]any)) != 180 {
 		t.Fatalf("%d %.200s", rec.Code, rec.Body.String())
 	}
 }

@@ -1,5 +1,6 @@
 // H · Evidências — "De onde vem cada número?". Everything shown carries its origin; no origin → "—" + N/D.
 import { mountShell } from "../core/shell.js";
+import { holdReady, markReady } from "../core/ready.js";
 import { mountTerrain } from "../core/terrain.js";
 import { loadSites, loadSeries, loadRegion, api, apiBase, sealFor, DATA_BASE } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
@@ -15,10 +16,11 @@ register({ en: { "cockpit.assumed": CK.en["cockpit.assumed"] }, "pt-BR": { "cock
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const shell = mountShell({ screen: "evidence", context: null, onLang: () => draw() });
+holdReady();
 const doc = await loadSites();
 if (!doc.sites.some(s => s.id === getState().site)) setState({ site: doc.sites[0].id });
 // Static facts loaded once.
-const [ready, health, caps, layers] = await Promise.all([api("/readyz", { timeoutMs: 3000 }), api("/api/health", { timeoutMs: 3000 }), api("/v1/capabilities", { timeoutMs: 3000 }), api("/api/layers", { timeoutMs: 3000 })]);
+const [ready, health, caps, layers, apiSites, vector] = await Promise.all([api("/readyz", { timeoutMs: 3000 }), api("/api/health", { timeoutMs: 3000 }), api("/v1/capabilities", { timeoutMs: 3000 }), api("/api/layers", { timeoutMs: 3000 }), api("/api/sites", { timeoutMs: 3000 }), api("/api/vector/status", { timeoutMs: 3000 })]);
 const online = ready.ok;
 let configCommit = null;
 try { const r = await fetch(apiBase() + "/config.js", { cache: "no-store" }); if (r.ok) configCommit = parseConfigCommit(await r.text()); } catch { /* no config.js here */ }
@@ -43,21 +45,30 @@ async function model() {
 
 async function draw() {
   const { st, site, meta, rows, passport } = await model();
-  const d = new Intl.DateTimeFormat(lang(), { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(passport.generated_at)) + " UTC";
+  // "14 nov 2026 · 17:32 UTC" (day, short month, year, time): short enough for the 927 px context bar.
+  const dp = Object.fromEntries(new Intl.DateTimeFormat(lang(), { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "UTC" }).formatToParts(new Date(passport.generated_at)).map(p => [p.type, p.value]));
+  const d = `${dp.day} ${String(dp.month).replace(/\./g, "")} ${dp.year} · ${dp.hour}:${dp.minute} UTC`;
   shell.setContext({ site: t("evidence.passport", { s: String(site.n) }), date: t("evidence.computed_at", { d }),
     days: t("evidence.version", { v: version ? version.value : t("nd") }), seal: sealFor(doc.status), online,
     action: { label: t("evidence.download_json"), href: "#" } });
-  // The core prints "<days> dias" in the third slot; here that slot carries the version, so replace the text node.
-  const ctxEl = document.querySelector(".mp-context"); if (ctxEl && ctxEl.childNodes[4]) ctxEl.childNodes[4].textContent = t("evidence.version", { v: version ? version.value : t("nd") });
+  // The core prints "<days> dias" in the last slot of .mp-ctx-text; here that slot carries the version, so replace
+  // that text node (never a positional child of .mp-context: its 5th child is the primary action pill).
+  const ctxText = document.querySelector(".mp-context .mp-ctx-text");
+  if (ctxText && ctxText.lastChild) ctxText.lastChild.textContent = t("evidence.version", { v: version ? version.value : t("nd") });
   const action = document.querySelector(".mp-context .mp-pill.is-primary");
   if (action) { action.removeAttribute("href"); action.setAttribute("role", "button"); action.tabIndex = 0; action.onclick = e => { e.preventDefault(); download(passport); };
     action.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); download(passport); } }; }
+  // "Alterar": switch the scenario (the terrain markers are hidden on this screen). Native select over a chip, rebuilt with the bar.
+  const bar = document.querySelector(".mp-context"), primary = bar && bar.querySelector(".mp-pill.is-primary");
+  if (bar) { const chip = el("div", "mp-ev-alter"), pick = el("select"); chip.append(el("span", null, t("evidence.change")), pick); pick.setAttribute("aria-label", t("evidence.change_aria"));
+    for (const s of doc.sites) pick.append(new Option(`${s.n} · ${s.name}`, s.id, false, s.id === st.site));
+    pick.onchange = () => setState({ site: pick.value }); bar.insertBefore(chip, primary); }
   // menu
   $("menu").replaceChildren(...SECTIONS.map(id => { const b = el("button", "mp-pill", t("evidence.nav." + id)); b.type = "button"; b.dataset.section = id;
     if (id === section) b.setAttribute("aria-current", "page"); b.onclick = () => { section = id; draw(); document.getElementById("sec-" + id)?.scrollIntoView({ block: "start" }); }; return b; }));
   // main
   const main = $("main");
-  const sub = (cls, ttl, desc, seal) => { const c = el("div", "mp-sub " + cls); const h = el("h3"); h.append(ttl, sealEl(seal)); c.append(h, el("p", null, desc)); return c; };
+  const sub = (cls, ttl, desc, seal) => { const c = el("div", "mp-sub " + cls); c.append(el("h3", null, ttl), el("p", null, desc), sealEl(seal)); return c; };
   const two = el("div", "mp-two"); two.append(sub("real", t("evidence.real_data"), t("evidence.real_data_desc"), sealFor(doc.status)), sub("sim", t("evidence.simulation"), t("evidence.simulation_desc"), "SIM"));
   const hMast = meta?.site?.observer_height_m;
   const assume = el("ol", "mp-assume");
@@ -92,12 +103,23 @@ async function draw() {
     if (r.id === "horizon") return r.detail ? t("evidence.horizon_src", { h: fmtNum(hMast, 0), d: fmtNum(r.detail.max_distance_m / 1000) }) : t("nd");
     if (r.id === "battery") return t("evidence.sim_battery"); if (r.id === "landing") return t("evidence.sim_landing"); return t("evidence.src_rocks_note");
   };
-  const sh = el("div", "mp-head", ""); sh.style.cssText = "display:flex;justify-content:space-between;align-items:center";
+  const sh = el("div", "mp-head mp-row-between", "");
   sh.append(el("h2", null, t("evidence.sources")), el("span", "mp-count", "• " + t("evidence.sources_count", { n: rows.length })));
   $("sources").replaceChildren(sh, ...rows.map(r => { const row = el("div", "mp-src"); const l = el("div"); const sm = el("small", null, sd(r)); sm.title = sm.textContent; l.append(el("b", null, t(names[r.id])), sm);
     row.append(l, r.registryOnly ? Object.assign(el("span", "mp-chipreg", r.detail.redistribution), { title: t("evidence.registry_note", { n: REGISTRY.assets.length, d: REGISTRY.reviewed_at }) }) : sealEl(r.seal)); return row; }));
+  // API sync (legacy Polar Lab backend widget): what the live API serves next to the static data.
+  const sync = el("div", "mp-sync"); sync.append(el("h3", null, t("evidence.sync")));
+  if (!online) sync.append(el("p", "mp-label", t("evidence.sync.off")));
+  else {
+    const n = Array.isArray(apiSites.data?.sites) ? apiSites.data.sites.length : null, h = health.ok ? health.data : {};
+    const st = h.series_science_statuses ? Object.entries(h.series_science_statuses).map(([k, v]) => `${v} ${k}`).join(" · ") : t("nd");
+    const vec = vector.ok ? (vector.data?.enabled ? t("evidence.sync.vecOn") : t("evidence.sync.vecOff")) : t("evidence.sync.vecNa");
+    for (const [k, v] of [["evidence.sync.sites", n == null ? t("nd") : String(n)], ["evidence.sync.series", `${h.sites_with_series ?? t("nd")} (${st})`], ["evidence.sync.local", String(doc.sites.length)], ["evidence.sync.vector", vec]]) {
+      const p = el("p", "mp-label"); p.append(el("b", null, t(k) + ": "), v); sync.append(p); }
+  }
+  $("sources").append(sync);
   // trust
-  const th = el("div"); th.style.cssText = "display:flex;justify-content:space-between;align-items:center"; th.append(el("h2", null, t("evidence.how_much_trust")));
+  const th = el("div", "mp-row-between"); th.append(el("h2", null, t("evidence.how_much_trust")));
   const q = el("button", "mp-pill mp-help", "?"); q.type = "button"; q.setAttribute("aria-label", t("evidence.help")); q.setAttribute("aria-expanded", String(trustOpen)); q.onclick = () => { trustOpen = !trustOpen; draw(); }; th.append(q);
   const keys = { sun: "evidence.trust_sun", earth: "evidence.trust_earth", tilt: "evidence.trust_tilt", battery: "evidence.trust_battery" };
   const tr = trustRows({ sitesStatus: doc.status, slopeAvailable: false });
@@ -115,3 +137,4 @@ function download(passport) {
 }
 onState(() => draw());
 await draw();
+markReady();

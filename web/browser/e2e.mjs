@@ -46,10 +46,12 @@ try{
  await desktop.locator("#tabs button[data-view='compare']").click();
  await desktop.locator("#tabs button[data-view='recover']").click();
  await desktop.locator("#tabs button[data-view='evidence']").click();
- assert((await desktop.locator("#panel-body").innerText()).length>60,"evidence panel is empty");
+ // The panel first shows a "Loading provenance…" placeholder and fills in asynchronously: wait for the real content.
+ await desktop.waitForFunction(()=>{const ev=document.querySelector("#ev");return !!ev&&!ev.textContent.includes("Loading provenance")&&ev.textContent.trim().length>200;},null,{timeout:30000});
+ assert((await desktop.locator("#panel-body").innerText()).length>260,"evidence panel is empty");
  await desktop.screenshot({path:path.join(out,"polar-lab-desktop.png"),fullPage:true});
  await desktop.getByRole("link",{name:"Mission computer"}).click();
- assert(desktop.url().endsWith("/index.html"),"classic UI navigation failed");
+ assert(desktop.url().endsWith("/classic.html"),"classic UI navigation failed");
  assert((await desktop.locator("body").innerText()).includes("UNVERIFIED INPUTS"),"classic scientific disclaimer absent");
  await desktop.screenshot({path:path.join(out,"moonproof-classic-desktop.png"),fullPage:true});
  const onboardResponse=await desktop.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});
@@ -103,13 +105,30 @@ try{
   assert((await desktop.locator("#feedback").innerText()).includes("compared"),"live compare API failed: "+await desktop.locator("#feedback").innerText());
  }
  await desktop.screenshot({path:path.join(out,"mission-studio-desktop.png"),fullPage:true});
+ // MoonProof v3: every screen opens, numbers carry PRE/SIM/N/D, never VAL outside a seal legend.
+ for(const page of ["index.html","mission.html","explore.html","compare.html","recover.html","cockpit.html","landing.html","debrief.html","evidence.html","plan.html","present.html","activity.html","rules.html"]){
+  const r=await desktop.goto(base+"/moonproof/"+page+"?lang=en",{waitUntil:"domcontentloaded",timeout:30000});
+  assert(r?.status()===200,"v3 HTTP "+page);
+  await desktop.waitForTimeout(1500);
+  const seals=await desktop.locator(".mp-seal:not([data-mp-legend] .mp-seal)").allInnerTexts();
+  assert(!seals.some(s=>s.trim()==="VAL"),"VAL seal without validated origin on "+page);
+ }
+ await desktop.goto(base+"/moonproof/mission.html?lang=en",{waitUntil:"domcontentloaded",timeout:30000});
+ await desktop.waitForFunction(()=>document.querySelectorAll(".mp-marker").length===5,null,{timeout:30000});
+ if(process.env.BRASPACE_REQUIRE_BACKEND==="1"){
+  await desktop.waitForFunction(()=>(document.querySelector(".mp-context")?.textContent||"").includes("live API"),null,{timeout:30000});
+  await desktop.goto(base+"/moonproof/recover.html?lang=en",{waitUntil:"domcontentloaded",timeout:30000});
+  await desktop.waitForFunction(()=>(document.querySelector(".mp-context")?.textContent||"").includes("live API"),null,{timeout:30000});
+ }
 
  const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  mobile.on("pageerror",error=>errors.push("mobile: "+error.message));
  const mobileResponse=await mobile.goto(base+"/lab.html",{waitUntil:"domcontentloaded",timeout:30000});
  assert(mobileResponse?.status()===200,"mobile lab status");
  await mobile.locator("#tabs button[data-view='evidence']").click();
- assert((await mobile.locator("#panel-body").innerText()).length>60,"mobile evidence empty");
+ // Same as desktop: wait for the provenance to load instead of racing the "Loading provenance…" placeholder.
+ await mobile.waitForFunction(()=>{const ev=document.querySelector("#ev");return !!ev&&!ev.textContent.includes("Loading provenance")&&ev.textContent.trim().length>200;},null,{timeout:30000});
+ assert((await mobile.locator("#panel-body").innerText()).length>260,"mobile evidence empty");
  await mobile.screenshot({path:path.join(out,"polar-lab-mobile.png"),fullPage:true});
  const overflow=await mobile.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
  assert(overflow.width<=overflow.viewport+4,"mobile horizontal overflow: "+JSON.stringify(overflow));
@@ -131,6 +150,13 @@ try{
  await mobile.screenshot({path:path.join(out,"mission-studio-mobile.png"),fullPage:true});
  const studioOverflow=await mobile.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
  assert(studioOverflow.width<=studioOverflow.viewport+4,"Mission Studio mobile overflow: "+JSON.stringify(studioOverflow));
+ for(const page of ["explore.html","mission.html","compare.html","recover.html","cockpit.html","evidence.html"]){
+  const r=await mobile.goto(base+"/moonproof/"+page+"?lang=en",{waitUntil:"domcontentloaded",timeout:30000});
+  assert(r?.status()===200,"v3 mobile HTTP "+page);
+  await mobile.waitForTimeout(1500);
+  const o=await mobile.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
+  assert(o.viewport===390&&o.width<=o.viewport+4,"v3 mobile overflow on "+page+": "+JSON.stringify(o));
+ }
  const mobileCockpit=await mobile.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});
  assert(mobileCockpit?.status()===200,"mobile cockpit HTTP status");
  await mobile.locator("nav.tabs button[data-tab='status']").click();

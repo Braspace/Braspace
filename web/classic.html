@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="BRASPACE MoonProof: educational south-pole lunar navigator and mission resilience laboratory.">
+  <title>BRASPACE MoonProof | Lunar Mission Resilience Lab</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+  <script type="module" src="./moon-hd/backdrop.js" data-moon-backdrop="globe"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to mission controls</a>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand"><span class="mark" aria-hidden="true">◉</span><span>BRASPACE<small>MOONPROOF · 2026</small></span></div>
+    <nav class="topnav" aria-label="MoonProof modules">
+      <a class="navitem" href="./moonproof/" aria-label="Open the new MoonProof v3 front: Mission Control, Explore and task entry">MoonProof v3 ↗</a>
+      <button class="navitem active" data-view="explore" aria-current="page">Explore</button>
+      <button class="navitem" data-view="compare">Compare</button>
+      <button class="navitem" data-view="recover">Recover</button>
+      <button class="navitem" data-view="science">Science &amp; Engineering</button>
+      <button class="navitem" data-view="evidence">Evidence &amp; Learn</button>
+      <a class="navitem" href="./studio/" aria-label="Open the new role-based Mission Studio">Mission Studio</a>
+      <a class="navitem" href="./lab.html" aria-label="Open the preliminary NASA-derived Polar Landing Lab">Polar Landing Lab</a>
+      <a class="navitem" href="./onboard/cockpit.html" aria-label="Open the synthetic onboard mission computer cockpit">Onboard Cockpit</a>
+    </nav>
+  </header>
+  <main id="main">
+    <div class="page-head">
+      <div><p class="eyebrow">NASA SPACE APPS CHALLENGE 2026 · EDUCATIONAL PROTOTYPE</p><h1>MoonProof <em>Mission Control</em></h1><p class="lede">Explore lunar geometry. Compare operational constraints. Understand how a delay changes a mission scenario.</p></div>
+      <div class="science-badge"><span aria-hidden="true">●</span> UNVERIFIED INPUTS <small>No validated NASA horizon/ephemeris connected</small></div>
+    </div>
+    <section class="initial-state" id="initial-state" aria-labelledby="initial-title">
+      <div><strong id="initial-title">No scenario evaluated yet</strong><p>The four numbers below stay empty until the Go API evaluates a baseline and a delayed scenario. Nothing here is precomputed.</p></div>
+      <button class="primary" id="run-top" type="button">Evaluate baseline + delay</button>
+    </section>
+    <p class="metrics-scope" id="metrics-scope" role="status"><span id="run-badge" class="state-label">NO SCENARIO RUN</span> <span id="scope-text">Top numbers: none yet.</span></p>
+    <div class="metrics" aria-label="Current model metrics">
+      <article class="metric"><span>MINIMUM CHARGE</span><strong id="metric-battery">—</strong><small>Wh, modeled resource</small></article>
+      <article class="metric"><span>DARKNESS INTERVAL</span><strong id="metric-dark">—</strong><small>hours, synthetic or source-backed</small></article>
+      <article class="metric"><span>EARTH OBSTRUCTION</span><strong id="metric-earth">—</strong><small>hours, geometric only</small></article>
+      <article class="metric"><span>MISSION RISKS</span><strong id="metric-risks">—</strong><small>caller-defined thresholds</small></article>
+    </div>
+    <div class="content">
+      <div class="left-column">
+        <section class="insight-panel" id="view-text" aria-live="polite">
+          <p class="eyebrow" id="view-eyebrow">01 / EXPLORE</p>
+          <h2 id="view-title">Look beyond a landing-site score</h2>
+          <p id="view-description">This prototype separates visualization, actual scientific evidence, and hypothetical spacecraft resource assumptions. Select a site to inspect its sourced catalog entry; the simulator below uses explicitly synthetic conditions until validated NASA data are integrated.</p>
+        </section>
+        <section class="panel-view" data-panel="explore" id="panel-explore" tabindex="-1" aria-label="Explore">
+        <section class="globe-panel" aria-labelledby="globe-heading">
+          <div class="panel-head"><div><p class="eyebrow">EXPLORE / LUNAR GLOBE</p><h2 id="globe-heading">The Moon, in context</h2></div><span class="mini-label">3D VISUALIZATION · NOT TERRAIN SCIENCE</span></div>
+          <div id="moon-stage" tabindex="0" role="img" aria-label="Interactive three-dimensional Moon. Drag to rotate; scroll to zoom; arrow keys rotate. Planetary imagery is for visual reference only.">
+            <div class="stage-fallback" id="stage-fallback"><div class="fallback-sphere"></div><span>Loading interactive 3D view…</span></div>
+            <div class="stage-overlay stage-top"><span>● SOUTH POLE FOCUS</span><span id="globe-status">NASA SVS texture pending</span></div>
+            <div class="stage-overlay stage-bottom"><span>DRAG TO ROTATE · SCROLL TO ZOOM · ARROWS TO ORBIT</span><button id="reset-globe" class="ghost" type="button">Reset view</button></div>
+          </div>
+          <p class="source-note">Visual source: <a href="https://svs.gsfc.nasa.gov/4720/" target="_blank" rel="noopener noreferrer">NASA Scientific Visualization Studio CGI Moon Kit</a> (Ernie Wright / NASA SVS). Its imagery is aesthetic; scientific local horizons require NASA LOLA DEM and validated ephemerides.</p>
+        </section>
+        </section>
+        <section class="results-panel panel-view" data-panel="compare" id="panel-compare" tabindex="-1" aria-labelledby="compare-title" hidden>
+          <div class="panel-head"><h2 id="compare-title">Scenario comparison</h2></div>
+          <div id="compare-empty" class="placeholder"><strong>No scenario evaluated yet.</strong> Run the baseline + delay scenario to see both side by side. Comparing different sites is not available: it needs science-backed series for more than one site.</div>
+          <div class="compare-cards" id="scenario-cards"></div>
+        </section>
+        <section class="results-panel panel-view" data-panel="recover" id="panel-recover" tabindex="-1" aria-labelledby="recover-title" hidden>
+          <div class="panel-head"><h2 id="recover-title">Delay recovery: constraints and causes</h2></div>
+          <div id="recover-empty" class="placeholder"><strong>No scenario evaluated yet.</strong> Run the baseline + delay scenario; the limit that was breached and the measured value appear here, read from the API response. No lunar replan is asserted.</div>
+          <div id="recover-content" hidden><h3>Risk register</h3><div id="risk-register" class="risk-register"></div></div>
+        </section>
+        <section class="results-panel panel-view" data-panel="science" id="panel-science" tabindex="-1" aria-labelledby="science-title" hidden>
+          <div class="panel-head"><h2 id="science-title">Science and engineering inputs</h2></div>
+          <div class="source-box"><strong>Science integrity</strong><p>NASA LOLA terrain and JPL SPICE ephemerides are required for any physically grounded landing-site assessment. This lab never substitutes illustrative values for validated measurements.</p><a href="https://github.com/Braspace/Braspace" target="_blank" rel="noopener noreferrer">Project repository (private)</a></div>
+          <p class="placeholder">No science-versus-engineering priority controls exist yet. Today the engineering side is the power, communication and crew limits in the form; there is no science-objective input to negotiate against them.</p>
+        </section>
+        <section class="results-panel panel-view" data-panel="evidence" id="panel-evidence" tabindex="-1" aria-labelledby="evidence-title" hidden>
+          <div class="panel-head"><h2 id="evidence-title">Evidence and status</h2></div>
+          <p class="small-muted" id="model-status">No scenario evaluated yet: no input status to report.</p>
+          <p class="small-muted" id="report-hint">The printable report button is in the parameters panel and stays disabled until a scenario has been evaluated.</p>
+        </section>
+      </div>
+      <aside class="control-panel" aria-labelledby="controls-title">
+        <div class="panel-head"><div><p class="eyebrow">ONBOARD COMPUTER / GROUND SIMULATOR</p><h2 id="controls-title">Mission parameters</h2></div><span class="mini-label">TRAINING MODE</span></div>
+        <p class="panel-explain">Evaluate a hypothetical lander. The observations below are <strong>synthetic, not NASA measurements</strong>; the actual Go simulator performs the energy/risk calculations.</p>
+        <form id="mission-form">
+          <label for="site">Explore candidate region</label>
+          <select id="site" name="site"><option value="">Loading public catalog…</option></select>
+          <p class="field-hint">Sites with an ingested horizon/ephemeris series are evaluated from that data by the Go API. Sites without one fall back to the synthetic training pattern, and the result says so.</p>
+          <div class="field-row"><div><label for="start">Scenario start (UTC)</label><input id="start" type="datetime-local" value="2026-12-01T00:00" required></div><div><label for="duration">Duration</label><select id="duration"><option value="24">24 hours</option><option value="48" selected>48 hours</option><option value="72">72 hours</option></select></div></div>
+          <div class="field-row"><div><label for="delay">Schedule delay</label><select id="delay"><option value="24">+24 hours</option><option value="48" selected>+48 hours</option><option value="72">+72 hours</option></select></div><div><label for="battery">Battery capacity (Wh)</label><input type="number" min="1" max="100000" step="1" value="800" id="battery" required></div></div>
+          <div class="field-row"><div><label for="initial">Initial charge (Wh)</label><input type="number" min="0" max="100000" step="1" value="650" id="initial" required></div><div><label for="reserve">Reserve threshold (Wh)</label><input type="number" min="0" max="100000" step="1" value="160" id="reserve" required></div></div>
+          <div class="field-row"><div><label for="generation">Assumed solar power (W)</label><input type="number" min="0" max="100000" value="180" id="generation" required></div><div><label for="load">Continuous load (W)</label><input type="number" min="0" max="100000" value="75" id="load" required></div></div>
+          <label for="blackout">Maximum Earth-visibility gap (hours)</label><input type="number" min="0" max="72" step="0.5" value="12" id="blackout" required>
+          <div class="field-row"><div><label for="crew">Crew (0 = none)</label><input type="number" min="0" max="12" step="1" value="2" id="crew" required></div><div><label for="o2">Oxygen stock (kg)</label><input type="number" min="0" max="100000" step="0.1" value="6" id="o2" required></div></div>
+          <label for="food">Food stock (kg)</label><input type="number" min="0" max="100000" step="0.1" value="13" id="food" required>
+          <p class="field-hint">Crew consumables apply to computed-series sites. Rates are placeholders (0.84 kg O2, 1.76 kg food per person per day) pending a check against NASA BVAD; the crew is assumed aboard during the delay.</p>
+          <p class="field-hint">Power is an assumed constant whenever the synthetic Sun is visible. Communication evaluates Earth geometric visibility only, not an RF link.</p>
+          <button class="primary" id="run" type="submit">Evaluate baseline + delay</button>
+          <button class="secondary" type="button" id="report" disabled>Open printable mission report</button>
+          <p id="api-status" class="api-status" role="status">Checking connected Go API…</p>
+        </form>
+      </aside>
+    </div>
+  </main>
+  <footer class="footer"><span>Backdrop: illustrative 3D Moon from NASA SVS (CGI Moon Kit, Deep Star Maps), NASA LRO/LOLA and NASA/JPL NAIF SPICE; not independently validated, not a NASA product. <a href="./moon-hd.html">Moon 3D viewer</a></span><span>BRASPACE · Uberlândia, Brazil · Independent educational hackathon prototype</span><span>NASA and its mission partners do not endorse this tool. <a href="https://science.nasa.gov/moon/" target="_blank" rel="noopener noreferrer">NASA Moon research</a></span></footer>
+</div>
+</body></html>

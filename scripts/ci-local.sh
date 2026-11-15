@@ -84,11 +84,15 @@ browser_qa() {
   BTMP=$(mktemp -d); BCID=$(docker create "$PROJECT-rel" ) || return 1
   docker cp "$BCID:/app/bin/api" "$BTMP/api" && docker cp "$BCID:/app/bin/lunar-engine" "$BTMP/engine" || return 1
   cp -r web "$BTMP/web"; (cd "$BTMP/web" && npm install --no-save playwright-core@1.56.1 >/dev/null 2>&1) || return 1
-  LISTEN_ADDR=127.0.0.1:8080 RUST_ENGINE_BIN="$BTMP/engine" "$BTMP/api" >"$BTMP/api.log" 2>&1 & local ap=$!
-  for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/readyz >/dev/null 2>&1 && break; sleep 1; done
+  # Own free port: 8080 may belong to another stack on the host, and the QA would then talk to that API.
+  local qp; qp=$(python3 -c "import socket;s=socket.socket();s.bind((\"127.0.0.1\",0));print(s.getsockname()[1]);s.close()")
+  LISTEN_ADDR=127.0.0.1:$qp RUST_ENGINE_BIN="$BTMP/engine" "$BTMP/api" >"$BTMP/api.log" 2>&1 & local ap=$!
+  local up=0; for i in $(seq 1 30); do kill -0 $ap 2>/dev/null || break; curl -fsS http://127.0.0.1:$qp/readyz >/dev/null 2>&1 && { up=1; break; }; sleep 1; done
+  [ $up = 1 ] || { echo "QA API did not start on 127.0.0.1:$qp"; tail -5 "$BTMP/api.log"; kill $ap 2>/dev/null; return 1; }
+  export BRASPACE_API_PORT=$qp
   sed "s#from \"playwright\"#from \"playwright-core\"#; s#chromium.launch({#chromium.launch({executablePath:\"$(command -v google-chrome)\",#" web/browser/e2e.mjs > "$BTMP/web/browser/e2e.mjs"
   ( cd "$BTMP" && cp -r "$OLDPWD/data" "$OLDPWD/examples" . 2>/dev/null; NODE_PATH="$BTMP/web/node_modules" BRASPACE_REQUIRE_BACKEND=1 BRASPACE_BROWSER_ARTIFACTS="$BTMP/shots" \
-    ONBOARD_API_URL=http://127.0.0.1:8080 node --test web/onboard/test/*.mjs && BRASPACE_REQUIRE_BACKEND=1 BRASPACE_BROWSER_ARTIFACTS="$BTMP/shots" node web/browser/e2e.mjs ); local rc=$?
+    ONBOARD_API_URL=http://127.0.0.1:$qp node --test web/onboard/test/*.mjs && BRASPACE_REQUIRE_BACKEND=1 BRASPACE_BROWSER_ARTIFACTS="$BTMP/shots" node web/browser/e2e.mjs ); local rc=$?
   kill $ap 2>/dev/null; return $rc
 }
 

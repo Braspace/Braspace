@@ -1,11 +1,13 @@
-/* Class Kit · Build activity (K3). Panels follow V3Atividade: steps 300 · preview · permissions on a SOLID black card · share bar. */
+/* Class Kit · Build activity (K3). Panels follow V3Atividade, measured by DOM on the 1440x900 board: steps · preview · permissions on a SOLID black card · share bar.
+   The board has no context bar on this screen (the page mounts the shell with context null), so the panels start at the board's own top. 320 + 552 + 510 = the board's 1382 px row;
+   the board overlaps steps and preview by 19 px, here the steps stop where the preview starts. */
 .mp-act-layout {
   position: fixed;
-  inset: 144px 28px 24px 28px; /* clears the shell context bar (ends at 136) */
+  inset: 97px 29px 28px 29px;
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr) minmax(300px, 470px);
+  grid-template-columns: 320px minmax(0, 552fr) minmax(300px, 510fr);
   grid-template-rows: 1fr auto;
-  gap: 14px;
+  gap: 14px 0;
   pointer-events: none;
   z-index: 15;
 }
@@ -18,7 +20,7 @@
   pointer-events: auto;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
   overflow-y: auto;
 }
 .mp-act-preview {
@@ -48,13 +50,14 @@
 .mp-act-share {
   grid-column: 2 / span 2;
   grid-row: 2;
-  padding: 16px 20px;
+  padding: 16px 20px 15px;
   pointer-events: auto;
   display: flex;
   align-items: center;
   gap: 18px;
   flex-wrap: wrap;
 }
+.mp-act-share .mp-share-btns { margin-left: auto; gap: 18px; flex-wrap: nowrap; }
 .mp-act-head {
   display: flex;
   justify-content: space-between;
@@ -71,14 +74,14 @@
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  padding: 10px 8px;
+  padding: 9px 0;
+  min-height: 57px;
   border: 0;
   border-radius: 12px;
   background: transparent;
   text-align: left;
   cursor: pointer;
 }
-.mp-step-item.is-active { background: rgba(255,255,255,.08); }
 .mp-step-txt { display: flex; flex-direction: column; }
 .mp-step-txt strong { font-size: 14.5px; font-weight: 700; color: var(--text-3, #8E99A6); }
 .mp-step-txt span { font-size: 12.5px; line-height: 18px; color: var(--text-3, #8E99A6); }
@@ -209,14 +212,14 @@
 .mp-switch[aria-checked="true"]::after { transform: translateX(18px); background: var(--jade-text); }
 .mp-teacher-notes {
   border-top: 1px solid var(--line);
-  margin-top: 10px;
-  padding-top: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
   font-size: 13px;
   line-height: 19px;
   color: var(--text-2);
 }
 .mp-teacher-notes strong { display: block; font-size: 14px; font-weight: 700; color: var(--text); }
-.mp-teacher-notes p { margin: 6px 0 0; }
+.mp-teacher-notes p { margin: 7px 0 0; }
 
 /* Share bar */
 .mp-qr {
@@ -251,9 +254,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 48px;
+  height: 47px;
+  gap: 8px;
   cursor: pointer;
 }
+.mp-btn-jade svg { flex: none; }
 .mp-btn-outline {
   background: rgba(255,255,255,.08);
   color: var(--pill);
@@ -261,7 +266,7 @@
   border-radius: var(--r-pill);
   padding: 0 20px;
   font: 600 15px var(--font);
-  height: 48px;
+  height: 47px;
   cursor: pointer;
 }
 .mp-chip-row { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -294,3 +299,7 @@
   }
   .mp-chip, .mp-layer-tab { min-height: 36px; height: 36px; }
 }
+
+/* Touch target: the tabs keep the design's 28 px look; an invisible 44 px hit area sits around them (project contract: 44 px). */
+.mp-layer-tab { position: relative; }
+.mp-layer-tab::after { content: ""; position: absolute; inset: -8px -2px; }

@@ -122,7 +122,7 @@ async function draw() {
   const card = createLayerCard({ id: "verdict", title: t("cmp.q"), status: statusOf(ms), answer, why: reasons, proof, layer: st.layer, onLayer: layer => setState({ layer }) });
   const actions = el("div", "mp-actions");
   const go = el("a", "mp-pill is-primary", t("cmp.delay", { L: L(sel) })); go.href = recoverHref(list);
-  const land = el("a", "mp-pill is-sim", t("cmp.land")); land.href = hrefTo("landing.html");
+  const land = el("a", "mp-pill is-sim", t("cmp.land")); land.href = hrefTo("landing.html", { ...getState(), site: list[sel].site, start: list[sel].start, hours: list[sel].hours }); // AUD-01: the chosen scenario, not the global one
   actions.append(go, land); card.el.insertBefore(actions, card.el.querySelector(".mp-chips"));
 
   // scenario list

@@ -25,7 +25,7 @@
 .deb-pill .v{margin-left:auto;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
 .deb-st,.deb-rules .tag{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:999px;font:700 10.5px/20px var(--font);letter-spacing:.06em;white-space:nowrap;border:1px solid var(--ok);background:var(--ok);color:#04110D}
 .deb-st[data-s=low],.deb-rules .tag[data-s=low]{background:var(--warn);border-color:var(--warn);color:#1A0E02}
-.deb-st[data-s=fail],.deb-rules .tag[data-s=fail]{background:var(--fail);border-color:var(--fail);color:#fff}
+.deb-st[data-s=fail],.deb-rules .tag[data-s=fail]{background:var(--fail);border-color:var(--fail-text);color:#fff}
 .deb-st[data-s=nd],.deb-rules .tag[data-s=nd]{background:repeating-linear-gradient(45deg,rgba(128,140,153,.25) 0 1px,transparent 1px 5px);border:1px dashed #808C99;color:#3a424b}
 .deb-rules .tag[data-s=nd]{color:#B7C0C9}
 .deb-chart{margin-top:auto;padding:18px}

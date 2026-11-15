@@ -2,11 +2,12 @@
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
 import { loadSites, windowMetrics, api, sealFor, apiOnline } from "../core/data.js";
-import { createLayerCard, statCircle } from "../core/layers.js";
+import { createLayerCard, statCircle, sealEl } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { TEXTS } from "./cockpit-texts.js";
-import { FAULTS, H1_PROFILE, SPEEDS, HOUR_MS, applyFault, runScenario, nextChange, dailyFractions, autonomyHours, fmtDuration,
+import { CREW_DEFAULT, POWER_FIELDS, CREW_FIELDS, crewRequest, readCrewAnswer, validateInputs, sensitivityVariants, readEnergy, loadSaved, saveScenario, savedExport } from "./cockpit-crew.js";
+import { siteEvaluateBody, FAULTS, H1_PROFILE, SPEEDS, HOUR_MS, applyFault, runScenario, nextChange, dailyFractions, autonomyHours, fmtDuration,
   clockLabel, hourIndex, evaluateRules, rulesMet, longestRun, countRises } from "./cockpit-model.js";
 
 register(TEXTS);
@@ -56,7 +57,7 @@ function buildBodies() {
   document.body.append(svg);
 }
 buildBodies();
-addEventListener("resize", () => { frame(); });
+addEventListener("resize", () => { frame(); lightDraw(); });
 
 async function compute() {
   const st = getState(), site = doc.sites.find(s => s.id === st.site), key = [st.site, st.start, hoursOf(), S.fault, st.battery].join("|");
@@ -73,6 +74,7 @@ async function compute() {
   if (!online) run = { ok: false, offline: true, route: "none" };
   else {
     const call = (p, o) => (p === "/api/onboard/site-evaluate" && S.noSiteRoute.has(st.site)) ? Promise.resolve({ ok: false, error: "cached DATA_NOT_AVAILABLE" }) : api(p, o);
+    S.reportReq = siteEvaluateBody({ siteId: st.site, startIso: new Date(m.t0).toISOString(), hours: hoursOf(), power, maxBlackoutH: Math.min(st.blackout, hoursOf()), delayH: f.delayH });
     run = await runScenario(call, { siteId: st.site, startIso: new Date(m.t0).toISOString(), hours: hoursOf(), power, maxBlackoutH: Math.min(st.blackout, hoursOf()), samples, delayH: f.delayH });
     if (run.route === "eval") S.noSiteRoute.add(st.site);
     if (run.route === "site") run.samples = null;
@@ -89,7 +91,7 @@ async function skyTransition(site, atIso) {
   const v = r.ok ? r.data.next_transitions : null; S.sky = { k, v }; return v;
 }
 
-const rulesCard = el("article", "mp-card"), alertCard = el("article", "mp-card mp-alert"), faultCard = el("article", "mp-glass");
+const rulesCard = el("article", "mp-card mp-rules"), alertCard = el("article", "mp-card mp-alert"), faultCard = el("article", "mp-glass");
 const left = $("left"), right = $("right");
 const sheet = $("sheet");
 
@@ -110,14 +112,14 @@ async function draw() {
   const seal = "SIM";
 
   shell.setContext({ site: t("cockpit.simulated_operation", { site: `${site.n} · ${site.name}` }),
-    date: `${t("cockpit.day_time", { n: clock.day, h: clock.hhmm })} UTC`, days: fmtNum(H / 24), seal, online, action: { label: t("cockpit.onboard"), href: "../onboard/" } });
+    date: `${t("cockpit.day_time", { n: clock.day, h: clock.hhmm })} UTC`, days: fmtNum(H / 24), seal, online, ...(narrow() ? { action: { label: t("cockpit.onboard"), href: "../onboard/" } } : {}) }); // desktop has the bottom-left link; the phone hides it
   const ctxEl = document.querySelector(".mp-context");
   if (ctxEl) { const chip = el("span", "mp-sim-chip", t("cockpit.sim_label")); ctxEl.append(el("span", "mp-label", t("cockpit.profile")), chip); }
 
   const title = el("p", "mp-ck-title", t("cockpit.how_now"));
   const stat = statCircle({ value: charge == null ? t("nd") : fmtNum(100 * charge / cap) + "%", label: t("cockpit.battery"), seal: charge == null ? "N/D" : seal,
     satellites: [{ value: hh(nightH), label: t("cockpit.next_night") }, { value: hh(auto), label: t("cockpit.endurance") },
-      { value: fmtNum(st.battery) + "%", label: t("cockpit.floor") }, { value: hh(margin, 0, true), label: t("cockpit.margin") }] });
+      { value: hh(margin, 0, true), label: t("cockpit.margin") }, { value: fmtNum(st.battery) + "%", label: t("cockpit.floor") }] });
   const vis = (body, nx, elev) => { const d = el("div", "mp-vis"); d.dataset.body = body; d.dataset.vis = nx?.visible ? "yes" : "no";
     const lab = el("span"); lab.append(el("span", "dot"), t(body === "sun" ? "cockpit.sun_visible" : "cockpit.earth_visible"));
     const val = el("b", null, elev == null ? t("nd") : t(nx?.visible ? "cockpit.yes_angle" : "cockpit.sun_no", { n: fmtNum(elev, 1) })); d.append(lab, val); return d; };
@@ -169,7 +171,9 @@ async function draw() {
     const nn = nightH; const tip = nn == null ? null : el("p", null, t(setting ? "cockpit.sunset_tip" : "cockpit.alert_tip_rise", { n: fmtNum(nn) }));
     const src = el("p", "mp-label", t(fromApi ? "cockpit.alert_src_api" : "cockpit.alert_src_series"));
     const ok = el("button", "mp-pill is-white", t("cockpit.got_it")); ok.type = "button"; ok.onclick = () => { S.dismissed = key; draw(); };
-    alertCard.replaceChildren(h3, ...(tip ? [tip] : []), src, ok);
+    const act = el("div", "mp-alert-act"); act.append(ok, src);
+    const body = el("div", "mp-alert-body"); body.append(h3, ...(tip ? [tip] : []), act);
+    alertCard.replaceChildren(el("span", "mp-alert-ic"), body);
   }
   // faults
   const fh = el("div", "mp-head"); fh.append(el("h3", null, t("cockpit.test_problem")), sealSpan("SIM"));
@@ -177,19 +181,21 @@ async function draw() {
   for (const f of Object.values(FAULTS)) { const b = el("button", "mp-pill", t(f.key, { n: f.n })); b.type = "button"; b.dataset.fault = f.id; b.setAttribute("aria-pressed", String(S.fault === f.id));
     b.onclick = () => { S.fault = S.fault === f.id ? null : f.id; draw(); }; fb.append(b); }
   const note = el("p", "mp-ck-note", run?.ok ? "" : t(run?.offline ? "cockpit.offline" : "cockpit.route.none"));
-  faultCard.replaceChildren(fh, fb, note);
-  right.replaceChildren(rulesCard, alertCard, faultCard);
+  fb.append(note); faultCard.replaceChildren(fh, fb);
+  right.replaceChildren(rulesCard, alertCard, faultCard, crewCard());
 
   // map tags
   const tagSun = sunNext?.inHours != null ? t(sunNext.visible ? "cockpit.sun_sets_in" : "cockpit.sun_rises_in", { t: fmtDuration(sunNext.inHours) }) : t("nd");
   const tagEarth = L.f.fault?.noEarth ? t("cockpit.problem_no_antenna") : earthNext?.inHours != null ? t(earthNext.visible ? "cockpit.earth_gone_in" : "cockpit.earth_back_in", { t: fmtDuration(earthNext.inHours) }) : t("nd");
   bodies.sun.tag.textContent = tagSun; bodies.earth.tag.textContent = tagEarth; placeBodies();
   // player
-  const rg = $("range"); rg.max = String(H); rg.value = String(th); rg.setAttribute("aria-valuetext", clock.text);
+  const rg = $("range"); rg.max = String(H); rg.value = String(th); rg.style.setProperty("--p", H ? th / H : 0); rg.setAttribute("aria-valuetext", clock.text);
   $("time").textContent = clock.text; $("end").textContent = "D" + fmtNum(H / 24);
   $("play").textContent = S.playing ? "⏸" : "▶"; $("play").setAttribute("aria-label", t(S.playing ? "cockpit.pause" : "cockpit.play"));
   $("restart").setAttribute("aria-label", t("cockpit.restart")); $("speed").setAttribute("aria-label", t("cockpit.speed")); rg.setAttribute("aria-label", t("cockpit.time"));
   $("onboard").textContent = t("cockpit.onboard"); $("onboard").href = "../onboard/";
+  // Printable site report from the onboard computer API (was only in the legacy onboard panel).
+  const rep = $("report"); rep.textContent = t("cockpit.report"); rep.disabled = !S.reportReq; rep.title = S.reportReq ? t("cockpit.report.hint") : t("cockpit.report.offline");
   $("handle").setAttribute("aria-label", t("cockpit.sheet"));
 }
 function sealSpan(s) { const e = el("span", "mp-seal", s); e.dataset.seal = s; e.title = t("seal." + s); return e; }
@@ -215,3 +221,83 @@ let last = getState().site;
 onState(s => { if (s.site !== last) { last = s.site; S.t = 0; S.dismissed = null; frame(); } draw(); });
 frame(); await draw(); frame();
 globalThis.__cockpit = S;
+
+// Opens the API's printable HTML report for the current scenario (POST /api/onboard/site-report).
+document.getElementById("report")?.addEventListener("click", async e => {
+  const b = e.currentTarget; if (!S.reportReq) return;
+  b.disabled = true; const r = await api("/api/onboard/site-report", { method: "POST", body: S.reportReq, as: "text", timeoutMs: 15000 }); b.disabled = false;
+  if (!r.ok) { b.title = t("cockpit.report.fail", { e: r.error }); b.textContent = t("cockpit.report.failShort"); return; }
+  window.open(URL.createObjectURL(new Blob([r.data], { type: "text/html" })), "_blank", "noopener");
+});
+
+// Crew, consumables and power (legacy onboard "Entrada" + "Vida", now on the real API). Built once so typed values survive redraws.
+var crewEl; // var, no initialiser: draw() can run during the top-level await, before this line
+function crewCard() {
+  if (crewEl) { crewEl.querySelector(".ck-crew-title").textContent = t("crew.title"); return crewEl; }
+  const c = document.createElement("details"); c.className = "mp-card ck-crew"; crewEl = c;
+  const sum = document.createElement("summary"); sum.className = "ck-crew-title"; sum.textContent = t("crew.title"); c.append(sum);
+  const form = document.createElement("form"); form.className = "ck-crew-form"; form.noValidate = true;
+  const field = (k, v, step) => { const l = document.createElement("label"); l.textContent = t("crew.f." + k);
+    const i = document.createElement("input"); i.type = "number"; i.min = "0"; i.step = step; i.value = String(v); i.name = k; i.inputMode = "decimal"; l.append(i); form.append(l); };
+  for (const k of POWER_FIELDS) field(k, ({ ...H1_PROFILE, reserve_wh: 4000 })[k], "1");
+  for (const k of CREW_FIELDS) field(k, CREW_DEFAULT[k], k === "size" ? "1" : "0.01");
+  const go = document.createElement("button"); go.type = "submit"; go.className = "mp-pill is-primary"; go.textContent = t("crew.run"); form.append(go);
+  const out = document.createElement("div"); out.className = "ck-crew-out"; out.setAttribute("aria-live", "polite");
+  const src = document.createElement("p"); src.className = "mp-label"; src.textContent = t("crew.src", { s: CREW_DEFAULT.rate_source });
+  const tools = document.createElement("div"); tools.className = "ck-crew-tools";
+  const bSens = document.createElement("button"); bSens.type = "button"; bSens.className = "mp-pill"; bSens.textContent = t("crew.sens");
+  const bSave = document.createElement("button"); bSave.type = "button"; bSave.className = "mp-pill"; bSave.textContent = t("crew.save");
+  const bExp = document.createElement("button"); bExp.type = "button"; bExp.className = "mp-pill"; bExp.textContent = t("crew.export");
+  tools.append(bSens, bSave, bExp);
+  const sens = document.createElement("div"); sens.className = "ck-crew-out"; sens.setAttribute("aria-live", "polite");
+  const saved = document.createElement("ul"); saved.className = "ck-saved";
+  const savedMsg = document.createElement("p"); savedMsg.className = "mp-label"; savedMsg.setAttribute("aria-live", "polite");
+  c.append(form, out, tools, sens, savedMsg, saved, src);
+  const store = (() => { try { return globalThis.localStorage; } catch { return null; } })();
+  const readForm = () => { const v = k => Number(form.elements[k].value);
+    return { power: Object.fromEntries(POWER_FIELDS.map(k => [k, v(k)])), crew: { ...CREW_DEFAULT, ...Object.fromEntries(CREW_FIELDS.map(k => [k, v(k)])) } }; };
+  const fill = e => { for (const k of POWER_FIELDS) if (e.power?.[k] != null) form.elements[k].value = String(e.power[k]); for (const k of CREW_FIELDS) if (e.crew?.[k] != null) form.elements[k].value = String(e.crew[k]); };
+  const listSaved = () => { saved.replaceChildren(...loadSaved(store).map(e => { const li = document.createElement("li"); const b = document.createElement("button"); b.type = "button"; b.className = "mp-link";
+    b.textContent = e.label; b.onclick = () => { fill(e); if (e.query && e.query !== location.search) location.search = e.query; }; li.append(b); return li; })); };
+  listSaved();
+  bSave.onclick = () => { const { power, crew } = readForm(), now = new Date(), q = S.reportReq;
+    const label = `${q ? q.candidates[0].site_id : t("nd")} · ${q ? q.start_utc.slice(0, 10) : ""} · ${now.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+    const r = saveScenario(store, { id: now.toISOString(), label, query: location.search, power, crew });
+    savedMsg.textContent = r.ok ? t("crew.saved") : t("crew.saveFail"); listSaved(); };
+  bExp.onclick = () => { const url = URL.createObjectURL(new Blob([JSON.stringify(savedExport(loadSaved(store)), null, 2)], { type: "application/json" }));
+    const a = Object.assign(document.createElement("a"), { href: url, download: "cockpit-scenarios.json" }); a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); };
+  bSens.onclick = async () => {
+    const { power, crew } = readForm(), chk = validateInputs(power, crew);
+    if (!chk.ok) { sens.textContent = t("crew.invalid"); return; }
+    if (!S.reportReq) { sens.textContent = t("cockpit.report.offline"); return; }
+    const q = S.reportReq; bSens.disabled = true; sens.textContent = t("crew.wait");
+    const rows = [];
+    for (const v of sensitivityVariants(power)) {
+      const r = await api("/api/onboard/site-evaluate", { method: "POST", body: crewRequest({ siteId: q.candidates[0].site_id, startIso: q.start_utc, hours: q.duration_hours, maxBlackoutH: q.max_comm_blackout_hours, delayH: q.candidates[0].delay_hours, power: v.power, crew }), timeoutMs: 15000 });
+      rows.push({ id: v.id, e: r.ok ? readEnergy(r.data) : null, err: r.ok ? null : r.error });
+    }
+    bSens.disabled = false;
+    const tb = document.createElement("table"); tb.className = "ck-crew-table"; const hr = tb.createTHead().insertRow();
+    for (const h of ["crew.s.case", "crew.s.min", "crew.s.unserved", "crew.s.end"]) { const th = document.createElement("th"); th.textContent = t(h); hr.append(th); }
+    for (const r of rows) { const tr = tb.insertRow(); const wh = x => x == null ? t("nd") : fmtNum(x, 0) + " Wh";
+      for (const x of [t("crew.s." + r.id), wh(r.e?.minWh), wh(r.e?.unservedWh), r.err ? r.err : (r.e?.endMode || t("nd"))]) tr.insertCell().textContent = x; }
+    sens.replaceChildren(sealEl("SIM"), tb);
+  };
+  form.onsubmit = async e => {
+    e.preventDefault(); const v = k => Number(form.elements[k].value);
+    const power = Object.fromEntries(POWER_FIELDS.map(k => [k, v(k)])), crew = { ...CREW_DEFAULT, ...Object.fromEntries(CREW_FIELDS.map(k => [k, v(k)])) };
+    const chk = validateInputs(power, crew); for (const el of form.querySelectorAll("input")) el.setAttribute("aria-invalid", String(chk.errors.includes(el.name)));
+    if (!chk.ok) { out.textContent = t("crew.invalid"); return; }
+    if (!S.reportReq) { out.textContent = t("cockpit.report.offline"); return; }
+    const q = S.reportReq; go.disabled = true; out.textContent = t("crew.wait");
+    const r = await api("/api/onboard/site-evaluate", { method: "POST", body: crewRequest({ siteId: q.candidates[0].site_id, startIso: q.start_utc, hours: q.duration_hours, maxBlackoutH: q.max_comm_blackout_hours, delayH: q.candidates[0].delay_hours, power, crew }), timeoutMs: 15000 });
+    go.disabled = false;
+    if (!r.ok) { out.textContent = t("cockpit.report.fail", { e: r.error }); return; }
+    const a = readCrewAnswer(r.data), tb = document.createElement("table"); tb.className = "ck-crew-table";
+    const hr = tb.createTHead().insertRow(); for (const h of ["crew.h.res", "crew.h.aut", "crew.h.mar", "crew.h.st"]) { const th = document.createElement("th"); th.textContent = t(h); hr.append(th); }
+    for (const row of a.rows) { const tr = tb.insertRow(); for (const x of [t("crew.res." + row.resource), row.autonomyH == null ? t("nd") : fmtNum(row.autonomyH, 0) + " h", row.marginH == null ? t("nd") : fmtNum(row.marginH, 0) + " h", row.status || t("nd")]) tr.insertCell().textContent = x; }
+    const d = document.createElement("p"); d.className = "mp-label"; d.textContent = t("crew.decision", { d: a.decision || t("nd") });
+    const seal = sealEl("SIM"); out.replaceChildren(seal, tb, d);
+  };
+  return c;
+}

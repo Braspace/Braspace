@@ -11,6 +11,8 @@ import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { judge, slack, computeExits, longestRun, parseHash, buildHash } from "./scenario-calc.js";
 import { loadAll, staticMetrics, flagsOf, apiDelayMetrics, HOUR_MS } from "./scenario-data.js";
+// Replan search horizon: about one synodic lunar day, independent of the mission length (AUD-12).
+const SEARCH_DAYS = 30;
 
 register({
   en: {
@@ -18,7 +20,7 @@ register({
     "rec.step1": "Step 1 · how long is the delay?", "rec.hours": "hours", "rec.newland": "New landing", "rec.end": "Mission end", "rec.endval": "{d} · {n} days after",
     "rec.step2": "Step 2 · what changed", "rec.night": "Longest night", "rec.slack": "Margin to the rule", "rec.earth": "Earth visible", "rec.loss": "Longest Earth loss",
     "rec.step3": "Step 3 · choose an option", "rec.exit.wait": "Wait until {d}", "rec.exit.wait.s": "same site · window moves", "rec.exit.switch": "Land at {name}", "rec.exit.switch.s": "same date · other site",
-    "rec.exit.shorten": "Mission of {n} days", "rec.exit.shorten.s": "same site · shorter window", "rec.slackWord": "margin", "rec.none": "No option meets every rule. Nothing is shown without a calculation.",
+    "rec.exit.shorten": "Mission of {n} days", "rec.exit.shorten.s": "same site · shorter window", "rec.slackWord": "margin", "rec.none": "No option meets every rule in the search done. Nothing is shown without a calculation.", "rec.nearby.title": "Live API · nearby catalog sites at the delayed start (POST /api/scenarios/delay, PRE)", "rec.nearby.ok": "meets the rules", "rec.nearby.no": "breaks a rule", "rec.nearby.nd": "no data ({r})", "rec.coverage": "Searched: waits up to +{d} days, the other {n} catalog sites at the same start, shorter windows. Options come from the stored hourly series (web/data), even when the delay itself came from the API.",
     "rec.step4": "Step 4 · compare and decide", "rec.step4.short": "Compare", "rec.head.break": "The delay makes the longest night {v} h, above the assumed limit of {lim} h.", "rec.head.ok": "With this delay every rule is still met.", "rec.head.nd": "No data for this delay.",
     "rec.timeline": "Sun over the window · red = rule-breaking night", "rec.planned": "Planned", "rec.after": "+{d} h", "rec.nightOf": "night of {v} h", "rec.exitLine": "Exit {L} · {what}",
     "rec.src.api": "POST /api/scenarios/delay", "rec.src.static": "stored hourly series (web/data)", "rec.src": "Source", "rec.rules": "Rules", "rec.assumed": "assumed limit",
@@ -31,7 +33,7 @@ register({
     "rec.step1": "Passo 1 · quanto o pouso atrasou?", "rec.hours": "horas", "rec.newland": "Novo pouso", "rec.end": "Fim da missão", "rec.endval": "{d} · {n} dias depois",
     "rec.step2": "Passo 2 · o que mudou", "rec.night": "Maior noite", "rec.slack": "Folga até a regra", "rec.earth": "Terra visível", "rec.loss": "Maior perda da Terra",
     "rec.step3": "Passo 3 · escolha uma saída", "rec.exit.wait": "Esperar até {d}", "rec.exit.wait.s": "mesmo local · a janela anda", "rec.exit.switch": "Pousar em {name}", "rec.exit.switch.s": "mesma data · outro local",
-    "rec.exit.shorten": "Missão de {n} dias", "rec.exit.shorten.s": "mesmo local · janela menor", "rec.slackWord": "folga", "rec.none": "Nenhuma saída atende a todas as regras. Sem cálculo, nada aparece.",
+    "rec.exit.shorten": "Missão de {n} dias", "rec.exit.shorten.s": "mesmo local · janela menor", "rec.slackWord": "folga", "rec.none": "Nenhuma saída atende a todas as regras na busca feita. Sem cálculo, nada aparece.", "rec.nearby.title": "API ao vivo · locais vizinhos do catálogo no início atrasado (POST /api/scenarios/delay, PRE)", "rec.nearby.ok": "atende às regras", "rec.nearby.no": "quebra uma regra", "rec.nearby.nd": "sem dado ({r})", "rec.coverage": "Buscado: esperar até +{d} dias, os outros {n} locais do catálogo no mesmo início e janelas menores. As saídas vêm das séries horárias gravadas (web/data), mesmo quando o atraso veio da API.",
     "rec.step4": "Passo 4 · comparar e decidir", "rec.step4.short": "Comparar", "rec.head.break": "O atraso leva a maior noite a {v} h, acima do limite assumido de {lim} h.", "rec.head.ok": "Com este atraso todas as regras ainda valem.", "rec.head.nd": "Sem dado para este atraso.",
     "rec.timeline": "Sol na janela · vermelho = noite que quebra a regra", "rec.planned": "Planejado", "rec.after": "+{d} h", "rec.nightOf": "noite de {v} h", "rec.exitLine": "Saída {L} · {what}",
     "rec.src.api": "POST /api/scenarios/delay", "rec.src.static": "série horária gravada (web/data)", "rec.src": "Fonte", "rec.rules": "Regras", "rec.assumed": "limite assumido",
@@ -67,10 +69,10 @@ const metricsAt = (id, startMs, hours) => { const m = staticMetrics(all.get(id),
 async function draw() {
   const sc = scenario(), st = getState(), rules = { night: st.night, blackout: st.blackout };
   const site = siteOf(sc.site), series = all.get(sc.site), t0 = Date.parse(sc.start), t1 = t0 + sc.d * HOUR_MS;
-  let base = metricsAt(sc.site, t0, sc.hours), delayed = metricsAt(sc.site, t1, sc.hours);
-  if (online) { const r = await apiDelayMetrics({ siteId: sc.site, startIso: new Date(t0).toISOString(), hours: sc.hours, delayH: sc.d, rules }); if (r.base && r.delayed) { base = r.base; delayed = r.delayed; } }
+  let base = metricsAt(sc.site, t0, sc.hours), delayed = metricsAt(sc.site, t1, sc.hours), apiNearby = null;
+  if (online) { const r = await apiDelayMetrics({ siteId: sc.site, startIso: new Date(t0).toISOString(), hours: sc.hours, delayH: sc.d, rules }); if (r.base && r.delayed) { base = r.base; delayed = r.delayed; } apiNearby = r.nearby || []; }
   const jd = judge(delayed, rules), jb = judge(base, rules);
-  const exits = computeExits({ metricsAt, siteId: sc.site, siteIds: doc.sites.map(s => s.id), startMs: t0, hours: sc.hours, delayH: sc.d, rules, searchDays: Math.floor(sc.hours / DAY) });
+  const exits = computeExits({ metricsAt, siteId: sc.site, siteIds: doc.sites.map(s => s.id), startMs: t0, hours: sc.hours, delayH: sc.d, rules, searchDays: SEARCH_DAYS });
   const chosen = exits.find(e => e.kind === sc.x) || exits[0] || null;
   shell.setContext({ site: t("rec.ctx", { L: "B", site: String(site.n) }), date: fmtDay(t1), days: fmtNum(sc.hours / DAY),
     seal: (delayed || base)?.seal || "N/D", online, action: { label: t("rec.step4.short"), href: hrefTo("compare.html") + "#" + compareHash(sc, chosen) } });
@@ -110,6 +112,17 @@ async function draw() {
     list.append(b);
   });
   if (!exits.length) list.append(el("p", "mp-label", t("rec.none")));
+  // AUD-12/13: say what was actually searched and where the options come from.
+  // AUD-13: API nearby sites are a separate block with their own source; never ranked with the static exits.
+  if (apiNearby && apiNearby.length) {
+    const nb = el("div", "mp-nearby"); nb.append(el("p", "mp-label", t("rec.nearby.title")));
+    for (const n of apiNearby) { const row = el("p", "mp-nearby-row");
+      row.append(el("b", "", n.siteId), " · " + (n.km == null ? t("nd") : fmtNum(n.km, 1) + " km") + " · ",
+        el("span", n.admissible === true ? "is-ok" : n.admissible === false ? "is-fail" : "", n.admissible === true ? t("rec.nearby.ok") : n.admissible === false ? t("rec.nearby.no") : t("rec.nearby.nd", { r: n.reason })));
+      nb.append(row); }
+    list.append(nb);
+  }
+  list.append(el("p", "mp-label mp-coverage", t("rec.coverage", { d: fmtNum(SEARCH_DAYS), n: fmtNum(doc.sites.length - 1) })));
   const go = el("a", "mp-pill is-primary", t("rec.step4")); go.href = hrefTo("compare.html") + "#" + compareHash(sc, chosen); go.style.justifyContent = "center";
   const proof = el("table", "mp-proof"); const add = (k, v) => { const r = proof.insertRow(); const h = el("th", "", k); h.scope = "row"; r.append(h); r.insertCell().append(v); };
   add(t("rec.def"), t("rec.def.txt")); add(t("rec.rules"), t("rec.assumed") + `: ${fmtNum(rules.night)} h · ${fmtNum(rules.blackout)} h`); add(t("rec.battery"), t("rec.battery.nd"));

@@ -1,0 +1,10 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>moonproof · ícones</title>
+<style>body{margin:0;padding:28px;background:#07090C;color:#F2F4F5;font:14px system-ui}
+.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.c{border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:13px;display:flex;flex-direction:column;gap:8px}
+.r{display:flex;gap:13px;align-items:center}.n{font:12px monospace;color:#B7C0C9}</style>
+<h1>moonproof · ícones (16 / 24 / 32)</h1><div class="g" id="g"></div>
+<script type="module">
+import { icon, ICON_NAMES } from "../core/icons.js";
+g.innerHTML = ICON_NAMES.map(n => `<div class="c"><div class="r">${[16,24,32].map(s=>icon(n).replace('width="24" height="24"',`width="${s}" height="${s}"`)).join("")}</div><span class="n">${n}</span></div>`).join("");
+</script></html>

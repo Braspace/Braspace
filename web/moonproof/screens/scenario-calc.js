@@ -39,7 +39,8 @@ export function dailyFractions(flags) {
   const out = [];
   for (let d = 0; d * 24 < flags.length; d++) {
     const day = flags.slice(d * 24, d * 24 + 24);
-    out.push(day.length ? day.filter(Boolean).length / day.length : null);
+    const known = day.filter(v => v != null); // AUD-14: null = outside the series, not "no Sun"
+    out.push(known.length ? known.filter(Boolean).length / known.length : null);
   }
   return out;
 }
