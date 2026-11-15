@@ -1,0 +1,20 @@
+/* Heloísa's existing tokens and glass surfaces; one responsive interactive stage. */
+.moon-console { margin: 12px var(--edge, 16px) 0; padding: clamp(12px, 2vw, 24px); border-radius: var(--r-card, 20px); min-width: 0; }
+.moon-console-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.moon-console-heading h2, .moon-console-heading p { margin: 0; }
+.moon-console-seal { border: 1px solid var(--c-line-strong, #687679); border-radius: 999px; padding: 5px 12px; font-size: 12px; }
+.moon-console-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(240px, 1fr); gap: 18px; align-items: start; }
+.moon-console-stage { position: relative; width: 100%; min-height: 220px; height: clamp(220px, 35vw, 440px); border-radius: var(--r-card, 18px); overflow: hidden; background: #080c10 var(--moon-pole-preview, url('./pole-preview.webp')) center/cover no-repeat; }
+.moon-console-stage canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+.moon-console-stage canvas[hidden] { display: none; }
+.moon-console-stage:focus-visible { outline: 3px solid var(--c-focus, #2ec4a0); outline-offset: 3px; }
+.moon-console-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+.moon-console-controls button, .moon-console-inputs button, .moon-console-inputs select, .moon-console-inputs input { min-height: 44px; }
+.moon-console-inputs { display: grid; gap: 10px; min-width: 0; }
+.moon-console-inputs label { display: grid; gap: 6px; font-weight: 600; }
+.moon-console-inputs input, .moon-console-inputs select { font: inherit; color: var(--c-t1, #fff); background: var(--c-card, #182224); border: 1px solid var(--c-line-strong, #748185); border-radius: 10px; padding: 8px; width: 100%; box-sizing: border-box; }
+.moon-console-inputs p { margin: 0; overflow-wrap: anywhere; }
+.moon-console-metrics { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px 12px; align-items: baseline; }
+.moon-console-metrics dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (max-width: 720px) { .moon-console-grid { grid-template-columns: minmax(0, 1fr); } .moon-console-stage { height: 260px; } }
+@media (prefers-reduced-motion: reduce) { .moon-console * { scroll-behavior: auto; transition: none; } }

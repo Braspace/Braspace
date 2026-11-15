@@ -10,7 +10,8 @@ export function sceneEpoch(eph,date) {
  const index=E.indexAt(eph,Number.isFinite(parsed)?parsed:Date.now());
  return {index,iso:new Date(E.timeAt(eph,index)).toISOString()};
 }
-export async function createMoon(stage,status,{date,onUnavailable=()=>{}}={}) {
+export async function createMoon(stage,status,{date,onUnavailable=()=>{},signal}={}) {
+ if(signal?.aborted)throw new Error("Moon HD startup cancelled");
  const probe=probeWebGL(()=>document.createElement("canvas"));
  if(!probe)throw new Error("Hardware WebGL 2 unavailable");
  const {canvas,gl}=probe;
@@ -28,6 +29,7 @@ export async function createMoon(stage,status,{date,onUnavailable=()=>{}}={}) {
  }
  const unavailable=()=>{dispose();onUnavailable()};
  const timer=setTimeout(unavailable,30000);
+ if(signal)on(signal,"abort",dispose,{once:true});
  on(canvas,"webglcontextlost",e=>{e.preventDefault();unavailable()});
  const alive=()=>{if(dead)throw Error("Moon HD startup ended")};
  function draw(){
@@ -39,6 +41,7 @@ export async function createMoon(stage,status,{date,onUnavailable=()=>{}}={}) {
  }
  function focus(a,b){if(Number.isFinite(a)&&Number.isFinite(b)){lat=clamp(a,-89.8,89.8);lon=b;draw()}}
  function reset(){lat=-84;lon=0;distance=2.65;draw()}
+ function zoom(factor){if(Number.isFinite(factor)&&factor>0){distance=clamp(distance*factor,1.35,5);draw()}}
  function setTime(value){
   if(dead||!eph)return;
   const {index,iso}=sceneEpoch(eph,value),{sun,earth}=E.pointsAt(eph,index);
@@ -84,6 +87,6 @@ export async function createMoon(stage,status,{date,onUnavailable=()=>{}}={}) {
   for(const type of ["pointerup","pointercancel","lostpointercapture"])on(canvas,type,()=>drag=null);
   on(canvas,"wheel",e=>{e.preventDefault();distance=clamp(distance+e.deltaY*.002,1.35,5);draw()},{passive:false});
   on(stage,"keydown",e=>{if(e.target!==stage)return;const moves={ArrowUp:[3,0],ArrowDown:[-3,0],ArrowLeft:[0,-3],ArrowRight:[0,3]};if(moves[e.key]){e.preventDefault();focus(lat+moves[e.key][0],lon+moves[e.key][1])}});
-  return {focus,reset,setSites,setTime,dispose};
+  return {focus,reset,zoom,setSites,setTime,dispose};
  }catch(err){dispose();throw err}
 }

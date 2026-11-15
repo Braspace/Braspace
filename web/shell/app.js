@@ -5,6 +5,7 @@
 import { h, Fragment, render } from "../vendor/preact/preact.module.js";
 import { startRouter, buildHash, bordoURL, loadLastRoute, parseHash } from "../ds/router.js";
 import { ProvStrip, mount } from "../ds/ui.js";
+import { paintMoonConsole } from "../moon-hd/preact.js";
 const ICONS = {
     explorar: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.5 4 5.6 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.6-4-9s1.5-6.5 4-9z",
     comparar: "M3 4h5v16H3zM10 4h5v16h-5zM17 4h4v16h-4z",
@@ -47,10 +48,12 @@ const routes = [
     { path: "/evidencias", title: "Fontes e limitações", render: view("evidencias") },
     // Board and 3D lab live on their own pages; replace() keeps the back button working (no redirect loop).
     { path: "/bordo", prefix: true, title: "Painel de bordo", external: ctx => location.replace(bordoURL("onboard/cockpit.html", ctx.parts, ctx.query)) },
-    { path: "/terreno", title: "Terreno 3D", external: ctx => { const q = new URLSearchParams(); if (ctx.site)
-            q.set("site", ctx.site); if (ctx.query.t)
-            q.set("t", ctx.query.t); if (ctx.query.d)
-            q.set("d", ctx.query.d); location.replace("lab.html" + (q.size ? "#" + q : "")); } },
+    { path: "/terreno", title: "Terreno 3D", render: (outlet, ctx) => {
+            mount(outlet, h("section", { class: "glass card" },
+                h("h1", { class: "title-l", "data-route-title": "" }, "Terreno 3D \u00B7 Moon HD"),
+                h("p", { class: "t2" }, "O modelo interativo do polo sul permanece acima, no mesmo aplicativo. Use os controles para explorar o relevo."),
+                h("a", { class: "btnL", href: "lab.html" + labHash({ ...ctx.query, site: ctx.site ?? undefined }) }, "Laborat\u00F3rio avan\u00E7ado (compatibilidade)")));
+        } },
     { path: "*", notFound: true, title: "Página não encontrada", render: (outlet) => {
             mount(outlet, h("section", { class: "glass card" },
                 h("h1", { class: "title-l", "data-route-title": "" }, "P\u00E1gina n\u00E3o encontrada"),
@@ -74,6 +77,7 @@ function isCurrent(path, current) { return current === path || (path !== "/" && 
 function paintChrome(ctx) {
     const q = { site: ctx.site, t: ctx.query.t, d: ctx.query.d }; // scenario travels with every nav link
     const el = (id) => document.getElementById(id);
+    paintMoonConsole(el("moon-console-root"), { path: ctx.path, site: ctx.site ?? undefined, day: ctx.query.t });
     render(h(Fragment, null, NAV.map(n => h("a", { class: "navp" + (n.cls ? " " + n.cls : ""), href: buildHash(n.path, q), "aria-current": isCurrent(n.path, ctx.path) || (n.path === "/comparar" && ctx.path === "/comparar") ? "page" : undefined },
         icon(ICONS[n.ic]),
         n.label))), el("nav"));

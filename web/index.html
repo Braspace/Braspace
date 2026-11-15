@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="./ds/components.css">
   <link rel="stylesheet" href="./shell/shell.css">
   <script type="module" src="./shell/app.js"></script>
-  <script type="module" src="./moon-hd/backdrop.js" data-moon-backdrop="pole"></script>
+  <link rel="stylesheet" href="./moon-hd/preact.css">
 <link rel="stylesheet" href="./moon-hd/preview.css">
 </head>
 <body class="mp">
@@ -24,13 +24,14 @@
   <div id="kits" class="kits" role="group" aria-label="Kits"></div>
 </header>
 <div id="pstrip" class="pstrip-slot"></div>
+<div id="moon-console-root"></div>
 <main id="view" class="view" tabindex="-1"><p class="t2 boot">Carregando…</p></main>
 <nav id="bottomnav" class="bottomnav glass" aria-label="Navegação principal"></nav>
 <footer class="foot">
   <span>BRASPACE · Uberlândia · NASA Space Apps 2026 · protótipo educativo.</span>
   <span>Dados: NASA LRO/LOLA, NASA GSFC PGDA, JPL/NAIF SPICE. A NASA não endossa esta ferramenta.</span>
   <span>Lua 3D (fundo e visualizador): NASA's Scientific Visualization Studio (CGI Moon Kit, Deep Star Maps), NASA LRO/LOLA, NASA/JPL NAIF SPICE, IAU/USGS Gazetteer, NASA Blue Marble. Imagem ilustrativa, sem validação independente; não é um produto da NASA.</span>
-  <a href="./moon-hd.html?view=pole&amp;lang=pt">Lua 3D (visualizador completo)</a>
+  <a href="#/terreno">Lua 3D (na interface principal)</a>
   <a href="./classic.html">Computador de missão (clássico)</a>
   <a href="./moonproof/">Missão passo a passo (multi-página) ↗</a>
 </footer>

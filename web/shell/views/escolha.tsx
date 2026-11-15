@@ -14,10 +14,9 @@ const TASKS = [
 ];
 
 export function render(outlet: HTMLElement, ctx: RouteCtx): void {
-  const q = { site: ctx.site };
+  const q = { site: ctx.site, t: ctx.query.t, d: ctx.query.d };
   const last = lastRouteLabel();
   mount(outlet, <>
-    <div class="backdrop" aria-hidden="true"><img src="./moon-hd/pole-preview.webp" alt="" /></div>
     <div class="escolha">
       <section class="hero">
         <span class="chipg">Lunar Landing Site Navigator · polo sul da Lua</span>
@@ -36,9 +35,9 @@ export function render(outlet: HTMLElement, ctx: RouteCtx): void {
         </a>)}</nav>
       <div class="row wrap">
         <a class="chipg" href={buildHash("/evidencias", q)}>Ver fontes e limitações →</a>
-        <a class="chipg" href="./moon-hd.html?view=pole&lang=pt">Ver a Lua em 3D (polo sul) →</a>
+        <a class="chipg" href={buildHash("/terreno", q)}>Ver a Lua em 3D (polo sul) →</a>
       </div>
-      <p class="t3 small">Fundo: Lua 3D (imagens LRO, relevo LOLA, Sol pelo SPICE) quando o navegador tem WebGL; sem ele, a prévia estática do mesmo relevo de Joel. Uso ilustrativo, sem validação independente.</p>
+      <p class="t3 small">O painel principal utiliza Lua 3D (imagens LRO, relevo LOLA, Sol pelo SPICE) e a prévia estática do mesmo relevo de Joel quando o 3D não está disponível. Uso ilustrativo, sem validação independente.</p>
     </div>
   </>);
 }

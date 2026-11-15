@@ -5,6 +5,7 @@
 import { h, Fragment, render, type VNode } from "../vendor/preact/preact.module.js";
 import { startRouter, buildHash, bordoURL, loadLastRoute, parseHash, type RouteCtx, type RouteDef } from "../ds/router.js";
 import { ProvStrip, mount } from "../ds/ui.js";
+import { paintMoonConsole } from "../moon-hd/preact.js";
 
 const ICONS: Record<string, string> = {
   explorar: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.5 4 5.6 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.6-4-9s1.5-6.5 4-9z",
@@ -45,7 +46,11 @@ const routes: RouteDef[] = [
   { path: "/evidencias", title: "Fontes e limitações", render: view("evidencias") },
   // Board and 3D lab live on their own pages; replace() keeps the back button working (no redirect loop).
   { path: "/bordo", prefix: true, title: "Painel de bordo", external: ctx => location.replace(bordoURL("onboard/cockpit.html", ctx.parts, ctx.query)) },
-  { path: "/terreno", title: "Terreno 3D", external: ctx => { const q = new URLSearchParams(); if (ctx.site) q.set("site", ctx.site); if (ctx.query.t) q.set("t", ctx.query.t); if (ctx.query.d) q.set("d", ctx.query.d); location.replace("lab.html" + (q.size ? "#" + q : "")); } },
+  { path: "/terreno", title: "Terreno 3D", render: (outlet, ctx) => {
+    mount(outlet, <section class="glass card"><h1 class="title-l" data-route-title="">Terreno 3D · Moon HD</h1>
+      <p class="t2">O modelo interativo do polo sul permanece acima, no mesmo aplicativo. Use os controles para explorar o relevo.</p>
+      <a class="btnL" href={"lab.html" + labHash({ ...ctx.query, site: ctx.site ?? undefined })}>Laboratório avançado (compatibilidade)</a></section>);
+  } },
   { path: "*", notFound: true, title: "Página não encontrada", render: (outlet) => {
     mount(outlet, <section class="glass card"><h1 class="title-l" data-route-title="">Página não encontrada</h1>
       <p class="t2">Este endereço não existe nesta versão.</p><a class="btnA" href="#/">Voltar para a escolha</a></section>);
@@ -71,6 +76,7 @@ function isCurrent(path: string, current: string) { return current === path || (
 function paintChrome(ctx: RouteCtx) {
   const q = { site: ctx.site, t: ctx.query.t, d: ctx.query.d }; // scenario travels with every nav link
   const el = (id: string) => document.getElementById(id) as HTMLElement;
+  paintMoonConsole(el("moon-console-root"), { path: ctx.path, site: ctx.site ?? undefined, day: ctx.query.t });
   render(<>{NAV.map(n => <a class={"navp" + (n.cls ? " " + n.cls : "")} href={buildHash(n.path, q)} aria-current={isCurrent(n.path, ctx.path) || (n.path === "/comparar" && ctx.path === "/comparar") ? "page" : undefined}>{icon(ICONS[n.ic])}{n.label}</a>)}</>, el("nav"));
   render(<>{KITS.map(k => <a class="navp" href={buildHash(k.path, q)} aria-current={ctx.path === k.path || ctx.path.startsWith(k.path + "/") ? "page" : undefined}>{k.label}</a>)}</>, el("kits"));
   render(<>{BOTTOM.map(n => <a href={buildHash(n.path, q)} aria-current={isCurrent(n.path, ctx.path) || (n.path === "/comparar" && ctx.path.startsWith("/comparar")) ? "page" : undefined}>{icon(ICONS[n.ic])}{n.label}</a>)}</>, el("bottomnav"));

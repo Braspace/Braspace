@@ -12,11 +12,9 @@ const TASKS = [
     { path: "/bordo", verb: "Acompanhar a missão", line: "Painel de bordo do módulo.", bullets: ["Energia, contato e vida", "Replanejar após atraso", "Selos de origem em cada número"], icon: "M3 5h18v12H3zM8 21h8M12 17v4" },
 ];
 export function render(outlet, ctx) {
-    const q = { site: ctx.site };
+    const q = { site: ctx.site, t: ctx.query.t, d: ctx.query.d };
     const last = lastRouteLabel();
     mount(outlet, h(Fragment, null,
-        h("div", { class: "backdrop", "aria-hidden": "true" },
-            h("img", { src: "./moon-hd/pole-preview.webp", alt: "" })),
         h("div", { class: "escolha" },
             h("section", { class: "hero" },
                 h("span", { class: "chipg" }, "Lunar Landing Site Navigator \u00B7 polo sul da Lua"),
@@ -40,6 +38,6 @@ export function render(outlet, ctx) {
                     h("span", { class: "chipa", "aria-hidden": "true" }, "\u2192"))))),
             h("div", { class: "row wrap" },
                 h("a", { class: "chipg", href: buildHash("/evidencias", q) }, "Ver fontes e limita\u00E7\u00F5es \u2192"),
-                h("a", { class: "chipg", href: "./moon-hd.html?view=pole&lang=pt" }, "Ver a Lua em 3D (polo sul) \u2192")),
-            h("p", { class: "t3 small" }, "Fundo: Lua 3D (imagens LRO, relevo LOLA, Sol pelo SPICE) quando o navegador tem WebGL; sem ele, a pr\u00E9via est\u00E1tica do mesmo relevo de Joel. Uso ilustrativo, sem valida\u00E7\u00E3o independente."))));
+                h("a", { class: "chipg", href: buildHash("/terreno", q) }, "Ver a Lua em 3D (polo sul) \u2192")),
+            h("p", { class: "t3 small" }, "O painel principal utiliza Lua 3D (imagens LRO, relevo LOLA, Sol pelo SPICE) e a pr\u00E9via est\u00E1tica do mesmo relevo de Joel quando o 3D n\u00E3o est\u00E1 dispon\u00EDvel. Uso ilustrativo, sem valida\u00E7\u00E3o independente."))));
 }
