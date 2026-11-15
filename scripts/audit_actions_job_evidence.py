@@ -2,7 +2,7 @@
 """Classify GitHub Actions job evidence without mistaking absent steps for CI success.
 
 Usage: python3 scripts/audit_actions_job_evidence.py jobs.json
-Input: GitHub REST /actions/runs/{run_id}/jobs JSON (object with "jobs").
+Input: GitHub REST /actions/runs/{run_id}/jobs JSON (or --paginate --slurp pages).
 Exit: 0 only when every job completed successfully with recorded successful steps;
       1 for blocked/incomplete evidence; 2 for malformed input.
 This is an evidence classifier, not a replacement for required-check review.
@@ -12,12 +12,40 @@ import sys
 
 
 def classify(payload):
-    if not isinstance(payload, dict) or not isinstance(payload.get("jobs"), list):
-        raise ValueError("expected object with jobs array")
-    jobs = payload["jobs"]
+    # gh api --paginate --slurp returns a list of page objects; a single
+    # GitHub REST response is one object. Require the advertised total count
+    # so a truncated first page can never be mistaken for a green run.
+    pages = payload if isinstance(payload, list) else [payload]
+    if not pages:
+        raise ValueError("expected nonempty job response pages")
+    jobs = []
+    advertised_total = None
+    for page in pages:
+        if not isinstance(page, dict) or not isinstance(page.get("jobs"), list):
+            raise ValueError("expected object(s) with jobs array")
+        count = page.get("total_count")
+        if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+            raise ValueError("missing/invalid total_count in job response")
+        if advertised_total is None:
+            advertised_total = count
+        elif advertised_total != count:
+            raise ValueError("inconsistent total_count across pages")
+        jobs.extend(page["jobs"])
     if not jobs:
         return ["NO_JOBS"]
+    seen_ids = set()
+    for job in jobs:
+        if not isinstance(job, dict):
+            raise ValueError("job must be object")
+        ident = job.get("id")
+        if not isinstance(ident, int) or isinstance(ident, bool):
+            raise ValueError("job id must be integer")
+        if ident in seen_ids:
+            raise ValueError("duplicate job id in response")
+        seen_ids.add(ident)
     blockers = []
+    if len(jobs) != advertised_total:
+        blockers.append(f"INCOMPLETE_JOB_PAGINATION_{len(jobs)}_OF_{advertised_total}")
     for index, job in enumerate(jobs):
         if not isinstance(job, dict):
             raise ValueError("job must be object")
