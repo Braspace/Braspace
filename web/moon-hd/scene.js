@@ -1,8 +1,8 @@
 // BRASPACE Moon HD: the shared 3D scene (shaders, geometry, Moon globe and south cap).
 // Used by the viewer (app.js) and by the page backdrop (backdrop.js) so both draw the same Moon.
 // Display only; see app.js and data/moonhd/manifest.json for what is real and what is a visual choice.
-// @ts-ignore TS2307: remote ES module (CDN), no local types
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.181.0/+esm";
+// @ts-ignore TS2307: vendored three.js 0.181.0 (web/vendor/three), no local types
+import * as THREE from "../vendor/three/three.module.min.js";
 import { bodyDirection, toGlobeScene } from "./ephemeris.js";
 import { R_REF, makeGrid, CAP_LAT, ALTITUDE_RANGE } from "./polar-math.js";
 export { THREE };
