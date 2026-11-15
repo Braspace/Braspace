@@ -32,8 +32,8 @@ register({
     "present.unknown": "There are not enough computed values to determine an answer. Missing data are not marked wrong.",
         "present.unknownChoice": "This scenario has missing measurements, so your choice cannot be graded.",
     "present.timerPaused": "Timer paused. Press to continue.",
-    "present.window": "UTC window: {start} · {hours} h",
-    "present.windowDefault": "Default window · {hours} h (start not specified)"
+        "present.window": "UTC window: {start} · {hours} h",
+        "present.windowDefault": "Default window · {hours} h (start not specified)"
     },
     "pt-BR": {
         "present.badge": "Apresentando · Missão",
@@ -58,8 +58,8 @@ register({
     "present.unknown": "Ainda não há dados suficientes para concluir. Dados ausentes não contam como erro.",
         "present.unknownChoice": "Faltam medições para este cenário; sua escolha não pode ser avaliada.",
     "present.timerPaused": "Cronômetro pausado. Pressione para continuar.",
-    "present.window": "Janela UTC: {start} · {hours} h",
-    "present.windowDefault": "Janela padrão · {hours} h (início não informado)"
+        "present.window": "Janela UTC: {start} · {hours} h",
+        "present.windowDefault": "Janela padrão · {hours} h (início não informado)"
     }
 });
 // No shell on this page: honour ?lang= (set by the other screens) and the browser language, and keep <html lang> in sync.
