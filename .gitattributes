@@ -1,5 +1,11 @@
+# Text files are stored and checked out with LF on every OS (Windows autocrlf must not rewrite them).
+* text=auto eol=lf
+
 # NASA-derived binary products are checksummed byte-for-byte; never convert line endings
 *.bin binary
 *.jpg binary
 *.img binary
 *.woff2 binary
+
+# Site series and catalog are checked by SHA-256 at API startup; never convert line endings (Windows autocrlf breaks the pin).
+api/sitedata/** -text
