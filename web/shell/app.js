@@ -1,6 +1,7 @@
 // moonproof v3 shell: one hash router for every route of the static site.
 // Views are lazy-loaded ES modules in ./views/. The board (onboard cockpit) and the 3D terrain lab
 // keep their own pages (their CSP and scripts differ) and are reached through the same routes.
+import { parseMission, labHref } from "../ds/mission-context.js";
 import { startRouter, buildHash, bordoURL, loadLastRoute, parseHash } from "../ds/router.js";
 import { h, provenanceStrip } from "../ds/components.js";
 
@@ -40,7 +41,7 @@ const routes = [
   { path: "/evidencias", title: "Fontes e limitações", render: view("evidencias") },
   // Board and 3D lab live on their own pages; replace() keeps the back button working (no redirect loop).
   { path: "/bordo", prefix: true, title: "Painel de bordo", external: ctx => location.replace(bordoURL("onboard/cockpit.html", ctx.parts, ctx.query)) },
-  { path: "/terreno", title: "Terreno 3D", external: ctx => { const q = new URLSearchParams(); if (ctx.site) q.set("site", ctx.site); if (ctx.query.t) q.set("t", ctx.query.t); if (ctx.query.d) q.set("d", ctx.query.d); location.replace("lab.html" + (q.size ? "#" + q : "")); } },
+  { path: "/terreno", title: "Terreno 3D", external: ctx => { const { ctx: m } = parseMission({ ...ctx.query, site: ctx.site }); location.replace(labHref(m)); } },
   { path: "*", notFound: true, title: "Página não encontrada", render: (outlet) => {
     outlet.append(h("section", { class: "glass card" }, h("h1", { class: "title-l", "data-route-title": "", text: "Página não encontrada" }),
       h("p", { class: "t2", text: "Este endereço não existe nesta versão." }), h("a", { class: "btnA", href: "#/", text: "Voltar para a escolha" })));
@@ -63,7 +64,7 @@ const BOTTOM = [
 function isCurrent(path, current) { return current === path || (path !== "/" && current.startsWith(path + "/") && path !== "/comparar"); }
 
 function paintChrome(ctx) {
-  const q = { site: ctx.site };
+  const q = { site: ctx.site, t: ctx.query.t, d: ctx.query.d }; // scenario travels with every nav link
   const nav = document.getElementById("nav");
   nav.replaceChildren(...NAV.map(n => h("a", { class: "navp" + (n.cls ? " " + n.cls : ""), href: buildHash(n.path, q), "aria-current": isCurrent(n.path, ctx.path) || (n.path === "/comparar" && ctx.path === "/comparar") ? "page" : null }, icon(ICONS[n.ic]), n.label)));
   document.getElementById("kits").replaceChildren(...KITS.map(k => h("a", { class: "navp", href: buildHash(k.path, q), "aria-current": ctx.path === k.path || ctx.path.startsWith(k.path + "/") ? "page" : null }, k.label)));

@@ -3,28 +3,36 @@
 // Every number comes from data/ (LOLA + SPICE pipeline). Missing data is "N/D", never 0.
 import { h, badge, num } from "../../ds/components.js";
 import { buildHash } from "../../ds/router.js";
+import { parseMission, serializeMission, warningText } from "../../ds/mission-context.js";
 import { loadSites, siteSeries, regionGrid, timeFromQuery, isoHour, fmtDate, HOUR_MS } from "../data.js";
 
 export const WINDOWS = [7, 14, 28, 56];          // window length options (days)
 export const LETTERS = ["A", "B", "C"];
 
-/** Scenario from the URL: { data, site, t0, days, hours }. Unknown ?site falls back to the first real site. */
+/** Scenario from the URL: { data, site, t0, days, hours, warnings }. Unsupported values fall back to the default
+ *  and are listed in `warnings` (shown by contextBar), never dropped silently. */
 export async function scenario(ctx) {
   const data = await loadSites();
-  const site = data.sites.find(s => s.id === ctx.site) || data.sites[0];
-  const days = WINDOWS.includes(Number(ctx.query.d)) ? Number(ctx.query.d) : 28;
-  let t0 = timeFromQuery(ctx.query, data.window);
+  const { ctx: m, warnings } = parseMission(ctx.query, { siteIds: data.sites.map(s => s.id), window: data.window });
+  const site = data.sites.find(s => s.id === m.siteId) || data.sites[0];
+  if (ctx.site && !m.siteId && !warnings.some(w => w.key === "site")) warnings.push({ key: "site", value: ctx.site, reason: "unknown-site" });
+  const days = m.durationH / 24;
+  let t0 = m.t ?? timeFromQuery({}, data.window);
   // keep the whole window inside the computed series
-  t0 = Math.min(t0, data.window.end - days * 24 * HOUR_MS);
-  return { data, site, t0, days, hours: days * 24 };
+  const last = data.window.end - days * 24 * HOUR_MS;
+  if (t0 > last) { warnings.push({ key: "t", value: isoHour(t0), reason: "window-end" }); t0 = last; }
+  return { data, site, t0, days, hours: days * 24, warnings };
 }
+
+/** Query carrying the resolved scenario (site, t, d), so a link opens exactly what the user sees. */
+export const scenarioQuery = sc => serializeMission({ siteId: sc.site.id, t: sc.t0, durationH: sc.hours });
 
 /** Sites picked for comparison (?a=&b=&c=). Explicit letters win; otherwise the originating
  *  ?site= is A and the remaining slots take the next distinct real sites (BR-01). */
 export function pickedSites(data, query) {
   const known = id => data.sites.some(s => s.id === id);
   const explicit = LETTERS.map(L => query[L.toLowerCase()]);
-  const fill = [query.site, ...data.sites.map(s => s.id)].filter(id => known(id) && !explicit.includes(id));
+  const fill = [...new Set([query.site, ...data.sites.map(s => s.id)])].filter(id => known(id) && !explicit.includes(id));
   const ids = explicit.map(id => id || fill.shift());
   return ids.map(id => data.sites.find(s => s.id === id)).filter(Boolean);
 }
@@ -49,6 +57,7 @@ export function contextBar(ctx, sc, { siteSelect = true } = {}) {
     WINDOWS.map(d => h("option", { value: String(d), text: d + " dias", selected: d === sc.days ? "" : null })));
   bar.append(h("label", { class: "row" }, h("span", { class: "lbl-s", text: "Início" }), date),
     h("span", { class: "dot", "aria-hidden": "true", text: "·" }), win);
+  if (sc.warnings?.length) bar.append(h("p", { class: "notice", role: "status", text: sc.warnings.map(warningText).join(" ") }));
   return bar;
 }
 

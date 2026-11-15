@@ -3,7 +3,7 @@
 import { h, badge, layerCard, num } from "../../ds/components.js";
 import { buildHash } from "../../ds/router.js";
 import { windowMetrics, hourlyRows } from "../data.js";
-import { scenario, contextBar, regionMap, seriesFor, seriesProof, pct, hrs, fmtDate, hourStrip, download, setQuery } from "./common.js";
+import { scenarioQuery, scenario, contextBar, regionMap, seriesFor, seriesProof, pct, hrs, fmtDate, hourStrip, download, setQuery } from "./common.js";
 
 const G = "est"; // global badge of this page (see the provenance strip)
 
@@ -61,7 +61,7 @@ export async function render(outlet, ctx) {
       answer: [h("span", { class: "big", text: num(sc.site.site_height_m, 0, " m") }), "acima da esfera de referência (1.737,4 km)."],
       why: "Altura do relevo LOLA no ponto do catálogo. Declividade e rugosidade aparecem no Terreno 3D.",
       proof: [["Coordenadas", num(sc.site.lat, 2, "°") + ", " + num(sc.site.lon, 2, "°")], ["Fonte do ponto", sc.site.source_url ? h("a", { href: sc.site.source_url, rel: "noopener", target: "_blank", text: sc.site.source }) : sc.site.source],
-        ["Nota", sc.data.raw.note], ["3D", h("a", { href: buildHash("/terreno", { site: sc.site.id }), text: "Abrir no Terreno 3D" })]],
+        ["Nota", sc.data.raw.note], ["3D", h("a", { href: buildHash("/terreno", scenarioQuery(sc)), text: "Abrir no Terreno 3D" })]],
     }),
   ];
 
