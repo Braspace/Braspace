@@ -304,7 +304,7 @@ func Handler() http.Handler {
 		media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil || media != "application/json" {
 			w.WriteHeader(http.StatusUnsupportedMediaType)
-			_ = json.NewEncoder(w).Encode(map[string]string{"code": "CONTENT_TYPE_REQUIRED", "error": "application/json required"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"code": "UNSUPPORTED_MEDIA_TYPE", "error": "application/json required"})
 			return
 		}
 		raw, err := io.ReadAll(io.LimitReader(r.Body, MaxRequestBytes+1))
@@ -329,7 +329,7 @@ func Handler() http.Handler {
 		var trailing any
 		if err := dec.Decode(&trailing); err != io.EOF {
 			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(map[string]string{"code": "TRAILING_JSON", "error": "trailing payload not allowed"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"code": "INVALID_JSON", "error": "trailing payload not allowed"})
 			return
 		}
 		out, err := Evaluate(req)
