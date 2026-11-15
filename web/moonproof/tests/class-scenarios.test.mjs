@@ -32,7 +32,7 @@ test("Direct Kit Aula links keep the legacy first-three default", () => {
   assert.ok(selected.every(w => w.start === defaults.start && w.hours === defaults.hours));
 });
 
-test("Invalid catalogue IDs cannot inject synthetic/unknown classroom sites", () => {
+test("Invalid catalogue IDs cannot inject unknown classroom sites", () => {
   assert.deepEqual(classroomWindows(sites, "#sc=not-in-catalogue", defaults).map(w => w.site.id), ["site-a", "site-b", "site-c"]);
   assert.deepEqual(classroomWindows(sites, "#sc=site-b%7E%7E", defaults).map(w => w.site.id), ["site-b"]);
 });
