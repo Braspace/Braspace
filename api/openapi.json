@@ -1040,11 +1040,42 @@
         },
         "responses": {
           "200": {
-            "description": "OK. Engine result including evidence_passport and science_status; never VALIDATED.",
+            "description": "OK. All required Rust output fields are explicit, non-null and exact-case. The evidence passport describes caller-supplied inputs; never VALIDATED.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["site_id", "epoch_utc", "science_status", "sun_horizon_deg", "earth_horizon_deg", "sun_margin_deg", "earth_margin_deg", "sun_visible", "earth_visible", "simultaneous_visibility", "evidence_passport"],
+                  "properties": {
+                    "site_id": {"type": "string"},
+                    "epoch_utc": {"type": "string", "format": "date-time"},
+                    "science_status": {"type": "string", "enum": ["UNVERIFIED_INPUTS"]},
+                    "sun_horizon_deg": {"type": "number", "minimum": -90, "maximum": 90},
+                    "earth_horizon_deg": {"type": "number", "minimum": -90, "maximum": 90},
+                    "sun_margin_deg": {"type": "number"},
+                    "earth_margin_deg": {"type": "number"},
+                    "sun_visible": {"type": "boolean"},
+                    "earth_visible": {"type": "boolean"},
+                    "simultaneous_visibility": {"type": "boolean"},
+                    "source_warning": {"type": "string"},
+                    "evidence_passport": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["protocol", "request_sha256", "terrain_dataset_id_claimed", "ephemeris_id_claimed", "frame_claimed", "inputs_supplied_by_caller", "nasa_sources_verified", "scientific_validation", "replay_path"],
+                      "properties": {
+                        "protocol": {"type": "string", "enum": ["braspace.visibility.v1"]},
+                        "request_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+                        "terrain_dataset_id_claimed": {"type": "string"},
+                        "ephemeris_id_claimed": {"type": "string"},
+                        "frame_claimed": {"type": "string", "enum": ["MOON_ME"]},
+                        "inputs_supplied_by_caller": {"type": "boolean", "enum": [true]},
+                        "nasa_sources_verified": {"type": "boolean", "enum": [false]},
+                        "scientific_validation": {"type": "boolean", "enum": [false]},
+                        "replay_path": {"type": "string", "enum": ["/v1/visibility"]}
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -1090,7 +1121,7 @@
             }
           },
           "502": {
-            "description": "Engine failed or returned an invalid contract (ENGINE_ERROR)",
+            "description": "Engine failed or returned an invalid contract, including missing, null, duplicate, case-aliased or unknown fields (ENGINE_ERROR)",
             "content": {
               "application/json": {
                 "schema": {
