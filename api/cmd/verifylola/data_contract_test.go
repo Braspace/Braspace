@@ -34,8 +34,8 @@ type fullManifest struct {
 		ProductFile string `json:"product_file"`
 		Raster      struct {
 			Lines, LineSamples, SampleBits, RecordBytes, FileSizeBytes int64
-			SampleType                                                string  `json:"sample_type"`
-			ScalingFactor                                             float64 `json:"scaling_factor"`
+			SampleType                                                 string  `json:"sample_type"`
+			ScalingFactor                                              float64 `json:"scaling_factor"`
 		} `json:"raster"`
 		MapProjection struct {
 			CoordinateSystemName string `json:"coordinate_system_name"`

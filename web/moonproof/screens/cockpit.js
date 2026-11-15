@@ -11,6 +11,7 @@ import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { TEXTS } from "./cockpit-texts.js";
 import { mountArtemisCockpit } from "../../moon-hd/artemis-cockpit.js";
 import { CREW_DEFAULT, POWER_FIELDS, CREW_FIELDS, crewRequest, readCrewAnswer, validateInputs, sensitivityVariants, readEnergy, loadSaved, saveScenario, savedExport } from "./cockpit-crew.js";
+import { foldOpen, foldSave, sessionStore, splitRules } from "./cockpit-fold.js";
 import { siteEvaluateBody, FAULTS, H1_PROFILE, SPEEDS, HOUR_MS, applyFault, runScenario, nextChange, dailyFractions, autonomyHours, fmtDuration, clockLabel, hourIndex, evaluateRules, rulesMet, longestRun, countRises } from "./cockpit-model.js";
 register(TEXTS);
 const $ = (id) => document.getElementById(id);
@@ -175,7 +176,21 @@ async function skyTransition(site, atIso) {
     S.sky = { k, v };
     return v;
 }
-const rulesCard = el("article", "mp-card mp-rules"), alertCard = el("article", "mp-card mp-alert"), faultCard = el("article", "mp-glass");
+// Secondary cards are accordions (<details>/<summary>), closed by default; the choice is remembered for this tab session.
+const foldStore = sessionStore();
+function accordion(id, cls) {
+    const box = el("details", "ck-acc " + cls);
+    box.id = "acc-" + id;
+    box.open = foldOpen(foldStore, id);
+    const sum = el("summary", "ck-acc-sum");
+    box.append(sum);
+    box.addEventListener("toggle", () => { foldSave(foldStore, id, box.open); if (!narrow())
+        placeBodies(); });
+    return { box, sum };
+}
+const sunAcc = accordion("sun-days", "ck-acc-sun"), faultAcc = accordion("faults", "mp-glass");
+let rulesOpen = foldOpen(foldStore, "rules-more");
+const rulesCard = el("article", "mp-card mp-rules"), alertCard = el("article", "mp-card mp-alert"), faultCard = faultAcc.box;
 const left = $("left"), right = $("right");
 const sheet = $("sheet");
 // Every caller fires draw() without awaiting it: a failed series fetch (offline, or cancelled by navigation)
@@ -258,14 +273,16 @@ async function drawNow() {
         moonBtn.textContent = "◐ " + t("cockpit.moon3d");
     moonBtn.title = t("cockpit.moon3d.hint");
     artemis.relabel();
-    left.replaceChildren(title, stat, visrow, moonBtn, card.el);
+    sunAcc.sum.replaceChildren(el("span", "ck-acc-name", t("cockpit.sun_hours_day")), sealSpan(sealFor(L.m.sunPct.status)));
+    sunAcc.box.replaceChildren(sunAcc.sum, card.el);
+    left.replaceChildren(title, stat, visrow, moonBtn, sunAcc.box);
     // rules
     const list = evaluateRules({ rules: { night: st.night, blackout: st.blackout, battery: st.battery }, lightStatus: doc.status, trace, capacityWh: run?.ok ? cap : null, light: L });
     const met = rulesMet(list);
     const rh = el("div", "mp-head");
     rh.append(el("h3", null, t("cockpit.rules")), el("span", "mp-count", t("cockpit.rules_met", { n: met.ok, m: met.of })));
     const lim = { floor: st.battery, night: st.night, blackout: st.blackout, days: 5, sunrises: 2 };
-    rulesCard.replaceChildren(rh, ...list.map(r => {
+    const ruleRow = (r) => {
         const row = el("div", "mp-rule");
         row.dataset.status = r.status;
         row.dataset.rule = r.id;
@@ -278,7 +295,22 @@ async function drawNow() {
         const sealS = r.status === "nodata" ? ` · N/D` : "";
         row.append(txt, el("span", "st", t(r.status === "pass" ? "cockpit.pass" : r.status === "risk" ? "cockpit.risk" : "cockpit.nodata") + (r.status === "nodata" ? "" : "")));
         return row;
-    }), Object.assign(el("a", "mp-link", t("cockpit.where_rules")), { href: hrefTo("evidence.html") }));
+    };
+    // first 3 rules in view; the others open in place behind "+N rules" (the "x of y met" count above always covers all of them)
+    const { head: rulesHead, more: rulesMore } = splitRules(list);
+    const moreBox = el("div", "mp-rules-more");
+    moreBox.id = "rules-more";
+    moreBox.hidden = !rulesOpen;
+    moreBox.append(...rulesMore.map(ruleRow));
+    const moreBtn = el("button", "mp-link ck-rules-toggle");
+    moreBtn.type = "button";
+    moreBtn.setAttribute("aria-controls", "rules-more");
+    moreBtn.setAttribute("aria-expanded", String(rulesOpen));
+    const moreLabel = () => t(rulesOpen ? "cockpit.rules_less" : "cockpit.rules_more", { n: rulesMore.length });
+    moreBtn.textContent = moreLabel();
+    moreBtn.hidden = !rulesMore.length;
+    moreBtn.onclick = () => { rulesOpen = !rulesOpen; foldSave(foldStore, "rules-more", rulesOpen); moreBox.hidden = !rulesOpen; moreBtn.setAttribute("aria-expanded", String(rulesOpen)); moreBtn.textContent = moreLabel(); };
+    rulesCard.replaceChildren(rh, ...rulesHead.map(ruleRow), moreBox, moreBtn, Object.assign(el("a", "mp-link", t("cockpit.where_rules")), { href: hrefTo("evidence.html") }));
     // alert: next sunset from the API's next_transitions when it has the site's series, else from the stored series
     const at = new Date(L.m.t0 + L.f.delayH * HOUR_MS + th * HOUR_MS).toISOString();
     let apiTr = online ? await skyTransition(site, at) : null;
@@ -302,8 +334,7 @@ async function drawNow() {
         alertCard.replaceChildren(el("span", "mp-alert-ic"), body);
     }
     // faults
-    const fh = el("div", "mp-head");
-    fh.append(el("h3", null, t("cockpit.test_problem")), sealSpan("SIM"));
+    faultAcc.sum.replaceChildren(el("span", "ck-acc-name", t("cockpit.test_problem")), sealSpan("SIM"));
     const fb = el("div", "mp-faults");
     for (const f of Object.values(FAULTS)) {
         const b = el("button", "mp-pill", t(f.key, { n: f.n }));
@@ -315,7 +346,7 @@ async function drawNow() {
     }
     const note = el("p", "mp-ck-note", run?.ok ? "" : t(run?.offline ? "cockpit.offline" : "cockpit.route.none"));
     fb.append(note);
-    faultCard.replaceChildren(fh, fb);
+    faultCard.replaceChildren(faultAcc.sum, fb);
     right.replaceChildren(rulesCard, alertCard, faultCard, crewCard());
     // map tags
     const tagSun = sunNext?.inHours != null ? t(sunNext.visible ? "cockpit.sun_sets_in" : "cockpit.sun_rises_in", { t: fmtDuration(sunNext.inHours) }) : t("nd");
@@ -419,10 +450,13 @@ function crewCard() {
         return crewEl;
     }
     const c = document.createElement("details");
-    c.className = "mp-card ck-crew";
+    c.className = "mp-card ck-crew ck-acc";
+    c.id = "acc-crew";
     crewEl = c;
+    c.open = foldOpen(foldStore, "crew");
+    c.addEventListener("toggle", () => foldSave(foldStore, "crew", c.open));
     const sum = document.createElement("summary");
-    sum.className = "ck-crew-title";
+    sum.className = "ck-crew-title ck-acc-sum";
     sum.textContent = t("crew.title");
     c.append(sum);
     const form = document.createElement("form");

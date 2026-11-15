@@ -30,19 +30,19 @@ type skySample struct {
 }
 
 type skyResponse struct {
-	APIVersion      string           `json:"api_version"`
-	SiteID          string           `json:"site_id"`
-	ScienceStatus   string           `json:"science_status"`
-	ScientificallyValidated bool `json:"scientifically_validated"`
-	Provenance      seriesProvenance `json:"provenance"`
-	ObserverHeightM float64          `json:"observer_height_m"`
-	StartUTC        string           `json:"start_utc"`
-	EndUTC          string           `json:"end_utc"`
-	StepSeconds     int              `json:"step_seconds"`
-	TerrainHorizon  []horizonSample  `json:"terrain_horizon"`
-	Samples         []skySample      `json:"samples"`
-	NextTransitions *nextTransitions `json:"next_transitions"`
-	Limitations     []string         `json:"limitations"`
+	APIVersion              string           `json:"api_version"`
+	SiteID                  string           `json:"site_id"`
+	ScienceStatus           string           `json:"science_status"`
+	ScientificallyValidated bool             `json:"scientifically_validated"`
+	Provenance              seriesProvenance `json:"provenance"`
+	ObserverHeightM         float64          `json:"observer_height_m"`
+	StartUTC                string           `json:"start_utc"`
+	EndUTC                  string           `json:"end_utc"`
+	StepSeconds             int              `json:"step_seconds"`
+	TerrainHorizon          []horizonSample  `json:"terrain_horizon"`
+	Samples                 []skySample      `json:"samples"`
+	NextTransitions         *nextTransitions `json:"next_transitions"`
+	Limitations             []string         `json:"limitations"`
 }
 
 func (m *missionAPI) registerSky(mux *http.ServeMux) {

@@ -10,8 +10,8 @@
 // Options   : natural colour or colour by altitude; real sunlight or an even light with no night side.
 // Display only. Relief exaggeration, the photometric function, the even light, earthshine and the star
 // background are visual choices; no landing metric is computed here. See data/moonhd/manifest.json.
-// @ts-ignore TS2307: remote ES module (CDN), no local types
-import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/controls/OrbitControls.js/+esm";
+// @ts-ignore TS2307: vendored three.js 0.181.0 (web/vendor/three), no local types
+import { OrbitControls } from "../vendor/three/addons/controls/OrbitControls.js";
 import type { SiteSeries, BodySky } from "./ephemeris.js";
 import { decodeEphemeris, indexAt, timeAt, pointsAt, bodyDirection, toGlobeScene, signedLon, elevationAtSouthPole, decodeOrientation, orientationAt, decodeSiteSeries, siteSkyAt } from "./ephemeris.js";
 import { R_REF, latLonToStereo, CAP_LAT } from "./polar-math.js";

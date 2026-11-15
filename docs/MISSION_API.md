@@ -90,7 +90,7 @@ and `science_status` travel with every candidate; `onboard.source_claim_unverifi
 names the terrain/ephemeris IDs.
 
 Rejected instead of filled in: a site without series (`DATA_NOT_AVAILABLE`), a window
-past the data (`OUTSIDE_COVERAGE`), more than 480 steps (`WINDOW_TOO_LONG`), candidates
+past the data (`OUTSIDE_COVERAGE`), more than 720 steps (`WINDOW_TOO_LONG`), candidates
 on different time steps (`GRID_MISMATCH`).
 
 Optional `crew` adds oxygen and food: autonomy, depletion time and margin at the end

@@ -194,10 +194,11 @@ test("backdrop source: three.js only on demand, same pinned version as the viewe
  const src=await read("moon-hd/backdrop.js"),scene=await read("moon-hd/scene.js"),app=await read("moon-hd/app.js"),lab=await read("lab/scene.js");
  assert.doesNotMatch(src,/^\s*import\s.*from\s/m,"no static import: nothing is fetched before the page content");
  assert.match(src,/import\("\.\/scene\.js"\)/);
- const version=s=>[...s.matchAll(/https:\/\/cdn\.jsdelivr\.net\/npm\/three@([0-9.]+)\//g)].map(m=>m[1]);
- assert.deepEqual([...new Set([...version(scene),...version(app),...version(lab)])],["0.181.0"]);
- assert.ok(version(scene).length>=1);
- assert.doesNotMatch(src+scene,/https?:\/\/(?!cdn\.jsdelivr\.net\/npm\/three@0\.181\.0\/)[a-z]/,"no other remote origin");
+ // One vendored three.js (web/vendor/three, 0.181.0) for viewer, lab and backdrop: no CDN, one THREE instance.
+ const vendored=s=>[...s.matchAll(/vendor\/three\//g)].length;
+ assert.ok(vendored(scene)>=1&&vendored(app)>=1&&vendored(lab)>=1,"viewer, scene and lab import web/vendor/three");
+ assert.match(await read("vendor/three/three.core.min.js"),/"181"/,"three.js r181 (0.181.0)");
+ assert.doesNotMatch(src+scene+app+lab,/https?:\/\/[a-z]/,"no remote origin at all");
  assert.doesNotMatch(src,/console\.|alert\(|throw /,"fails silently");
  assert.match(src,/webglcontextlost/);assert.match(src,/prefers-reduced-motion/);assert.match(src,/visibilitychange/);assert.match(src,/IntersectionObserver/);
  assert.match(src,/aria-hidden/);

@@ -7,6 +7,7 @@ package onboard
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/Braspace/Braspace/api/internal/jsoncontract"
 	"html/template"
 	"io"
 	"mime"
@@ -158,7 +159,7 @@ Educational scenario simulation only. Sun and Earth visibility values, site name
 <p><strong>Review checklist:</strong> Compare every numeric value with the corresponding <span class="mono">/api/onboard/evaluate</span> JSON response; verify risk thresholds and science status; cite primary NASA/LROC/JPL assets when actually integrated.</p>
 <p>This self-contained HTML document can be saved as PDF using your browser's Print → Save as PDF feature. No external network resource, JavaScript, logo, tracking or third-party script is required.</p>
 </footer>
-</body></html>`;
+</body></html>`
 
 var missionReport = template.Must(template.New("mission-report").Parse(reportTemplate))
 
@@ -173,15 +174,15 @@ type ReportAppendix struct {
 
 type AppendixCandidate struct {
 	ID, SiteID, ScienceStatus, Provenance, ConsumablesStatus string
-	Admissible                                             bool
-	Consumables                                            []ConsumableRow
-	Risks                                                  []Risk
+	Admissible                                               bool
+	Consumables                                              []ConsumableRow
+	Risks                                                    []Risk
 }
 
 type ConsumableRow struct {
-	Resource, Status                                                                  string
+	Resource, Status                                                          string
 	StockAtStartKg, UsedDuringDelayKg, RequiredKg, AutonomyHours, MarginHours float64
-	DepletionUTC                                                                      string
+	DepletionUTC                                                              string
 }
 
 type reportView struct {
@@ -214,6 +215,10 @@ func ReportHandler() http.Handler {
 		raw, err := io.ReadAll(io.LimitReader(r.Body, MaxRequestBytes+1))
 		if err != nil || len(raw) > MaxRequestBytes {
 			http.Error(w, "maximum request size exceeded", http.StatusRequestEntityTooLarge)
+			return
+		}
+		if err := jsoncontract.Check(raw); err != nil {
+			http.Error(w, "invalid JSON document", http.StatusBadRequest)
 			return
 		}
 		dec := json.NewDecoder(bytes.NewReader(raw))

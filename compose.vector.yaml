@@ -1,21 +1,30 @@
 # OPTIONAL overlay on top of compose.yaml + compose.db.yaml.
 # Usage: docker compose -f compose.yaml -f compose.db.yaml -f compose.vector.yaml up --build
-# Runs `api vector-ingest` to apply api/db/optional-vector.sql and seed
-# provenance-linked metadata embeddings (never used for lunar physics).
+# Explicit opt-in overlay installs the optional schema, then imports only the
+# reviewed registry via the pinned lexical projection (not lunar physics).
 services:
   db:
     image: pgvector/pgvector:pg16
-  vector-ingest:
-    build:
-      context: .
-    command: ["/app/bin/api", "vector-ingest"]
+  vector-schema:
+    image: pgvector/pgvector:pg16
+    entrypoint: ["psql", "-v", "ON_ERROR_STOP=1", "-h", "db", "-U", "braspace", "-d", "braspace", "-f", "/schema/optional-vector.sql"]
     environment:
-      DATABASE_URL: "postgres://braspace:${POSTGRES_PASSWORD}@db:5432/braspace?sslmode=disable"
-      VECTOR_DATABASE_URL: "postgres://braspace:${POSTGRES_PASSWORD}@db:5432/braspace?sslmode=disable"
+      PGPASSWORD: "${POSTGRES_PASSWORD}"
+    volumes:
+      - ./api/db/optional-vector.sql:/schema/optional-vector.sql:ro
     depends_on:
       db:
         condition: service_healthy
-      ingest:
+    restart: "no"
+  vector-ingest:
+    build:
+      context: .
+    command: ["/app/bin/api", "vector-ingest", "-lexical", "-apply"]
+    environment:
+      VECTOR_DATABASE_URL: "postgres://braspace:${POSTGRES_PASSWORD}@db:5432/braspace?sslmode=disable"
+      BRASPACE_VECTOR_MODEL_ID: "braspace-lexical-384-v1"
+    depends_on:
+      vector-schema:
         condition: service_completed_successfully
     restart: "no"
   api:
