@@ -73,6 +73,45 @@ func TestVisibilityRejectsNullEngineScalars(t *testing.T) {
 	}
 }
 
+// A successful Rust document must mean exactly the same thing to Go and to
+// the browser. encoding/json otherwise coerces null into zero/false and
+// silently accepts duplicate keys and case-insensitive struct field aliases.
+func TestVisibilityRejectsAmbiguousEngineOutput(t *testing.T) {
+	valid := okEngineJSON + `}`
+	_, spec := loadSpec(t)
+	cases := map[string]string{
+		"null zero horizon":      strings.Replace(valid, `"sun_horizon_deg":0`, `"sun_horizon_deg":null`, 1),
+		"null earth horizon":     strings.Replace(valid, `"earth_horizon_deg":0`, `"earth_horizon_deg":null`, 1),
+		"null false flag":        strings.Replace(valid, `"earth_visible":false`, `"earth_visible":null`, 1),
+		"null simultaneous flag": strings.Replace(valid, `"simultaneous_visibility":false`, `"simultaneous_visibility":null`, 1),
+		"duplicate exact key":    okEngineJSON + `,"earth_visible":false}`,
+		"duplicate escaped key":  okEngineJSON + `,"earth_\u0076isible":false}`,
+		"case alias":             okEngineJSON + `,"Earth_Visible":false}`,
+		"optional alias":         okEngineJSON + `,"Source_Warning":"unexpected alias"}`,
+		"null optional warning":  okEngineJSON + `,"source_warning":null}`,
+	}
+	for name, payload := range cases {
+		t.Run(name, func(t *testing.T) {
+			rec := visibilityVia(t, scriptEngine(t, "printf '%s\\n' '"+payload+"'"))
+			if rec.Code != http.StatusBadGateway || decode(t, rec)["code"] != "ENGINE_ERROR" {
+				t.Fatalf("ambiguous output must be a stable ENGINE_ERROR: %d %s", rec.Code, rec.Body.String())
+			}
+			for _, issue := range validateSchema(spec, responseSchema(t, spec, "/v1/visibility", "post", rec.Code), decode(t, rec), name) {
+				t.Error(issue)
+			}
+		})
+	}
+	for _, payload := range []string{valid, okEngineJSON + `,"source_warning":"unverified caller inputs"}`} {
+		rec := visibilityVia(t, scriptEngine(t, "printf '%s\\n' '"+payload+"'"))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("explicit zero/false and valid optional string must pass: %d %s", rec.Code, rec.Body.String())
+		}
+		for _, issue := range validateSchema(spec, responseSchema(t, spec, "/v1/visibility", "post", rec.Code), decode(t, rec), "valid engine result") {
+			t.Error(issue)
+		}
+	}
+}
+
 func TestVisibilityCapsEngineOutput(t *testing.T) {
 	// ~200 KB of valid-looking padding after the contract: must be refused, not buffered.
 	rec := visibilityVia(t, scriptEngine(t, "printf '%s' '"+okEngineJSON+",\"source_warning\":\"'; head -c 200000 /dev/zero | tr '\\\\0' 'x'; printf '\"}\\n'"))
