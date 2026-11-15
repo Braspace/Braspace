@@ -17,7 +17,9 @@ concurrency:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    # Repository variable CI_RUNS_ON switches runners without editing workflows, e.g. '["self-hosted","exo-x1"]'
+    # while GitHub-hosted minutes are blocked by billing; unset it to go back to ubuntu-latest.
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4

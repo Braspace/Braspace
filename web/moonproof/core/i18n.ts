@@ -14,6 +14,8 @@ export const dict: Texts = {
     "ctx.site": "Site", "ctx.compare": "Compare",
     "ctx.sunCap": "Sun: upper bound",
     "ctx.sunCapWhy": "Sunlight here is probably overestimated. Our series gives {ours} % and the NASA PGDA map {pgda} % ({diff} points less); the terrain horizon is traced to 100 km only. Read every Sun figure for this site as \"at most\".",
+    "ctx.reachCap": "Sun: upper bound · Night: lower bound",
+    "ctx.reachCapWhy": "The 100 km terrain horizon likely overstates sunlight and understates the longest darkness. A preliminary 200 km sensitivity study changes Sun-centre visibility from {sun100} to {sun200} % and longest darkness from {dark100} to {dark200} h. The longer-range result is not independently validated; see the horizon reach study.",
     "layer.answer": "Answer", "layer.why": "Why", "layer.proof": "Proof",
     "layer.seeWhy": "See why", "layer.seeProof": "See proof",
     "seal.VAL": "validated", "seal.PRE": "preliminary, not NASA-reviewed", "seal.EST": "estimate, unverified inputs",
@@ -38,7 +40,7 @@ export const dict: Texts = {
     "proof.step": "Step", "proof.window": "Window", "proof.source": "Sources", "proof.src.compare": "Live API (comparison)", "proof.status": "State", "proof.sha": "Series SHA-256",
     "proof.loading": "loading…", "proof.error": "Data could not be loaded: {msg}",
     "terrain.label": "Shaded relief of the lunar south pole from NASA LOLA (400 m)",
-    "terrain.marker": "Site {n}: {name}",
+    "terrain.marker": "{n} {name} (site)",
   },
   "pt-BR": {
     "brand": "moonproof",
@@ -49,6 +51,8 @@ export const dict: Texts = {
     "ctx.site": "Local", "ctx.compare": "Comparar",
     "ctx.sunCap": "Sol: teto",
     "ctx.sunCapWhy": "A luz solar aqui provavelmente está superestimada. Nossa série dá {ours} % e o mapa PGDA da NASA {pgda} % ({diff} pontos a menos); o horizonte do relevo só é traçado até 100 km. Leia todo número de Sol deste local como \"no máximo\".",
+    "ctx.reachCap": "Sol: teto · Noite: mínimo",
+    "ctx.reachCapWhy": "O horizonte de 100 km provavelmente superestima a luz solar e subestima a maior escuridão. Um estudo preliminar com 200 km muda a visibilidade do centro do Sol de {sun100} para {sun200} % e a maior escuridão de {dark100} para {dark200} h. O resultado de maior alcance não foi validado independentemente; veja o estudo do alcance do horizonte.",
     "layer.answer": "Resposta", "layer.why": "Por quê", "layer.proof": "Prova",
     "layer.seeWhy": "Ver por quê", "layer.seeProof": "Ver prova",
     "seal.VAL": "validado", "seal.PRE": "preliminar, sem revisão da NASA", "seal.EST": "estimativa, entradas não verificadas",
@@ -73,7 +77,7 @@ export const dict: Texts = {
     "proof.step": "Passo", "proof.window": "Janela", "proof.source": "Fontes", "proof.src.compare": "API ao vivo (comparação)", "proof.status": "Estado", "proof.sha": "SHA-256 da série",
     "proof.loading": "carregando…", "proof.error": "Não foi possível carregar o dado: {msg}",
     "terrain.label": "Relevo sombreado do polo sul da Lua a partir do LOLA da NASA (400 m)",
-    "terrain.marker": "Local {n}: {name}",
+    "terrain.marker": "{n} {name} (local)",
   },
 };
 

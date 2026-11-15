@@ -62,8 +62,10 @@ catch {
 } }
 export function saveScenario(storage, entry, max = 20) {
     const list = [entry, ...loadSaved(storage).filter((x) => x.id !== entry.id)].slice(0, max);
+    if (!storage)
+        return { ok: false, list };
     try {
-        storage?.setItem(SAVED_KEY, JSON.stringify(list));
+        storage.setItem(SAVED_KEY, JSON.stringify(list));
         return { ok: true, list };
     }
     catch {

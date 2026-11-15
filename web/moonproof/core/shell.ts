@@ -83,7 +83,7 @@ export function mountShell({ screen, context = null, onLang, kit = null }: Shell
       pill(t("nav.class"), { cls: "mp-kit" + (kit === "class" ? " is-kit-on" : ""), pressed: st.task === "class", onClick: () => { setState({ task: st.task === "class" ? null : "class" }); render(); } }),
       pill(t("nav.plan"), { cls: "mp-kit" + (kit === "plan" ? " is-kit-on" : ""), pressed: st.task === "plan", onClick: () => { setState({ task: st.task === "plan" ? null : "plan" }); render(); } }),
       helpPill(),
-      pill(t("nav.lang.short"), { cls: "is-round mp-lang", label: t("nav.lang"), onClick: () => { const l = lang() === "en" ? "pt-BR" : "en"; setState({ lang: l }); setLang(l); render(); apply(); onLang && onLang(l); } }),
+      pill(t("nav.lang.short"), { cls: "is-round mp-lang", label: `${t("nav.lang.short")} · ${t("nav.lang")}`, onClick: () => { const l = lang() === "en" ? "pt-BR" : "en"; setState({ lang: l }); setLang(l); render(); apply(); onLang && onLang(l); } }),
     );
     top.replaceChildren(brand, nav, right);
     bottom.setAttribute("aria-label", t("nav.main"));
@@ -107,8 +107,10 @@ export function mountShell({ screen, context = null, onLang, kit = null }: Shell
     const caveat = sunCaveat(catalogue?.sites.find(s => s.id === st.site));
     if (caveat) {
       const chip = document.createElement("span"); chip.className = "mp-caveat"; chip.tabIndex = 0;
-      chip.textContent = t("ctx.sunCap");
-      chip.title = t("ctx.sunCapWhy", { ours: caveat.ours.toFixed(1), pgda: caveat.pgda.toFixed(1), diff: caveat.diff.toFixed(1) });
+      chip.textContent = t(caveat.reach ? "ctx.reachCap" : "ctx.sunCap");
+      chip.title = caveat.reach
+        ? t("ctx.reachCapWhy", { sun100: caveat.reach.sun100, sun200: caveat.reach.sun200, dark100: caveat.reach.dark100, dark200: caveat.reach.dark200 })
+        : t("ctx.sunCapWhy", { ours: caveat.ours.toFixed(1), pgda: caveat.pgda.toFixed(1), diff: caveat.diff.toFixed(1) });
       chip.setAttribute("aria-label", chip.textContent + ". " + chip.title);
       parts.push(chip);
     }

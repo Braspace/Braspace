@@ -58,7 +58,8 @@ export const SAVED_KEY = "braspace.cockpit.saved.v1";
 export function loadSaved(storage: Storage | null | undefined): any[] { try { const v = JSON.parse(storage?.getItem(SAVED_KEY) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; } }
 export function saveScenario(storage: Storage | null | undefined, entry: { id: string; [k: string]: unknown }, max = 20) {
   const list = [entry, ...loadSaved(storage).filter((x: { id: string }) => x.id !== entry.id)].slice(0, max);
-  try { storage?.setItem(SAVED_KEY, JSON.stringify(list)); return { ok: true, list }; } catch { return { ok: false, list }; }
+  if (!storage) return { ok: false, list };
+  try { storage.setItem(SAVED_KEY, JSON.stringify(list)); return { ok: true, list }; } catch { return { ok: false, list }; }
 }
 export function savedExport(list: unknown[], now = new Date()) {
   return { schema: "braspace.cockpit-scenarios", version: 1, exported_utc: now.toISOString(), storage: "localStorage (this browser only)", science_status: "SIMULATION", scenarios: list };

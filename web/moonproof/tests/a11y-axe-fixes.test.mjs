@@ -15,7 +15,7 @@ test("role=img bars carry a text alternative with the drawn values", () => {
   assert.match(read("core/layers.ts"), /bar\.setAttribute\("aria-label"/);
 });
 test("contrast: entry subtitle fully opaque; fail badge on Heloísa's --fail-fill", () => {
-  assert.match(read("screens/entry.css"), /\.mp-task \.who\{font-size:14px;font-weight:600;opacity:1;/);
+  assert.match(read("screens/entry.css"), /\.mp-task \.who\{font-size:14px;font-weight:600;opacity:1;color:inherit\}\.mp-task\[aria-current="true"\] \.who\{opacity:1\}/);
   assert.match(read("screens/scenario.css"), /\.mp-badge\.is-fail\{background:var\(--fail-fill\);color:#fff\}/);
 });
 test("scrollable regions are keyboard reachable and named", () => {
