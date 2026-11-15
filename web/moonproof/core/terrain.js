@@ -64,7 +64,9 @@ export function freeArea(W, H, rects) {
   const pad = 36; // marker radius + label
   l += pad; tp += pad; r -= pad; b -= pad + 18;
   if (r - l < W * .2) { const c = (l + r) / 2; l = c - W * .1; r = c + W * .1; }
-  if (b - tp < H * .2) { const c = (tp + b) / 2; tp = c - H * .1; b = c + H * .1; }
+  // Cramped (phone: context bar + sheet): keep the marker between the real bars with a tight pad (radius 24 above, label 40 below) instead of growing into them.
+  if (b - tp < H * .2) { tp -= pad - 24; b += pad + 18 - 40; }
+  if (b - tp < 8) { const c = (tp + b) / 2; tp = c - 4; b = c + 4; }
   return { l, t: tp, r, b };
 }
 
@@ -72,7 +74,7 @@ function overlayRects(container) {
   const out = [];
   for (const el of document.body.querySelectorAll("body > *")) {
     if (el === container || el.contains(container) || el.hidden) continue;
-    const cs = getComputedStyle(el); if (cs.position !== "fixed" || cs.display === "none" || cs.visibility === "hidden") continue;
+    const cs = getComputedStyle(el); if (cs.position !== "fixed" || cs.display === "none" || cs.visibility === "hidden" || cs.pointerEvents === "none") continue; // decorations (Sun/Earth icons and tags) never move the frame
     out.push(el.getBoundingClientRect());
   }
   return out;

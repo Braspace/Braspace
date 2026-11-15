@@ -150,8 +150,17 @@
 .ck-crew-tools{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.ck-crew-tools .mp-pill{min-height:44px}.ck-saved{list-style:none;padding:0;margin:6px 0;display:grid;gap:4px}.ck-saved .mp-link{background:none;border:0;color:var(--jade);text-decoration:underline;cursor:pointer;min-height:44px;text-align:left;padding:0}
 /* iPhone (Safari, 14/11): scale() over a 250x200 box drew an ellipse and pushed the satellites off the halo. A real square circle. */
 @media (max-width:700px){
-  .mp-ck-left .mp-stat{width:176px!important;height:176px!important;transform:none!important;margin:42px auto 40px!important;aspect-ratio:1}
-  .mp-ck-left .mp-stat-core{inset:34px}
-  .mp-ck-left .mp-sat{width:46px;height:46px;margin:-23px 0 0 -23px}
-  .mp-ck-left .mp-sat b{font-size:12px}.mp-ck-left .mp-sat span{font-size:10px;max-width:42px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
+
+/* Phone (iPhone review): the context bar fits in two short lines and the stat circle is whole, right under its question. */
+@media (max-width:700px){
+  .mp-context{flex-wrap:wrap;gap:4px 8px;padding:6px 12px}
+  .mp-context .mp-ctx-text{flex:1 1 100%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mp-context .mp-sim-chip,.mp-context>.mp-label{display:none}
+  .mp-context a,.mp-context .mp-pill{min-height:32px;height:32px;padding:0 12px;font-size:12.5px}
+  .mp-sheet{--sheet-h:42vh}.mp-ck-title{margin:0 0 32px!important}
+  .mp-ck-left .mp-stat{width:136px!important;height:136px!important;transform:none!important;margin:0 auto 34px!important;aspect-ratio:1}
+  .mp-ck-left .mp-stat-core{inset:24px}
+  .mp-ck-left .mp-sat{width:56px;height:56px;margin:-28px 0 0 -28px}
+  .mp-ck-left .mp-sat b{font-size:12px}.mp-ck-left .mp-sat span{font-size:9px;line-height:1.1;max-width:52px;white-space:normal;text-align:center}
 }

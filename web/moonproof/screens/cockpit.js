@@ -26,7 +26,7 @@ const S = { t: 0, playing: false, speed: SPEEDS[1], fault: null, run: null, ligh
 /** Frame the chosen site inside the free area of the map (centre on desktop, upper part above the sheet on mobile). */
 function frame() {
   const site = doc.sites.find(s => s.id === getState().site); terrain.select(site.id);
-  if (narrow()) { const v = terrain.view, H = innerHeight; v.cy = site.stereo_y_m - 0.2 * H * (v.span / Math.min(innerWidth, H)); terrain.redraw(); }
+  // phone framing: core/terrain.js already centres the site in the free area between the context bar and the sheet
   placeBodies();
 }
 function markerCentre() {
@@ -45,7 +45,11 @@ function placeBodies() {
   if (sheetTop && getComputedStyle(document.querySelector(".mp-sheet")).display !== "none") { const maxY = sheetTop - 62; sun[1] = Math.min(sun[1], maxY); earth[1] = Math.min(earth[1], maxY); }
   for (const [b, p] of [["sun", sun], ["earth", earth]]) {
     Object.assign(bodies[b].ic.style, { left: p[0] + "px", top: p[1] + "px" });
-    Object.assign(bodies[b].tag.style, { left: p[0] + "px", top: p[1] + 24 + "px" });
+    // Phone: icons sit wide of the marker and each tag is clamped on screen, so neither covers the marker "1".
+    if (narrow()) p[0] = b === "sun" ? Math.max(28, c[0] - 130) : Math.min(innerWidth - 28, c[0] + 130);
+    if (narrow()) Object.assign(bodies[b].ic.style, { left: p[0] + "px" });
+    const half = (bodies[b].tag.offsetWidth || 120) / 2, tx = narrow() ? Math.min(innerWidth - half - 8, Math.max(half + 8, p[0])) : p[0];
+    Object.assign(bodies[b].tag.style, { left: tx + "px", top: p[1] + 24 + "px" });
     bodies[b].line.setAttribute("x1", c[0]); bodies[b].line.setAttribute("y1", c[1]); bodies[b].line.setAttribute("x2", p[0]); bodies[b].line.setAttribute("y2", p[1]);
   }
 }
