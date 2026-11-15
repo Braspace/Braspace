@@ -5,8 +5,8 @@ Drafted by an AI agent (Renata, BR109); @joeljato (science owner) must review be
 
 ## 1. What the code computes
 
-For a site (latitude, longitude, height 2 m) and a UTC time, `science/three_site_pipeline.py` computes:
-1. the Sun and Earth direction as azimuth/elevation (`science/spice_lunar_angles.py`, NAIF SPICE, apparent light-time + stellar aberration, frame `MOON_ME_DE440_ME421`);
+For a site (latitude, longitude, height 2 m) and a UTC time, `api/cmd/threesitepipeline` (Go; formerly `science/three_site_pipeline.py`) computes:
+1. the Sun and Earth direction as azimuth/elevation (`api/naif` + `api/spicelunar`, a pure-Go NAIF SPICE subset checked against CSPICE, apparent light-time + stellar aberration, frame `MOON_ME_DE440_ME421`);
 2. the terrain horizon (`science/lola_horizon.py`): rays every 1 deg of azimuth over LOLA `LDEM_80S_80M`, 160 m steps, out to 100 km, lunar curvature included;
 3. "visible" = the body's **centre** is above the horizon at that azimuth, plus a straight-horizon solar-disc fraction (radius about 0.27 deg).
 
