@@ -40,16 +40,26 @@ jobs:
           POSTGRES_PASSWORD: ci-temporary-only
           POSTGRES_DB: braspace
         # Avoid conflicts with shared PostgreSQL instances on the EXO-X1 host.
-        ports: ["5432/tcp"]
+        ports: ["5432"]
         options: >-
           --health-cmd "pg_isready -U braspace -d braspace"
           --health-interval 5s --health-timeout 5s --health-retries 20
     env:
-      TEST_VECTOR_DATABASE_URL: "postgres://braspace:ci-temporary-only@127.0.0.1:${{ job.services['postgres-vector'].ports[5432] }}/braspace?sslmode=disable"
-      TEST_DATABASE_URL: "postgres://braspace:ci-temporary-only@127.0.0.1:${{ job.services['postgres-vector'].ports[5432] }}/braspace?sslmode=disable"
       BRASPACE_VECTOR_ENABLED: "0"
     steps:
       - uses: actions/checkout@v4
+      # GitHub does not expose job.services in jobs.<job_id>.env, only within step
+      # expressions. Resolve the ephemeral port after the service is running.
+      - name: Configure disposable PostgreSQL service URL
+        env:
+          DB_PORT: ${{ job.services['postgres-vector'].ports[5432] }}
+        run: |
+          set -euo pipefail
+          : "${DB_PORT:?postgres service port missing}"
+          {
+            echo "TEST_VECTOR_DATABASE_URL=postgres://braspace:ci-temporary-only@127.0.0.1:${DB_PORT}/braspace?sslmode=disable"
+            echo "TEST_DATABASE_URL=postgres://braspace:ci-temporary-only@127.0.0.1:${DB_PORT}/braspace?sslmode=disable"
+          } >> "$GITHUB_ENV"
       - uses: actions/setup-go@v5
         with:
           go-version-file: api/go.mod
