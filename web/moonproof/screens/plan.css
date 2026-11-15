@@ -202,9 +202,10 @@
 }
 @media (max-width: 900px) {
   .mp-plan-layout {
-    position: static;
+    position: relative; /* static dropped z-index 15: the fixed #terrain canvas covered the rule labels */
+    inset: auto;
     margin: 76px 13px 84px 13px;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
   }
   .mp-plan-rules, .mp-plan-export, .mp-plan-table {

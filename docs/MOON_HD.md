@@ -69,7 +69,7 @@ or `mountMoonBackdrop({ view: "pole" | "globe", interactive: false })`. It adds 
 ## Cross-check with the site series
 
 `web/tests/moon-hd.test.mjs` compares, for Connecting Ridge and Peak Near Shackleton, whether the Sun's centre is above the
-terrain according to (a) the team series (`science/three_site_pipeline.py`: Sun seen from the site with `spkcpo`, against a
+terrain according to (a) the team series (`api/cmd/threesitepipeline`: Sun seen from the site with `spkcpo`, against a
 360-azimuth LOLA horizon traced out to 100 km) and (b) the viewer's ray march toward the sub-solar direction (`sunClearance`
 in `web/moon-hd/polar-math.js`, a CPU copy of the shader at relief ×1). Samples within 0.3° of the horizon are left out.
 

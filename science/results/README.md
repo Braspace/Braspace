@@ -1,6 +1,6 @@
 # Five-site Sun/Earth visibility, 2025–2028 (PRELIMINARY)
 
-These results come from `science/three_site_pipeline.py` with the PR #86 half-pixel registration fix, run on real NASA data:
+These results come from `api/cmd/threesitepipeline` (ported from `science/three_site_pipeline.py`; the per-site JSON is byte-identical) with the PR #86 half-pixel registration fix, run on real NASA data:
 
 - **Terrain:** LRO/LOLA `LDEM_80S_80M.IMG` (80 m/px), SHA-256 `e6591eee…5fdc`.
 - **Ephemeris:** NAIF `de440s.bsp`, `moon_pa_de440_200625.bpc`, `moon_de440_250416.tf`, `naif0012.tls`. Frame `MOON_ME_DE440_ME421`, apparent `LT+S` from the surface site (`spkcpo`).
