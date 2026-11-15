@@ -187,3 +187,17 @@ html:not(.mp-ready) body{visibility:hidden;animation:mp-reveal 0s 2s forwards}
 }
 @media (max-width: 900px) { .mp-fold { display: none; } }
 @media (prefers-reduced-motion: reduce) { [data-fold] { transition: none; } }
+
+/* QA 15/11 (EXO-X1/Haiku): the SIM seal inside the jade stat circle had 1.14:1 contrast (lilac on jade):
+   on jade it becomes a solid lilac chip with dark text (Heloísa's --sim hue, same shape). */
+.mp-stat-core .mp-seal[data-seal="SIM"]{background:#D9C6FA;color:#160B26;border-color:#160B26}
+/* Touch: every control in the MoonProof chrome is at least 44 px on coarse pointers (18 of 42 cockpit controls were 32–40 px at 390). */
+@media (pointer:coarse){
+  :is(.mp-sheet,.mp-ck-left,.mp-ck-right,.mp-player,.mp-links,.mp-scn-dock,.mc-dock) :is(button,input:not([type=range]):not([type=checkbox]):not([type=radio]),select,a.mp-pill,.mp-chip){min-height:44px}
+}
+/* Tablet (701–1100 px): nav pills become icon-only (the label stays as the accessible name), so Explorar/Comparar
+   are no longer scrolled out of view on the left (QA 768: x = -50). */
+@media (min-width:701px) and (max-width:1100px){
+  .mp-nav .mp-pill{font-size:0;gap:0;padding:0 12px;min-width:44px;justify-content:center}
+  .mp-nav .mp-pill svg{width:17px;height:17px}
+}
