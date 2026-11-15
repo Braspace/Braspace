@@ -267,6 +267,7 @@ body.mp-present { font-variant-numeric: tabular-nums; }
 }
 @media (max-width: 900px) {
   .mp-present-top { position: relative; top: auto; left: auto; right: auto; margin: 13px 13px 0; flex-wrap: wrap; }
+  .mp-present-brand { flex-wrap: wrap; min-width: 0; row-gap: 5px; }
   .mp-present-q, .mp-present-side, .mp-present-bottom { position: relative; left: auto; right: auto; top: auto; bottom: auto; width: auto; margin: 13px; }
   .mp-present-q { margin-top: 21px; }
   .mp-present-q h1 { font-size: 34px; line-height: 40px; }

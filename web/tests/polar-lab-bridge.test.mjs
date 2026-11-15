@@ -8,16 +8,13 @@ await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
 const origin="http://127.0.0.1:"+server.address().port;
 after(()=>new Promise(resolve=>server.close(resolve)));
 
-test("Heloísa lab, linked from classic MoonProof, serves same-origin NASA assets",async()=>{
- const home=await (await fetch(origin+"/classic.html")).text();
- assert.match(home,/href="\.\/lab\.html"/);
+test("MoonProof is the product; shared lab modules and NASA-derived data stay same-origin",async()=>{
+ const home=await fetch(origin+"/");assert.equal(home.status,200);assert.match(await home.text(),/url=moonproof\//);
  const paths=[
-  ["/lab.html","text/html"],["/lab/app.js","text/javascript"],
-  ["/lab/backend-bridge.js","text/javascript"],["/lab/backend-widget.js","text/javascript"],
-  ["/lab/lab.css","text/css"],["/data/sites.json","application/json"],
-  ["/data/region/south_pole_400m.bin","application/octet-stream"],
-  ["/data/moon/lroc_color_2k.jpg","image/jpeg"],
-  ["/data/validation/validation_horizons.json","application/json"]
+  ["/moonproof/","text/html"],["/moonproof/landing.html","text/html"],
+  ["/lab/physics.js","text/javascript"],["/lab/scene.js","text/javascript"],["/lab/backend-bridge.js","text/javascript"],
+  ["/data/sites.json","application/json"],["/data/region/south_pole_400m.bin","application/octet-stream"],
+  ["/data/moonhd/manifest.json","application/json"],["/moon-hd.html","text/html"]
  ];
  for(const [path,ct] of paths){
   const r=await fetch(origin+path);
@@ -25,6 +22,11 @@ test("Heloísa lab, linked from classic MoonProof, serves same-origin NASA asset
   assert.match(r.headers.get("content-type"),new RegExp(ct),path);
   assert.match(r.headers.get("content-security-policy"),/default-src 'none'/,path);
   assert.equal(r.headers.get("x-content-type-options"),"nosniff",path);
+ }
+});
+test("archived surfaces are no longer served (archive/web-legacy)",async()=>{
+ for(const path of ["/classic.html","/lab.html","/lab/app.js","/studio/","/onboard/","/onboard/cockpit.html","/dashboard/","/shell/app.js","/ds/router.js","/polar-map-demo.html","/app.js","/moon3d.js","/styles.css"]){
+  const r=await fetch(origin+path);assert.equal(r.status,404,path);
  }
 });
 test("strict allowlist denies file access and sensitive extensions",async()=>{

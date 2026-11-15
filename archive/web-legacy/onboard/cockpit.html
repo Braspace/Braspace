@@ -1,0 +1,83 @@
+<!doctype html>
+<html data-moon-preview="decorative" lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BRASPACE · Computador de bordo</title>
+<link rel="stylesheet" href="../ds/tokens.css">
+<link rel="stylesheet" href="../ds/components.css">
+<link rel="stylesheet" href="cockpit.css">
+<script type="module" src="../moon-hd/backdrop.js" data-moon-backdrop="pole"></script>
+<link rel="stylesheet" href="../moon-hd/preview.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <a class="brand" href="../index.html#/" aria-label="moonproof · voltar para a escolha de tarefa">
+      <svg width="30" height="30" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11" class="logo-ring"/><path d="M14 3a11 11 0 0 1 0 22a7 11 0 0 0 0-22z" class="logo-fill"/></svg>
+      <div>moonproof<small>Painel de bordo</small></div>
+    </a>
+    <nav class="tabs" aria-label="Painéis">
+      <div class="grp">Missão</div>
+      <button type="button" data-tab="visao" aria-pressed="true"><span class="ic">◉</span>Visão geral</button>
+      <button type="button" data-tab="entrada" aria-pressed="false"><span class="ic">✎</span>Parâmetros</button>
+      <button type="button" data-tab="geometria" aria-pressed="false"><span class="ic">☀</span>Geometria</button>
+      <button type="button" data-tab="horizonte" aria-pressed="false"><span class="ic">⌒</span>Horizonte</button>
+      <button type="button" data-tab="janelas" aria-pressed="false"><span class="ic">▭</span>Janelas</button>
+      <button type="button" data-tab="navegacao" aria-pressed="false"><span class="ic">⌁</span>Navegação</button>
+      <div class="grp">Recursos</div>
+      <button type="button" data-tab="energia" aria-pressed="false"><span class="ic">⚡</span>Energia</button>
+      <button type="button" data-tab="vida" aria-pressed="false"><span class="ic">✚</span>Vida</button>
+      <div class="grp">Análise</div>
+      <button type="button" data-tab="replan" aria-pressed="false"><span class="ic">↻</span>Replanejar</button>
+      <button type="button" data-tab="visual" aria-pressed="false"><span class="ic">◎</span>Visual</button>
+      <button type="button" data-tab="sens" aria-pressed="false"><span class="ic">≈</span>Sensibilidade</button>
+      <div class="grp">Dados</div>
+      <button type="button" data-tab="historico" aria-pressed="false"><span class="ic">☰</span>Registro</button>
+      <button type="button" data-tab="lanc" aria-pressed="false"><span class="ic">↑</span>Lançamentos</button>
+      <button type="button" data-tab="status" aria-pressed="false"><span class="ic">✓</span>Status</button>
+    </nav>
+    <div class="side-foot">Cada número leva o selo da sua origem. Não é software de voo.
+      <p><a class="chipg" href="../moon-hd.html?view=pole&amp;lang=pt">Lua 3D (polo sul) ↗</a></p>
+      <p>Fundo: Lua 3D ilustrativa. NASA SVS (CGI Moon Kit, Deep Star Maps), NASA LRO/LOLA, NASA/JPL NAIF SPICE. Sem validação independente; não é um produto da NASA.</p></div>
+  </aside>
+
+  <main class="shell">
+    <header class="top">
+      <nav class="topnav" id="topnav" aria-label="Módulos"></nav>
+      <h1 class="sr" id="page-title" tabindex="-1">Painel de bordo</h1>
+      <label class="filter" title="Lugar: sintéticos (SIM) e reais (abrem em Explorar)"><b>Lugar</b>
+        <select id="top-site" aria-label="Lugar"></select>
+      </label>
+      <div class="filter"><span>UTC</span><b class="num" id="utc">--:--:--</b><span class="dim num" id="met">T- --</span></div>
+      <div class="status" role="status" aria-label="Estado do sistema">
+        <details class="alarm none" id="alarm">
+          <summary id="alarm-sum">Sem alarmes do modelo</summary>
+          <ul id="alarm-list"></ul>
+        </details>
+        <span id="badges" class="badges"><span class="prov sim">SIM</span> PROTÓTIPO · sintético · <span class="prov nd">N/D</span> Não validado · Sem recomendação de voo</span>
+        <span class="chip info" id="lamp-api">API ?</span>
+      </div>
+    </header>
+
+    <div class="content">
+      <section id="views" class="grid" aria-live="polite"></section>
+    </div>
+  </main>
+</div>
+
+<button type="button" class="fab" id="fab" aria-label="Calcular energia do cenário com a API"><span class="plus" aria-hidden="true">+</span><span class="tip">Calcular energia</span></button>
+
+<script type="module" src="../ds/components.js"></script>
+<script type="module" src="../ds/router.js"></script>
+<script defer src="sim.js"></script>
+<script defer src="request.js"></script>
+<script defer src="model.js"></script>
+<script defer src="nav.js"></script>
+<script defer src="live.js"></script>
+<script defer src="features.js"></script>
+<script defer src="config.js"></script>
+<script defer src="api.js"></script>
+<script defer src="cockpit.js"></script>
+</body>
+</html>

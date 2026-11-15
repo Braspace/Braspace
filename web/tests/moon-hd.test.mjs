@@ -225,5 +225,5 @@ test("local preview serves the Moon HD page, modules and data, and nothing else 
  }
  for(const route of ["/moon-hd/","/moon-hd/app.mjs","/moon-hd/sub/app.js","/moon-hd/APP.js","/moon-hd/app.js.map","/moon-hd.htm"])
   assert.equal(moonHdFile(route),null,route);
- assert.equal((await fetch(base+"/moon-hd/missing.js")).status,500);
+ assert.equal((await fetch(base+"/moon-hd/missing.js")).status,404); // allowed pattern, no file: not found, not a server error
 });

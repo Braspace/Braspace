@@ -280,6 +280,21 @@ export async function createCap({ renderer, base, manifest, moon, segments, step
   return { mesh, uniforms, innerGrid, wideGrid, lightPolar, camPolar };
 }
 
+// Flat south-polar stereographic map of a cap (2D maps such as MoonProof): the same fragment shading,
+// but each stereographic point goes straight to the screen, so the image registers pixel for pixel with
+// maps drawn in stereographic x/y. stereoView = centre x, y and half width, half height, in metres.
+const CAP_STEREO_VERTEX = CAP_COMMON + `
+uniform vec4 stereoView;
+varying vec2 vSt;
+void main(){
+  vSt = position.xy;
+  gl_Position = vec4((vSt - stereoView.xy) / stereoView.zw, 0.0, 1.0);
+}`;
+export function stereoCapMaterial(cap: CapScene, steps = 1) {
+  const uniforms = { ...cap.mesh.material.uniforms, stereoView: { value: new THREE.Vector4(0, 0, 1, 1) } };
+  return new THREE.ShaderMaterial({ uniforms, vertexShader: CAP_STEREO_VERTEX, fragmentShader: CAP_FRAGMENT, defines: { STEPS: steps, MAX_RANGE: "260000.0" } });
+}
+
 // Light direction and camera position in the polar frame of the cap shader.
 export function setPolarFrame(cap: Pick<CapScene, "lightPolar" | "camPolar">, lightDir: { x: number; y: number; z: number }, camera: Three) {
   cap.lightPolar.set(lightDir.x, -lightDir.y, -lightDir.z);

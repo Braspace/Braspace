@@ -22,7 +22,7 @@ Browser, all same-origin; no CORS change on the API.
 Guarantees (covered by `moonproof-worker.test.mjs`):
 
 - Allowlist equals the OpenAPI paths; the test fails on drift either way.
-- Upstream pinned; `redirect: "error"`; no Cookie, Authorization, Origin or client-IP headers forwarded.
+- Upstream pinned; `redirect: "manual"` and any 3xx refused as 502 (workerd throws a TypeError for `"error"`: on 15/11 that made every `/api` call 502 `API_UNAVAILABLE`; covered by `moonproof-worker.workerd-redirect.test.mjs`); no Cookie, Authorization, Origin or client-IP headers forwarded.
 - POST bodies: `application/json` only, ≤ 128 KiB (Go's bound), must be a JSON object; no query string.
 - Go status codes and error bodies pass through unchanged (a 422 stays a 422).
 - Per-route success media types mirror the OpenAPI (`image/jpeg`, `model/gltf-binary` for layer assets; `text/html` reports keep the upstream CSP). Anything else on a 2xx → 502 `INVALID_UPSTREAM_RESPONSE`.

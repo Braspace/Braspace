@@ -288,15 +288,22 @@
 
 @media (max-width: 900px) {
   .mp-act-layout {
-    position: static;
+    /* relative (not static) keeps z-index 15: with static, the fixed #terrain canvas painted over the
+       permissions card text (.mp-card has no stacking context of its own, unlike .mp-glass). */
+    position: relative;
+    inset: auto; /* the desktop fixed-board offsets must not shift the relative box */
     margin: 76px 13px 84px 13px;
-    grid-template-columns: 1fr;
+    /* minmax(0, 1fr): a bare 1fr track grows to its content's min width (nowrap share buttons, 460 px URL), which pushed every panel to 504 px and scrolled the page sideways at 320-390 px. */
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
   }
   .mp-act-steps, .mp-act-preview, .mp-act-controls, .mp-act-share {
     grid-column: 1;
     grid-row: auto;
+    min-width: 0;
   }
+  .mp-act-share .mp-share-btns { margin-left: 0; flex-wrap: wrap; gap: 13px; }
+  .mp-share-url { max-width: 100%; }
   .mp-chip, .mp-layer-tab { min-height: 36px; height: 36px; }
 }
 

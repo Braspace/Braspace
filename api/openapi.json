@@ -818,7 +818,8 @@
                 "type": "object",
                 "required": [
                   "lat",
-                  "lon"
+                  "lon",
+                  "start_utc", "duration_hours", "step_minutes"
                 ],
                 "properties": {
                   "lat": {

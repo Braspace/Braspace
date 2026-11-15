@@ -250,6 +250,14 @@ export async function mountMoonBackdrop(options) {
                 const wanted = new URLSearchParams(location.search).get("site") || new URLSearchParams(String(location.hash).split("?")[1] || "").get("site");
                 if (wanted)
                     selectSite(wanted, false);
+                // explore was opened before the catalogue arrived: fly now so the pins spread out
+                if (exploring && !tween && pins.length) {
+                    const sel = pins.find(p => p.id === selectedId);
+                    if (sel)
+                        focusLatLon(sel.lat, sel.lon, 1.5);
+                    else
+                        focusLatLon(-88.6, 20, 1.55);
+                }
                 requestDraw();
             }
             catch { /* no pins: the Moon stays a complete backdrop */ }
@@ -429,7 +437,18 @@ export async function mountMoonBackdrop(options) {
                 wrap.removeAttribute("aria-label");
             }
             openBtn.setAttribute("aria-pressed", String(onOff));
-            openBtn.textContent = onOff ? "✕ " + T.close : T.open;
+            openBtn.textContent = onOff ? T.close : T.open;
+            openBtn.setAttribute("aria-label", onOff ? T.close : T.open);
+            openBtn.title = onOff ? T.close : T.open;
+            // The south-pole sites sit within a few degrees of each other: from the far default view they stack on one
+            // point. Opening explore flies close to the selected site (or the pole) so the pins spread out.
+            if (onOff && !tween) {
+                const sel = pins.find(p => p.id === selectedId);
+                if (sel)
+                    focusLatLon(sel.lat, sel.lon, 1.5);
+                else if (pins.length)
+                    focusLatLon(-88.6, 20, 1.55);
+            }
             touched();
             kick();
         };
@@ -514,7 +533,25 @@ if (typeof document !== "undefined") {
         const view = tag.dataset.moonBackdrop, lazy = tag.hasAttribute("data-moon-lazy");
         const start = () => setTimeout(() => {
             if (!lazy) {
-                mountMoonBackdrop({ view });
+                // No hardware WebGL (or the scene failed): Joel's real GPU poster instead of an empty background.
+                mountMoonBackdrop({ view }).then(async (made) => {
+                    if (made)
+                        return;
+                    try {
+                        const { mountMoonPoster } = await import("./poster-fallback.js");
+                        const wrap = document.createElement("div");
+                        wrap.className = "moon-backdrop is-on is-poster";
+                        wrap.setAttribute("aria-hidden", "true");
+                        document.body.prepend(wrap);
+                        const css = document.createElement("link");
+                        css.rel = "stylesheet";
+                        css.href = new URL("./backdrop.css", import.meta.url).href;
+                        document.head.append(css);
+                        mountMoonPoster(wrap, { view: view === "globe" ? "globe" : "pole", lang: (document.documentElement.lang || "pt").startsWith("en") ? "en" : "pt" });
+                        document.documentElement.classList.add("moon-backdrop-on");
+                    }
+                    catch { /* the page keeps its own background */ }
+                });
                 return;
             }
             const pt = (document.documentElement.lang || navigator.language || "").toLowerCase().startsWith("pt");

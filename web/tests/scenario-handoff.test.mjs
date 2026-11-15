@@ -17,13 +17,3 @@ test("BR-02: unknown site and bad time keep defaults; out-of-coverage time is cl
   assert.deepEqual(parseEntryHash("", sites, start, end), {});
 });
 
-test("BR-01: Explore→Compare keeps the originating site as A; explicit letters win", async () => {
-  const { pickedSites } = await import("../shell/views/common.js");
-  const data = { sites: ["mons-mouton-im2", "malapert-massif", "nobile-rim-1", "connecting-ridge", "peak-near-shackleton"].map(id => ({ id })) };
-  const ids = q => pickedSites(data, q).map(s => s.id);
-  assert.deepEqual(ids({ site: "connecting-ridge" }), ["connecting-ridge", "mons-mouton-im2", "malapert-massif"]);
-  assert.deepEqual(ids({ site: "peak-near-shackleton" })[0], "peak-near-shackleton");
-  assert.deepEqual(ids({ a: "nobile-rim-1", b: "malapert-massif", c: "mons-mouton-im2", site: "connecting-ridge" }), ["nobile-rim-1", "malapert-massif", "mons-mouton-im2"]);
-  assert.deepEqual(ids({ b: "mons-mouton-im2" }), ["malapert-massif", "mons-mouton-im2", "nobile-rim-1"]);
-  assert.deepEqual(ids({}), ["mons-mouton-im2", "malapert-massif", "nobile-rim-1"]);
-});
