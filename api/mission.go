@@ -10,11 +10,12 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"mime"
 	"net/http"
 	"sort"
-	"strings"
 	"time"
 
+	"github.com/Braspace/Braspace/api/internal/jsoncontract"
 	"github.com/Braspace/Braspace/api/onboard"
 )
 
@@ -159,12 +160,15 @@ func (m *missionAPI) getSite(w http.ResponseWriter, r *http.Request) {
 
 // decodeJSON enforces content type, size, known fields and a single document.
 func decodeJSON(r *http.Request, v any) error {
-	if ct := r.Header.Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+	if media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil || media != "application/json" {
 		return errf(http.StatusUnsupportedMediaType, "UNSUPPORTED_MEDIA_TYPE", "application/json required")
 	}
 	raw, err := io.ReadAll(io.LimitReader(r.Body, maxRequestBytes+1))
 	if err != nil || len(raw) > maxRequestBytes {
 		return errf(http.StatusRequestEntityTooLarge, "REQUEST_TOO_LARGE", "request too large")
+	}
+	if err := jsoncontract.Check(raw); err != nil {
+		return errf(http.StatusBadRequest, "INVALID_JSON", "invalid JSON document")
 	}
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.DisallowUnknownFields()

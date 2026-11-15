@@ -11,6 +11,8 @@ import (
 	"io"
 	"mime"
 	"net/http"
+
+	"github.com/Braspace/Braspace/api/internal/jsoncontract"
 )
 
 const reportTemplate = `<!doctype html>
@@ -214,6 +216,10 @@ func ReportHandler() http.Handler {
 		raw, err := io.ReadAll(io.LimitReader(r.Body, MaxRequestBytes+1))
 		if err != nil || len(raw) > MaxRequestBytes {
 			http.Error(w, "maximum request size exceeded", http.StatusRequestEntityTooLarge)
+			return
+		}
+		if err := jsoncontract.Check(raw); err != nil {
+			http.Error(w, "invalid JSON document", http.StatusBadRequest)
 			return
 		}
 		dec := json.NewDecoder(bytes.NewReader(raw))
