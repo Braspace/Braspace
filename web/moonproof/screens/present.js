@@ -7,6 +7,7 @@ import { sealEl } from "../core/layers.js";
 import { register, t, fmtNum, pickLang, setLang } from "../core/i18n.js";
 import { getState, hrefTo, DEFAULT_RULES } from "../core/state.js";
 import { evaluateQuestion, gradeChoice } from "./quiz-grading.js";
+import { classroomWindows } from "./class-scenarios.js";
 register({
     en: {
         "present.badge": "Presenting · Mission",
@@ -64,15 +65,16 @@ holdReady();
 const doc = await loadSites();
 const LETTERS = ["A", "B", "C"];
 // Scenarios are real sites; the terrain marker shows the scenario letter instead of the site number.
-const scenarios = doc.sites.slice(0, 3).map((s, i) => ({ ...s, n: LETTERS[i] }));
 const st = getState();
+const chosenWindows = classroomWindows(doc.sites, location.hash, st);
+const scenarios = chosenWindows.map((w, i) => ({ ...w.site, n: LETTERS[i] }));
 const nightLimit = Number(st.night ?? DEFAULT_RULES.night);
 const blackoutLimit = Number(st.blackout ?? DEFAULT_RULES.blackout);
 await mountTerrain(document.getElementById("terrain"), {
     sites: scenarios,
     selected: st.site || scenarios[0]?.id
 });
-const metrics = await Promise.all(scenarios.map((s) => apiWindowMetrics(doc, s, st.start, st.hours || 336)));
+const metrics = await Promise.all(chosenWindows.map((w) => apiWindowMetrics(doc, w.site, w.start, w.hours || 336)));
 let qIndex = 1;
 let revealed = false;
 let chosen = null;
@@ -121,7 +123,7 @@ function draw() {
     paint(h(Fragment, null,
         h(IconX, null),
         t("present.exit")), exitEl);
-    exitEl.href = hrefTo("activity.html");
+    exitEl.href = hrefTo("activity.html") + location.hash;
     const progEl = $("present-progress");
     progEl.setAttribute("aria-label", t("present.qOf", { n: qIndex }));
     paint(h(Fragment, null, [1, 2, 3, 4].map((i) => h("span", { class: `mp-progress-seg ${i <= qIndex ? "is-done" : ""}` }))), progEl);
