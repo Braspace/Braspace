@@ -109,6 +109,9 @@ func (r Request) resolve() (Premises, float64, float64, float64, time.Time, int,
 	if !(lat >= -90 && lat <= 90) || !(lon >= -180 && lon <= 180) {
 		return P, 0, 0, 0, time.Time{}, 0, errors.New("lat must be in [-90, 90] and lon in [-180, 180]")
 	}
+	if r.StartUTC == "" {
+		return P, 0, 0, 0, time.Time{}, 0, errors.New("start_utc is required (RFC 3339 UTC)")
+	}
 	start, err := time.Parse(time.RFC3339, r.StartUTC)
 	if err != nil {
 		return P, 0, 0, 0, time.Time{}, 0, errors.New("start_utc must be RFC 3339")

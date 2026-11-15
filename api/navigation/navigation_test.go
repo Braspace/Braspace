@@ -144,3 +144,24 @@ func TestHandlerContract(t *testing.T) {
 		t.Fatalf("no content type: status %d, want 415", wrong.Code)
 	}
 }
+
+func TestStartUTCContract(t *testing.T) {
+	post := func(body string) (int, string) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/api/onboard/navigation", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		Handler().ServeHTTP(w, req)
+		return w.Code, w.Body.String()
+	}
+	rest := `"lat":-89.5,"lon":45,"duration_hours":24,"step_minutes":60`
+	code, out := post(`{` + rest + `}`)
+	if code != http.StatusUnprocessableEntity || !strings.Contains(out, `"INVALID_INPUT"`) || !strings.Contains(out, "start_utc is required (RFC 3339 UTC)") {
+		t.Errorf("missing start_utc: %d %s", code, out)
+	}
+	if code, out = post(`{` + rest + `,"start_utc":"ontem"}`); code != http.StatusUnprocessableEntity || !strings.Contains(out, "must be RFC 3339") {
+		t.Errorf("invalid start_utc: %d %s", code, out)
+	}
+	if code, out = post(`{` + rest + `,"start_utc":"2026-12-01T00:00:00Z"}`); code != http.StatusOK {
+		t.Errorf("valid start_utc: %d %s", code, out)
+	}
+}
