@@ -337,7 +337,7 @@ async function fillCompare() {
   const el = $("#ctable"); if (!el) return;
   if (!ok.length) { el.innerHTML = `<p class="hud-warn" role="alert">${esc(tr("notComputed"))}: ${esc(rows[0]?.w.reason || "no site series covers this window")}</p>`; return; }
   // Live API: rows for sites the API holds a series for, in batches of 3 (API limit). Others keep static values.
-  const apiRows = new Map(), ids = state.index.sites.map(x => x.id).filter(id => live.online && live.apiId(id) && live.covers(id, state.t, state.compareH));
+  const apiRows = new Map(), ids = state.compareH > 720 ? [] : state.index.sites.map(x => x.id).filter(id => live.online && live.apiId(id) && live.covers(id, state.t, state.compareH)); // API maxWindowHours = 720 (api/mission.go): longer windows stay on the precomputed series
   for (let i = 0; i < ids.length; i += 3) {
     const r = await live.compare(ids.slice(i, i + 3), isoZ(state.t), state.compareH);
     if (r.ok) r.data.results.forEach(x => { const lab = ids.find(id => live.apiId(id) === x.site.id), row = compareRow(x, r.data.scientifically_validated === true); if (lab && row) apiRows.set(lab, row); });
