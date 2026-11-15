@@ -25,6 +25,17 @@ BASE='https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data
 curl -fLSs "${BASE}/ldem_80s_80m.img" -o data/raw/lola/ldem_80s_80m.img
 curl -fLSs "${BASE}/ldem_80s_80m.lbl" -o data/raw/lola/ldem_80s_80m.lbl
 
+# Go CLI (api/lolahorizon + api/cmd/lolahorizon): same flags, JSON keys/order and exit codes
+go -C api run ./cmd/lolahorizon \
+  --img ../data/raw/lola/ldem_80s_80m.img \
+  --label ../data/raw/lola/ldem_80s_80m.lbl \
+  --lat -89.4632 --lon -137.49 \
+  --observer-height-m 2 \
+  --max-distance-m 30000 --step-m 160 --azimuth-step-deg 5 \
+  --output ../.local/out/connecting-ridge-horizon-preliminary.json
+
+# Python reference (kept: science/lola_horizon.py is the library imported by
+# three_site_pipeline.py, spice_lunar_angles.py and benchmarks/pgda_illumination/compare.py)
 python3 science/lola_horizon.py \
   --img data/raw/lola/ldem_80s_80m.img \
   --label data/raw/lola/ldem_80s_80m.lbl \
@@ -34,7 +45,10 @@ python3 science/lola_horizon.py \
   --output .local/out/connecting-ridge-horizon-preliminary.json
 
 python3 -m unittest discover -s science/tests -v
+(cd api && go test ./lolahorizon ./cmd/lolahorizon)
 ```
+
+The Go port was checked against the Python on a synthetic 7600x7600 raster (not NASA data): the JSON was byte-identical on every case tried. The owner-approved acceptance bound is `|diff| <= 1e-6` per value (degrees, and relative for metres). The committed `science/results/*`, `api/sitedata/*` and `web/data/*` remain the Python-produced, SHA-pinned outputs; they were not regenerated.
 
 The CLI refuses a raster with the wrong byte length, an unexpected frame or changed checksum. It computes the terrain horizon **from the actual binary at runtime** when supplied with that binary. It never downloads or commits NASA data itself. The resulting JSON contains `actual_nasa_dem_bytes_used`, checksum, site, observer mast height, azimuthal elevation profile, missing-data coverage and explicit `PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED` plus `ephemerides_integrated: false` and `nasa_certified: false`.
 
