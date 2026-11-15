@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -102,16 +101,16 @@ func (m *missionAPI) siteSky(w http.ResponseWriter, r *http.Request) {
 		writeError(w, errf(http.StatusUnprocessableEntity, "GRID_NOT_ALIGNED", "start must fall on the series grid (start_utc %s, step %d s)", ser.StartUTC, ser.StepSeconds))
 		return
 	}
-	from := int(off / ser.step)
-	n := int(math.Ceil(hours * float64(time.Hour) / float64(ser.step)))
-	if n < 1 {
-		n = 1
+	if !gridAligned(ser, start, hours) {
+		writeError(w, errf(http.StatusUnprocessableEntity, "GRID_NOT_ALIGNED", "hours must be a whole multiple of the series step (%d s); durations are never rounded", ser.StepSeconds))
+		return
 	}
-	to := from + n
-	if to > len(ser.Samples) {
+	from, to, ok := span(ser, start, hours)
+	if !ok {
 		writeError(w, errf(http.StatusUnprocessableEntity, "OUTSIDE_COVERAGE", "series covers %s to %s", ser.StartUTC, ser.end().Format(time.RFC3339)))
 		return
 	}
+	n := to - from
 	count := (n + stride - 1) / stride
 	if count > maxSkySamples {
 		writeError(w, errf(http.StatusUnprocessableEntity, "WINDOW_TOO_LONG", "window would return %d samples; the limit is %d (raise step or shorten hours)", count, maxSkySamples))

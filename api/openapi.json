@@ -1067,11 +1067,42 @@
         },
         "responses": {
           "200": {
-            "description": "OK. Engine result including evidence_passport and science_status; never VALIDATED.",
+            "description": "OK. All required Rust output fields are explicit, non-null and exact-case. The evidence passport describes caller-supplied inputs; never VALIDATED.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["site_id", "epoch_utc", "science_status", "sun_horizon_deg", "earth_horizon_deg", "sun_margin_deg", "earth_margin_deg", "sun_visible", "earth_visible", "simultaneous_visibility", "evidence_passport"],
+                  "properties": {
+                    "site_id": {"type": "string"},
+                    "epoch_utc": {"type": "string", "format": "date-time"},
+                    "science_status": {"type": "string", "enum": ["UNVERIFIED_INPUTS"]},
+                    "sun_horizon_deg": {"type": "number", "minimum": -90, "maximum": 90},
+                    "earth_horizon_deg": {"type": "number", "minimum": -90, "maximum": 90},
+                    "sun_margin_deg": {"type": "number"},
+                    "earth_margin_deg": {"type": "number"},
+                    "sun_visible": {"type": "boolean"},
+                    "earth_visible": {"type": "boolean"},
+                    "simultaneous_visibility": {"type": "boolean"},
+                    "source_warning": {"type": "string"},
+                    "evidence_passport": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["protocol", "request_sha256", "terrain_dataset_id_claimed", "ephemeris_id_claimed", "frame_claimed", "inputs_supplied_by_caller", "nasa_sources_verified", "scientific_validation", "replay_path"],
+                      "properties": {
+                        "protocol": {"type": "string", "enum": ["braspace.visibility.v1"]},
+                        "request_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+                        "terrain_dataset_id_claimed": {"type": "string"},
+                        "ephemeris_id_claimed": {"type": "string"},
+                        "frame_claimed": {"type": "string", "enum": ["MOON_ME"]},
+                        "inputs_supplied_by_caller": {"type": "boolean", "enum": [true]},
+                        "nasa_sources_verified": {"type": "boolean", "enum": [false]},
+                        "scientific_validation": {"type": "boolean", "enum": [false]},
+                        "replay_path": {"type": "string", "enum": ["/v1/visibility"]}
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -1117,7 +1148,7 @@
             }
           },
           "502": {
-            "description": "Engine failed or returned an invalid contract (ENGINE_ERROR)",
+            "description": "Engine failed or returned an invalid contract, including missing, null, duplicate, case-aliased or unknown fields (ENGINE_ERROR)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1187,7 +1218,7 @@
             "name": "hours",
             "in": "query",
             "required": false,
-            "description": "Window length, default 24, max 720",
+            "description": "Window length in hours, default 24, max 720. Must be a whole multiple of the series step, otherwise 422 GRID_NOT_ALIGNED; it is never rounded.",
             "schema": {
               "type": "number",
               "exclusiveMinimum": 0,
@@ -1251,7 +1282,7 @@
     },
     "/api/vector/status": {
       "get": {
-        "summary": "Optional metadata-only vector capability and model configuration; default disabled",
+        "summary": "Optional metadata-only vector index state; only state=index_ready (current audited ingest manifest) serves search",
         "operationId": "getVectorStatus",
         "responses": {
           "200": {
@@ -1266,7 +1297,8 @@
                       "type": "boolean"
                     },
                     "available": {
-                      "type": "boolean"
+                      "type": "boolean",
+                      "description": "true only when state is index_ready"
                     },
                     "dimension": {
                       "type": "integer",
@@ -1286,6 +1318,38 @@
                       "enum": [
                         false
                       ]
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "disabled",
+                        "db_down",
+                        "schema_unavailable",
+                        "empty",
+                        "model_mismatch",
+                        "legacy_unverified",
+                        "index_ready"
+                      ],
+                      "description": "disabled: BRASPACE_VECTOR_ENABLED!=1. db_down: no connection. schema_unavailable: extension, table or audit columns missing (run vector-ingest). empty: no rows. model_mismatch: rows exist only for another model_id. legacy_unverified: rows for this model exist but none from the current audited ingest manifest (quarantined, never served, never deleted). index_ready: audited rows available."
+                    },
+                    "audited_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "rows of the configured model in the current audited manifest"
+                    },
+                    "legacy_unverified_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "quarantined rows of the configured model (no or stale ingest_manifest_sha256)"
+                    },
+                    "other_model_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "rows of other model_ids (never served)"
+                    },
+                    "ingest_manifest_sha256": {
+                      "type": "string",
+                      "description": "current audited manifest for the model, or empty"
                     }
                   },
                   "required": [
@@ -1294,7 +1358,12 @@
                     "dimension",
                     "model_id",
                     "purpose",
-                    "scientifically_validated"
+                    "scientifically_validated",
+                    "state",
+                    "audited_count",
+                    "legacy_unverified_count",
+                    "other_model_count",
+                    "ingest_manifest_sha256"
                   ]
                 }
               }
@@ -1341,7 +1410,8 @@
                 "required": [
                   "model_id",
                   "vector"
-                ]
+                ],
+                "description": "Keys are exact and case-sensitive; duplicate keys are 400 INVALID_JSON. vector: exactly 384 finite numbers, no null, not all zero (422 INVALID_VECTOR). limit: omitted means 5; null, 0, >10 or non-integer is 422 INVALID_LIMIT."
               }
             }
           }
@@ -1412,6 +1482,10 @@
                           "similarity"
                         ]
                       }
+                    },
+                    "ingest_manifest_sha256": {
+                      "type": "string",
+                      "description": "audited manifest the results come from"
                     }
                   },
                   "required": [
@@ -1533,6 +1607,10 @@
               "INVALID_VECTOR",
               "INVALID_VISIBILITY_INPUT"
             ]
+          },
+          "state": {
+            "type": "string",
+            "description": "VECTOR_UNAVAILABLE only: the /api/vector/status state that blocked the search"
           }
         },
         "additionalProperties": false,

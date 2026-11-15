@@ -31,8 +31,9 @@ export BRASPACE_VECTOR_MODEL_ID=sentence-transformers/all-MiniLM-L6-v2:1110a243f
 The first invocation validates only (no DB writes). Apply validates exact registry
 and per-source provenance, normalizes embeddings, records manifest and model
 revision/license in the audit table, and upserts atomically. Repeating the same
-manifest is idempotent. Legacy rows without an audit manifest remain readable;
-do not treat their provenance as equivalent to an audited ingest.
+manifest is idempotent. Legacy rows without an audit manifest (or from a stale
+manifest) are kept in the table but quarantined: they are counted by the status
+route and never served by search (see "Audit lineage and quarantine" below).
 
 ## API and UI
 
@@ -40,10 +41,13 @@ Set `BRASPACE_VECTOR_ENABLED=1`, `BRASPACE_VECTOR_MODEL_ID` and
 `VECTOR_DATABASE_URL` on the Go service only after provisioning. The status route
 reports backend readiness, model and dimensionality. POST `/api/vector/search`
 accepts the reviewed query JSON (`model_id`, 384 finite numeric `vector` components,
-optional `limit` from 1 to 20). The result includes source reference, title,
-HTTPS source URL, SHA-256 and cosine similarity. It always reports
-`scientifically_validated:false`. Empty index returns an honest empty list;
-disabled/unavailable search returns 503 and leaves mission features operational.
+optional integer `limit` from 1 to 10, default 5). The result includes source
+reference, title, HTTPS source URL, SHA-256, cosine similarity and the audited
+`ingest_manifest_sha256` it came from. It always reports
+`scientifically_validated:false`. Search is served only in `state=index_ready`;
+any other state (disabled, db_down, schema_unavailable, empty, model_mismatch,
+legacy_unverified) returns 503 `VECTOR_UNAVAILABLE` with that `state`, and leaves
+mission features operational.
 
 The Evidence surfaces expose the optional source search with explicit disabled,
 unavailable, ready, empty, error and result states. They accept the same-model
@@ -72,3 +76,15 @@ registry after applying the optional schema; MiniLM is an explicit operator impo
   Keep the optional service disabled if those gates or the mission demo fail.
 
 References: #107, #24.
+
+## Audit lineage and quarantine (#331, ported onto #363)
+
+`GET /api/vector/status` reports `state` plus `audited_count`,
+`legacy_unverified_count`, `other_model_count` and the current
+`ingest_manifest_sha256`. The current manifest is the model's most recently
+*applied* audited manifest (the ledger `source_semantic_ingest_runs` keeps the
+first ingest time; every apply rewrites `updated_at` on all its rows). Rows with
+a NULL or non-current manifest are `legacy_unverified`: never deleted, never
+served. A legacy-only index answers 503 with `state=legacy_unverified`.
+Rollback of the audit link only: `api/db/optional-vector.down.sql` (keeps every
+row). Runbook: [DB_MIGRATION_RUNBOOK.md](DB_MIGRATION_RUNBOOK.md).
