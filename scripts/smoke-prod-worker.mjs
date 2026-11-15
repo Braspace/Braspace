@@ -60,6 +60,9 @@ const SITE_BODY_PATHS = new Set([
 // Ajustes mínimos que o schema não expressa (limit de 1..10 no vector search).
 const BODY_OVERRIDES = {
   '/api/vector/search': (body) => ({ ...body, limit: 1 }),
+  // The Go handler rejects a missing start_utc ("start_utc must be RFC 3339") although api/openapi.json lists only
+  // lat/lon as required: send a full, realistic body here and keep that contract gap visible (see PR notes).
+  '/api/onboard/navigation': (body) => ({ ...body, start_utc: '2026-12-01T00:00:00Z', duration_hours: 24, step_minutes: 60 }),
 };
 
 const rows = [];
