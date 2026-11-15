@@ -4,6 +4,7 @@ import {readFile} from "node:fs/promises";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import vm from "node:vm";
+import {apiURL} from "../api-base.js";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const app=await readFile(path.join(root,"app.js"),"utf-8");
@@ -26,9 +27,8 @@ function loadApp(){
   createTextNode:t=>({text:t}),
   querySelectorAll:sel=>sel==="[data-panel]"?panels:sel==="[data-view]"?buttons:[]};
  // Strip the top-level boot lines (listeners, await) and the import; keep every function.
- const src=app.split("\ndocument.querySelectorAll(\"[data-view]\").forEach(b=>b.addEventListener")[0]
-  .replace(/^\s*import\s+[^;]+;\s*$/gm,"");
- const ctx=vm.createContext({document,console,Number,Math,Date,String,Array,Object,Error,Intl,fetch:()=>{throw new Error("no network in tests")},Promise,JSON,URL,Blob:class{},setTimeout,apiURL:p=>p});
+ const src=app.split("\ndocument.querySelectorAll(\"[data-view]\").forEach(b=>b.addEventListener")[0].replace('import {apiURL} from "./api-base.js";', '');
+ const ctx=vm.createContext({document,apiURL,console,Number,Math,Date,String,Array,Object,Error,Intl,fetch:()=>{throw new Error("no network in tests")},Promise,JSON,URL,Blob:class{},setTimeout});
  vm.runInContext(src+"\n;globalThis.__t={showView,renderResult,breachText,state};",ctx);
  return {t:ctx.__t,ids,panels};
 }

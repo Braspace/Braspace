@@ -94,7 +94,7 @@ let gridP = null;
 export function loadRegion() { return gridP ||= TerrainGrid.load(DATA_BASE + "region/south_pole_400m"); }
 
 /**
- * Call the API. Resolves {ok:true, data, status} or {ok:false, offline:true, error}. Never throws.
+ * Call the API. Resolves {ok:true, data, status} or {ok:false, offline, httpStatus, code, error}. Never throws.
  * status is the payload's own science state when present (science_status / status / state).
  */
 export async function api(path, { method = "GET", body, timeoutMs = 8000, as = "json" } = {}) {
@@ -102,8 +102,15 @@ export async function api(path, { method = "GET", body, timeoutMs = 8000, as = "
   try {
     const r = await fetch(apiURL(path), { method, signal: ctl.signal,
       headers: body ? { "content-type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined });
-    if (!r.ok) return { ok: false, offline: r.status >= 500, error: "HTTP " + r.status };
-    if (as === "text") return { ok: true, data: await r.text(), status: null };
+    if (!r.ok) {
+      const payload = await r.json().catch(() => null);
+      const code = typeof payload?.code === "string" ? payload.code : null;
+      return { ok: false, offline: r.status >= 500, httpStatus: r.status, code, error: "HTTP " + r.status + (code ? " · " + code : "") };
+    }
+    if (as === "text") {
+      if (!/^text\/html(?:;|$)/i.test(r.headers.get("content-type") || "")) return { ok: false, offline: false, httpStatus: r.status, error: "INVALID_REPORT_TYPE" };
+      return { ok: true, data: await r.text(), status: null };
+    }
     const data = await r.json();
     return { ok: true, data, status: data?.science_status || data?.status || data?.state || null };
   } catch (e) { return { ok: false, offline: true, error: String(e?.message || e) }; }

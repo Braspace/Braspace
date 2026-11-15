@@ -1,0 +1,17 @@
+/* Shared by the Evidence page and the Portuguese root shell. */
+.metadata-vector{display:grid;gap:10px;align-content:start;min-width:0;overflow-wrap:anywhere;line-height:1.45}
+.metadata-vector :is(h2,h3,p,ol){margin:0}
+.metadata-vector h2{font-size:1rem}.metadata-vector h3{font-size:.9rem}
+.metadata-vector-note,.metadata-vector-state,.metadata-vector-results{font-size:.83rem}
+.metadata-vector-state{font-weight:600}
+.metadata-vector :is(input,textarea,select,.metadata-vector-btn){font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:8px;padding:9px;min-height:44px;min-width:0}
+.metadata-vector textarea{width:100%;max-width:100%;resize:vertical;box-sizing:border-box;font-family:monospace;font-size:.8rem}
+.metadata-vector select option{color:#111;background:#fff}
+.metadata-vector-btn{cursor:pointer}.metadata-vector-btn:disabled{opacity:.55;cursor:not-allowed}
+.metadata-vector :is(input,textarea,select,summary,button,a):focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.metadata-vector details summary{cursor:pointer;font-weight:600;margin-bottom:10px}
+.metadata-vector details[hidden]{display:none}
+.metadata-vector form{display:grid;gap:6px;margin-top:10px;font-size:.83rem}
+.metadata-vector-results{display:grid;gap:8px}.metadata-vector-results li{margin:0 0 12px}
+.metadata-vector-results ol{padding-inline-start:20px}.metadata-vector-results a{font-weight:600;text-decoration:underline}
+.metadata-vector-hash{font-family:monospace;font-size:.78rem;overflow-wrap:anywhere}

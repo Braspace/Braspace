@@ -1,30 +1,74 @@
-# BRASPACE — Optional pgvector metadata search (P1, isolated)
+# BRASPACE — optional pgvector metadata search
 
-The core NASA MoonProof mission engine does **not** depend on pgvector. Go/Rust numerical geometry, comparison, timestamps, source hashes, and PostgreSQL ingestion stay deterministic and keep their established API semantics.
+The core MoonProof mission engine does **not** depend on pgvector. Search is
+informational retrieval of reviewed source metadata, never scientific validation,
+landing safety, ephemerides or numerical input to mission simulation.
 
-This optional extension is for *metadata search only* (NASA dataset descriptions, source citations and educational notes); it **cannot verify a lunar fact** and must never rank actual landing safety.
+## Provisioning and ingestion
 
-## Configuration
+- Default: `BRASPACE_VECTOR_ENABLED=0`; regular PostgreSQL migrations have no
+  vector extension dependency. Only opt in to an independently reviewed vector DB.
+- Apply `api/db/optional-vector.sql` to that database as an authorized operator.
+  The migration is idempotent, retains old rows and versions entries by model ID.
+- Generate a manifest and a same-model query by following [VECTOR_EMBEDDINGS.md](VECTOR_EMBEDDINGS.md).
+  The local pinned MiniLM model uses 384 dimensions and Apache-2.0 licensing.
+  Review the manifest and exact source registry before ingestion.
+- The built-in `braspace-lexical-384-v1` projection is a separate, MIT-licensed
+  deterministic text index, not a trained semantic model. `vector-ingest -lexical`
+  creates a validated manifest from the same registry, with the encoder's Git
+  blob as model revision. No hard-coded unverified dataset hashes are indexed.
+- Build the Go API from the repository, then run the CLI from the repository root:
 
-- Default: `BRASPACE_VECTOR_ENABLED=0`, no database extension required and `GET /api/vector/status` announces `enabled:false`.
-- Opt in with a PostgreSQL installation that supports pgvector, after separately reviewing the image and applying `api/db/optional-vector.sql`. This SQL is intentionally *not* in mandatory migrations.
-- Set `BRASPACE_VECTOR_ENABLED=1`, `BRASPACE_VECTOR_MODEL_ID=<pinned-compatible-model>`, `VECTOR_DATABASE_URL=postgres://...`. Search requires exactly 384 finite numeric dimensions, model ID equality and a nonzero norm.
-- The server returns source_ref, title, HTTPS source URL, SHA-256 and similarity for existing index entries. It does **not** generate embeddings; provisioning must be done by an explicit, independently reviewed ingestion process with model/version/license recorded.
-- Empty index returns an honest empty list. Disabled or absent vector DB returns 503; the MoonProof frontend and all other APIs must continue operating.
+```bash
+(cd api && go build -o /tmp/braspace-api .)
+/tmp/braspace-api vector-ingest -input /tmp/braspace-source-embeddings.json
+# Explicit operator configuration, never commit a connection string:
+export BRASPACE_VECTOR_MODEL_ID=sentence-transformers/all-MiniLM-L6-v2:1110a243fdf4706b3f48f1d95db1a4f5529b4d41
+# Set VECTOR_DATABASE_URL securely before applying.
+/tmp/braspace-api vector-ingest -input /tmp/braspace-source-embeddings.json -apply
+```
 
-## API
+The first invocation validates only (no DB writes). Apply validates exact registry
+and per-source provenance, normalizes embeddings, records manifest and model
+revision/license in the audit table, and upserts atomically. Repeating the same
+manifest is idempotent. Legacy rows without an audit manifest remain readable;
+do not treat their provenance as equivalent to an audited ingest.
 
-`GET /api/vector/status` returns enabled, available, dimensions and model identifier.
+## API and UI
 
-`POST /api/vector/search`: `{"model_id":"<configured-model>","vector":[384 finite numbers],"limit":5}`
+Set `BRASPACE_VECTOR_ENABLED=1`, `BRASPACE_VECTOR_MODEL_ID` and
+`VECTOR_DATABASE_URL` on the Go service only after provisioning. The status route
+reports backend readiness, model and dimensionality. POST `/api/vector/search`
+accepts the reviewed query JSON (`model_id`, 384 finite numeric `vector` components,
+optional `limit` from 1 to 20). The result includes source reference, title,
+HTTPS source URL, SHA-256 and cosine similarity. It always reports
+`scientifically_validated:false`. Empty index returns an honest empty list;
+disabled/unavailable search returns 503 and leaves mission features operational.
 
-The response always includes `scientifically_validated:false` and limitations; never feed similarity scores into sunlight, landing, slope, oxygen, communications or risk calculations.
+The Evidence surfaces expose the optional source search with explicit disabled,
+unavailable, ready, empty, error and result states. They accept the same-model
+query JSON produced by the local utility; no invented vectors, browser secrets,
+external inference requests or unaudited natural-language embedding endpoint.
+The text box is enabled only for the exact built-in lexical model (local projection).
+The optional Compose overlay selects this lexical model and seeds the exact
+registry after applying the optional schema; MiniLM is an explicit operator import.
 
-## Hard gates before any deployment
+## Validation and release gates
 
-1. Verified pgvector image tag/digest and independent security review (the example overlay uses the `pg16` tag for CI only).
-2. Source permissions and licensing, 384-dimensional model provenance, index cardinality and performance benchmark; never commit embedding API keys.
-3. Real pgvector PostgreSQL integration test against the optional SQL, including two deterministic synthetic metadata vectors; standard Postgres regression remains green.
-4. Work with Heloísa/JV on a separate, clearly labelled **source search UI** only after the final mission demo and NASA submission gates pass.
+- Local isolated PostgreSQL 17.12 + pgvector 0.8.0: 28 top-level Go DB/vector
+  tests and 37 subtests passed under `-race` without skips. Concurrent migration,
+  rollback, model mismatch, audit integrity and snapshot consistency were tested.
+- Four real metadata embeddings from the reviewed layer registry were imported
+  twice; exactly four rows and one audit record remained. Actual Go HTTP and
+  web proxy produced identical source rankings; the example LOLA query returned
+  `data/manifest.json` first. This is not a scientific validation of the DEM.
+- Reconciliation with the lexical index proved both models coexist on the same
+  four reviewed sources: eight rows, two independent audit manifests.
+- CI must run the optional real database/API/proxy lane, ordinary PostgreSQL
+  regressions, web regressions and browser smoke checks. The independent model
+  test requires verified assets; see [VECTOR_EMBEDDINGS.md](VECTOR_EMBEDDINGS.md).
+- Before enabling in production, review the exact image digest, permissions,
+  model/source licensing and performance, and obtain the deployment review.
+  Keep the optional service disabled if those gates or the mission demo fail.
 
-References: #107 and completed evaluation #24.
+References: #107, #24.

@@ -35,9 +35,21 @@ export function siteEvaluateBody({ siteId, startIso, hours, power, maxBlackoutH,
     candidates: [{ id: "cockpit", site_id: siteId, delay_hours: delayH }], power };
 }
 /** Request for POST /api/onboard/evaluate with visibility booleans taken from the browser's stored series. */
-export function evaluateBody({ siteId, startIso, power, maxBlackoutH, samples }) {
+export function evaluateBody({ siteId, startIso, power, maxBlackoutH, samples, sourceClaim = "Browser-stored preliminary series; caller-provided inputs" }) {
   return { mission_id: "moonproof-cockpit", candidates: [{ id: "cockpit", site_id: siteId, start_utc: startIso, step_minutes: 60,
-    max_comm_blackout_hours: maxBlackoutH, power, samples: samples.map(x => ({ sun_visible: !!x.sun_visible, earth_visible: !!x.earth_visible })) }] };
+    source_claim: sourceClaim, max_comm_blackout_hours: maxBlackoutH, power, samples: samples.map(x => ({ sun_visible: x.sun_visible, earth_visible: x.earth_visible })) }] };
+}
+
+/** Extract an entire hourly window; never convert missing margin data into false. */
+export function visibilityWindow(series, i0, hours) {
+  if (!Number.isInteger(i0) || !Number.isInteger(hours) || i0 < 0 || hours < 1 || i0 + hours > series.count) return [];
+  const samples = [];
+  for (let i = i0; i < i0 + hours; i++) {
+    const sun = series.sunMargin[i], earth = series.earthMargin[i];
+    if (!Number.isFinite(sun) || !Number.isFinite(earth)) return [];
+    samples.push({ sun_visible: sun >= 0, earth_visible: earth >= 0 });
+  }
+  return samples;
 }
 
 /** Charge trace [Wh] by hour, index 0 = initial charge, from the API's timeline. null when there is none. */
@@ -51,28 +63,50 @@ export function chargeTrace(optionLike, initialWh) {
 
 /**
  * Runs the scenario against the API. `call(path, {method, body})` is core/data.js api().
- * 1) POST /api/onboard/site-evaluate (the API's stored series); 2) if that site has none there, POST /api/onboard/evaluate
- * with the booleans of the browser's stored series. Never invents a charge: no answer → {ok:false}.
+ * Normal operation prefers the site's stored API series. A caller visibility override
+ * (e.g. antenna fault) must go straight to /evaluate, because /site-evaluate does not
+ * implement that override. Known coverage/route gaps allow a complete static
+ * window as an explicitly unverified fallback. Invalid input or malformed result
+ * cannot be bypassed. Return the exact successful request for its matching report.
  */
-export async function runScenario(call, { siteId, startIso, hours, power, maxBlackoutH, samples, delayH }) {
-  const a = await call("/api/onboard/site-evaluate", { method: "POST", body: siteEvaluateBody({ siteId, startIso, hours, power, maxBlackoutH, delayH }) });
-  if (a.ok) { const opt = a.data?.onboard?.options?.[0]; const tr = chargeTrace(opt, power.initial_charge_wh);
-    if (tr) return { ok: true, route: "site", trace: tr, status: a.data.onboard.science_status, option: opt, sha: a.data.onboard.inputs_sha256 }; }
-  if (a.offline) return { ok: false, offline: true, route: "none", error: a.error };
-  const b = await call("/api/onboard/evaluate", { method: "POST", body: evaluateBody({ siteId, startIso, power, maxBlackoutH, samples }) });
-  if (b.ok) { const opt = b.data?.options?.[0]; const tr = chargeTrace(opt, power.initial_charge_wh);
-    if (tr) return { ok: true, route: "eval", trace: tr, status: b.data.science_status, option: opt, sha: b.data.inputs_sha256 }; }
-  return { ok: false, offline: !!b.offline, route: "none", error: b.error || a.error };
+export async function runScenario(call, { siteId, startIso, hours, power, maxBlackoutH, samples, delayH = 0, samplesOverride = false }) {
+  const failure = r => ({ ok: false, offline: !!r.offline, route: "none", error: r.error || "INVALID_API_CONTRACT" });
+  if (!samplesOverride) {
+    const request = siteEvaluateBody({ siteId, startIso, hours, power, maxBlackoutH, delayH });
+    const a = await call("/api/onboard/site-evaluate", { method: "POST", body: request });
+    if (a.ok) {
+      const opt = a.data?.onboard?.options?.[0], tr = chargeTrace(opt, power.initial_charge_wh);
+      if (tr && tr.length === hours + 1) return { ok: true, route: "site", trace: tr, status: a.data.onboard.science_status, option: opt, sha: a.data.onboard.inputs_sha256,
+        report: { path: "/api/onboard/site-report", body: request } };
+      return failure(a);
+    }
+    if (a.offline || !(["DATA_NOT_AVAILABLE", "OUTSIDE_COVERAGE", "GRID_UNSUPPORTED"].includes(a.code) || (a.httpStatus === 404 && !a.code))) return failure(a);
+  }
+  // Standalone evaluates the exact supplied full window. A partial array would
+  // silently shorten the requested mission and could fake a better outcome.
+  const epoch = Date.parse(startIso) + delayH * HOUR_MS;
+  if (!Number.isFinite(epoch) || !Number.isInteger(hours) || hours < 1 || !Array.isArray(samples) || samples.length !== hours ||
+      !samples.every(x => typeof x.sun_visible === "boolean" && typeof x.earth_visible === "boolean")) return failure({ error: "NO_COMPLETE_SAMPLE_WINDOW" });
+  const request = evaluateBody({ siteId, startIso: new Date(epoch).toISOString(), power, maxBlackoutH, samples,
+    sourceClaim: samplesOverride ? "Hypothetical antenna outage; Earth visibility overridden by caller (simulation)" : "Browser-stored preliminary series; caller-provided inputs" });
+  const b = await call("/api/onboard/evaluate", { method: "POST", body: request });
+  if (b.ok) {
+    const opt = b.data?.options?.[0], tr = chargeTrace(opt, power.initial_charge_wh);
+    if (tr && tr.length === hours + 1) return { ok: true, route: "eval", trace: tr, status: b.data.science_status, option: opt, sha: b.data.inputs_sha256,
+      report: { path: "/api/onboard/report", body: request } };
+  }
+  return failure(b);
 }
 
 /** Hours [h] from index i until the Sun/Earth visibility changes, and how long the next opposite state lasts. */
 export function nextChange(margin, i, count) {
-  if (i < 0 || i >= count) return null;
+  if (!Number.isInteger(i) || i < 0 || i >= count || !Number.isFinite(margin[i])) return null;
   const vis = margin[i] >= 0; let k = i + 1;
-  while (k < count && (margin[k] >= 0) === vis) k++;
+  while (k < count && Number.isFinite(margin[k]) && (margin[k] >= 0) === vis) k++;
+  if (k < count && !Number.isFinite(margin[k])) return { visible: vis, inHours: null, lastsHours: null };
   if (k >= count) return { visible: vis, inHours: null, lastsHours: null };
-  let e = k; while (e < count && (margin[e] >= 0) !== vis) e++;
-  return { visible: vis, inHours: k - i, lastsHours: e >= count ? null : e - k };
+  let e = k; while (e < count && Number.isFinite(margin[e]) && (margin[e] >= 0) !== vis) e++;
+  return { visible: vis, inHours: k - i, lastsHours: e >= count || !Number.isFinite(margin[e]) ? null : e - k };
 }
 /** Number of sunrises (dark → lit) in margin[i0, i0+hours). */
 export function countSunrises(margin, i0, hours) {
@@ -82,8 +116,9 @@ export function countSunrises(margin, i0, hours) {
 export function dailyFractions(margin, i0, hours) {
   const out = [];
   for (let d = 0; d * 24 < hours; d++) { let on = 0, n = 0;
-    for (let h = d * 24; h < Math.min(hours, d * 24 + 24); h++) { const i = i0 + h; if (i < 0 || i >= margin.length) continue; n++; if (margin[i] >= 0) on++; }
-    out.push(n ? on / n : null); }
+    const expected = Math.min(hours, d * 24 + 24) - d * 24;
+    for (let h = d * 24; h < Math.min(hours, d * 24 + 24); h++) { const i = i0 + h; if (i < 0 || i >= margin.length || !Number.isFinite(margin[i])) continue; n++; if (margin[i] >= 0) on++; }
+    out.push(n === expected && n ? on / n : null); }
   return out;
 }
 /** Hours of autonomy at constant load from `chargeWh` down to the floor. null without inputs. */
@@ -113,8 +148,8 @@ export function evaluateRules({ rules = DEFAULT_RULES, extra = EXTRA_LIMITS, lig
     status: minCharge == null || floorWh == null ? "nodata" : minCharge >= floorWh ? "pass" : "risk", source: "API charge trace" });
   out.push({ id: "night", seal: lightSeal, limit: rules.night, measured: light?.longestDarkH ?? null,
     status: light?.longestDarkH == null ? "nodata" : light.longestDarkH <= rules.night ? "pass" : "risk", source: "stored series" });
-  out.push({ id: "blackout", seal: lightSeal, limit: rules.blackout, measured: light?.longestBlackoutH ?? null,
-    status: light?.longestBlackoutH == null ? "nodata" : light.longestBlackoutH <= rules.blackout ? "pass" : "risk", source: "stored series" });
+  out.push({ id: "blackout", seal: light?.antennaOverride ? simSeal : lightSeal, limit: rules.blackout, measured: light?.longestBlackoutH ?? null,
+    status: light?.longestBlackoutH == null ? "nodata" : light.longestBlackoutH <= rules.blackout ? "pass" : "risk", source: light?.antennaOverride ? "hypothetical antenna outage" : "stored series" });
   // Operation days = hours until the battery is empty (power loss) or the whole window, over 24. Needs the API trace.
   let days = null;
   if (trace) { const first = trace.findIndex(c => c <= 0); days = (first < 0 ? trace.length - 1 : first) / 24; }
