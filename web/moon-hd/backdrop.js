@@ -1,5 +1,7 @@
 const BASE = new URL("../data/moonhd/", import.meta.url).href;
 export const MAX_PIXEL_RATIO = 1.5;
+/** Lighter LOLA cap for phones, loaded only on demand in explore mode (desktop: 448 segments / 72 shadow steps). */
+export const PHONE_CAP = { segments: 256, steps: 40 };
 export const FRAME_MS = 1000 / 30;
 const PHONE_WIDTH = 720, WIDE_WIDTH = 1600, ORBIT_SECONDS = 900;
 /** interactive defaults to true; lazy = the page keeps its own (functional) background and the Moon only opens on demand. */
@@ -635,7 +637,10 @@ export async function mountMoonBackdrop(options) {
         const hint = document.createElement("p");
         hint.className = "moon-hint";
         hint.textContent = T.hint;
+        let loadCap = () => { };
         const setExplore = (onOff) => {
+            if (onOff)
+                loadCap(true);
             exploring = onOff;
             wrap.classList.toggle("is-explore", onOff);
             ui.classList.toggle("is-explore", onOff);
@@ -723,16 +728,27 @@ export async function mountMoonBackdrop(options) {
         on(window, "moon:focus-site", ((e) => { if (e.detail?.id)
             selectSite(String(e.detail.id)); }));
         window.dispatchEvent(new CustomEvent("moon-backdrop:ready", { detail: api }));
-        // South cap (LOLA 320 m, terrain shadows): after the first frame, never on phones.
-        if (want.cap)
-            S.createCap({ renderer, base: BASE, manifest, moon, segments: want.capSegments, steps: want.capSteps, wideOnly: true }).then(made => {
+        // South cap (LOLA 320 m, terrain shadows): after the first frame on wide screens. Phones skip it behind the
+        // panels, but load a lighter cap the first time the user opens "Explore the Moon" (close-ups of the pole were
+        // only the blurred 4k globe texture there).
+        let capLoading = false;
+        loadCap = (light) => {
+            if (cap || capLoading || dead)
+                return;
+            capLoading = true;
+            S.createCap({ renderer, base: BASE, manifest, moon, segments: light ? PHONE_CAP.segments : want.capSegments, steps: light ? PHONE_CAP.steps : want.capSteps, wideOnly: true }).then(made => {
                 if (dead)
                     return;
                 scene.add(made.mesh);
                 moon.uniforms.capReady.value = 1;
                 cap = made;
                 draw();
-            }).catch(() => { }); // the globe alone is a complete backdrop
+            }).catch(() => { capLoading = false; }); // the globe alone is a complete backdrop
+        };
+        if (want.cap)
+            loadCap(false);
+        else if (exploring)
+            loadCap(true);
         return { dispose, explore: setExplore };
     }
     catch {
