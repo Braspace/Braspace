@@ -652,9 +652,12 @@ if (typeof document !== "undefined") {
       const css = document.createElement("link"); css.rel = "stylesheet"; css.href = new URL("./backdrop.css", import.meta.url).href;
       document.head.append(css); document.body.append(ui);
       b.addEventListener("click", async () => {
-        b.disabled = true;
+        // Feedback while three.js + textures load (~3 s on a phone): the click is never lost silently.
+        b.disabled = true; b.setAttribute("aria-busy", "true"); b.classList.add("is-loading");
+        b.textContent = pt ? "Carregando a Lua…" : "Loading the Moon…";
         const made = await mountMoonBackdrop({ view, lazy: true, explore: true } as BackdropOptions);
-        if (made) ui.remove(); else { b.disabled = false; b.textContent = pt ? "Lua 3D indisponível neste dispositivo" : "3D Moon unavailable on this device"; }
+        if (made) ui.remove();
+        else { b.disabled = false; b.removeAttribute("aria-busy"); b.classList.remove("is-loading"); b.textContent = pt ? "Lua 3D indisponível neste dispositivo" : "3D Moon unavailable on this device"; }
       }, { once: false });
     }, 0);
     if (document.readyState === "complete") start(); else addEventListener("load", start, { once: true });
