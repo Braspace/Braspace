@@ -162,15 +162,30 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
     const ext = geo.nx * geo.dx;
     let hd = null;
     container.dataset.relief = "lola-2d";
+    // While the Moon HD relief is on its way (WebGL2 present), do not spend the main thread on the per-pixel 2D
+    // hillshade only to throw it away a moment later (~0.5 s of CPU on a mid phone, and a visible swap). The 2D
+    // relief is drawn if HD is refused (no hardware WebGL), fails, is lost, or takes longer than HD_WAIT_MS.
+    const HD_WAIT_MS = 2500;
+    let hdPending = !RELIEF_2D && typeof globalThis.WebGL2RenderingContext === "function";
+    const stopWaiting = () => { if (hdPending) {
+        hdPending = false;
+        reliefKey = "";
+        draw();
+    } };
+    if (hdPending)
+        setTimeout(stopWaiting, HD_WAIT_MS);
     if (!RELIEF_2D)
         import("../../moon-hd/stereo-relief.js")
             .then(m => m.mountStereoRelief(container, cv, () => { hd = null; container.dataset.relief = "lola-2d"; reliefKey = ""; draw(); }, { wideOnly: typeof matchMedia === "function" && matchMedia("(max-width:700px)").matches }))
             .then(r => { if (r) {
             hd = r;
+            hdPending = false;
             container.dataset.relief = "moonhd";
             draw();
-        } })
-            .catch(() => { });
+        }
+        else
+            stopWaiting(); })
+            .catch(stopWaiting);
     // The 2D hillshade needs the heights: draw as soon as they arrive (a failed load keeps the poster, no map).
     const gridP = loadRegion().then(g => { grid = g; reliefKey = ""; draw(); });
     if (!progressive)
@@ -234,13 +249,18 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
             hd.draw(sx, sy, W, H, mpp);
             g.clearRect(0, 0, w, h);
         }
+        else if (hdPending)
+            g.clearRect(0, 0, w, h); // HD relief on its way: markers and labels now, relief when it lands
         else {
             const key = [w, h, sx.toFixed(1), sy.toFixed(1), mpp.toFixed(4)].join();
             if (key !== reliefKey && grid) {
                 relief = renderRelief(grid, w, h, sx - W * mpp / 2, sy + H * mpp / 2, mpp / dpr);
                 reliefKey = key;
             }
-            g.putImageData(relief, 0, 0);
+            if (relief)
+                g.putImageData(relief, 0, 0);
+            else
+                g.clearRect(0, 0, w, h);
         }
         g.setTransform(dpr, 0, 0, dpr, 0, 0);
         const vg = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .78);

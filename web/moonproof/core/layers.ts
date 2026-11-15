@@ -60,8 +60,10 @@ export function createLayerCard({ id, title, status, answer, why, proof, layer =
 }
 
 /** A segmented bar: fractions 0..1 (null = unknown, hatched). */
-export function barEl(fracs: (number | null)[], color = "var(--sun)"): HTMLDivElement {
+export function barEl(fracs: (number | null)[], color = "var(--sun)", label?: string): HTMLDivElement {
   const bar = document.createElement("div"); bar.className = "mp-bar"; bar.setAttribute("role", "img");
+  // Text alternative (WCAG 1.1.1): the same numbers the bar draws, "—" where unknown.
+  bar.setAttribute("aria-label", (label ? label + ": " : "") + fracs.map(f => f == null ? "—" : Math.round(f * 100) + "%").join(", "));
   for (const f of fracs) { const i = document.createElement("i"); i.style.flex = "1"; i.style.margin = "0 1px";
     i.style.background = f == null ? "repeating-linear-gradient(135deg,#808C99 0 2px,transparent 2px 4px)" : `linear-gradient(to top, ${color} ${Math.round(f * 100)}%, #1a1f25 0)`;
     bar.append(i); }
