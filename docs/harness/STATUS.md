@@ -16,9 +16,9 @@ Horas em BRT (America/Sao_Paulo). Horas UTC entre parênteses quando informadas 
 
 ## API em produção (harness, `/docker/braspace`)
 
-- Imagem: `62bf446e386d`, publicada às 11:35 BRT (14:35Z).
-- Backup antes do deploy: `backup/pre-62bf446e386d-20261115-143519.dump`.
-- Rollback: `IMAGEM=20882693109b`.
+- Imagem: `ad83cfe7517c-sha` (main `ad83cfe`, `build_commit` carimbado), publicada às 12:53 BRT (15:53Z). Detalhes nas seções de deploy abaixo.
+- Backup antes do deploy: `backup/pre-ad83cfe7517c-sha-20261115-155332.dump`.
+- Rollback: `IMAGEM=ad83cfe7517c` (mesmo código) ou `IMAGEM=62bf446e386d`.
 
 ## Verificado ao vivo pela borda
 
@@ -61,6 +61,7 @@ Feito pela sessão do #296 com autorização do Gustavo. O integrador MAC estava
 - **Subida:** `.env` com `IMAGEM=ad83cfe7517c`, depois `docker compose up -d` (`ingest` → `vector-ingest`, 10 upserts → `api` healthy).
 - **Rollback:** `IMAGEM=62bf446e386d` no `.env` e `docker compose up -d`. A imagem anterior continua no host.
 
+
 Smoke pós-deploy, direto e pela borda do Worker:
 - `/api/health`: 200, `data_source: postgres`, `store.status: ok`, 16 locais, 7 com série.
 - `/readyz` e `/api/sites`: 200.
@@ -71,3 +72,13 @@ Matriz `web/browser/route-matrix.mjs` em produção (16 páginas × 6 tamanhos),
 - Depois, 95/96 em cada trilha. A única falha de cada uma foi `net::ERR_NETWORK_CHANGED` ao baixar o three.js de `cdn.jsdelivr.net`: a rede do host de teste oscilou, não é defeito da aplicação.
 
 Risco anotado: o three.js vem do CDN jsDelivr (CSP `script-src`). Se o CDN falhar, a cena 3D cai no poster. Vendorizar o three.js em `web/vendor/` eliminaria essa dependência externa; ainda não foi feito.
+
+## Re-stamp da API `ad83cfe7517c-sha` — 15/11/2026 12:53 BRT (15:53Z), EXO-X1
+
+- **Motivo:** `/healthz` do deploy acima respondia `build_commit: "unknown"` (imagem construída sem `--build-arg BRASPACE_GIT_SHA`). Sem o SHA, o smoke de release não prova qual código está no ar.
+- **Código:** o mesmo commit `ad83cfe7517c481adb2b8ba4c0971c9ada0c302a`, sem migração. Build no EXO-X1: `docker build --target release --build-arg BRASPACE_GIT_SHA=<sha completo>` a partir de `git archive`.
+- **Imagem:** `braspace-api:ad83cfe7517c-sha`. Só o serviço `api` foi trocado (`docker compose up -d --no-deps api`), healthy.
+- **Backup:** `backup/pre-ad83cfe7517c-sha-20261115-155332.dump` e `backup/env-antes-ad83cfe7517c-sha-20261115-155332`.
+- **Verificado:** `BRASPACE_EXPECT_COMMIT=ad83cfe7517c… BRASPACE_COCKPIT_PACE_MS=150 node scripts/cockpit-backend-contract.mjs` com 49/49 pela borda do Worker e 49/49 direto na API. `smoke-publico.sh` também passou.
+- **Rollback:** `IMAGEM=ad83cfe7517c` (mesmo código, sem SHA) ou `IMAGEM=62bf446e386d`.
+- **Regra para os próximos deploys:** sempre construir com `BRASPACE_GIT_SHA=$(git rev-parse HEAD)` e validar com `BRASPACE_EXPECT_COMMIT`. Rodar o contrato com `BRASPACE_COCKPIT_PACE_MS=150`, porque o Traefik limita 20 req/s com burst 40 por IP.
