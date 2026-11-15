@@ -135,7 +135,7 @@ func TestSiteOnboardRejectsMissingOrPartialData(t *testing.T) {
 	}{
 		{"site without series", r(`"site_id": "synthetic-demo-b"`, `"site_id": "haworth"`), "DATA_NOT_AVAILABLE", 422},
 		{"past series end", r(`"delay_hours": 48`, `"delay_hours": 700`), "OUTSIDE_COVERAGE", 422},
-		{"over onboard sample limit", r(`"duration_hours": 72`, `"duration_hours": 500`), "WINDOW_TOO_LONG", 422},
+		{"over 30-day mission limit", r(`"duration_hours": 72`, `"duration_hours": 721`), "INVALID_DURATION", 422},
 		{"unknown site", r(`"site_id": "synthetic-demo-b"`, `"site_id": "atlantis"`), "SITE_NOT_FOUND", 404},
 		{"duplicate id", r(`"id": "B-planned"`, `"id": "A-planned"`), "INVALID_CANDIDATES", 422},
 		{"crew without rate source", r(`"rate_source": "Example`, `"rate_source": " ", "x": "`), "INVALID_JSON", 400},
@@ -217,5 +217,38 @@ func TestDelayScenarioWithResources(t *testing.T) {
 		if rec := do(h, "POST", "/api/scenarios/delay", b); rec.Code != 422 {
 			t.Errorf("%s: %d %s", name, rec.Code, rec.Body.String())
 		}
+	}
+}
+
+// A 30-day mission (720 h) at the hourly series step must be evaluated in
+// full, not refused or cut to 480 h; one sample more stays explicitly refused.
+func TestSiteOnboardFullThirtyDayWindow(t *testing.T) {
+	h, _ := testAPI(t, "ok")
+	base := readExample(t, "onboard-site-evaluate.request.json")
+	// Start 2026-11-01 so that +48 h + 720 h stays inside the 2026-11-01..2027-01-01 series.
+	base = strings.Replace(base, `"start_utc": "2026-12-01T00:00:00Z"`, `"start_utc": "2026-11-01T00:00:00Z"`, 1)
+	body := strings.Replace(base, `"duration_hours": 72`, `"duration_hours": 720`, 1)
+	rec := do(h, "POST", "/api/onboard/site-evaluate", body)
+	if rec.Code != 200 {
+		t.Fatalf("720 h window refused: %d %.300s", rec.Code, rec.Body.String())
+	}
+	var out struct {
+		Onboard struct {
+			Options []struct {
+				Timeline []json.RawMessage `json:"timeline"`
+			} `json:"options"`
+		} `json:"onboard"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil || len(out.Onboard.Options) == 0 {
+		t.Fatalf("decode: %v", err)
+	}
+	for i, o := range out.Onboard.Options {
+		if len(o.Timeline) != 720 {
+			t.Fatalf("option %d evaluated %d of 720 h", i, len(o.Timeline))
+		}
+	}
+	over := strings.Replace(base, `"duration_hours": 72`, `"duration_hours": 721`, 1)
+	if rec := do(h, "POST", "/api/onboard/site-evaluate", over); rec.Code != 422 || decode(t, rec)["code"] != "INVALID_DURATION" {
+		t.Fatalf("721 h must be refused explicitly: %d %.200s", rec.Code, rec.Body.String())
 	}
 }

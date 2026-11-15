@@ -40,7 +40,8 @@ COPY web/data/sites/ ./web/data/sites/
 COPY --from=rustbuilder /build/engine/target/release/braspace-lunar-engine /src/engine/target/debug/braspace-lunar-engine
 WORKDIR /src/api
 ENV RUST_ENGINE_BIN=/src/engine/target/debug/braspace-lunar-engine
-RUN go vet ./... && go test -race -count=1 ./...
+RUN unformatted="$(gofmt -l .)" && { [ -z "$unformatted" ] || { echo "gofmt needed:"; echo "$unformatted"; exit 1; }; } \
+ && go vet ./... && go test -race -count=1 ./...
 RUN mkdir -p /markers && echo ok > /markers/go
 
 # test-rust: unit + real-process integration tests of the engine, lockfile enforced.
