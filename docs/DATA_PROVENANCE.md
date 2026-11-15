@@ -26,7 +26,7 @@ Verified against `main` (`0e646c3c50ad665c34013415809e951e489a3b0f`) on **2026-1
 | `web/data/region/pgda_earth_400m.bin` | `dfa7930ff8573d27951e031cc9f358eaa31bb93a956e648834340a595ea95a48` |
 | `web/data/region/pgda_sun_400m.bin` | `de500c3b504e09ee0423b53b17ae8e87d6cdc855da3c9c496c090c489fd77d4e` |
 | `web/data/region/south_pole_400m.bin` | `87e7353dafe537cef80fe45047162770a29c9de4b620423b18dd1a1fb3da1d89` |
-| `web/data/region/south_pole_400m.json` | `c7468bb643403f9914b8502bc9f6606a260da23241b9a16572da2f67567887a9` |
+| `web/data/region/south_pole_400m.json` | `baa6188064b18e083f6a4ff5c12435b62d29e6743f9bab8a1e15f0a974dcc8d6` |
 | `web/data/sites/connecting-ridge.bin` | `9b6c4b473ace9777a9f20cc7d75f28a8ba77c23fd5dc83777b23da4a60d1f061` |
 | `web/data/sites/connecting-ridge.json` | `811f5e211fa00549c3740bc6bf2a23e4937ad8b6c9e4c8938505ce03e981073c` |
 | `web/data/sites.json` | `ca33daa5bb294e7924a6fe3c070e457ebbeecb79d2e576d8100ef0eeb731f914` |
@@ -50,3 +50,5 @@ Verified against `main` (`0e646c3c50ad665c34013415809e951e489a3b0f`) on **2026-1
 | `web/data/terrain/peak-near-shackleton_local.json` | `889aec2589bfb46955186ac2c04b578ebe44dc007af073e90338d97b86851082` |
 | `web/data/validation/validation_horizons.json` | `09f10d0ffe30a751aecdaf15b434b993a75ea53c9c912cd0973ab869c4eb5229` |
 | `web/data/validation/validation_pgda.json` | `de0ccf38db16779f1a900c232e5824dd88cf01d29980b183dcaece53b7c20fdd` |
+
+The PGDA entries under `south_pole_400m.json.layers` distinguish the resampled 400 m binary `sha256` from the original PGDA raster `source_sha256`. The original source and label checksums match `science/results/validation_pgda.json`; the regional layer checksums are verified against the committed `.bin` files. This is a metadata correction only, not independent scientific validation.

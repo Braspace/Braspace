@@ -113,13 +113,16 @@ func (r Request) resolve() (Premises, float64, float64, float64, time.Time, int,
 	if err != nil {
 		return P, 0, 0, 0, time.Time{}, 0, errors.New("start_utc must be RFC 3339")
 	}
-	if r.DurationHours == nil || *r.DurationHours < 1 || *r.DurationHours > 720 {
+	if r.DurationHours == nil || !(*r.DurationHours >= 1 && *r.DurationHours <= 720) {
 		return P, 0, 0, 0, time.Time{}, 0, errors.New("duration_hours must be in [1, 720]")
 	}
-	if r.StepMinutes == nil || *r.StepMinutes < 1 || *r.StepMinutes > 360 {
+	if r.StepMinutes == nil || !(*r.StepMinutes >= 1 && *r.StepMinutes <= 360) {
 		return P, 0, 0, 0, time.Time{}, 0, errors.New("step_minutes must be in [1, 360]")
 	}
 	count := int(math.Floor(*r.DurationHours * 60 / *r.StepMinutes))
+	if count < 1 {
+		return P, 0, 0, 0, time.Time{}, 0, errors.New("step_minutes must fit at least one sample in duration_hours")
+	}
 	if count > MaxSamples {
 		return P, 0, 0, 0, time.Time{}, 0, errors.New("too many samples: raise step_minutes or lower duration_hours")
 	}
@@ -310,7 +313,10 @@ func Compute(req Request) (Response, error) {
 		g, ok := gdop(units)
 		avail := len(units) >= P.MinSatellites && ok && g <= P.GDOPLimit
 		sm := Sample{
-			EpochUTC:   start.Add(time.Duration(float64(i)*stepMin) * time.Minute).UTC().Format(time.RFC3339),
+			// Convert the complete minute offset to nanoseconds before rounding.
+			// Truncating the minute count first would report different epochs
+			// from the geometry whenever step_minutes is fractional.
+			EpochUTC:   start.Add(time.Duration(math.Round(float64(i) * stepMin * float64(time.Minute)))).UTC().Format(time.RFC3339Nano),
 			Satellites: len(units),
 			Available:  avail,
 		}
@@ -389,6 +395,46 @@ func summarise(P Premises, samples []Sample, stepMin float64) Response {
 	}
 }
 
+// decodeRequest rejects repeated/case-aliased fields and trailing documents;
+// encoding/json's struct decoder normally accepts both aliases and duplicates.
+func decodeRequest(raw []byte) (Request, error) {
+	var req Request
+	dec := json.NewDecoder(strings.NewReader(string(raw)))
+	first, err := dec.Token()
+	if err != nil || first != json.Delim('{') {
+		return req, errors.New("expected JSON object")
+	}
+	fields := map[string]any{
+		"lat": &req.Lat, "lon": &req.Lon, "start_utc": &req.StartUTC,
+		"duration_hours": &req.DurationHours, "step_minutes": &req.StepMinutes,
+		"gdop_limit": &req.GDOPLimit, "min_satellites": &req.MinSatellites,
+		"elevation_mask_deg": &req.ElevationMaskDeg,
+	}
+	for dec.More() {
+		token, err := dec.Token()
+		key, ok := token.(string)
+		if err != nil || !ok {
+			return req, errors.New("invalid JSON field")
+		}
+		target, ok := fields[key]
+		if !ok {
+			return req, errors.New("unknown or repeated JSON field")
+		}
+		delete(fields, key)
+		if err := dec.Decode(target); err != nil {
+			return req, err
+		}
+	}
+	last, err := dec.Token()
+	if err != nil || last != json.Delim('}') {
+		return req, errors.New("invalid JSON object")
+	}
+	if dec.Decode(new(any)) != io.EOF {
+		return req, errors.New("trailing JSON payload")
+	}
+	return req, nil
+}
+
 // Handler serves POST /api/onboard/navigation.
 func Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -406,10 +452,8 @@ func Handler() http.Handler {
 			_ = json.NewEncoder(w).Encode(map[string]string{"code": "REQUEST_TOO_LARGE", "error": "maximum request size exceeded"})
 			return
 		}
-		dec := json.NewDecoder(strings.NewReader(string(raw)))
-		dec.DisallowUnknownFields()
-		var req Request
-		if err := dec.Decode(&req); err != nil {
+		req, err := decodeRequest(raw)
+		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			_ = json.NewEncoder(w).Encode(map[string]string{"code": "INVALID_JSON", "error": "invalid JSON contract"})
 			return

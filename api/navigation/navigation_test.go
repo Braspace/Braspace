@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func fptr(v float64) *float64 { return &v }
@@ -106,7 +107,10 @@ func TestValidationRejectsBadInput(t *testing.T) {
 		"bad start":          func(r *Request) { r.StartUTC = "ontem" },
 		"duration zero":      func(r *Request) { r.DurationHours = fptr(0) },
 		"duration too long":  func(r *Request) { r.DurationHours = fptr(721) },
+		"duration NaN":       func(r *Request) { r.DurationHours = fptr(math.NaN()) },
 		"step zero":          func(r *Request) { r.StepMinutes = fptr(0) },
+		"step NaN":           func(r *Request) { r.StepMinutes = fptr(math.NaN()) },
+		"empty grid":         func(r *Request) { r.DurationHours = fptr(1); r.StepMinutes = fptr(360) },
 		"too many samples":   func(r *Request) { r.StepMinutes = fptr(1); r.DurationHours = fptr(720) },
 		"gdop limit zero":    func(r *Request) { r.GDOPLimit = fptr(0) },
 		"min satellites big": func(r *Request) { r.MinSatellites = iptr(25) },
@@ -116,6 +120,29 @@ func TestValidationRejectsBadInput(t *testing.T) {
 		mutate(&r)
 		if _, err := Compute(r); err == nil {
 			t.Errorf("%s: accepted", name)
+		}
+	}
+}
+
+func TestFractionalMinuteEpochs(t *testing.T) {
+	r := baseReq()
+	r.DurationHours = fptr(1)
+	r.StepMinutes = fptr(1.5)
+	resp, err := Compute(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resp.Samples) != 40 || resp.Summary.TotalH != 1 {
+		t.Fatalf("got %d samples and %.6f hours, want 40 and 1", len(resp.Samples), resp.Summary.TotalH)
+	}
+	start, err := time.Parse(time.RFC3339, r.StartUTC)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, sample := range resp.Samples {
+		want := start.Add(time.Duration(i) * 90 * time.Second).Format(time.RFC3339)
+		if sample.EpochUTC != want {
+			t.Fatalf("sample %d epoch = %s, want %s", i, sample.EpochUTC, want)
 		}
 	}
 }
@@ -142,5 +169,32 @@ func TestHandlerContract(t *testing.T) {
 	h.ServeHTTP(wrong, httptest.NewRequest(http.MethodPost, "/api/onboard/navigation", strings.NewReader(body)))
 	if wrong.Code != http.StatusUnsupportedMediaType {
 		t.Fatalf("no content type: status %d, want 415", wrong.Code)
+	}
+}
+
+func TestHandlerRejectsAmbiguousJSONAndEmptyGrid(t *testing.T) {
+	const valid = `{"lat":-89.5,"lon":45,"start_utc":"2026-12-01T00:00:00Z","duration_hours":24,"step_minutes":60}`
+	h := Handler()
+	for _, tc := range []struct {
+		name string
+		body string
+		code int
+	}{
+		{"trailing document", valid + `{}`, http.StatusBadRequest},
+		{"trailing garbage", valid + `!`, http.StatusBadRequest},
+		{"duplicate field", strings.Replace(valid, `"lat":-89.5`, `"lat":-89.5,"lat":0`, 1), http.StatusBadRequest},
+		{"case alias", strings.Replace(valid, `"lat"`, `"LAT"`, 1), http.StatusBadRequest},
+		{"empty grid", strings.Replace(strings.Replace(valid, `"duration_hours":24`, `"duration_hours":1`, 1), `"step_minutes":60`, `"step_minutes":360`, 1), http.StatusUnprocessableEntity},
+		{"trailing whitespace", valid + "\n\t ", http.StatusOK},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/api/onboard/navigation", strings.NewReader(tc.body))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, req)
+			if w.Code != tc.code {
+				t.Fatalf("status %d, want %d: %s", w.Code, tc.code, w.Body.String())
+			}
+		})
 	}
 }

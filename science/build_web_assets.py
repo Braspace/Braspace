@@ -189,13 +189,19 @@ def main():
                          "resolution_m": pg[name].scale, "scaling_factor": pg[name].k}
 
     region_hdr, layer_sha = build_region(lola, pg["sun"], pg["earth"], a.out)
+    # Keep raw-raster identity separate from the resampled layer's byte digest.
+    # pg_meta retains its original schema for validation_pgda.json.
+    layer_source = {
+        body: {("source_sha256" if key == "sha256" else key): value for key, value in source.items()}
+        for body, source in pg_meta.items()
+    }
     region_hdr["layers"] = {
         "pgda_sun": {"file": "pgda_sun_400m.bin", "type": "uint8 percent", "sha256": layer_sha["sun"],
                      "meaning": "average fraction of the solar disc visible (PGDA, Mazarico et al. 2011); 0 = permanent shadow",
-                     **pg_meta["sun"]},
+                     **layer_source["sun"]},
         "pgda_earth": {"file": "pgda_earth_400m.bin", "type": "uint8 percent", "sha256": layer_sha["earth"],
                        "meaning": "average Earth visibility; Earth counted visible if any part of its disc is unobscured (PGDA)",
-                       **pg_meta["earth"]},
+                       **layer_source["earth"]},
     }
     (a.out / "region" / "south_pole_400m.json").write_text(json.dumps(region_hdr, indent=1) + "\n", encoding="utf-8")
 

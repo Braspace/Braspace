@@ -816,9 +816,13 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "additionalProperties": false,
                 "required": [
                   "lat",
-                  "lon"
+                  "lon",
+                  "start_utc",
+                  "duration_hours",
+                  "step_minutes"
                 ],
                 "properties": {
                   "lat": {
@@ -836,10 +840,14 @@
                     "format": "date-time"
                   },
                   "duration_hours": {
-                    "type": "number"
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 720
                   },
                   "step_minutes": {
-                    "type": "number"
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 360
                   },
                   "gdop_limit": {
                     "type": "number"
