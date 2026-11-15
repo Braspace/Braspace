@@ -73,6 +73,7 @@ Serve with `cd web && node dev-server.mjs` (set `BRASPACE_WEB_PORT` if 5173 is t
 
 - **Explore the Moon ↔ Show panels** on every screen: Joel's Moon HD (`web/moon-hd/backdrop.ts`) behind the panels or full screen, with the catalogue sites from `GET /api/sites` as pins; the camera orbits the selected site in perspective. Map screens keep their LOLA relief and load the 3D only on demand.
 - **Cockpit:** an illustrative Artemis-style lander (`web/moon-hd/artemis.ts`) over the south pole on that same scene — the same model as the gamified Landing Lab. Not telemetry.
+- **P0 nine-panel controls (release candidate):** `web/moonproof/screens/cockpit-panels.tsx` adds independent Battery, Sun/Earth, Sun-hours, Rules, Alerts, Faults, Crew, Timeline and Report visibility switches plus **Moon only** / **Restore panels**, using Heloísa's tokens and the existing lazy 3D Moon button. The battery indicator is wrapped by the current Preact `mp-node`; never reuse the old direct `.mp-stat` selector. This is a pending PR, not a claim of deployment; validate Chromium GPU/no-GPU, six viewport widths and the EXO-X1 fullstack CI before release.
 - **Density** (`web/moonproof/core/density.css`) and collapsible panels within Heloísa's design system; ≥ 44 px touch targets; Lighthouse A11y/SEO 100.
 - Details, public `window.moonBackdrop` API and the Worker deploy runbook: [`docs/MOONPROOF_FRONT_RUNTIME.md`](docs/MOONPROOF_FRONT_RUNTIME.md).
 
