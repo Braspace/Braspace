@@ -1,3 +1,4 @@
+import {readFileSync} from "node:fs";
 // Moon HD page backdrop: public API, pure decisions (assets, WebGL fallback, clock), page wiring and asset registry.
 import {test,after} from "node:test";
 import assert from "node:assert/strict";
@@ -10,7 +11,7 @@ import * as backdrop from "../moon-hd/backdrop.js";
 
 const web=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const read=name=>readFile(path.join(web,name),"utf8");
-const {mountMoonBackdrop,pickAssets,probeWebGL,backdropTime,shouldAnimate,normalizeOptions,cameraPosition,MAX_PIXEL_RATIO,FRAME_MS}=backdrop;
+const {mountMoonBackdrop,pickAssets,probeWebGL,backdropTime,shouldAnimate,normalizeOptions,cameraPosition,MAX_PIXEL_RATIO,FRAME_MS,isSoftwareRenderer,slowStreak,SLOW_FRAME_MS,SLOW_FRAMES_TO_STOP}=backdrop;
 
 // Pages whose background is decorative get the Moon; pages whose LOLA relief is the functional map never do.
 const WITH={"index.html":"./moon-hd/backdrop.js","onboard/cockpit.html":"../moon-hd/backdrop.js","moonproof/index.html":"../moon-hd/backdrop.js",
@@ -56,6 +57,44 @@ test("WebGL probe never throws: missing, refusing and throwing canvases all mean
  const asked=[],gl={},canvas={getContext(kind){asked.push(kind);return kind==="webgl2"?gl:null;}};
  assert.deepEqual(probeWebGL(()=>canvas),{canvas,gl});
  assert.deepEqual(asked,["webgl2"],"three.js r181 needs WebGL 2; WebGL 1 is not tried");
+});
+
+// Measured on main before this guard: with SwiftShader (the renderer of the Chromium e2e) one backdrop frame
+// took about 500 ms and starved the page, so the browser gate timed out.
+test("software WebGL gets no backdrop: the context is asked with failIfMajorPerformanceCaveat and the renderer name is read",()=>{
+ for(const name of ["ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)","llvmpipe (LLVM 15.0.7, 256 bits)","softpipe","Microsoft Basic Render Driver","Google SwiftShader"])
+  assert.equal(isSoftwareRenderer(name),true,name);
+ for(const name of ["ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)","ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)","Mali-G78","Adreno (TM) 740","Intel(R) Iris(R) Xe Graphics",null,undefined,""])
+  assert.equal(isSoftwareRenderer(name),false,String(name));
+ const make=(renderer,{debugInfo=true}={})=>{
+  const state={attributes:null,lost:false};
+  const gl={RENDERER:0x1F01,
+   getExtension:kind=>kind==="WEBGL_debug_renderer_info"?(debugInfo?{UNMASKED_RENDERER_WEBGL:0x9246}:null):kind==="WEBGL_lose_context"?{loseContext(){state.lost=true;}}:null,
+   getParameter:p=>(p===0x9246||p===0x1F01)?renderer:null};
+  return {state,gl,canvas:{getContext(kind,attributes){state.attributes=attributes;return kind==="webgl2"?gl:null;}}};
+ };
+ const soft=make("ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)");
+ assert.equal(probeWebGL(()=>soft.canvas),null);
+ assert.equal(soft.state.attributes.failIfMajorPerformanceCaveat,true);
+ assert.equal(soft.state.lost,true,"the refused software context is released");
+ const softNoExtension=make("llvmpipe (LLVM 15.0.7, 256 bits)",{debugInfo:false});
+ assert.equal(probeWebGL(()=>softNoExtension.canvas),null,"falls back to gl.RENDERER when the debug extension is unavailable");
+ const hard=make("ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)");
+ assert.deepEqual(probeWebGL(()=>hard.canvas),{canvas:hard.canvas,gl:hard.gl});
+ assert.equal(hard.state.lost,false);
+});
+
+test("slow frames end the animation: four in a row over 120 ms, and a fast frame resets the count",()=>{
+ assert.equal(SLOW_FRAME_MS,120);assert.equal(SLOW_FRAMES_TO_STOP,4);
+ let streak=0;
+ for(const gap of [500,500,500])streak=slowStreak(streak,gap);
+ assert.equal(streak,3);assert.ok(streak<SLOW_FRAMES_TO_STOP);
+ assert.equal(slowStreak(streak,33),0,"one frame on time clears the streak");
+ assert.equal(slowStreak(streak,500),4);
+ assert.equal(slowStreak(0,120),0,"exactly at the limit is not slow");
+ const source=readFileSync(new URL("../moon-hd/backdrop.js",import.meta.url),"utf8");
+ assert.match(source,/streak >= SLOW_FRAMES_TO_STOP\) \{ still = true;/,"the loop stops for good");
+ assert.match(source,/if \(!raf && !dead && !still\)/,"and is not restarted by resize, visibility or motion changes");
 });
 
 test("clock: the scenario's ?start= when the page has one, else now",()=>{
