@@ -109,3 +109,6 @@
 @media (max-width:700px){.mp-ev{top:176px}}
 .mp-row-between{display:flex;justify-content:space-between;align-items:center}
 .mp-sync{margin-top:13px;border-top:1px solid var(--line);padding-top:8px}.mp-sync h3{margin:0 0 6px;font-size:14px}.mp-sync p{margin:3px 0}
+/* iPhone (Safari, 14/11): the PRE seal stretched across the card; the tabs touched the context bar. */
+.mp-two .mp-seal{justify-self:start;align-self:start;width:auto}
+@media (max-width:700px){.mp-ev{top:188px}}

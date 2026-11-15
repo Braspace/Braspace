@@ -148,3 +148,10 @@
 .ck-crew-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px;font-variant-numeric:tabular-nums}
 .ck-crew-table th{text-align:left;color:var(--text-2);font-weight:600;padding:4px 0}.ck-crew-table td{padding:4px 0}
 .ck-crew-tools{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.ck-crew-tools .mp-pill{min-height:44px}.ck-saved{list-style:none;padding:0;margin:6px 0;display:grid;gap:4px}.ck-saved .mp-link{background:none;border:0;color:var(--jade);text-decoration:underline;cursor:pointer;min-height:44px;text-align:left;padding:0}
+/* iPhone (Safari, 14/11): scale() over a 250x200 box drew an ellipse and pushed the satellites off the halo. A real square circle. */
+@media (max-width:700px){
+  .mp-ck-left .mp-stat{width:176px!important;height:176px!important;transform:none!important;margin:42px auto 40px!important;aspect-ratio:1}
+  .mp-ck-left .mp-stat-core{inset:34px}
+  .mp-ck-left .mp-sat{width:46px;height:46px;margin:-23px 0 0 -23px}
+  .mp-ck-left .mp-sat b{font-size:12px}.mp-ck-left .mp-sat span{font-size:10px;max-width:42px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}

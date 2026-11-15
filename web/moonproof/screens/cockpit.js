@@ -40,6 +40,9 @@ function placeBodies() {
   // Keep the Sun/Earth icon and its label below the top bar and context bar (they used to slide under them).
   const minY = Math.max(...[".mp-top", ".mp-context"].map(s => document.querySelector(s)?.getBoundingClientRect().bottom || 0)) + 22;
   sun[1] = Math.max(sun[1], minY); earth[1] = Math.max(earth[1], minY);
+  // Phone: icon + label (about 60 px) must also stay above the sheet, or the label is cut by it.
+  const sheetTop = document.querySelector(".mp-sheet")?.getBoundingClientRect().top;
+  if (sheetTop && getComputedStyle(document.querySelector(".mp-sheet")).display !== "none") { const maxY = sheetTop - 62; sun[1] = Math.min(sun[1], maxY); earth[1] = Math.min(earth[1], maxY); }
   for (const [b, p] of [["sun", sun], ["earth", earth]]) {
     Object.assign(bodies[b].ic.style, { left: p[0] + "px", top: p[1] + "px" });
     Object.assign(bodies[b].tag.style, { left: p[0] + "px", top: p[1] + 24 + "px" });

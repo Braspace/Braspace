@@ -55,10 +55,11 @@ export function freeArea(W, H, rects) {
   let l = 0, tp = 0, r = W, b = H;
   for (const q of rects) {
     if (!q || q.width < 4 || q.height < 4) continue;
+    if (q.top < H * .25 && q.bottom > H * .75) continue; // full-height overlay (rays SVG, glass backdrop): not a panel
     if (q.width < W * .45 && q.right < W * .42) l = Math.max(l, q.right);
     else if (q.width < W * .45 && q.left > W * .58) r = Math.min(r, q.left);
     else if (q.bottom < H * .4) tp = Math.max(tp, q.bottom);
-    else if (q.top > H * .5) b = Math.min(b, q.top);
+    else if (q.top > H * .5 || q.bottom > H * .6) b = Math.min(b, q.top); // phone sheet starts near 43%
   }
   const pad = 36; // marker radius + label
   l += pad; tp += pad; r -= pad; b -= pad + 18;

@@ -52,7 +52,8 @@ test("visual size below 44 px keeps a real touch area of at least 44 px", () => 
   assert.ok(px(decl(".mp-ev-alter select", "height", null)) >= 44, "Alterar select");
 });
 test("mobile layout is untouched: single column, bar below the context", () => {
-  assert.equal(decl(".mp-ev", "top", /max-width:700px/), "176px");
+  // 188: at 176 the tabs touched the context bar on a real iPhone (Safari, 14/11); 12 px gap now.
+  assert.equal(decl(".mp-ev", "top", /max-width:700px/), "188px");
   assert.equal(decl(".mp-ev", "display", /max-width:700px/), "block");
   assert.equal(decl(".mp-ev-main", "grid-column", /max-width:700px/), null);
 });

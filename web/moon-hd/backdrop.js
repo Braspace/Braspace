@@ -49,7 +49,7 @@ export const shouldAnimate = ({ hidden, onScreen, reducedMotion }) => !hidden &&
 
 /** Camera position (unit Moon radius, +Y north) on a slow orbit around the polar axis. */
 export function cameraPosition(view, angle) {
-  const [lat, distance] = view === "globe" ? [-12, 4.6] : [-66, 2.45];
+  const [lat, distance] = view === "globe" ? [-12, 4.6] : [-84, 2.05];
   const phi = lat * Math.PI / 180, c = Math.cos(phi) * distance;
   return [c * Math.cos(angle), Math.sin(phi) * distance, -c * Math.sin(angle)];
 }

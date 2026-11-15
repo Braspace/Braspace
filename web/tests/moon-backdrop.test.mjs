@@ -79,7 +79,7 @@ test("camera stays outside the Moon and south of the equator in both views",()=>
   const [x,y,z]=cameraPosition(view,angle),r=Math.hypot(x,y,z);
   assert.ok(r>2&&r<6,view+" distance "+r);assert.ok(y<0,"looks from the south");
  }
- assert.ok(cameraPosition("pole",0)[1]/Math.hypot(...cameraPosition("pole",0))<-0.85,"pole view sits over the south polar region");
+ assert.ok(cameraPosition("pole",0)[1]/Math.hypot(...cameraPosition("pole",0))<-0.99,"pole view looks straight at the south pole");
 });
 
 test("backdrop source: three.js only on demand, same pinned version as the viewer and the lab, silent fallback",async()=>{

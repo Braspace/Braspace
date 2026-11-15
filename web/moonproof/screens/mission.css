@@ -106,7 +106,6 @@
   .mc-circles{overflow:hidden}
 }
 @media (max-width:700px){
-  .mc-dock{top:134px;bottom:auto;right:12px;left:auto;transform:none}
   .mc-circles{display:grid;grid-template-columns:1fr 1fr;margin:0;gap:0;justify-items:center;padding:4px 0}
   .mc-circles .mp-stat{width:118px;height:118px;margin:26px 0!important}
   .mc-circles .mp-stat::before{inset:0}
@@ -174,3 +173,6 @@
   .mc-circles .mp-sat{width:40px;height:40px;margin:-20px 0 0 -20px}
   .mc-circles .mp-sat b{font-size:10.5px}.mc-circles .mp-sat span{font-size:8px}
 }
+/* iPhone (Safari, 14/11): the dock sat at the top over the Earth marker and its label. On phones it rides just above the sheet. */
+@media (max-width:700px){.mc-dock{top:auto;bottom:calc(46vh + 84px);left:50%;right:auto;transform:translateX(-50%)}}
+@media (max-width:700px){.mc-panels .mc-dock{position:static;transform:none;margin:0 auto 10px;bottom:auto;top:auto;left:auto;right:auto;justify-content:center}}
