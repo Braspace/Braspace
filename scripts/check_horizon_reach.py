@@ -49,11 +49,18 @@ def check(data):
                     errors.append(f"{site['site']}: {metric} increases with horizon reach")
                     break
                 previous = value
-        for row in rows:
-            for metric in ("longest_darkness_h", "longest_earth_blackout_h"):
+        for metric in ("longest_darkness_h", "longest_earth_blackout_h"):
+            previous = None
+            for row in rows:
                 value = row.get(metric)
                 if type(value) not in (int, float) or not math.isfinite(value) or value < 0:
                     errors.append(f"{site['site']}: invalid {metric}")
+                    break
+                # With identical epochs, adding terrain cannot shorten the longest blackout.
+                if previous is not None and value < previous - 0.011:
+                    errors.append(f"{site['site']}: {metric} decreases with horizon reach")
+                    break
+                previous = value
     return errors
 
 
