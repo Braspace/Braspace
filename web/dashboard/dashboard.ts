@@ -144,6 +144,18 @@ export function luminance(hex: string){
 }
 export function contrast(a: string,b: string){const [x,y]=[luminance(a),luminance(b)].sort((p,q)=>q-p);return(x+.05)/(y+.05)}
 
+// ---- latest-request gate ------------------------------------------------------
+// Only the most recent calculation may render. Starting a new one aborts the
+// previous request, so a slow answer for site A can never be shown under site B.
+export interface GateToken { id: number; signal: AbortSignal; }
+export function latestRequestGate(){
+ let current=0,ctrl: AbortController|null=null;
+ return{
+  begin(): GateToken{if(ctrl)ctrl.abort();ctrl=new AbortController();return{id:++current,signal:ctrl.signal}},
+  isCurrent(t: GateToken){return t.id===current&&!t.signal.aborted},
+ };
+}
+
 // ---- DOM wiring (browser only) ----------------------------------------------
 async function getJSON(path: string,opts?: RequestInit){
  const r=await fetch(path,opts);
@@ -151,7 +163,8 @@ async function getJSON(path: string,opts?: RequestInit){
  if(!r.ok){const e: Error&{code?: string}=new Error(body&&body.error||"HTTP "+r.status);e.code=body&&body.code||String(r.status);throw e}
  return body;
 }
-const post=(p: string,b: unknown)=>getJSON(p,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b)});
+const post=(p: string,b: unknown,signal?: AbortSignal)=>getJSON(p,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b),signal});
+const gate=latestRequestGate();
 
 function init(){
  const $=<T extends HTMLElement=HTMLElement>(s: string): T=>document.querySelector(s) as T,$$=<T extends HTMLElement=HTMLElement>(s: string): T[]=>[...document.querySelectorAll<T>(s)];
@@ -278,23 +291,27 @@ function init(){
  }
  async function calculate(){
   const msg=$("#form-msg");
+  const t=gate.begin();
+  const aborted=(e: unknown)=>(e as Error)&&(e as Error).name==="AbortError";
   state.calcError=null;state.compare=null;state.onboard=null;state.cView=null;state.oView=null;
   if(!state.site){render();return}
   const b=buildBody(formState());
   if(b.error){state.calcError=T("f_start")+" / "+T("f_dur");set(msg,"");render();return}
   set(msg,T("calculating"));$<HTMLButtonElement>("#calc-btn").disabled=true;
   try{
-   const cmp=await post("/api/compare",b.compare);
+   const cmp=await post("/api/compare",b.compare,t.signal);
+   if(!gate.isCurrent(t))return;
    state.compare=cmp;state.cView=viewFromCompare(cmp);
    if(b.onboard){
-    try{const ob=await post("/api/onboard/site-evaluate",b.onboard);state.onboard=ob;state.oView=viewFromOnboard(ob)}
-    catch(e){state.calcError=((e as Json).code?(e as Json).code+": ":"")+(e as Error).message}
+    try{const ob=await post("/api/onboard/site-evaluate",b.onboard,t.signal);if(!gate.isCurrent(t))return;state.onboard=ob;state.oView=viewFromOnboard(ob)}
+    catch(e){if(aborted(e)||!gate.isCurrent(t))return;state.calcError=((e as Json).code?(e as Json).code+": ":"")+(e as Error).message}
    }
    set(msg,T("done"));
-  }catch(e){state.apiDown=(e as Json).code===undefined||(e as Json).code==="502"||(e as Json).code==="503";state.calcError=state.apiDown?null:((e as Json).code?(e as Json).code+": ":"")+(e as Error).message;set(msg,"")}
-  finally{$<HTMLButtonElement>("#calc-btn").disabled=false;render();tick()}
+  }catch(e){if(aborted(e)||!gate.isCurrent(t))return;state.apiDown=(e as Json).code===undefined||(e as Json).code==="502"||(e as Json).code==="503";state.calcError=state.apiDown?null:((e as Json).code?(e as Json).code+": ":"")+(e as Error).message;set(msg,"")}
+  finally{if(gate.isCurrent(t)){$<HTMLButtonElement>("#calc-btn").disabled=false;render();tick()}}
  }
  function chooseSite(id: string){
+  gate.begin();$<HTMLButtonElement>("#calc-btn").disabled=false;set($("#form-msg"),"");
   state.site=state.sites.find((s: Json)=>s.id===id)||null;state.compare=null;state.onboard=null;state.cView=null;state.oView=null;state.calcError=null;
   prefillWindow();render();
   if(state.site&&state.site.series)calculate();

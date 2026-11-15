@@ -127,3 +127,38 @@ test("the test fails with wrong code: a hard-coded metric would be caught",()=>{
  const found=[...bad.matchAll(/data-metric="[^"]+">([^<]*)</g)].some(m=>m[1]!=="—");
  assert.ok(found);
 });
+
+// P0 backlog #5: selecting site A then site B while A's request is still in flight
+// must never apply A's response under B's identity (stale render over current route).
+test("latest-request gate: a slow response for site A is dropped after site B is chosen",async()=>{
+ assert.equal(typeof D.latestRequestGate,"function","dashboard must export latestRequestGate");
+ const gate=D.latestRequestGate();
+ const applied=[];
+ const delay=(ms,v)=>new Promise(r=>setTimeout(()=>r(v),ms));
+ const run=async(site,ms)=>{
+  const t=gate.begin();
+  const body=await delay(ms,{site});
+  if(gate.isCurrent(t))applied.push(body.site);
+  return t;
+ };
+ const a=run("A",40);            // A starts first, answers last
+ const tb=await run("B",5);      // B starts later, answers first
+ const ta=await a;
+ assert.deepEqual(applied,["B"],"only the latest selection may render");
+ assert.equal(ta.signal.aborted,true,"the superseded request is aborted");
+ assert.equal(tb.signal.aborted,false);
+ assert.equal(gate.isCurrent(tb),true);
+});
+
+test("calculate() is guarded by the latest-request gate and passes its abort signal",()=>{
+ const body=js.slice(js.indexOf("async function calculate()"),js.indexOf("function chooseSite("));
+ assert.match(body,/gate\.begin\(\)/);
+ assert.match(body,/isCurrent\(/);
+ assert.match(body,/signal/);
+ assert.match(body,/AbortError/,"an aborted request must not be reported as API down");
+});
+
+test("choosing a site without series still invalidates an in-flight calculation",()=>{
+ const body=js.slice(js.indexOf("function chooseSite("),js.indexOf("async function boot()"));
+ assert.match(body,/gate\.begin\(\)/);
+});

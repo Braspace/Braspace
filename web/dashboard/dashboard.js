@@ -162,6 +162,14 @@ export function luminance(hex) {
     return .2126 * v[0] + .7152 * v[1] + .0722 * v[2];
 }
 export function contrast(a, b) { const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p); return (x + .05) / (y + .05); }
+export function latestRequestGate() {
+    let current = 0, ctrl = null;
+    return {
+        begin() { if (ctrl)
+            ctrl.abort(); ctrl = new AbortController(); return { id: ++current, signal: ctrl.signal }; },
+        isCurrent(t) { return t.id === current && !t.signal.aborted; },
+    };
+}
 // ---- DOM wiring (browser only) ----------------------------------------------
 async function getJSON(path, opts) {
     const r = await fetch(path, opts);
@@ -177,7 +185,8 @@ async function getJSON(path, opts) {
     }
     return body;
 }
-const post = (p, b) => getJSON(p, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(b) });
+const post = (p, b, signal) => getJSON(p, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(b), signal });
+const gate = latestRequestGate();
 function init() {
     const $ = (s) => document.querySelector(s), $$ = (s) => [...document.querySelectorAll(s)];
     const state = { lang: "en", sites: [], site: null, compare: null, onboard: null, ready: null, caps: null, apiDown: false, calcError: null, cView: null, oView: null };
@@ -384,6 +393,8 @@ function init() {
     }
     async function calculate() {
         const msg = $("#form-msg");
+        const t = gate.begin();
+        const aborted = (e) => e && e.name === "AbortError";
         state.calcError = null;
         state.compare = null;
         state.onboard = null;
@@ -403,33 +414,46 @@ function init() {
         set(msg, T("calculating"));
         $("#calc-btn").disabled = true;
         try {
-            const cmp = await post("/api/compare", b.compare);
+            const cmp = await post("/api/compare", b.compare, t.signal);
+            if (!gate.isCurrent(t))
+                return;
             state.compare = cmp;
             state.cView = viewFromCompare(cmp);
             if (b.onboard) {
                 try {
-                    const ob = await post("/api/onboard/site-evaluate", b.onboard);
+                    const ob = await post("/api/onboard/site-evaluate", b.onboard, t.signal);
+                    if (!gate.isCurrent(t))
+                        return;
                     state.onboard = ob;
                     state.oView = viewFromOnboard(ob);
                 }
                 catch (e) {
+                    if (aborted(e) || !gate.isCurrent(t))
+                        return;
                     state.calcError = (e.code ? e.code + ": " : "") + e.message;
                 }
             }
             set(msg, T("done"));
         }
         catch (e) {
+            if (aborted(e) || !gate.isCurrent(t))
+                return;
             state.apiDown = e.code === undefined || e.code === "502" || e.code === "503";
             state.calcError = state.apiDown ? null : (e.code ? e.code + ": " : "") + e.message;
             set(msg, "");
         }
         finally {
-            $("#calc-btn").disabled = false;
-            render();
-            tick();
+            if (gate.isCurrent(t)) {
+                $("#calc-btn").disabled = false;
+                render();
+                tick();
+            }
         }
     }
     function chooseSite(id) {
+        gate.begin();
+        $("#calc-btn").disabled = false;
+        set($("#form-msg"), "");
         state.site = state.sites.find((s) => s.id === id) || null;
         state.compare = null;
         state.onboard = null;
