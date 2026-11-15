@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Stamps /healthz build_commit: BRASPACE_GIT_SHA=$(git rev-parse HEAD) docker compose build
+      args:
+        BRASPACE_GIT_SHA: ${BRASPACE_GIT_SHA:-unknown}
     # Optional exact-origin allowlist for Pages/external frontend. The Go
     # middleware rejects wildcard origins; empty disables cross-origin access.
     environment:
