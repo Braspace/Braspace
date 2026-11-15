@@ -1,0 +1,32 @@
+/* Collapsible panels (core/panels.ts). Folding uses the standalone `translate` property so it never fights a screen's own transform. */
+.mp-ptab{position:fixed;z-index:21;display:inline-flex;align-items:center;justify-content:center;width:var(--margin);height:var(--touch);padding:0;border:1px solid var(--line-2);border-radius:var(--r-pill);background:var(--glass);-webkit-backdrop-filter:var(--glass-filter);backdrop-filter:var(--glass-filter);color:var(--text);cursor:pointer;transition:background-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease)}
+.mp-ptab:hover{border-color:var(--jade)}
+.mp-ptab:focus-visible{outline:2px solid var(--jade);outline-offset:2px}
+.mp-ptab svg{transition:transform .26s var(--ease)}
+.mp-ptab[data-edge="left"]{left:0;border-left:0;border-radius:0 var(--r-pill) var(--r-pill) 0}
+.mp-ptab[data-edge="right"]{right:0;border-right:0;border-radius:var(--r-pill) 0 0 var(--r-pill)}
+.mp-ptab[data-edge="right"] svg{transform:rotate(180deg)}
+.mp-ptab[data-edge="left"][aria-expanded="false"] svg{transform:rotate(180deg)}
+.mp-ptab[data-edge="right"][aria-expanded="false"] svg{transform:none}
+.mp-ptab[data-edge="bottom"]{width:var(--touch);left:0}
+.mp-ptab[data-edge="bottom"] svg{transform:rotate(-90deg)}
+.mp-ptab[data-edge="bottom"][aria-expanded="false"] svg{transform:rotate(90deg)}
+.mp-ptab[data-edge="sheet"]{display:none;right:var(--margin);width:var(--touch);height:30px}
+.mp-ptab[data-edge="sheet"] svg{transform:rotate(-90deg)}
+.mp-ptab[data-edge="sheet"][aria-expanded="false"] svg{transform:rotate(90deg)}
+
+.mp-panel{transition:translate .26s var(--ease),opacity .26s var(--ease),visibility 0s linear 0s}
+@media (min-width:701px){
+  .mp-panel[data-mp-panel="left"].mp-panel-folded,html.moon-explore-on .mp-panel[data-mp-panel="left"]{translate:calc(-100% - var(--margin) - 8px) 0}
+  .mp-panel[data-mp-panel="right"].mp-panel-folded,html.moon-explore-on .mp-panel[data-mp-panel="right"]{translate:calc(100% + var(--margin) + 8px) 0}
+  .mp-panel[data-mp-panel="left"].mp-panel-folded,.mp-panel[data-mp-panel="right"].mp-panel-folded,
+  html.moon-explore-on .mp-panel[data-mp-panel="left"],html.moon-explore-on .mp-panel[data-mp-panel="right"]{opacity:0;visibility:hidden;pointer-events:none;transition:translate .26s var(--ease),opacity .26s var(--ease),visibility 0s linear .26s}
+}
+.mp-panel[data-mp-panel="bottom"].mp-panel-folded,html.moon-explore-on .mp-panel[data-mp-panel="bottom"]{translate:0 calc(100% + 56px);opacity:0;visibility:hidden;pointer-events:none;transition:translate .26s var(--ease),opacity .26s var(--ease),visibility 0s linear .26s}
+@media (max-width:700px){
+  .mp-ptab[data-edge="left"],.mp-ptab[data-edge="right"],.mp-ptab[data-edge="bottom"]{display:none}
+  .mp-ptab[data-edge="sheet"]{display:inline-flex}
+  .mp-panel[data-mp-panel="sheet"].mp-panel-folded,html.moon-explore-on .mp-panel[data-mp-panel="sheet"]{translate:0 calc(100% + 160px);opacity:0;visibility:hidden;pointer-events:none;transition:translate .26s var(--ease),opacity .26s var(--ease),visibility 0s linear .26s}
+}
+html.moon-explore-on .mp-ptab{display:none}
+@media (prefers-reduced-motion:reduce){.mp-panel,.mp-ptab svg{transition:none!important}}
