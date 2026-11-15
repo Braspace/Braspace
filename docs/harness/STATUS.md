@@ -16,9 +16,9 @@ Horas em BRT (America/Sao_Paulo). Horas UTC entre parênteses quando informadas 
 
 ## API em produção (harness, `/docker/braspace`)
 
-- Imagem: `ad83cfe7517c-sha` (main `ad83cfe`, `build_commit` carimbado), publicada às 12:53 BRT (15:53Z). Detalhes nas seções de deploy abaixo.
-- Backup antes do deploy: `backup/pre-ad83cfe7517c-sha-20261115-155332.dump`.
-- Rollback: `IMAGEM=ad83cfe7517c` (mesmo código) ou `IMAGEM=62bf446e386d`.
+- Imagem: `2b6247498db4-sha` (main `2b62474`, #374), publicada às 13:39 BRT (16:39Z). Release `v2026.11.15-prod-2b62474`.
+- Backup antes do deploy: `backup/pre-2b6247498db4-sha-20261115-163914.dump`.
+- Rollback: `IMAGEM=41dedbb4705b-sha` (anterior), depois `ad83cfe7517c-sha`. Se for preciso desfazer a migração do pgvector, restaurar o dump.
 
 ## Verificado ao vivo pela borda
 
@@ -98,3 +98,21 @@ Verificado ao vivo:
 - `/api/health` responde `store.status: ok`.
 
 Matriz em produção (16 páginas × 6 tamanhos): **96/96 sem WebGL** e **96/96 com GPU**. Não há mais dependência do CDN jsDelivr; o risco anotado no deploy da API está resolvido.
+
+## Deploys da API `41dedbb4705b-sha` e `2b6247498db4-sha` — 15/11/2026, EXO-X1
+
+| Hora (Z) | Imagem | Conteúdo | Backup |
+|---|---|---|---|
+| 16:16 | `41dedbb4705b-sha` | #363 contratos + vector-ingest sem flag, #369 disc_fraction corrigido; migração `optional-vector.sql` (tabela `source_semantic_ingest_runs`, PK `(source_ref, model_id)`, CHECK norma > 0) | `pre-41dedbb4705b-sha-20261115-161650.dump` |
+| 16:39 | `2b6247498db4-sha` | #374: quarentena pgvector e estados (#331+#358), saída exata do Rust (#347), grade do sky (#332) | `pre-2b6247498db4-sha-20261115-163914.dump` |
+
+Procedimento usado nos dois deploys:
+1. `ci-local --browser` GREEN no SHA. No último, 12/12, com a faixa de pgvector real.
+2. Build com `--build-arg BRASPACE_GIT_SHA=<sha completo>`.
+3. Ensaio num pgvector:pg17 local, restaurado de um dump atual da produção: `ingest`, `vector-ingest` e `api`.
+4. `docker save | tailscale ssh harness docker load`.
+5. `pg_dump`.
+6. `IMAGEM` no `.env`, depois `up --no-deps ingest`, depois `vector-ingest`, depois `api`.
+7. Contrato com `BRASPACE_EXPECT_COMMIT` e `BRASPACE_COCKPIT_PACE_MS=150` (49/49 pela borda e direto), `smoke-publico.sh` e QA do cockpit em 6 viewports com toque e GPU real.
+
+Estado do pgvector depois do deploy: `index_ready`, 4 auditados com manifesto `8fdc414e…`, 10 legados em quarentena (`legacy_unverified`, não servidos; as linhas não foram apagadas).
