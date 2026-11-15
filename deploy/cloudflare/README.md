@@ -15,7 +15,7 @@ own origin.
 
 ## Fix
 
-`moonproof-worker.mjs` proxies **exactly** the routes in `api/openapi.json` to the pinned Go API and
+`moonproof-worker.mjs` (entry, default export only) + `moonproof-proxy.mjs` (helpers) proxy **exactly** the routes in `api/openapi.json` to the pinned Go API and
 falls through to `ASSETS` for everything else. Browser → Worker → Go → Postgres/Rust → Worker →
 Browser, all same-origin; no CORS change on the API.
 

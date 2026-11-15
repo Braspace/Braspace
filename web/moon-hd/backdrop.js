@@ -102,13 +102,13 @@ function stylesheet(doc) {
 export async function mountMoonBackdrop(options) {
     if (typeof document === "undefined")
         return null;
-    const { view } = normalizeOptions(options);
+    const { view, interactive, lazy } = normalizeOptions(options);
     const probe = probeWebGL(() => document.createElement("canvas"));
     if (!probe)
         return null;
     const { canvas, gl } = probe, root = document.documentElement;
     const wrap = document.createElement("div");
-    wrap.className = "moon-backdrop";
+    wrap.className = "moon-backdrop" + (lazy ? " is-lazy" : "");
     wrap.setAttribute("aria-hidden", "true");
     wrap.append(canvas);
     let renderer = null, raf = 0, dead = false, observer = null;
@@ -126,7 +126,7 @@ export async function mountMoonBackdrop(options) {
         }
         catch { /* the context may already be gone */ }
         wrap.remove();
-        root.classList.remove("moon-backdrop-on");
+        root.classList.remove("moon-backdrop-on", "moon-explore-on");
     };
     const on = (target, type, handler) => { target.addEventListener(type, handler); cleanups.push(() => target.removeEventListener(type, handler)); };
     try {
@@ -162,11 +162,12 @@ export async function mountMoonBackdrop(options) {
         const camera = new THREE.PerspectiveCamera(view === "globe" ? 32 : 40, 1, 0.02, 400);
         let cap = null;
         // Start on the sunlit side, a little past the sub-solar meridian, so the terminator is in view.
-        let angle = Math.atan2(-moon.lightDir.z, moon.lightDir.x) + 0.6;
+        const home = { angle: Math.atan2(-moon.lightDir.z, moon.lightDir.x) + 0.6, lat: VIEW_DEFAULTS[view].lat, distance: VIEW_DEFAULTS[view].distance };
+        let angle = home.angle, lat = home.lat, distance = home.distance;
         const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-        let onScreen = true, last = 0, streak = 0, still = false;
+        let onScreen = true, last = 0, streak = 0, still = false, idleUntil = 0, pending = 0, exploring = false;
         const draw = () => {
-            camera.position.set(...cameraPosition(view, angle));
+            camera.position.set(...cameraPosition(view, angle, lat, distance));
             camera.lookAt(0, 0, 0);
             camera.updateMatrixWorld();
             stars?.position.copy(camera.position);
@@ -174,6 +175,10 @@ export async function mountMoonBackdrop(options) {
                 S.setPolarFrame(cap, moon.lightDir, camera);
             renderer.render(scene, camera);
         };
+        /** One frame on demand (user input), even when auto-orbit is stopped, slow or reduced-motion. */
+        const requestDraw = () => { if (!pending && !dead)
+            pending = requestAnimationFrame(() => { pending = 0; if (!dead)
+                draw(); }); };
         const frame = (now) => {
             raf = 0;
             if (dead || !shouldAnimate({ hidden: document.hidden, onScreen, reducedMotion: reduced.matches }))
@@ -182,7 +187,7 @@ export async function mountMoonBackdrop(options) {
             if (now - last < FRAME_MS - 2)
                 return; // 30 fps target
             // A GPU that cannot keep up (weak, or software that slipped past the probe) must not hold the page back:
-            // stop animating and keep what is drawn as a still background.
+            // stop animating and keep what is drawn as a still background (user input still redraws on demand).
             streak = slowStreak(streak, now - last);
             if (streak >= SLOW_FRAMES_TO_STOP) {
                 still = true;
@@ -190,7 +195,8 @@ export async function mountMoonBackdrop(options) {
                 raf = 0;
                 return;
             }
-            angle += Math.min(0.25, (now - last) / 1000) * 2 * Math.PI / ORBIT_SECONDS;
+            if (now > idleUntil)
+                angle += Math.min(0.25, (now - last) / 1000) * 2 * Math.PI / ORBIT_SECONDS;
             last = now;
             draw();
         };
@@ -212,10 +218,159 @@ export async function mountMoonBackdrop(options) {
             observer = new IntersectionObserver((entries) => { onScreen = entries[entries.length - 1].isIntersecting; kick(); });
             observer.observe(canvas);
         }
+        // ---- Interaction: drag = turn, wheel / pinch / buttons = zoom. Never steals clicks from page controls. ----
+        const touched = () => { idleUntil = performance.now() + 6000; requestDraw(); };
+        const turn = (dx, dy) => {
+            const k = 0.0055 * Math.min(1.6, Math.max(0.35, (distance - 1) / 3.4));
+            angle -= dx * k;
+            lat = clampLat(lat + dy * k * 57.3);
+            touched();
+        };
+        const zoomBy = (factor) => { distance = clampDistance(distance * factor); touched(); };
+        const reset = () => { angle = home.angle; lat = home.lat; distance = home.distance; touched(); };
+        const pointers = new Map();
+        let pinch = 0, dragging = false;
+        const pinchSpan = () => { const [a, b] = [...pointers.values()]; return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0; };
+        const down = (e) => {
+            if (e.button > 0)
+                return;
+            const target = e.target;
+            const mine = exploring ? !!target?.closest?.(".moon-backdrop") : (!lazy && e.pointerType !== "touch" && isBackgroundTarget(target));
+            if (!mine)
+                return;
+            pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            dragging = true;
+            pinch = pinchSpan();
+            root.classList.add("moon-dragging");
+            if (exploring) {
+                try {
+                    canvas.setPointerCapture(e.pointerId);
+                }
+                catch { /* not capturable */ }
+            }
+            e.preventDefault();
+        };
+        const move = (e) => {
+            const p = pointers.get(e.pointerId);
+            if (!dragging || !p)
+                return;
+            if (pointers.size >= 2) {
+                p.x = e.clientX;
+                p.y = e.clientY;
+                const span = pinchSpan();
+                if (pinch > 0 && span > 0)
+                    zoomBy(pinch / span);
+                pinch = span;
+                return;
+            }
+            turn(e.clientX - p.x, e.clientY - p.y);
+            p.x = e.clientX;
+            p.y = e.clientY;
+        };
+        const up = (e) => {
+            pointers.delete(e.pointerId);
+            pinch = pinchSpan();
+            if (!pointers.size) {
+                dragging = false;
+                root.classList.remove("moon-dragging");
+            }
+        };
+        const scrollable = () => document.documentElement.scrollHeight > innerHeight + 4;
+        const wheel = (e) => {
+            const target = e.target;
+            const mine = exploring ? !!target?.closest?.(".moon-backdrop") : (!lazy && !e.ctrlKey && isBackgroundTarget(target) && (e.altKey || !scrollable()));
+            if (!mine)
+                return;
+            e.preventDefault();
+            zoomBy(Math.exp(Math.max(-1, Math.min(1, e.deltaY / 400))));
+        };
+        if (interactive) {
+            on(document, "pointerdown", down);
+            on(window, "pointermove", move);
+            on(window, "pointerup", up);
+            on(window, "pointercancel", up);
+            document.addEventListener("wheel", wheel, { passive: false });
+            cleanups.push(() => document.removeEventListener("wheel", wheel));
+        }
+        // Explore mode: the Moon comes in front of the page, without veil, with its own controls (works on touch).
+        const pt = (document.documentElement.lang || navigator.language || "").toLowerCase().startsWith("pt");
+        const T = pt ? { open: "Explorar a Lua", close: "Voltar", zin: "Aproximar", zout: "Afastar", reset: "Centralizar", hint: "Arraste para girar · role ou pince para zoom · Esc para sair" }
+            : { open: "Explore the Moon", close: "Back", zin: "Zoom in", zout: "Zoom out", reset: "Reset view", hint: "Drag to turn · scroll or pinch to zoom · Esc to leave" };
+        const ui = document.createElement("div");
+        ui.className = "moon-ui";
+        const button = (cls, label, text, act) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "moon-btn " + cls;
+            b.setAttribute("aria-label", label);
+            b.title = label;
+            b.textContent = text;
+            b.addEventListener("click", act);
+            return b;
+        };
+        const tools = document.createElement("div");
+        tools.className = "moon-tools";
+        const hint = document.createElement("p");
+        hint.className = "moon-hint";
+        hint.textContent = T.hint;
+        const setExplore = (onOff) => {
+            exploring = onOff;
+            wrap.classList.toggle("is-explore", onOff);
+            ui.classList.toggle("is-explore", onOff);
+            root.classList.toggle("moon-explore-on", onOff);
+            wrap.setAttribute("aria-hidden", onOff ? "false" : "true");
+            if (onOff) {
+                wrap.setAttribute("role", "img");
+                wrap.setAttribute("aria-label", pt ? "Lua 3D interativa" : "Interactive 3D Moon");
+            }
+            else {
+                wrap.removeAttribute("role");
+                wrap.removeAttribute("aria-label");
+            }
+            openBtn.setAttribute("aria-pressed", String(onOff));
+            openBtn.textContent = onOff ? "✕ " + T.close : T.open;
+            touched();
+            kick();
+        };
+        const openBtn = button("moon-open", T.open, T.open, () => setExplore(!exploring));
+        openBtn.setAttribute("aria-pressed", "false");
+        tools.append(button("moon-zin", T.zin, "+", () => zoomBy(0.8)), button("moon-zout", T.zout, "−", () => zoomBy(1.25)), button("moon-reset", T.reset, "⟲", reset));
+        ui.append(hint, tools, openBtn);
+        if (interactive) {
+            document.body.append(ui);
+            cleanups.push(() => ui.remove());
+            on(document, "keydown", ((e) => {
+                if (!exploring)
+                    return;
+                const k = e.key;
+                if (k === "Escape")
+                    setExplore(false);
+                else if (k === "+" || k === "=")
+                    zoomBy(0.8);
+                else if (k === "-" || k === "_")
+                    zoomBy(1.25);
+                else if (k === "ArrowLeft")
+                    turn(-40, 0);
+                else if (k === "ArrowRight")
+                    turn(40, 0);
+                else if (k === "ArrowUp")
+                    turn(0, -40);
+                else if (k === "ArrowDown")
+                    turn(0, 40);
+                else if (k === "0")
+                    reset();
+                else
+                    return;
+                e.preventDefault();
+            }));
+        }
         resize();
-        root.classList.add("moon-backdrop-on");
+        if (!lazy)
+            root.classList.add("moon-backdrop-on");
         wrap.classList.add("is-on");
         kick();
+        if (options?.explore)
+            setExplore(true);
         // South cap (LOLA 320 m, terrain shadows): after the first frame, never on phones.
         if (want.cap)
             S.createCap({ renderer, base: BASE, manifest, moon, segments: want.capSegments, steps: want.capSteps, wideOnly: true }).then(made => {
@@ -226,7 +381,7 @@ export async function mountMoonBackdrop(options) {
                 cap = made;
                 draw();
             }).catch(() => { }); // the globe alone is a complete backdrop
-        return { dispose };
+        return { dispose, explore: setExplore };
     }
     catch {
         dispose();
@@ -234,10 +389,41 @@ export async function mountMoonBackdrop(options) {
     }
 }
 // Auto-mount for pages that only add the script tag. Waits for the page to finish loading first.
+// data-moon-lazy: the page's own background is functional (a map); only the "Explore the Moon" button is added
+// and the Moon (WebGL, textures) loads on the first click.
 if (typeof document !== "undefined") {
     const tag = document.querySelector("script[data-moon-backdrop]");
     if (tag) {
-        const start = () => setTimeout(() => mountMoonBackdrop({ view: tag.dataset.moonBackdrop }), 0);
+        const view = tag.dataset.moonBackdrop, lazy = tag.hasAttribute("data-moon-lazy");
+        const start = () => setTimeout(() => {
+            if (!lazy) {
+                mountMoonBackdrop({ view });
+                return;
+            }
+            const pt = (document.documentElement.lang || navigator.language || "").toLowerCase().startsWith("pt");
+            const ui = document.createElement("div");
+            ui.className = "moon-ui";
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "moon-btn moon-open";
+            b.textContent = (pt ? "Explorar a Lua" : "Explore the Moon");
+            ui.append(b);
+            const css = document.createElement("link");
+            css.rel = "stylesheet";
+            css.href = new URL("./backdrop.css", import.meta.url).href;
+            document.head.append(css);
+            document.body.append(ui);
+            b.addEventListener("click", async () => {
+                b.disabled = true;
+                const made = await mountMoonBackdrop({ view, lazy: true, explore: true });
+                if (made)
+                    ui.remove();
+                else {
+                    b.disabled = false;
+                    b.textContent = pt ? "Lua 3D indisponível neste dispositivo" : "3D Moon unavailable on this device";
+                }
+            }, { once: false });
+        }, 0);
         if (document.readyState === "complete")
             start();
         else

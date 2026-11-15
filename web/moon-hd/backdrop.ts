@@ -283,10 +283,10 @@ export async function mountMoonBackdrop(options?: BackdropOptions): Promise<{ di
       if (onOff) { wrap.setAttribute("role", "img"); wrap.setAttribute("aria-label", pt ? "Lua 3D interativa" : "Interactive 3D Moon"); }
       else { wrap.removeAttribute("role"); wrap.removeAttribute("aria-label"); }
       openBtn.setAttribute("aria-pressed", String(onOff));
-      openBtn.textContent = onOff ? "✕ " + T.close : "◐ " + T.open;
+      openBtn.textContent = onOff ? "✕ " + T.close : T.open;
       touched(); kick();
     };
-    const openBtn = button("moon-open", T.open, "◐ " + T.open, () => setExplore(!exploring));
+    const openBtn = button("moon-open", T.open, T.open, () => setExplore(!exploring));
     openBtn.setAttribute("aria-pressed", "false");
     tools.append(button("moon-zin", T.zin, "+", () => zoomBy(0.8)), button("moon-zout", T.zout, "−", () => zoomBy(1.25)), button("moon-reset", T.reset, "⟲", reset));
     ui.append(hint, tools, openBtn);
@@ -338,7 +338,7 @@ if (typeof document !== "undefined") {
       const pt = (document.documentElement.lang || navigator.language || "").toLowerCase().startsWith("pt");
       const ui = document.createElement("div"); ui.className = "moon-ui";
       const b = document.createElement("button"); b.type = "button"; b.className = "moon-btn moon-open";
-      b.textContent = "◐ " + (pt ? "Explorar a Lua" : "Explore the Moon");
+      b.textContent = (pt ? "Explorar a Lua" : "Explore the Moon");
       ui.append(b);
       const css = document.createElement("link"); css.rel = "stylesheet"; css.href = new URL("./backdrop.css", import.meta.url).href;
       document.head.append(css); document.body.append(ui);

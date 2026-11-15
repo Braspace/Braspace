@@ -1,7 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import worker, { ROUTES, KIND_TYPES, DEFAULT_UPSTREAM, handleAPI, handleMoonAPI } from "./moonproof-worker.mjs";
+import worker from "./moonproof-worker.mjs";
+import * as entry from "./moonproof-worker.mjs";
+import { ROUTES, KIND_TYPES, DEFAULT_UPSTREAM, handleAPI, handleMoonAPI } from "./moonproof-proxy.mjs";
+
+test("entry module exports only the default handler (workerd rejects non-handler named exports)", () => {
+  assert.deepEqual(Object.keys(entry), ["default"]);
+  assert.equal(typeof worker.fetch, "function");
+});
 
 const origin = "https://braspace-moonproof.example.workers.dev";
 const assets = { ASSETS: { fetch: () => new Response("static") } };
@@ -66,7 +73,7 @@ test("upstream is pinned, credentials stripped, Go status and errors preserved",
     const r = await handleAPI(new Request(origin + "/api/compare", { method: "POST", body: JSON.stringify(body),
       headers: { "Content-Type": "application/json", Authorization: "Bearer t", Cookie: "a=1", Origin: origin, "CF-Connecting-IP": "1.2.3.4" } }));
     assert.equal(calls[0].url, DEFAULT_UPSTREAM + "/api/compare");
-    assert.equal(calls[0].opts.redirect, "error");
+    assert.equal(calls[0].opts.redirect, "manual", "workerd rejects redirect: \"error\"");
     assert.deepEqual(JSON.parse(calls[0].opts.body), body);
     for (const h of ["Authorization", "Cookie", "Origin", "CF-Connecting-IP"]) assert.equal(calls[0].opts.headers.get(h), null);
     assert.equal(r.status, 422); assert.deepEqual(await r.json(), { code: "OUTSIDE_COVERAGE" });
@@ -124,4 +131,14 @@ test("network failure and timeout map to structured 502/504, never success", asy
   await withFetch(() => { const e = new Error("t"); e.name = "TimeoutError"; throw e; }, async () => {
     assert.equal((await handleAPI(new Request(origin + "/api/health"))).status, 504);
   });
+});
+
+test("an upstream redirect is never followed: 502 UPSTREAM_REDIRECT", async () => {
+  const saved = globalThis.fetch;
+  globalThis.fetch = async () => new Response(null, { status: 302, headers: { location: "https://evil.example/" } });
+  try {
+    const res = await handleAPI(new Request("https://w.example/api/health"));
+    assert.equal(res.status, 502);
+    assert.equal((await res.json()).code, "UPSTREAM_REDIRECT");
+  } finally { globalThis.fetch = saved; }
 });
