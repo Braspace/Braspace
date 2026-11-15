@@ -21,7 +21,7 @@ export function render(outlet, ctx) {
   const q = { site: ctx.site };
   const last = lastRouteLabel();
   outlet.append(
-    h("div", { class: "backdrop", "aria-hidden": "true" }, h("img", { src: "./assets/polar-elevation-87s.webp", alt: "" })),
+    h("div", { class: "backdrop", "aria-hidden": "true" }, h("img", { src: "./moon-hd/pole-preview.webp", alt: "" })),
     h("div", { class: "escolha" },
       h("section", { class: "hero" },
         h("span", { class: "chipg", text: "Lunar Landing Site Navigator · polo sul da Lua" }),
@@ -39,5 +39,5 @@ export function render(outlet, ctx) {
       h("div", { class: "row wrap" },
         h("a", { class: "chipg", href: buildHash("/evidencias", q), text: "Ver fontes e limitações →" }),
         h("a", { class: "chipg", href: "./moon-hd.html?view=pole&lang=pt", text: "Ver a Lua em 3D (polo sul) →" })),
-      h("p", { class: "t3 small", text:"Fundo: Lua 3D (imagens LRO, relevo LOLA, Sol pelo SPICE) quando o navegador tem WebGL; sem ele, o relevo LOLA do polo sul. Uso ilustrativo, sem validação independente." })));
+      h("p", { class: "t3 small", text:"Fundo: Lua 3D (imagens LRO, relevo LOLA, Sol pelo SPICE) quando o navegador tem WebGL; sem ele, a prévia estática do mesmo relevo de Joel. Uso ilustrativo, sem validação independente." })));
 }

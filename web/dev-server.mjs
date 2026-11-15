@@ -67,6 +67,7 @@ export function moonproofFile(pathname){
 // Moon HD viewer (web/moon-hd.html): one page, its modules and stylesheet. Its data is under /data/moonhd/ (labFile).
 export function moonHdFile(pathname){
  if(pathname==="/moon-hd.html")return {name:"moon-hd.html",type:labTypes[".html"]};
+ if(pathname==="/moon-hd/pole-preview.webp")return {name:"moon-hd/pole-preview.webp",type:"image/webp"};
  if(!/^\/moon-hd\/[a-z0-9\-]+\.(js|css)$/.test(pathname))return null;
  return {name:path.normalize(pathname.slice(1)),type:labTypes[pathname.slice(pathname.lastIndexOf("."))]};
 }
