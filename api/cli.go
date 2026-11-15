@@ -15,6 +15,7 @@ const cliUsage = `usage: api <command> [flags]   (DATABASE_URL must be set)
   migrate                         apply database migrations
   ingest [-data DIR] [-manifest FILE]  migrate, then load catalog, series and NASA manifest
   verify [-data DIR] [-manifest FILE]  compare database contents with the source files
+  vector-ingest [-data DIR]       apply optional-vector.sql and seed provenance embeddings (pgvector)
 
 Without -data the embedded api/sitedata is used.
 `
@@ -28,11 +29,16 @@ func runCLI(args []string) int {
 		return 2
 	}
 	cmd := args[0]
-	if cmd != "migrate" && cmd != "ingest" && cmd != "verify" {
+	if cmd != "migrate" && cmd != "ingest" && cmd != "verify" && cmd != "vector-ingest" {
 		fmt.Fprint(os.Stderr, cliUsage)
 		return 2
 	}
 	url := os.Getenv("DATABASE_URL")
+	if cmd == "vector-ingest" {
+		if vurl := os.Getenv("VECTOR_DATABASE_URL"); vurl != "" {
+			url = vurl
+		}
+	}
 	if url == "" {
 		fmt.Fprintln(os.Stderr, "DATABASE_URL is not set")
 		return 2
@@ -73,6 +79,8 @@ func runCLI(args []string) int {
 		var rep *readbackReport
 		rep, err = verifyReadback(ctx, db, fsys, manifest)
 		out = rep
+	case "vector-ingest":
+		out, err = ingestVectorMetadata(ctx, db, fsys)
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s failed: %v\n", cmd, err)
