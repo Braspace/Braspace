@@ -35,6 +35,18 @@ if [ -z "$API" ]; then
 fi
 API="${API%/}"
 
+# Optional exact frontend build provenance gate (the backend has its own SHA).
+# Usage: BRASPACE_EXPECT_FRONT_COMMIT=$(git rev-parse HEAD) scripts/smoke-publico.sh <origin>
+if [ -n "${BRASPACE_EXPECT_FRONT_COMMIT:-}" ]; then
+  [[ "$BRASPACE_EXPECT_FRONT_COMMIT" =~ ^[0-9a-f]{40}$ ]] ||
+    fail "BRASPACE_EXPECT_FRONT_COMMIT deve ser um SHA Git completo (40 hex lowercase)"
+  build_config=$(curl -fsS --max-time 20 "$FRONT/config.js") ||
+    fail "config.js indisponivel para conferir build do Worker"
+  printf '%s\n' "$build_config" | grep -Fq "const BRASPACE_COMMIT = \"$BRASPACE_EXPECT_FRONT_COMMIT\";" ||
+    fail "config.js nao publica o SHA exato esperado do frontend"
+  ok "frontend /config.js identifica o SHA exato $BRASPACE_EXPECT_FRONT_COMMIT"
+fi
+
 echo "Front: $FRONT"
 echo "API:   $API"
 
