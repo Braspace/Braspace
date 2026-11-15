@@ -14,10 +14,11 @@ export async function verifyCockpitPanels(page) {
     if (!(await menu.evaluate(el => el.open))) await menu.locator("summary").click();
     assert.equal(await control.getAttribute("aria-pressed"), "true", id + " initially visible");
     await control.click();
-    await page.waitForFunction(id => document.body.dataset.ckHidden?.split(/\\s+/).includes(id), id);
+    await page.waitForFunction(id => document.body.dataset.ckHidden?.split(/\s+/).includes(id), id);
     assert.equal(await control.getAttribute("aria-pressed"), "false", id + " is closed");
+    if (!(await menu.evaluate(el => el.open))) await menu.locator("summary").click();
     await control.click();
-    await page.waitForFunction(id => !document.body.dataset.ckHidden?.split(/\\s+/).includes(id), id);
+    await page.waitForFunction(id => !document.body.dataset.ckHidden?.split(/\s+/).includes(id), id);
     assert.equal(await control.getAttribute("aria-pressed"), "true", id + " is restored");
   }
   const selectors = [
@@ -30,13 +31,14 @@ export async function verifyCockpitPanels(page) {
     const control = menu.locator(`button[data-panel="${id}"]`);
     await control.click();
     assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).display), "none", id + " hidden by CSS");
+    if (!(await menu.evaluate(el => el.open))) await menu.locator("summary").click();
     await control.click();
     assert.notEqual(await page.locator(selector).evaluate(el => getComputedStyle(el).display), "none", id + " visible again");
   }
   // The button asks the existing lazy Moon controller to explore, never creates another renderer.
   const moonOnly = page.locator("#ck-panel-controls button.ck-panel-focus");
   await moonOnly.click();
-  await page.waitForFunction(ids => ids.every(id => document.body.dataset.ckHidden?.split(/\\s+/).includes(id)), PANEL_IDS);
+  await page.waitForFunction(ids => ids.every(id => document.body.dataset.ckHidden?.split(/\s+/).includes(id)), PANEL_IDS);
   assert.equal(await moonOnly.getAttribute("aria-pressed"), "true", "Moon only is active");
   // The Moon overlay may sit above the controls in real WebGL. Exit it via its own button.
   if (await page.evaluate(() => document.documentElement.classList.contains("moon-explore-on"))) {
