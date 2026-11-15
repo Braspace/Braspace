@@ -172,6 +172,11 @@ cockpit_contract() {
   else docker run --rm --network host --security-opt label=disable -e BRASPACE_COCKPIT_API="$BASE" -v "$PWD:/src:ro" -w /src node:22.23.5-alpine node scripts/cockpit-backend-contract.mjs; fi
 }
 step "cloudflare worker same-origin API proxy contract (node --test)" worker_contract || finish
+api_doc_sync() { # docs/API.md is generated from api/openapi.json; fail when someone changes one without the other
+  if command -v node >/dev/null 2>&1; then node scripts/gen-api-md.mjs --check
+  else docker run --rm --security-opt label=disable -v "$PWD:/src:ro" -w /src node:22.23.5-alpine node scripts/gen-api-md.mjs --check; fi
+}
+step "docs/API.md in sync with api/openapi.json" api_doc_sync || finish
 step "docker build --target test (go vet+race, rust, web, science)" build_tests || finish
 step "build release image (needs test)" build_rel || finish
 step "build go test image" build_go_img || finish
