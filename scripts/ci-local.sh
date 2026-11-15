@@ -82,10 +82,13 @@ postgres_tests() {
 freeport() { python3 -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1]);s.close()'; }
 smoke_publico() { # front via dev-server (proxies /api, /healthz, /v1) + Compose API, as main-smoke did
   local wport; wport=$(freeport)
-  BRASPACE_API_PORT=$PORT BRASPACE_WEB_PORT=$wport node web/dev-server.mjs >${TMPDIR:-/tmp}/smoke-web.$$ 2>&1 & local wp=$!
+  # Node may be absent on the CI host: run the dev-server in the same Node image the Dockerfile tests with.
+  local wc="$PROJECT-smoke-web"; docker rm -f "$wc" >/dev/null 2>&1
+  docker run -d --name "$wc" --network host -v "$PWD:/src:ro" -w /src -e BRASPACE_API_PORT=$PORT -e BRASPACE_WEB_PORT=$wport \
+    node:22.23.5-alpine node web/dev-server.mjs >/dev/null || return 1
   for i in $(seq 1 30); do curl -fsS "http://127.0.0.1:$wport/" >/dev/null 2>&1 && break; sleep 1; done
   ./scripts/smoke-publico.sh "http://127.0.0.1:$wport" "$BASE"; local rc=$?
-  kill $wp 2>/dev/null; [ $rc = 0 ] || tail -20 ${TMPDIR:-/tmp}/smoke-web.$$; rm -f ${TMPDIR:-/tmp}/smoke-web.$$; return $rc
+  [ $rc = 0 ] || docker logs --tail 20 "$wc"; docker rm -f "$wc" >/dev/null 2>&1; return $rc
 }
 browser_qa() {
   command -v node >/dev/null && command -v google-chrome >/dev/null || { echo "need node + host Chrome"; return 1; }
