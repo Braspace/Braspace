@@ -162,7 +162,7 @@ async function draw() {
     const card = createLayerCard({ id: "verdict", title: t("cmp.q"), status: statusOf(ms), answer, why: reasons, proof, layer: st.layer, onLayer: (layer) => setState({ layer }) });
     const actions = one(h("div", { class: "mp-actions" },
         h("a", { class: "mp-pill is-primary", href: recoverHref(list) }, t("cmp.delay", { L: L(sel) })),
-        (judged[sel].status === "pass" ? h("a", { class: "mp-pill is-sim", href: hrefTo("landing.html", { ...getState(), site: list[sel].site, start: list[sel].start, hours: list[sel].hours }) }, t("cmp.land")) : h("button", { class: "mp-pill", type: "button", onClick: () => setState({ layer: "why" }) }, t("cmp.viewFailures")))));
+        judged[sel].status === "pass" ? h("a", { class: "mp-pill is-sim", href: hrefTo("landing.html", { ...getState(), site: list[sel].site, start: list[sel].start, hours: list[sel].hours }) }, t("cmp.land")) : h("button", { class: "mp-pill", type: "button", onClick: () => setState({ layer: "why" }) }, t("cmp.viewFailures"))));
     card.el.insertBefore(actions, card.el.querySelector(".mp-chips"));
     // scenario list
     const ul = one(h("div", { class: "mp-scn-list", role: "radiogroup", "aria-label": t("cmp.q") }, list.map((sc, i) => (h("button", { class: "mp-scn" + (judged[i].status === "pass" ? " is-eligible" : ""), type: "button", role: "radio", "aria-checked": i === sel, tabIndex: i === sel ? 0 : -1, onClick: () => { sel = i; draw(); }, onKeyDown: (e) => { const d = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0; if (d) {
