@@ -96,7 +96,7 @@ async function boot({ hash = "#/bordo", series = {} } = {}) {
   };
   sb.window = sb;
   vm.createContext(sb);
-  for (const f of ["sim.js", "request.js", "model.js", "live.js", "features.js", "api.js", "cockpit.js"]) vm.runInContext(read(f), sb, { filename: f });
+  for (const f of ["sim.js", "request.js", "model.js", "nav.js", "live.js", "features.js", "api.js", "cockpit.js"]) vm.runInContext(read(f), sb, { filename: f });
   const settle = async () => { for (let i = 0; i < 6; i++) await new Promise(r => setTimeout(r, 4)); };
   await settle();
   const env = {
