@@ -1,36 +1,36 @@
 // BRASPACE Moon HD: the shared 3D scene (shaders, geometry, Moon globe and south cap).
 // Used by the viewer (app.js) and by the page backdrop (backdrop.js) so both draw the same Moon.
 // Display only; see app.js and data/moonhd/manifest.json for what is real and what is a visual choice.
+// @ts-ignore TS2307: remote ES module (CDN), no local types
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.181.0/+esm";
 import { bodyDirection, toGlobeScene } from "./ephemeris.js";
 import { R_REF, makeGrid, CAP_LAT, ALTITUDE_RANGE } from "./polar-math.js";
-
 export { THREE };
 export const R_KM = R_REF / 1000;
-
 // ---------------------------------------------------------------- loading
-export const fetchJSON = async url => { const res = await fetch(url); if (!res.ok) throw new Error(url + " " + res.status); return res.json(); };
+export const fetchJSON = async (url) => { const res = await fetch(url); if (!res.ok)
+    throw new Error(url + " " + res.status); return res.json(); };
 export async function fetchBinary(url, byteLength) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(url + " " + res.status);
-  const buffer = await res.arrayBuffer();
-  if (buffer.byteLength !== byteLength) throw new Error(url + ": unexpected size");
-  return buffer;
+    const res = await fetch(url);
+    if (!res.ok)
+        throw new Error(url + " " + res.status);
+    const buffer = await res.arrayBuffer();
+    if (buffer.byteLength !== byteLength)
+        throw new Error(url + ": unexpected size");
+    return buffer;
 }
 export function textureLoader(renderer, base) {
-  const loader = new THREE.TextureLoader();
-  return (name, srgb) => new Promise((resolve, reject) => loader.load(base + name, tex => {
-    tex.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    resolve(tex);
-  }, undefined, () => reject(new Error("texture " + name))));
+    const loader = new THREE.TextureLoader();
+    return (name, srgb) => new Promise((resolve, reject) => loader.load(base + name, (tex) => {
+        tex.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        resolve(tex);
+    }, undefined, () => reject(new Error("texture " + name))));
 }
-
 // Everything is drawn in the globe frame: unit sphere, +X toward 0°E, +Y north, -Z toward 90°E.
 // The cap shader works in the polar frame (metres; x toward 0°E, y up at the south pole, z toward 90°E).
 export const CAP_MATRIX = new THREE.Matrix4().set(1 / R_KM, 0, 0, 0, 0, -1 / R_KM, 0, -1, 0, 0, -1 / R_KM, 0, 0, 0, 0, 1); // polar km -> globe
-
 // ---------------------------------------------------------------- shaders
 const SHADING = `
 uniform float colorMode, realLight;
@@ -54,7 +54,6 @@ vec3 shade(vec3 albedo, float h, vec3 N, vec3 L, vec3 V, float lit){
   vec3 coloured = ramp((h - ALT_MIN) / (ALT_MAX - ALT_MIN)) * (0.07 + 0.5 * refl);
   return mix(natural, coloured, colorMode);
 }`;
-
 const GLOBE_VERTEX = `
 uniform sampler2D heightMap; uniform float hMin, hMax, relief;
 varying vec2 vUv; varying vec3 vPos; varying float vH;
@@ -105,7 +104,6 @@ void main(){
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
-
 const CAP_COMMON = `
 uniform sampler2D hmap, hmapWide; uniform float halfInner, halfWide, relief;
 const float R = ${R_REF.toFixed(1)};
@@ -168,108 +166,124 @@ void main(){
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
-
 // ---------------------------------------------------------------- geometry
 export function globeGeometry(nLon, nLat) {
-  const position = new Float32Array((nLon + 1) * (nLat + 1) * 3), uv = new Float32Array((nLon + 1) * (nLat + 1) * 2);
-  let p = 0, q = 0;
-  for (let j = 0; j <= nLat; j++) for (let i = 0; i <= nLon; i++) {
-    const u = i / nLon, v = j / nLat, [x, y, z] = toGlobeScene(bodyDirection(v * 180 - 90, u * 360 - 180));
-    position[p++] = x; position[p++] = y; position[p++] = z; uv[q++] = u; uv[q++] = v;
-  }
-  const index = new Uint32Array(nLon * nLat * 6);
-  let k = 0;
-  for (let j = 0; j < nLat; j++) for (let i = 0; i < nLon; i++) {
-    const a = j * (nLon + 1) + i, b = a + 1, c = a + nLon + 1, d = c + 1;
-    index[k++] = a; index[k++] = b; index[k++] = c; index[k++] = b; index[k++] = d; index[k++] = c;
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.BufferAttribute(position, 3));
-  g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
-  g.setIndex(new THREE.BufferAttribute(index, 1));
-  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1.2);
-  return g;
+    const position = new Float32Array((nLon + 1) * (nLat + 1) * 3), uv = new Float32Array((nLon + 1) * (nLat + 1) * 2);
+    let p = 0, q = 0;
+    for (let j = 0; j <= nLat; j++)
+        for (let i = 0; i <= nLon; i++) {
+            const u = i / nLon, v = j / nLat, [x, y, z] = toGlobeScene(bodyDirection(v * 180 - 90, u * 360 - 180));
+            position[p++] = x;
+            position[p++] = y;
+            position[p++] = z;
+            uv[q++] = u;
+            uv[q++] = v;
+        }
+    const index = new Uint32Array(nLon * nLat * 6);
+    let k = 0;
+    for (let j = 0; j < nLat; j++)
+        for (let i = 0; i < nLon; i++) {
+            const a = j * (nLon + 1) + i, b = a + 1, c = a + nLon + 1, d = c + 1;
+            index[k++] = a;
+            index[k++] = b;
+            index[k++] = c;
+            index[k++] = b;
+            index[k++] = d;
+            index[k++] = c;
+        }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(position, 3));
+    g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+    g.setIndex(new THREE.BufferAttribute(index, 1));
+    g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1.2);
+    return g;
 }
-
 export function capGeometry(span, segments) {
-  const n = segments + 1, position = new Float32Array(n * n * 3), index = new Uint32Array(segments * segments * 6);
-  let p = 0, k = 0;
-  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
-    position[p++] = -span + 2 * span * i / segments; position[p++] = -span + 2 * span * j / segments; position[p++] = 0;
-  }
-  for (let j = 0; j < segments; j++) for (let i = 0; i < segments; i++) {
-    const a = j * n + i, b = a + 1, c = a + n, d = c + 1;
-    index[k++] = a; index[k++] = b; index[k++] = c; index[k++] = b; index[k++] = d; index[k++] = c;
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.BufferAttribute(position, 3));
-  g.setIndex(new THREE.BufferAttribute(index, 1));
-  return g;
+    const n = segments + 1, position = new Float32Array(n * n * 3), index = new Uint32Array(segments * segments * 6);
+    let p = 0, k = 0;
+    for (let j = 0; j < n; j++)
+        for (let i = 0; i < n; i++) {
+            position[p++] = -span + 2 * span * i / segments;
+            position[p++] = -span + 2 * span * j / segments;
+            position[p++] = 0;
+        }
+    for (let j = 0; j < segments; j++)
+        for (let i = 0; i < segments; i++) {
+            const a = j * n + i, b = a + 1, c = a + n, d = c + 1;
+            index[k++] = a;
+            index[k++] = b;
+            index[k++] = c;
+            index[k++] = b;
+            index[k++] = d;
+            index[k++] = c;
+        }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(position, 3));
+    g.setIndex(new THREE.BufferAttribute(index, 1));
+    return g;
 }
-
 function heightTexture(renderer, grid) {
-  const n = grid.nx, metres = new Float32Array(n * n);
-  for (let i = 0; i < metres.length; i++) metres[i] = grid.dn[i] * grid.scale;
-  let tex;
-  if (renderer.extensions.has("OES_texture_float_linear")) tex = new THREE.DataTexture(metres, n, n, THREE.RedFormat, THREE.FloatType);
-  else {
-    // Half floats filter linearly everywhere in WebGL2; about 4 m of height resolution at 4 km.
-    const half = new Uint16Array(metres.length);
-    for (let i = 0; i < half.length; i++) half[i] = THREE.DataUtils.toHalfFloat(metres[i]);
-    tex = new THREE.DataTexture(half, n, n, THREE.RedFormat, THREE.HalfFloatType);
-  }
-  tex.minFilter = tex.magFilter = THREE.LinearFilter;
-  tex.needsUpdate = true;
-  return tex;
+    const n = grid.nx, metres = new Float32Array(n * n);
+    for (let i = 0; i < metres.length; i++)
+        metres[i] = grid.dn[i] * grid.scale;
+    let tex;
+    if (renderer.extensions.has("OES_texture_float_linear"))
+        tex = new THREE.DataTexture(metres, n, n, THREE.RedFormat, THREE.FloatType);
+    else {
+        // Half floats filter linearly everywhere in WebGL2; about 4 m of height resolution at 4 km.
+        const half = new Uint16Array(metres.length);
+        for (let i = 0; i < half.length; i++)
+            half[i] = THREE.DataUtils.toHalfFloat(metres[i]);
+        tex = new THREE.DataTexture(half, n, n, THREE.RedFormat, THREE.HalfFloatType);
+    }
+    tex.minFilter = tex.magFilter = THREE.LinearFilter;
+    tex.needsUpdate = true;
+    return tex;
 }
-
 // ---------------------------------------------------------------- scene parts
 // The Moon globe. lightDir / earthDir are unit vectors of the globe frame that the caller keeps up to date.
 export function createMoon({ manifest, colorTex, normalTex, heightTex, lon, lat, steps }) {
-  const lightDir = new THREE.Vector3(1, 0, 0), earthDir = new THREE.Vector3(1, 0, 0);
-  const shared = { colorMode: { value: 0 }, realLight: { value: 1 }, relief: { value: 1 } };
-  const uniforms = {
-    ...shared, colorMap: { value: colorTex }, normalMap: { value: normalTex }, heightMap: { value: heightTex },
-    hMin: { value: manifest.relief.height_min_m }, hMax: { value: manifest.relief.height_max_m },
-    normalScale: { value: 1 / manifest.relief.normal_exaggeration }, capReady: { value: 0 },
-    lightDir: { value: lightDir }, earthDir: { value: earthDir },
-  };
-  const mesh = new THREE.Mesh(globeGeometry(lon, lat),
-    new THREE.ShaderMaterial({ uniforms, vertexShader: GLOBE_VERTEX, fragmentShader: GLOBE_FRAGMENT, defines: { GLOBE_STEPS: steps } }));
-  return { mesh, shared, uniforms, lightDir, earthDir };
+    const lightDir = new THREE.Vector3(1, 0, 0), earthDir = new THREE.Vector3(1, 0, 0);
+    const shared = { colorMode: { value: 0 }, realLight: { value: 1 }, relief: { value: 1 } };
+    const uniforms = {
+        ...shared, colorMap: { value: colorTex }, normalMap: { value: normalTex }, heightMap: { value: heightTex },
+        hMin: { value: manifest.relief.height_min_m }, hMax: { value: manifest.relief.height_max_m },
+        normalScale: { value: 1 / manifest.relief.normal_exaggeration }, capReady: { value: 0 },
+        lightDir: { value: lightDir }, earthDir: { value: earthDir },
+    };
+    const mesh = new THREE.Mesh(globeGeometry(lon, lat), new THREE.ShaderMaterial({ uniforms, vertexShader: GLOBE_VERTEX, fragmentShader: GLOBE_FRAGMENT, defines: { GLOBE_STEPS: steps } }));
+    return { mesh, shared, uniforms, lightDir, earthDir };
 }
-
 // The LOLA south cap for a Moon made by createMoon. The caller adds cap.mesh to the scene, sets
 // moon.uniforms.capReady to 1 and calls setPolarFrame every frame.
 // wideOnly: skip the native 80 m grid (8.4 MB) and draw the whole cap from the 320 m block means.
 export async function createCap({ renderer, base, manifest, moon, segments, steps, wideOnly = false }) {
-  const inner = manifest.south_pole, wide = manifest.south_pole_wide;
-  const [a, b] = await Promise.all([wideOnly ? null : fetchBinary(base + inner.file, inner.nx * inner.ny * 2), fetchBinary(base + wide.file, wide.nx * wide.ny * 2)]);
-  const wideGrid = makeGrid(wide, new Int16Array(b)), innerGrid = a ? makeGrid(inner, new Int16Array(a)) : null;
-  const wideTex = heightTexture(renderer, wideGrid);
-  const capRho = 2 * R_REF * Math.tan((CAP_LAT + 90) * Math.PI / 360);
-  const lightPolar = new THREE.Vector3(1, 0, 0), camPolar = new THREE.Vector3();
-  const uniforms = {
-    ...moon.shared, hmap: { value: innerGrid ? heightTexture(renderer, innerGrid) : wideTex }, hmapWide: { value: wideTex },
-    // halfInner 0 makes blendWide() 1 everywhere, so the shader reads only the wide grid.
-    halfInner: { value: innerGrid ? innerGrid.half : 0 }, halfWide: { value: wideGrid.half }, capRho: { value: capRho },
-    colorMap: moon.uniforms.colorMap, lightDir: { value: lightPolar }, camPolar: { value: camPolar },
-  };
-  const mesh = new THREE.Mesh(capGeometry(capRho + 400, segments), new THREE.ShaderMaterial({
-    uniforms, vertexShader: CAP_VERTEX, fragmentShader: CAP_FRAGMENT, defines: { STEPS: steps, MAX_RANGE: "260000.0" },
-  }));
-  mesh.matrixAutoUpdate = false; mesh.matrix.copy(CAP_MATRIX); mesh.frustumCulled = false;
-  return { mesh, uniforms, innerGrid, wideGrid, lightPolar, camPolar };
+    const inner = manifest.south_pole, wide = manifest.south_pole_wide;
+    const [a, b] = await Promise.all([wideOnly ? null : fetchBinary(base + inner.file, inner.nx * inner.ny * 2), fetchBinary(base + wide.file, wide.nx * wide.ny * 2)]);
+    const wideGrid = makeGrid(wide, new Int16Array(b)), innerGrid = a ? makeGrid(inner, new Int16Array(a)) : null;
+    const wideTex = heightTexture(renderer, wideGrid);
+    const capRho = 2 * R_REF * Math.tan((CAP_LAT + 90) * Math.PI / 360);
+    const lightPolar = new THREE.Vector3(1, 0, 0), camPolar = new THREE.Vector3();
+    const uniforms = {
+        ...moon.shared, hmap: { value: innerGrid ? heightTexture(renderer, innerGrid) : wideTex }, hmapWide: { value: wideTex },
+        // halfInner 0 makes blendWide() 1 everywhere, so the shader reads only the wide grid.
+        halfInner: { value: innerGrid ? innerGrid.half : 0 }, halfWide: { value: wideGrid.half }, capRho: { value: capRho },
+        colorMap: moon.uniforms.colorMap, lightDir: { value: lightPolar }, camPolar: { value: camPolar },
+    };
+    const mesh = new THREE.Mesh(capGeometry(capRho + 400, segments), new THREE.ShaderMaterial({
+        uniforms, vertexShader: CAP_VERTEX, fragmentShader: CAP_FRAGMENT, defines: { STEPS: steps, MAX_RANGE: "260000.0" },
+    }));
+    mesh.matrixAutoUpdate = false;
+    mesh.matrix.copy(CAP_MATRIX);
+    mesh.frustumCulled = false;
+    return { mesh, uniforms, innerGrid, wideGrid, lightPolar, camPolar };
 }
-
 // Light direction and camera position in the polar frame of the cap shader.
 export function setPolarFrame(cap, lightDir, camera) {
-  cap.lightPolar.set(lightDir.x, -lightDir.y, -lightDir.z);
-  cap.camPolar.set(camera.position.x * R_KM, -camera.position.y * R_KM - R_KM, -camera.position.z * R_KM);
+    cap.lightPolar.set(lightDir.x, -lightDir.y, -lightDir.z);
+    cap.camPolar.set(camera.position.x * R_KM, -camera.position.y * R_KM - R_KM, -camera.position.z * R_KM);
 }
-
 // Decorative star background (NASA SVS Deep Star Maps 2020; not oriented relative to the Moon).
 export function createStars(starTex, radius) {
-  return new THREE.Mesh(new THREE.SphereGeometry(radius, 48, 24),
-    new THREE.MeshBasicMaterial({ map: starTex, color: 0x8c8c8c, side: THREE.BackSide, depthWrite: false, toneMapped: false }));
+    return new THREE.Mesh(new THREE.SphereGeometry(radius, 48, 24), new THREE.MeshBasicMaterial({ map: starTex, color: 0x8c8c8c, side: THREE.BackSide, depthWrite: false, toneMapped: false }));
 }

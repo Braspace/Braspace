@@ -63,12 +63,12 @@ test("cockpit.html: static chips are only a fallback inside #badges; cockpit.js 
   for (const t of ["PROTÓTIPO · sintético", "Não validado", "Sem recomendação de voo"]) {
     assert.ok(box.includes(t), t); assert.equal(h.split(t).length - 1, 1, t + " only once, inside #badges");
   }
-  assert.match(src("cockpit.js"), /box\.replaceChildren\(\.\.\.L\.badges/);
+  assert.match(src("cockpit.ts"), /box\.replaceChildren\(\.\.\.L\.badges/);
   assert.ok(h.includes('id="badges"') && h.indexOf("live.js") < h.indexOf("cockpit.js"));
 });
 
 test("cockpit.js: model numbers are sealed, fuel never drives alarms or verdicts, no literal 0 for absent", () => {
-  const c = src("cockpit.js");
+  const c = src("cockpit.ts");
   assert.ok(/L\.summaryFromMetrics/.test(c) && /OnboardApi\.scenarioDelay/.test(c) && /OnboardApi\.sky/.test(c));
   assert.ok(!/M\.violations\([^)]*life\)/.test(c), "fuel (life) must not feed violations");
   assert.ok(!/life\.fuelMarginKg/.test(c), "fuel margin is not used anywhere");
@@ -100,7 +100,7 @@ test("stamp: browser-model samples get ms, so a daily bar count is finite", () =
 });
 
 test("cockpit.js uses the shared stepOf/stamp, not tr[1].ms - tr[0].ms", () => {
-  const c = src("cockpit.js");
+  const c = src("cockpit.ts");
   assert.doesNotMatch(c, /tr\[1\]\.ms - tr\[0\]\.ms/);
   assert.match(c, /L\.stamp\(track\(0\)/);
 });

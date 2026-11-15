@@ -52,8 +52,8 @@ test("prohibit directory traversal and unexpected methods",async()=>{
 });
 
 test("training code explicitly refuses to synthesize NASA source status",async()=>{
- const app=await readFile(path.join(root,"app.js"),"utf-8");
- const moon=await readFile(path.join(root,"moon3d.js"),"utf-8");
+ const app=await readFile(path.join(root,"app.ts"),"utf-8");
+ const moon=await readFile(path.join(root,"moon3d.ts"),"utf-8");
  assert.match(app,/SYNTHETIC-NOT-NASA/);
  assert.match(app,/UNVERIFIED_INPUTS/);
  assert.match(app,/site_id:"SYNTHETIC-SOUTH-POLE-TRAINING"/);

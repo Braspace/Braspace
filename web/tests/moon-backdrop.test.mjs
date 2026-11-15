@@ -92,7 +92,7 @@ test("slow frames end the animation: four in a row over 120 ms, and a fast frame
  assert.equal(slowStreak(streak,33),0,"one frame on time clears the streak");
  assert.equal(slowStreak(streak,500),4);
  assert.equal(slowStreak(0,120),0,"exactly at the limit is not slow");
- const source=readFileSync(new URL("../moon-hd/backdrop.js",import.meta.url),"utf8");
+ const source=readFileSync(new URL("../moon-hd/backdrop.ts",import.meta.url),"utf8");
  assert.match(source,/streak >= SLOW_FRAMES_TO_STOP\) \{ still = true;/,"the loop stops for good");
  assert.match(source,/if \(!raf && !dead && !still\)/,"and is not restarted by resize, visibility or motion changes");
 });
@@ -156,14 +156,14 @@ test("pages with a decorative background mount the backdrop; functional-map scre
 });
 
 test("links to the full viewer and credits without endorsement",async()=>{
- const escolha=await read("shell/views/escolha.js"),home=await read("index.html"),cockpit=await read("onboard/cockpit.html"),classic=await read("classic.html");
- assert.match(escolha,/href: "\.\/moon-hd\.html\?view=pole&lang=pt"/);
+ const escolha=await read("shell/views/escolha.tsx"),home=await read("index.html"),cockpit=await read("onboard/cockpit.html"),classic=await read("classic.html");
+ assert.match(escolha,/href="\.\/moon-hd\.html\?view=pole&lang=pt"/);
  assert.match(cockpit,/href="\.\.\/moon-hd\.html\?view=pole&amp;lang=pt"/);
  for(const text of [home,cockpit]){assert.match(text,/NASA LRO\/LOLA/);assert.match(text,/NAIF SPICE/);assert.match(text,/CGI Moon Kit/);assert.match(text,/não é um produto da NASA/);}
  assert.match(home,/IAU\/USGS/);assert.match(home,/Blue Marble/);
  assert.match(classic,/not a NASA product/);
  // MoonProof screens: the help popover of the shared shell carries the link and the credit, in both languages.
- const shell=await read("moonproof/core/shell.js"),{t,setLang}=await import("../moonproof/core/i18n.js");
+ const shell=await read("moonproof/core/shell.ts"),{t,setLang}=await import("../moonproof/core/i18n.js");
  assert.match(shell,/\.\.\/moon-hd\.html/);assert.match(shell,/nav\.moon3d\.credit/);
  for(const [lang,phrase] of [["en","not a NASA product"],["pt-BR","não é um produto da NASA"]]){
   setLang(lang);

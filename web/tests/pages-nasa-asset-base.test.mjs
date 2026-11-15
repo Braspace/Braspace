@@ -6,8 +6,8 @@ import {apiURL,TEXTURE_PATH,MODEL_PATH} from "../moon3d.js";
 
 // Evaluate the actual first block of app.js without booting its DOM.
 // This exercises the public Pages configuration in Node (no network).
-const app=readFileSync(new URL("../app.js",import.meta.url),"utf8");
-const anchor="const byId = id => document.getElementById(id);";
+const app=readFileSync(new URL("../app.ts",import.meta.url),"utf8");
+const anchor="const byId = <T extends HTMLElement = HTMLElement>(id: string): T => document.getElementById(id) as T;";
 const split=app.indexOf(anchor);
 assert.ok(split>0,"API configuration must precede app boot / 3D loading");
 const config=app.slice(0,split);
@@ -41,6 +41,7 @@ test("explicit API origin is not overwritten by the Pages fallback",()=>{
 });
 
 test("Pages origin is assigned before async 3D module loading",()=>{
-  assert.ok(app.indexOf("BRASPACE_API_BASE") < app.indexOf('import("./moon3d.js")'));
+  assert.ok(app.includes('import("./moon-hd/classic-adapter.js")'),"Classic must load the shared Moon HD adapter");
+  assert.ok(app.indexOf("BRASPACE_API_BASE") < app.indexOf('import("./moon-hd/classic-adapter.js")'));
   assert.ok(app.indexOf("BRASPACE_API_BASE") < app.indexOf("await Promise.allSettled"));
 });

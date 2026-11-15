@@ -35,7 +35,7 @@ test("no flag without both numbers, at the tolerance, or when PGDA shows more su
 });
 
 test("the shell shows the flag for the selected site, in both languages, and the Moon HD card applies the same rule", () => {
-  const shell = read("../core/shell.js"), i18n = read("../core/i18n.js"), css = read("../core/components.css");
+  const shell = read("../core/shell.ts"), i18n = read("../core/i18n.ts"), css = read("../core/components.css");
   assert.match(shell, /sunCaveat\(catalogue\?\.sites\.find\(s => s\.id === st\.site\)\)/);
   assert.match(shell, /t\("ctx\.sunCapWhy", \{ ours: .*pgda: .*diff: /);
   for (const key of ["ctx.sunCap", "ctx.sunCapWhy"]) assert.equal(i18n.split(`"${key}"`).length - 1, 2, key + " in en and pt-BR");

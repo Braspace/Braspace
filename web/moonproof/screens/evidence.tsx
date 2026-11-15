@@ -3,16 +3,11 @@
 // The context bar (owned by core/shell.js) stays imperative; the main, sources, trust and menu panels are JSX.
 import { h, Fragment, render } from "../../vendor/preact/preact.module.js";
 import type { ComponentChildren } from "../../vendor/preact/preact.module.js";
-// @ts-ignore TS7016: JS module without types
 import { mountShell } from "../core/shell.js";
-// @ts-ignore TS7016
 import { holdReady, markReady } from "../core/ready.js";
-// @ts-ignore TS7016
 import { mountTerrain } from "../core/terrain.js";
 import { loadSites, loadSeries, loadRegion, api, sealFor, DATA_BASE } from "../core/data.js";
-// @ts-ignore TS7016
 import { sealEl } from "../core/layers.js";
-// @ts-ignore TS7016
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState } from "../core/state.js";
 import type { Site } from "../core/data.js";
@@ -20,13 +15,10 @@ import type { LayerEntry, SiteDoc, SourceRow } from "./evidence-model.js";
 
 type Passport = ReturnType<typeof buildPassport>;
 type Meta = SiteDoc & { series?: { sha256?: string } };
-// @ts-ignore TS7016
 import { TEXTS } from "./evidence-texts.js";
 import { TEXTS as CK } from "./cockpit-texts.js";
-// @ts-ignore TS7016
 import { REGISTRY } from "./evidence-registry.js";
 import { sourceRows, trustRows, buildPassport, pickVersion, parseConfigCommit, registryChip, SECTIONS, TRUST_BLOCKS } from "./evidence-model.js";
-// @ts-ignore TS7016
 import { backendVectorSearch } from "../../lab/backend-bridge.js";
 
 register(TEXTS);

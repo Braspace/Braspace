@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { ICON_NAMES } from "../core/icons.js";
 
-const shell = await readFile(new URL("../core/shell.js", import.meta.url), "utf8");
+const shell = await readFile(new URL("../core/shell.ts", import.meta.url), "utf8");
 const css = await readFile(new URL("../core/components.css", import.meta.url), "utf8");
 const ids = [...shell.matchAll(/\{ id: "([a-z]+)", page:/g)].map(m => m[1]);
 const map = Object.fromEntries([...(shell.match(/const ICON_OF = \{([^}]*)\}/)?.[1] ?? "").matchAll(/(\w+): "([\w-]+)"/g)].map(m => [m[1], m[2]]));
