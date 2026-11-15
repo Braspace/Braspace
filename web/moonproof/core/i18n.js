@@ -2,7 +2,7 @@ export const LANGS = ["en", "pt-BR"];
 export const dict = {
     en: {
         "brand": "moonproof",
-        "nav.explore": "Explore", "nav.compare": "Compare", "nav.recover": "Replan", "nav.cockpit": "Cockpit",
+        "nav.explore": "Explore", "nav.compare": "Compare", "nav.recover": "Replan", "nav.cockpit": "Cockpit", "nav.onboard": "+ Onboard",
         "nav.evidence": "Evidence", "nav.evidence.short": "Proof", "nav.landing": "Landing Lab", "nav.debrief": "Debrief", "nav.class": "Class", "nav.plan": "Plan",
         "nav.help": "Help", "nav.moon3d": "Moon 3D", "nav.moon3d.credit": "3D Moon (viewer and page backdrops): NASA SVS CGI Moon Kit, NASA LRO/LOLA, NASA/JPL NAIF SPICE, IAU/USGS, NASA Blue Marble. Illustrative, not independently validated; not a NASA product.", "sheet.grip": "Resize panel (drag or ↑ ↓)", "nav.lang": "Português", "nav.lang.short": "PT", "nav.main": "Main navigation",
         "ctx.days": "{n} days", "ctx.openIn": "Open in", "ctx.offline": "offline · precomputed", "ctx.online": "live API",
@@ -37,7 +37,7 @@ export const dict = {
     },
     "pt-BR": {
         "brand": "moonproof",
-        "nav.explore": "Explorar", "nav.compare": "Comparar", "nav.recover": "Replanejar", "nav.cockpit": "Cockpit",
+        "nav.explore": "Explorar", "nav.compare": "Comparar", "nav.recover": "Replanejar", "nav.cockpit": "Cockpit", "nav.onboard": "+ Bordo",
         "nav.evidence": "Evidências", "nav.evidence.short": "Provas", "nav.landing": "Landing Lab", "nav.debrief": "Debrief", "nav.class": "Aula", "nav.plan": "Planejar",
         "nav.help": "Ajuda", "nav.moon3d": "Lua 3D", "nav.moon3d.credit": "Lua 3D (visualizador e fundo das páginas): NASA SVS CGI Moon Kit, NASA LRO/LOLA, NASA/JPL NAIF SPICE, IAU/USGS, NASA Blue Marble. Ilustrativa, sem validação independente; não é um produto da NASA.", "sheet.grip": "Redimensionar painel (arraste ou ↑ ↓)", "nav.lang": "English", "nav.lang.short": "EN", "nav.main": "Navegação principal",
         "ctx.days": "{n} dias", "ctx.openIn": "Abrir em", "ctx.offline": "offline · pré-calculado", "ctx.online": "API ao vivo",

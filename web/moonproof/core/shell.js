@@ -4,21 +4,19 @@ import { getState, setState, hrefTo, LAYERS } from "./state.js";
 import { sealEl } from "./layers.js";
 import { loadSites, sunCaveat } from "./data.js";
 import { icon as svgIcon, ICON_NAMES } from "./icons.js";
+// 15/11 (ordem do Gustavo): the cockpit is the only MoonProof screen; the others are archived (ARQUIVO.md) and redirect to it.
+// Navigation keeps the Cockpit, the onboard computer ("+ Bordo") and the Landing Lab (realistic/gamified lander, ../lab.html).
 export const SCREENS = [
-    { id: "explore", page: "explore.html", key: "nav.explore" },
-    { id: "compare", page: "compare.html", key: "nav.compare" },
-    { id: "recover", page: "recover.html", key: "nav.recover" },
     { id: "cockpit", page: "cockpit.html", key: "nav.cockpit" },
-    { id: "evidence", page: "evidence.html", key: "nav.evidence", short: "nav.evidence.short" },
-    { id: "landing", page: "landing.html", key: "nav.landing", sim: true },
-    { id: "debrief", page: "debrief.html", key: "nav.debrief", sim: true },
+    { id: "onboard", page: "../onboard/", key: "nav.onboard" },
+    { id: "landing", page: "../lab.html", key: "nav.landing", sim: true },
 ];
 // Pages that are a view of a nav screen (A · Mission Control is the overview of Explore, as in capture A).
 const ALIAS = { mission: "explore" };
 /** Which nav pill is current for a page's screen id ("" = none). */
 export function currentNav(screen) { const id = ALIAS[screen] || screen; return SCREENS.some(s => s.id === id) ? id : ""; }
 // Nav icons come from the shared set (core/icons.js); debrief has no shared icon yet.
-const ICON_OF = { explore: "explore", compare: "compare", recover: "replan", cockpit: "cockpit", evidence: "evidence", landing: "lab" };
+const ICON_OF = { explore: "explore", compare: "compare", recover: "replan", cockpit: "cockpit", evidence: "evidence", landing: "lab", onboard: "cockpit" };
 const LOCAL = { debrief: '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>' };
 const icon = (id) => { const n = ICON_OF[id] || id; return ICON_NAMES.includes(n) ? svgIcon(n) : (LOCAL[id] || ""); };
 function pill(text, { href, current, cls = "", onClick, pressed, ico, label } = {}) {

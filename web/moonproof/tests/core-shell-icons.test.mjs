@@ -11,12 +11,12 @@ const map = Object.fromEntries([...(shell.match(/const ICON_OF = \{([^}]*)\}/)?.
 const local = [...(shell.match(/const LOCAL = \{\s*(\w+):/g) ?? [])].map(m => m.match(/(\w+):$/)[1]);
 
 test("every nav screen has an icon: a name of the shared set, or the one local drawing", () => {
-  assert.equal(ids.length, 7);
+  assert.deepEqual(ids, ["cockpit", "onboard", "landing"]); // 15/11: only the cockpit stays (ARQUIVO.md)
   for (const id of ids) {
     if (map[id]) assert.ok(ICON_NAMES.includes(map[id]), `${id} -> ${map[id]} is not in core/icons.js`);
     else assert.ok(local.includes(id), `${id} has no icon`);
   }
-  assert.deepEqual(local, ["debrief"]);
+  assert.deepEqual(local, ["debrief"]); // kept for the archived Debrief page
 });
 
 test("shell imports the shared set, has no private path table and the help pill uses the help icon", () => {

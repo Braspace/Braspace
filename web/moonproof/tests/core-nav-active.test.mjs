@@ -34,6 +34,13 @@ async function screenOf(page) {
 test("there are moonproof pages to check", () => assert.ok(pages.includes("mission.html")));
 
 for (const page of pages) test(`${page}: only its own pill is current`, async () => {
+  const html = await readFile(new URL(page, dir), "utf8");
+  if (html.includes('src="core/archived.js"')) { // archived 15/11: redirects to the cockpit, no nav pill of its own
+    const { archivedTarget } = await import("../core/archived.js");
+    assert.equal(archivedTarget("?site=x", "#k"), "cockpit.html?site=x#k");
+    assert.equal(archivedTarget("?archived=1", ""), null);
+    return;
+  }
   const screen = await screenOf(page);
   if (screen == null) return; // page without the shell (index.html = task entry)
   body.replaceChildren();
