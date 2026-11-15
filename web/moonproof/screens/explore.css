@@ -142,3 +142,4 @@
   #card-horizon>.mp-chips{margin-top:0}
   /* chips: 36 px drawn, 44 px touch (core/components.css .mp-chip::after already does that) */
 }
+.ex-media h3{margin:0 0 8px;font-size:15px}.ex-media-link{color:var(--jade);font-weight:700;text-decoration:underline}

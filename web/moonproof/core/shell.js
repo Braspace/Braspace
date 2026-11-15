@@ -111,6 +111,7 @@ function helpPill() {
     if (pop) pop.remove();
     else {
       pop = document.createElement("div"); pop.id = "mp-help"; pop.className = "mp-glass mp-help-pop"; pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", t("nav.help"));
+      pop.dataset.mpLegend = ""; // seal legend, not a value
       for (const k of ["VAL", "PRE", "EST", "SIM", "N/D", "FALHA"]) { const r = document.createElement("p"); r.append(sealEl(k), " ", t("seal." + k)); pop.append(r); }
       document.body.append(pop);
     }

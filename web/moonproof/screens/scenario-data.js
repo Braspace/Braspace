@@ -57,11 +57,14 @@ export function apiCompareMetrics(siteId, startIso, hours) {
 export function apiDelayMetrics({ siteId, startIso, hours, delayH, rules }) {
   return once(`d|${siteId}|${startIso}|${hours}|${delayH}|${rules.night}|${rules.blackout}`, async () => {
     const r = await api("/api/scenarios/delay", { method: "POST", body: { site_id: siteId, start_utc: startIso, duration_hours: hours,
-      delays_hours: [delayH], include_nearby: false,
+      delays_hours: [delayH], include_nearby: true, max_nearby: 3,
       constraints: { max_continuous_dark_hours: rules.night, max_continuous_comm_gap_hours: rules.blackout } } });
-    if (!r.ok) return { online: !r.offline, base: null, delayed: null };
+    if (!r.ok) return { online: !r.offline, base: null, delayed: null, nearby: [] };
     const pick = o => (o && o.data_status === "AVAILABLE" && o.metrics ? mapApiMetrics(o.metrics, o.science_status, "POST /api/scenarios/delay") : null);
     const opts = r.data?.options || [];
-    return { online: true, base: pick(opts.find(o => o.kind === "baseline")), delayed: pick(opts.find(o => o.kind === "delay" && o.delay_hours === delayH)) };
+    // Nearby catalog sites the API evaluated at the delayed start (from the Polar Lab / onboard replan, now in v3).
+    const nearby = opts.filter(o => o.kind === "nearby_site").map(o => ({ siteId: o.site_id, km: o.distance_km ?? null,
+      available: o.data_status === "AVAILABLE", admissible: o.data_status === "AVAILABLE" ? !!o.admissible : null, reason: o.reason || o.data_status, status: o.science_status || null }));
+    return { online: true, base: pick(opts.find(o => o.kind === "baseline")), delayed: pick(opts.find(o => o.kind === "delay" && o.delay_hours === delayH)), nearby };
   });
 }
