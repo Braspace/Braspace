@@ -10,10 +10,11 @@ review suspected that this overestimates sunlight at Peak Near Shackleton. Is th
 
 ## Method
 
-`science/horizon_reach_study.py` repeats the same ray march without the 100 km limit (160 m steps, bilinear LOLA heights,
+`api/cmd/horizonreachstudy` (Go; ported from `science/horizon_reach_study.py` with byte-identical output) repeats the same ray march without the 100 km limit (160 m steps, bilinear LOLA heights,
 observer 2 m above ground, one ray per degree) and records the horizon at 100, 150, 200, 250 and 300 km. Sun and Earth
 visibility are then recounted from the **committed** hourly series, so only the horizon changes between columns.
-Input: `LDEM_80S_80M.IMG`, SHA-256 checked against the team pin. Runtime: 14 s. Output: `science/results/horizon_reach.json`.
+Input: `LDEM_80S_80M.IMG`, SHA-256 checked against the team pin. Runtime: about 1 s. Output: `science/results/horizon_reach.json`.
+Run it from `api/`: `go run ./cmd/horizonreachstudy --img ../data/raw/lola/ldem_80s_80m.img --label ../data/raw/lola/ldem_80s_80m.lbl`.
 
 **Control.** At 100 km the study reproduces the committed horizon of all five sites with a maximum difference of 0.0°,
 so the march is the same computation as the pipeline's.
@@ -78,5 +79,5 @@ series, the results tables) come from the 100 km horizon. For those two sites:
   difference (+3.55 pp) is under the 5 pp tolerance.
 
 **Not done here:** the series were not regenerated. That means raising the limit in `lola_horizon.py`, re-running
-`three_site_pipeline.py`, `build_web_assets.py` and `go run ./cmd/exportapiseries` (api/), and updating every pinned SHA-256, table and
+`go run ./cmd/threesitepipeline`, `science/build_web_assets.py` and `go run ./cmd/exportapiseries` (api/), and updating every pinned SHA-256, table and
 test that carries the old values. It is the correct fix and it is a team decision, the day before the deadline.

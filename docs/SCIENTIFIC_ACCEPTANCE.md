@@ -9,7 +9,7 @@ served by the public demo. Nothing below is promoted to VALIDATED.
 |---|---|---|---|
 | G1 Data origin | `LDEM_80S_80M.IMG` (PDS LRO-L-LOLA-4-GDR-V1.0) pinned by SHA-256 `e6591eee…5fdc` in `data/manifest.json` | No (provenance recorded, not reviewed) | Derived files only (`web/data/`), never the raw DEM |
 | G2 Observer coordinates | 5 sites in `web/data/sites.json` (feature centres from NASA ACD-50044, not touchdown points) | No | Yes, labelled PRE |
-| G3 SPICE derivation | `science/spice_lunar_angles.py`, kernels listed in `data/SPICE_SOURCES.md`, evidence `science/evidence/*NAIF-PRELIMINARY*` | No | Derived hourly series only |
+| G3 SPICE derivation | `api/cmd/spicelunarangles` + `api/naif` (pure Go, checked against CSPICE), kernels listed in `data/SPICE_SOURCES.md`, evidence `science/evidence/*NAIF-PRELIMINARY*` | No | Derived hourly series only |
 | G4 Terrain horizon | `science/lola_horizon.py`, horizons in `web/data/sites/*.json` (80 m DEM, mast height in the series metadata) | No | Yes, labelled PRE |
 | G5 Independent benchmark | Comparisons in `web/data/validation/validation_{pgda,horizons}.json`; PGDA differs by ~9 pp at Peak Near Shackleton (different method/window, unexplained) | **No**: tolerance not agreed, residuals not signed off | Shown as context on Evidence |
 | G6 Downstream | 5 hourly Sun/Earth series 2025-01-01..2028-12-31 (`api/sitedata/series/`), `science_status` = `PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED`; 2 SYNTHETIC demo series | No | Yes, labelled PRE / SIM |

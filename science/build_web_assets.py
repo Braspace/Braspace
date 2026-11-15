@@ -3,7 +3,7 @@
 Inputs (outside git):
   --lola-img/--lola-lbl   LRO/LOLA LDEM_80S_80M (PDS), SHA-256 pinned in data/manifest.json
   --pgda-dir              PGDA AVGVISIB_75S_120M_201608{,_EARTH}.IMG/.LBL (Mazarico et al. 2011)
-  --results-dir           output of three_site_pipeline.py (per-site JSON + summary.json)
+  --results-dir           output of api/cmd/threesitepipeline (per-site JSON + summary.json)
 
 Outputs (web/data/, a few MB total; the browser never downloads a full dataset):
   region/south_pole_400m.{json,bin}   LOLA heights, 5x5 block mean (400 m), stereographic grid
