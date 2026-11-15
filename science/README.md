@@ -34,8 +34,8 @@ go -C api run ./cmd/lolahorizon \
   --max-distance-m 30000 --step-m 160 --azimuth-step-deg 5 \
   --output ../.local/out/connecting-ridge-horizon-preliminary.json
 
-# Python reference (kept: science/lola_horizon.py is the library imported by
-# three_site_pipeline.py, spice_lunar_angles.py and benchmarks/pgda_illumination/compare.py)
+# Python reference (kept: science/lola_horizon.py is still imported by
+# benchmarks/pgda_illumination/compare.py)
 python3 science/lola_horizon.py \
   --img data/raw/lola/ldem_80s_80m.img \
   --label data/raw/lola/ldem_80s_80m.lbl \
@@ -47,6 +47,25 @@ python3 science/lola_horizon.py \
 python3 -m unittest discover -s science/tests -v
 (cd api && go test ./lolahorizon ./cmd/lolahorizon)
 ```
+
+## SPICE pipeline in Go (no spiceypy)
+
+The NAIF/SPICE side of the pipeline is pure Go (`api/naif`: text kernels, DAF/SPK type 2, binary PCK type 2, `str2et`,
+`spkpos`/`spkezr`/`spkcpo` with `NONE`, `LT` and `LT+S`, `pxform`, `reclat`, `m2q`). It was checked against spiceypy 8.4.0
+(CSPICE N0067) on 2,500 random epochs and the five sites: at most 5.4e-11 deg in azimuth/elevation and 9.4e-13 relative in
+km (`api/naif/differential_test.go`). The scripts that used spiceypy were ported and deleted; the outputs they wrote are
+reproduced byte for byte (SHA-256 identical) from the same kernels and the same LOLA raster:
+
+| Was (Python) | Is (Go, run from `api/`) |
+|---|---|
+| `science/spice_lunar_angles.py` | `go run ./cmd/spicelunarangles --horizon ../science/evidence/connecting-ridge-LOLA-PRELIMINARY.json --kernels-dir <kernels> --output-series ... --output-metadata ...` |
+| `science/three_site_pipeline.py` | `go run ./cmd/threesitepipeline --img <lola>.img --label <lola>.lbl --kernels-dir <kernels> --out-dir ../science/results` |
+| `science/horizon_reach_study.py` | `go run ./cmd/horizonreachstudy --img <lola>.img --label <lola>.lbl` |
+
+Tests that need NASA inputs skip with a clear message when they are absent: set `NAIF_KERNEL_DIR` (the four kernels above plus
+`pck00010.tpc`; checksums are verified), `LOLA_DIR` (`ldem_80s_80m.img` + `.lbl`) and, for the differential report,
+`NAIF_DIFF_REF` (written by `api/naif/testdata/gen/gen_fixtures.py --diff N`, not committed). The `generator` strings inside
+the committed artefacts still name the old Python files on purpose: they are provenance of those bytes.
 
 The Go port was checked against the Python on a synthetic 7600x7600 raster (not NASA data): the JSON was byte-identical on every case tried. The owner-approved acceptance bound is `|diff| <= 1e-6` per value (degrees, and relative for metres). The committed `science/results/*`, `api/sitedata/*` and `web/data/*` remain the Python-produced, SHA-pinned outputs; they were not regenerated.
 

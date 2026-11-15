@@ -22,8 +22,8 @@ The flow follows the challenge: **Explore → Compare → Recover → Landing La
 
 ```sh
 # NASA inputs stay outside git (≈350 MB): LOLA .img/.lbl, 4 NAIF kernels, 2 PGDA maps + labels
-python science/three_site_pipeline.py --img <lola>/ldem_80s_80m.img --label <lola>/ldem_80s_80m.lbl \
-  --kernels-dir <kernels> --out-dir science/results --start-utc 2025-01-01T00:00:00Z --hours 35064
+go -C api run ./cmd/threesitepipeline --img <lola>/ldem_80s_80m.img --label <lola>/ldem_80s_80m.lbl \
+  --kernels-dir <kernels> --out-dir ../science/results --start-utc 2025-01-01T00:00:00Z --hours 35064
 go -C api run ./cmd/validatehorizons -output ../science/results/validation_horizons.json \
   ../science/results/{mons-mouton-im2,malapert-massif,nobile-rim-1,connecting-ridge,peak-near-shackleton}.json
 python science/build_web_assets.py --lola-img <lola>/ldem_80s_80m.img --lola-lbl <lola>/ldem_80s_80m.lbl \
