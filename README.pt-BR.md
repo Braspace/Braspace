@@ -6,11 +6,13 @@ O BRASPACE / MoonProof é um protótipo educacional e de engenharia para avaliar
 
 ---
 
-## Entrada canônica no Cockpit — candidato de release (15/11/2026)
+## Entrada restaurada: escolha entre três modos (15/11/2026)
 
-Por decisão explícita do responsável pelo produto, `/moonproof/` deve abrir o **Cockpit único** com a mesma Lua 3D de Joel, a nave Artemis educacional e os nove grupos independentes de painéis (incluídos neste candidato consolidado). A antiga seleção Explorar / Aula / Planejar permanece acessível em `/moonproof/tasks.html`, sem exclusão dos módulos, dados ou links existentes. O redirecionamento preserva parâmetros e fragmentos da missão e não cria um segundo renderizador Three.js.
+**A página inicial é a tela de escolha:** `/moonproof/` mostra três cartões funcionais — **Explorar a Lua**, **Dar uma aula** e **Planejar uma missão**. Ao escolher, a pessoa abre, respectivamente, `explore.html`, `activity.html` ou `plan.html`; o módulo Preact preserva as opções da missão e o modo escolhido no link. Mesmo sem JavaScript, os três cartões e seus links aparecem com estilo, evitando o redirecionamento em página branca.
 
-**Candidato não publicado neste PR**: exigir QA real, build TypeScript, testes e deploy do SHA exato com Go/Rust/PostgreSQL/pgvector, GPU e fallback antes de anunciar produção.
+O seletor também permanece em `/moonproof/tasks.html`. O Cockpit com nove painéis continua acessível diretamente em `/moonproof/cockpit.html` e pela navegação do aplicativo; a Lua Three.js e a demonstração educacional Artemis permanecem as mesmas. No primeiro acesso, há um tutorial opcional de quatro etapas para a tela de escolha, com opção de pular; os tours de cada modo continuam acessíveis pelo botão **Ver tutorial**.
+
+**Situação da publicação:** os testes completos e o deploy do SHA exato ainda precisam ser comprovados antes de afirmar que a versão já aparece no Cloudflare. A imagem enviada mostrava a antiga entrada com redirecionamento JavaScript; esta correção elimina aquela dependência.
 
 ## Demo no Ar e API
 
