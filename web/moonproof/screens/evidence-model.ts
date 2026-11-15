@@ -86,15 +86,11 @@ export function buildPassport({ state, site, sites, series, version, api, rows, 
   };
 }
 
-/** Version: the config.js commit when the deployment publishes one, else /api/health; else null (shown as N/D). */
-export function pickVersion({ configCommit, health }: { configCommit?: string | null; health?: { api_version?: unknown; version?: unknown } | null }): Version | null {
-  if (configCommit) return { value: String(configCommit), source: "config.js" };
+/** Version: the API build commit from /healthz (the code that computed every number), else /api/health; else null (N/D). */
+export function pickVersion({ buildCommit, health }: { buildCommit?: unknown; health?: { api_version?: unknown; version?: unknown } | null }): Version | null {
+  if (typeof buildCommit === "string" && /^[0-9a-f]{7,40}$/i.test(buildCommit)) return { value: buildCommit.slice(0, 12), source: "/healthz build_commit" };
   const v = health?.api_version || health?.version;
   return v ? { value: String(v), source: "/api/health" } : null;
 }
 
-/** Parse the config.js text served by the deployment: `const BRASPACE_COMMIT = "…"` or window.BRASPACE_COMMIT. */
-export function parseConfigCommit(text?: string | null): string | null {
-  const m = /BRASPACE_COMMIT\s*=\s*["']([0-9a-f]{7,40})["']/i.exec(text || ""); return m ? m[1] : null;
-}
 export const SECTIONS: readonly string[] = Object.freeze(["passport", "sources", "assumptions", "limits", "lessons", "missions"]);

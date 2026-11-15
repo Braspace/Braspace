@@ -201,3 +201,5 @@ html:not(.mp-ready) body{visibility:hidden;animation:mp-reveal 0s 2s forwards}
   .mp-nav .mp-pill{font-size:0;gap:0;padding:0 12px;min-width:44px;justify-content:center}
   .mp-nav .mp-pill svg{width:17px;height:17px}
 }
+/* Phones: the context pill started 4 px under the top bar (top bar sits at 22 px after the fidelity pass). */
+@media (max-width:700px){ .mp-context{top:84px} }

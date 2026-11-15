@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { trustRows, trustOf, sourceRows, buildPassport, pickVersion, parseConfigCommit, registryChip } from "../screens/evidence-model.js";
+import { trustRows, trustOf, sourceRows, buildPassport, pickVersion, registryChip } from "../screens/evidence-model.js";
 
 const PRE = "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED";
 const region = { spacing_m: 400, native_resolution_m: 80, source: "LOLA", sha256: "a", source_sha256: "b" };
@@ -25,16 +25,16 @@ test("sources: each row has the seal of its origin; missing origin → N/D", () 
   assert.ok(rows.every(r => r.seal !== "VAL"));
 });
 test("registry chip is the registry state, not a data seal", () => { assert.equal(registryChip({ redistribution_status: "approved_candidate" }), "approved_candidate"); assert.equal(registryChip({}), null); });
-test("version: config.js commit, else /api/health, else null", () => {
-  assert.deepEqual(pickVersion({ configCommit: "abc1234", health: { api_version: "v" } }), { value: "abc1234", source: "config.js" });
-  assert.deepEqual(pickVersion({ configCommit: null, health: { api_version: "braspace.mission.v1" } }), { value: "braspace.mission.v1", source: "/api/health" });
-  assert.equal(pickVersion({ configCommit: null, health: null }), null);
-  assert.equal(parseConfigCommit('const BRASPACE_COMMIT = "7814f1314a2d";'), "7814f1314a2d"); assert.equal(parseConfigCommit("nothing"), null); assert.equal(parseConfigCommit(null), null);
+test("version: /healthz build_commit, else /api/health, else null; never a fake or 'unknown' commit", () => {
+  assert.deepEqual(pickVersion({ buildCommit: "62bf446e386d3101b6448582330248e160edbb09", health: { api_version: "v" } }), { value: "62bf446e386d", source: "/healthz build_commit" });
+  assert.deepEqual(pickVersion({ buildCommit: "unknown", health: { api_version: "braspace.mission.v1" } }), { value: "braspace.mission.v1", source: "/api/health" });
+  assert.deepEqual(pickVersion({ buildCommit: null, health: { api_version: "braspace.mission.v1" } }), { value: "braspace.mission.v1", source: "/api/health" });
+  assert.equal(pickVersion({ buildCommit: null, health: null }), null);
 });
 test("passport JSON: scenario, rules, version and origin of each number", () => {
   const rows = sourceRows({ sites: { science_status: PRE }, region, series, layers: [] });
   const p = buildPassport({ state: { start: null, hours: 336, night: 60, blackout: 72, battery: 30, link: "http://x/?a" }, site: { id: "s", n: 2, name: "N", lat: 1, lon: 2, source: "src" },
-    sites: { science_status: PRE, generated_utc: "g", series_window: { hours: 1 } }, series: { series: { sha256: "h" } }, version: { value: "v", source: "config.js" }, api: { online: false }, rows, layers: [], nowIso: "2026-01-01T00:00:00Z" });
+    sites: { science_status: PRE, generated_utc: "g", series_window: { hours: 1 } }, series: { series: { sha256: "h" } }, version: { value: "v", source: "/healthz build_commit" }, api: { online: false }, rows, layers: [], nowIso: "2026-01-01T00:00:00Z" });
   assert.equal(p.version.value, "v"); assert.equal(p.rules.label, "assumed limit"); assert.equal(p.rules.night_h, 60); assert.equal(p.data.seal, "PRE"); assert.equal(p.data.series_sha256, "h");
   assert.equal(p.numbers.length, rows.length); assert.ok(p.numbers.every(n => "seal" in n && "origin" in n)); assert.equal(p.api.online, false);
   JSON.parse(JSON.stringify(p));
