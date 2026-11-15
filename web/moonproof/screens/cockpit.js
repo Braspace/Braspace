@@ -164,36 +164,51 @@ function buildBodies() {
 }
 buildBodies();
 addEventListener("resize", () => { frame(); lightDraw(); });
+let computeRevision = 0;
+const scenarioKey = () => { const st = getState(); return [st.site, st.start, hoursOf(), S.fault, st.battery, st.blackout].join("|"); };
 async function compute() {
-    const st = getState(), site = doc.sites.find(s => s.id === st.site), key = [st.site, st.start, hoursOf(), S.fault, st.battery].join("|");
+    const st = { ...getState() }, site = doc.sites.find(s => s.id === st.site), key = scenarioKey();
     if (key === S.siteKey)
-        return;
-    S.siteKey = key;
-    const m = await apiWindowMetrics(doc, site, st.start, hoursOf());
+        return true;
+    const revision = ++computeRevision, hours = hoursOf(), fault = S.fault;
+    const current = () => revision === computeRevision && key === scenarioKey();
+    S.reportReq = undefined;
+    S.siteKey = "";
+    const m = await apiWindowMetrics(doc, site, st.start, hours);
+    if (!current())
+        return false;
     const series = m.series, i0 = Math.ceil((m.t0 - series.start) / HOUR_MS);
     const base = { power: { ...H1_PROFILE }, samples: [], delayH: 0 };
     const win = (off, n) => Array.from({ length: Math.max(0, Math.min(n, series.count - i0 - off)) }, (_, h) => ({ sun_visible: series.sunMargin[i0 + off + h] >= 0, earth_visible: series.earthMargin[i0 + off + h] >= 0 }));
-    const f = applyFault(S.fault, { ...base, samples: win(0, hoursOf()) });
-    const samples = win(f.delayH, hoursOf()).map(x => f.fault?.noEarth ? { ...x, earth_visible: false } : x);
+    const f = applyFault(fault, { ...base, samples: win(0, hours) });
+    const samples = win(f.delayH, hours).map(x => f.fault?.noEarth ? { ...x, earth_visible: false } : x);
     const power = { ...f.power, reserve_wh: f.power.battery_capacity_wh * st.battery / 100 };
     const startIso = new Date(m.t0 + f.delayH * HOUR_MS).toISOString();
     let run;
+    let reportReq;
     if (!online)
         run = { ok: false, offline: true, route: "none" };
     else {
         const call = ((p, o) => (p === "/api/onboard/site-evaluate" && S.noSiteRoute.has(st.site)) ? Promise.resolve({ ok: false, error: "cached DATA_NOT_AVAILABLE" }) : api(p, o));
-        S.reportReq = siteEvaluateBody({ siteId: st.site, startIso: new Date(m.t0).toISOString(), hours: hoursOf(), power, maxBlackoutH: Math.min(st.blackout, hoursOf()), delayH: f.delayH });
-        run = await runScenario(call, { siteId: st.site, startIso: new Date(m.t0).toISOString(), hours: hoursOf(), power, maxBlackoutH: Math.min(st.blackout, hoursOf()), samples, delayH: f.delayH });
+        reportReq = siteEvaluateBody({ siteId: st.site, startIso: new Date(m.t0).toISOString(), hours: hours, power, maxBlackoutH: Math.min(st.blackout, hours), delayH: f.delayH });
+        run = await runScenario(call, { siteId: st.site, startIso: new Date(m.t0).toISOString(), hours: hours, power, maxBlackoutH: Math.min(st.blackout, hours), samples, delayH: f.delayH });
+        if (!current())
+            return false;
         if (run.route === "eval")
             S.noSiteRoute.add(st.site);
         if (run.route === "site")
             run.samples = null;
     }
+    if (!current())
+        return false;
+    S.reportReq = reportReq;
+    S.siteKey = key;
     S.light = { m, i0, samples, power, f, startIso, series: series,
         longestDarkH: samples.length ? longestRun(samples, "sun_visible", false) : null,
         longestBlackoutH: samples.length ? longestRun(samples, "earth_visible", false) : null, sunrises: samples.length ? countRises(samples) : null };
     S.run = run;
-    S.t = Math.min(S.t, hoursOf());
+    S.t = Math.min(S.t, hours);
+    return true;
 }
 async function skyTransition(site, atIso) {
     const k = site.id + atIso;
@@ -404,7 +419,9 @@ function draw() {
     });
 }
 async function drawNow() {
-    await compute();
+    if (!await compute())
+        return;
+    const drawKey = scenarioKey();
     const th = hourIndex(S.t, hoursOf()); // series and API trace are hourly: read them at a whole hour, keep S.t continuous
     const st = getState(), site = doc.sites.find(s => s.id === st.site), L = S.light, run = S.run, series = L.series, H = hoursOf();
     const i = L.i0 + th, trace = run?.ok ? run.trace : null, cap = L.power.battery_capacity_wh;
@@ -454,6 +471,8 @@ async function drawNow() {
     // alert: next sunset from the API's next_transitions when it has the site's series, else from the stored series
     const at = new Date(L.m.t0 + L.f.delayH * HOUR_MS + th * HOUR_MS).toISOString();
     const apiTr = online ? await skyTransition(site, at) : null;
+    if (drawKey !== scenarioKey())
+        return;
     const apiSun = apiTr?.sun || null;
     const fromApi = !!apiSun && Number.isFinite(apiSun.hours_from_start);
     const inH = fromApi ? apiSun.hours_from_start : sunNext?.inHours, setting = fromApi ? apiSun.kind === "sunset" : sunNext?.visible;
