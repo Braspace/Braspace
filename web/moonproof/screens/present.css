@@ -205,6 +205,17 @@ body.mp-present { font-variant-numeric: tabular-nums; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.mp-sc-window {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-2, #B7C0C9);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
 .mp-sc-seal { margin-left: auto; }
 .mp-sc-row {
   display: flex;
