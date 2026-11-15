@@ -57,6 +57,7 @@ COPY data/ ./data/
 COPY docs/ASSET_LICENSE_MATRIX.md ./docs/ASSET_LICENSE_MATRIX.md
 # audit-p0.test.mjs checks the acceptance status table; plan-calc.test.mjs validates request bodies against the OpenAPI contract.
 COPY docs/SCIENTIFIC_ACCEPTANCE.md ./docs/SCIENTIFIC_ACCEPTANCE.md
+COPY docs/SOLAR_ANGLE_VS_POWER.md ./docs/SOLAR_ANGLE_VS_POWER.md
 COPY api/openapi.json ./api/openapi.json
 COPY --from=gobuilder /out/api /opt/e2e/braspace-e2e-api
 COPY --from=rustbuilder /build/engine/target/release/braspace-lunar-engine /src/engine/target/debug/braspace-lunar-engine

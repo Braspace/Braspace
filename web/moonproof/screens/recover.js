@@ -17,7 +17,7 @@ const SEARCH_DAYS = 30;
 register({
   en: {
     "rec.ctx": "Scenario {L} · {site}", "rec.landing.delayed": "landing delayed", "rec.violated": "{n} RULES VIOLATED", "rec.violated1": "1 RULE VIOLATED", "rec.ok": "NO RULE VIOLATED", "rec.nd": "NO DATA",
-    "rec.step1": "Step 1 · how long is the delay? · hours", "rec.hours": "hours", "rec.newland": "New landing", "rec.end": "Mission end", "rec.endval": "{d} · {n} days after",
+    "rec.step1": "Step 1 · how long is the delay?", "rec.hours": "hours", "rec.newland": "New landing", "rec.end": "Mission end", "rec.endval": "{d} · {n} days after",
     "rec.step2": "Step 2 · what changed", "rec.night": "Longest night", "rec.slack": "Margin to the rule", "rec.earth": "Earth visible", "rec.loss": "Longest Earth loss",
     "rec.step3": "Step 3 · choose an option", "rec.exit.wait": "Wait until {d}", "rec.exit.wait.s": "same site · window moves", "rec.exit.switch": "Land at {name}", "rec.exit.switch.s": "same date · other site",
     "rec.exit.shorten": "Mission of {n} days", "rec.exit.shorten.s": "same site · shorter window", "rec.slackWord": "margin", "rec.none": "No option meets every rule in the search done. Nothing is shown without a calculation.", "rec.nearby.title": "Live API · nearby catalog sites at the delayed start (POST /api/scenarios/delay, PRE)", "rec.nearby.ok": "meets the rules", "rec.nearby.no": "breaks a rule", "rec.nearby.nd": "no data ({r})", "rec.coverage": "Searched: waits up to +{d} days, the other {n} catalog sites at the same start, shorter windows. Options come from the stored hourly series (web/data), even when the delay itself came from the API.",
@@ -30,7 +30,7 @@ register({
   },
   "pt-BR": {
     "rec.ctx": "Cenário {L} · {site}", "rec.landing.delayed": "pouso adiado", "rec.violated": "{n} REGRAS VIOLADAS", "rec.violated1": "1 REGRA VIOLADA", "rec.ok": "NENHUMA REGRA VIOLADA", "rec.nd": "SEM DADO",
-    "rec.step1": "Passo 1 · quanto o pouso atrasou? · horas", "rec.hours": "horas", "rec.newland": "Novo pouso", "rec.end": "Fim da missão", "rec.endval": "{d} · {n} dias depois",
+    "rec.step1": "Passo 1 · quanto o pouso atrasou?", "rec.hours": "horas", "rec.newland": "Novo pouso", "rec.end": "Fim da missão", "rec.endval": "{d} · {n} dias depois",
     "rec.step2": "Passo 2 · o que mudou", "rec.night": "Maior noite", "rec.slack": "Folga até a regra", "rec.earth": "Terra visível", "rec.loss": "Maior perda da Terra",
     "rec.step3": "Passo 3 · escolha uma saída", "rec.exit.wait": "Esperar até {d}", "rec.exit.wait.s": "mesmo local · a janela anda", "rec.exit.switch": "Pousar em {name}", "rec.exit.switch.s": "mesma data · outro local",
     "rec.exit.shorten": "Missão de {n} dias", "rec.exit.shorten.s": "mesmo local · janela menor", "rec.slackWord": "folga", "rec.none": "Nenhuma saída atende a todas as regras na busca feita. Sem cálculo, nada aparece.", "rec.nearby.title": "API ao vivo · locais vizinhos do catálogo no início atrasado (POST /api/scenarios/delay, PRE)", "rec.nearby.ok": "atende às regras", "rec.nearby.no": "quebra uma regra", "rec.nearby.nd": "sem dado ({r})", "rec.coverage": "Buscado: esperar até +{d} dias, os outros {n} locais do catálogo no mesmo início e janelas menores. As saídas vêm das séries horárias gravadas (web/data), mesmo quando o atraso veio da API.",
@@ -100,7 +100,8 @@ async function draw() {
   line(t("rec.earth"), pv(base?.earthPct ?? null), pv(delayed?.earthPct ?? null), false);
   line(t("rec.loss"), hv(base?.blackout ?? null), hv(delayed?.blackout ?? null), delayed && delayed.blackout > rules.blackout);
   const p2 = el("div", "mp-card"); p2.append(el("p", "mp-label mp-q", t("rec.step2")), chg, seals(delayed, base));
-  document.getElementById("left").replaceChildren(alert, p1, pills, p2);
+  document.getElementById("left").replaceChildren(p1, pills, p2);
+  document.querySelector(".mp-context")?.querySelectorAll(".mp-alert").forEach(a => a.remove()); document.querySelector(".mp-context")?.prepend(alert);
 
   // Step 3 (right)
   const head = jd.status === "nd" ? t("rec.head.nd") : jd.reasons.some(r => r.key === "night") ? t("rec.head.break", { v: fmtNum(delayed.dark), lim: fmtNum(rules.night) }) : jd.status === "pass" ? t("rec.head.ok") : t("rec.head.break", { v: fmtNum(delayed.dark), lim: fmtNum(rules.night) });
@@ -176,6 +177,7 @@ function drawDock() {
 let terrain = null;
 const route = []; // read by the terrain on every redraw; filled in place (B then the chosen exit site)
 let chips = [];
+let mo = new MutationObserver(() => {});
 function markMap(sc, chosen, delayed) {
   const sw = chosen?.kind === "switch";
   route.splice(0, route.length, ...(sw ? [sc.site, chosen.siteId] : []));
@@ -186,8 +188,9 @@ function markMap(sc, chosen, delayed) {
   if (delayed && worst > rules.night) chips.push({ site: sc.site, cls: "is-red", text: t("rec.nightOf", { v: fmtNum(worst) }) });
   if (sw) chips.push({ site: chosen.siteId, cls: "is-jade", text: t("rec.chip.exit") });
   placeChips();
-  document.querySelectorAll(".mp-marker").forEach(m => { const isB = m.dataset.site === sc.site, isD = chosen?.kind === "switch" && m.dataset.site === chosen.siteId;
+  const fixM = () => document.querySelectorAll(".mp-marker").forEach(m => { const isB = m.dataset.site === sc.site, isD = chosen?.kind === "switch" && m.dataset.site === chosen.siteId;
     m.hidden = !(isB || isD); m.firstChild.textContent = isB ? "B" : "D"; });
+  fixM(); mo.disconnect(); mo = new MutationObserver(() => fixM()); mo.observe(document.getElementById("terrain"), { childList: true, subtree: true });
 }
 terrain = await mountTerrain(document.getElementById("terrain"), { sites: doc.sites, selected: scenario().site, route, onSelect: id => write({ site: id, x: null }) });
 // Map chips follow their marker (the terrain rebuilds markers on redraw, so measure after the next frame).
