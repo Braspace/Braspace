@@ -31,6 +31,8 @@ COPY api/ ./api/
 COPY data/ ./data/
 COPY examples/ ./examples/
 COPY compose.yaml ./compose.yaml
+# api/cmd/validatederivedseries tests pin the NAIF metadata kept outside api/.
+COPY science/evidence/ ./science/evidence/
 # api/cmd/{exportapiseries,validatehorizons,compareangles,downloadbenchmark} tests read these committed science artefacts.
 COPY science/results/ ./science/results/
 COPY science/benchmarks/horizons/ ./science/benchmarks/horizons/
@@ -90,7 +92,6 @@ COPY api/sitedata/ ./api/sitedata/
 # science/tests/test_terrain_backgrounds.py checks the products against this matrix.
 COPY docs/ASSET_LICENSE_MATRIX.md ./docs/ASSET_LICENSE_MATRIX.md
 RUN python3 -m compileall -q scripts tests science \
- && python3 -m unittest discover -s tests -v \
  && python3 -m unittest discover -s science/tests -v
 COPY science/results/ ./science/results/
 RUN python3 -c "import json; idx=json.load(open('web/data/sites.json')); v=json.load(open('science/results/validation_pgda.json')); assert idx['science_status']=='PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED', idx['science_status']; assert [1 for r in v['results'] if abs(r['diff_sun_pp'])>5], 'known PGDA discrepancy removed without reviewed evidence'" \

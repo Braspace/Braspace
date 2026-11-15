@@ -5,15 +5,15 @@ on:
     paths:
       - "data/POLAR_SOURCE_EVIDENCE.json"
       - "docs/POLAR_DATA_INGESTION.md"
-      - "scripts/validate_polar_source_evidence.py"
-      - "tests/test_polar_source_evidence.py"
+      - "api/cmd/validatepolarsource/**"
+      - "api/internal/pyjson/**"
       - ".github/workflows/polar-source-evidence.yml"
   push:
     branches: [main]
     paths:
       - "data/POLAR_SOURCE_EVIDENCE.json"
-      - "scripts/validate_polar_source_evidence.py"
-      - "tests/test_polar_source_evidence.py"
+      - "api/cmd/validatepolarsource/**"
+      - "api/internal/pyjson/**"
 
 permissions:
   contents: read
@@ -24,10 +24,11 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-go@v5
         with:
-          python-version: "3.12"
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
       - name: Check catalog integrity (not scientific validation)
-        run: python3 scripts/validate_polar_source_evidence.py
+        run: go -C api run ./cmd/validatepolarsource
       - name: Fail-closed regression tests
-        run: python3 -m unittest discover -s tests -p 'test_polar_source_evidence.py'
+        run: go -C api test -count=1 ./cmd/validatepolarsource ./internal/pyjson
