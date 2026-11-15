@@ -5,6 +5,8 @@
 // screen (viewport minus the fixed panels laid over the map).
 import { loadRegion } from "./data.js";
 import { t } from "./i18n.js";
+// Read at load: core/state rewrites the query string once the screen starts.
+const RELIEF_2D = typeof location !== "undefined" && new URLSearchParams(location.search).get("relief") === "2d";
 // @ts-ignore TS7016
 import { southStereoForward } from "../../lab/coords.js";
 // Two lights (key from the upper left, soft fill from the right) + slope occlusion, grey ramp.
@@ -140,6 +142,20 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
     const layer = document.createElement("div");
     Object.assign(layer.style, { position: "absolute", inset: "0", pointerEvents: "none" });
     container.append(cv, labelsEl, layer);
+    // Joel Moon HD relief (same LOLA grids as the 3D viewer, 80 m near the pole) under the 2D canvas, in the
+    // same stereographic projection, so markers, rays and routes stay where they are. Hardware WebGL only;
+    // ?relief=2d, no WebGL or a lost context keep the original LOLA 400 m hillshade.
+    let hd = null;
+    container.dataset.relief = "lola-2d";
+    if (!RELIEF_2D)
+        import("../../moon-hd/stereo-relief.js")
+            .then(m => m.mountStereoRelief(container, cv, () => { hd = null; container.dataset.relief = "lola-2d"; reliefKey = ""; draw(); }))
+            .then(r => { if (r) {
+            hd = r;
+            container.dataset.relief = "moonhd";
+            draw();
+        } })
+            .catch(() => { });
     // view: centre (metres) and span (metres across the free area's short side).
     const xs = sites.map(s => s.stereo_x_m), ys = sites.map(s => s.stereo_y_m);
     const view = { cx: xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0, cy: ys.length ? (Math.min(...ys) + Math.max(...ys)) / 2 : 0,
@@ -193,13 +209,19 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
             cv.height = h;
         }
         const g = cv.getContext("2d");
-        const key = [w, h, sx.toFixed(1), sy.toFixed(1), mpp.toFixed(4)].join();
-        if (key !== reliefKey) {
-            relief = renderRelief(grid, w, h, sx - W * mpp / 2, sy + H * mpp / 2, mpp / dpr);
-            reliefKey = key;
-        }
         g.setTransform(1, 0, 0, 1, 0, 0);
-        g.putImageData(relief, 0, 0);
+        if (hd) {
+            hd.draw(sx, sy, W, H, mpp);
+            g.clearRect(0, 0, w, h);
+        }
+        else {
+            const key = [w, h, sx.toFixed(1), sy.toFixed(1), mpp.toFixed(4)].join();
+            if (key !== reliefKey) {
+                relief = renderRelief(grid, w, h, sx - W * mpp / 2, sy + H * mpp / 2, mpp / dpr);
+                reliefKey = key;
+            }
+            g.putImageData(relief, 0, 0);
+        }
         g.setTransform(dpr, 0, 0, dpr, 0, 0);
         const vg = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .78);
         vg.addColorStop(0, "rgba(7,9,12,0)");
