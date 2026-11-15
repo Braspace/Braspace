@@ -7,8 +7,8 @@ refuses to continue unless its SHA-256 equals the manifest value, crops the
 square that contains the 87°S circle, block-averages 2x2 (80 m -> 160 m/px),
 colours elevation with a continuous ramp over a low-sun hillshade, and writes
 
-  web/assets/polar-elevation-87s.webp   (visual product, <= 400 KB)
-  web/assets/polar-elevation-87s.json   (bounds, projection, pixel <-> lat/lon)
+  archive/web-legacy/assets/polar-elevation-87s.webp   (visual product, <= 400 KB)
+  archive/web-legacy/assets/polar-elevation-87s.json   (bounds, projection, pixel <-> lat/lon)
 
 This is an ELEVATION map (visual context). The hillshade uses a fixed,
 arbitrary synthetic light direction to show relief; it is NOT a model of
@@ -40,7 +40,7 @@ import numpy as np
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "data" / "manifest.json"
-OUT_DIR = ROOT / "web" / "assets"
+OUT_DIR = ROOT / "archive" / "web-legacy" / "assets"  # moved by #321
 STEM = "polar-elevation-87s"
 
 # Fixed LOLA LDEM_80S_80M geometry (checked against manifest/label at runtime).

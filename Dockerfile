@@ -85,6 +85,8 @@ COPY scripts/ ./scripts/
 COPY science/ ./science/
 COPY data/ ./data/
 COPY web/ ./web/
+# science/tests/test_render_polar_map.py: the derived polar map moved with the legacy surfaces (#321).
+COPY archive/web-legacy/assets/ ./archive/web-legacy/assets/
 COPY api/db/ ./api/db/
 COPY compose.yaml ./
 COPY api/sitedata/ ./api/sitedata/
