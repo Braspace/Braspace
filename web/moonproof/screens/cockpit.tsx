@@ -4,7 +4,7 @@
 // positioned from live layout measurements, and the crew form is built once so typed values survive redraws.
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, windowMetrics, api, sealFor, apiOnline } from "../core/data.js";
+import { loadSites, windowMetrics, apiWindowMetrics, api, sealFor, apiOnline } from "../core/data.js";
 import { createLayerCard, statCircle, sealEl } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
@@ -12,6 +12,7 @@ import type { Site } from "../core/data.js";
 import type { Layer, ScenarioState } from "../core/state.js";
 import type { Power, Fault, RunResult, ApiCall, Sample } from "./cockpit-model.js";
 import { TEXTS } from "./cockpit-texts.js";
+import { mountArtemisCockpit } from "../../moon-hd/artemis-cockpit.js";
 import { CREW_DEFAULT, POWER_FIELDS, CREW_FIELDS, crewRequest, readCrewAnswer, validateInputs, sensitivityVariants, readEnergy, loadSaved, saveScenario, savedExport } from "./cockpit-crew.js";
 import { siteEvaluateBody, FAULTS, H1_PROFILE, SPEEDS, HOUR_MS, applyFault, runScenario, nextChange, dailyFractions, autonomyHours, fmtDuration,
   clockLabel, hourIndex, evaluateRules, rulesMet, longestRun, countRises } from "./cockpit-model.js";
@@ -25,6 +26,20 @@ if (!doc.sites.some(s => s.id === getState().site)) setState({ site: doc.sites[0
 const online = await apiOnline();
 const terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id: string) => setState({ site: id }) });
 const narrow = () => matchMedia("(max-width:700px)").matches;
+// The shared Artemis-style lander over this site on the shared 3D Moon (loaded on demand by the page's Moon script).
+const siteNow = () => doc.sites.find(s => s.id === getState().site) as Site;
+const artemis = mountArtemisCockpit({ lat: siteNow()?.lat, lon: siteNow()?.lon, texts: () => ({ note: t("cockpit.artemis_note"), tag: t("cockpit.artemis_tag") }) });
+const moonBtn = el("button", "mp-pill mp-ck-moon"); moonBtn.type = "button";
+const openMoon = (retry: boolean) => {
+  const live = (window as unknown as { moonBackdrop?: { explore(on: boolean): void } }).moonBackdrop;
+  if (live) { live.explore(true); return; }
+  const open = document.querySelector<HTMLButtonElement>(".moon-ui .moon-open");
+  if (open && !open.disabled) { open.click(); return; }
+  // the Moon's button is added after the page's load event: wait for it once before giving up
+  if (retry) { const later = () => setTimeout(() => openMoon(false), 60); if (document.readyState === "complete") later(); else addEventListener("load", later, { once: true }); return; }
+  if (!open) { moonBtn.disabled = true; moonBtn.textContent = t("cockpit.moon3d.na"); }
+};
+moonBtn.onclick = () => openMoon(true);
 const hoursOf = () => getState().hours || 14 * 24;
 
 type Metrics = Awaited<ReturnType<typeof windowMetrics>>;
@@ -88,7 +103,7 @@ addEventListener("resize", () => { frame(); lightDraw(); });
 async function compute() {
   const st = getState(), site = (doc.sites.find(s => s.id === st.site) as Site), key = [st.site, st.start, hoursOf(), S.fault, st.battery].join("|");
   if (key === S.siteKey) return; S.siteKey = key;
-  const m = await windowMetrics(doc, site, st.start, hoursOf());
+  const m = await apiWindowMetrics(doc, site, st.start, hoursOf());
   const series = m.series, i0 = Math.ceil((m.t0 - series.start) / HOUR_MS);
   const base = { power: { ...H1_PROFILE }, samples: [], delayH: 0 };
   const win = (off: number, n: number) => Array.from({ length: Math.max(0, Math.min(n, series.count - i0 - off)) }, (_, h) => ({ sun_visible: series.sunMargin[i0 + off + h] >= 0, earth_visible: series.earthMargin[i0 + off + h] >= 0 }));
@@ -181,7 +196,8 @@ async function drawNow() {
       [t("cockpit.fault_on", { p: "" }), L.f.fault ? `${t(L.f.fault.key, { n: L.f.fault.n })} (${t("seal.SIM")})` : t("nd")],
       [t("proof.status") + " API", run?.ok ? `${run.status} · ${t("seal." + sealFor(run.status))}` : t("cockpit.route.none")], ["inputs_sha256", code((run as { sha?: string } | null)?.sha)],
       [t("cockpit.derived"), trace ? "charge_wh" : t("nd")]) });
-  left.replaceChildren(title, stat, visrow, card.el);
+  if (!moonBtn.disabled) moonBtn.textContent = "◐ " + t("cockpit.moon3d"); moonBtn.title = t("cockpit.moon3d.hint"); artemis.relabel();
+  left.replaceChildren(title, stat, visrow, moonBtn, card.el);
 
   // rules
   const list = evaluateRules({ rules: { night: st.night, blackout: st.blackout, battery: st.battery }, lightStatus: doc.status, trace, capacityWh: run?.ok ? cap : null, light: L });
@@ -254,7 +270,7 @@ $("player").addEventListener("keydown", e => { if (e.key === " " && e.target ===
   h.addEventListener("pointerup", () => { y0 = null; });
   h.addEventListener("keydown", e => { const cur = sheet.getBoundingClientRect().height; if (e.key === "ArrowUp") sheet.style.setProperty("--sheet-h", Math.min(innerHeight * 0.78, cur + 40) + "px"); if (e.key === "ArrowDown") sheet.style.setProperty("--sheet-h", Math.max(96, cur - 40) + "px"); }); }
 let last = getState().site;
-onState((s: ScenarioState) => { if (s.site !== last) { last = s.site; S.t = 0; S.dismissed = null; frame(); } draw(); });
+onState((s: ScenarioState) => { if (s.site !== last) { last = s.site; S.t = 0; S.dismissed = null; frame(); const x = siteNow(); if (x) artemis.setSite(Number(x.lat), Number(x.lon)); } draw(); });
 frame(); await draw(); frame();
 (globalThis as unknown as Record<string, unknown>).__cockpit = S;
 

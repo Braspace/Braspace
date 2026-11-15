@@ -159,3 +159,60 @@ button,input,select,textarea{font:inherit;color:inherit}
    if a script fails. The reduced-motion rule above zeroes duration, not delay. */
 html:not(.mp-ready) body{visibility:hidden;animation:mp-reveal 0s 2s forwards}
 @keyframes mp-reveal{to{visibility:visible}}
+/* Top bar fits at 1280–1500 px: the 6–9 nav pills + Aula/Planejar/?/EN used to push the language pill past the right edge
+   (mission at 1440: 16 px clipped). Right group never shrinks; the centre nav compacts first and, as a last resort, scrolls. */
+.mp-nav-right{flex:none}
+.mp-nav{min-width:0;overflow-x:auto;scrollbar-width:none}
+.mp-nav::-webkit-scrollbar{display:none}
+@media (max-width:1500px) and (min-width:701px){
+  .mp-brand{width:auto;margin-right:6px}
+  .mp-top{gap:8px}.mp-nav,.mp-nav-right{gap:6px}
+  .mp-top .mp-pill{padding:0 12px;font-size:13.5px}
+  .mp-top .mp-pill.is-round{padding:0}
+}
+
+/* Fold buttons (core/collapse.ts): small glass pills on the panel edge; panels slide to their own side.
+   `translate` (not `transform`) composes with each screen's own centring transforms, e.g. .mp-scn-dock. */
+.mp-fold { position: fixed; z-index: 45; width: 28px; height: 44px; padding: 0; border-radius: 13px; border: 1px solid var(--line-2);
+  background: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); color: var(--text);
+  font: 700 17px/1 var(--font, system-ui); display: grid; place-items: center; cursor: pointer; }
+.mp-fold[data-side="bottom"] { width: 44px; height: 28px; }
+.mp-fold:hover { border-color: var(--jade); }
+.mp-fold:focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
+@media (min-width: 901px) {
+  [data-fold] { transition: translate .22s ease, opacity .22s ease; }
+  [data-fold="left"][data-folded="true"] { translate: calc(-100% - 48px) 0; opacity: 0; pointer-events: none; }
+  [data-fold="right"][data-folded="true"] { translate: calc(100% + 48px) 0; opacity: 0; pointer-events: none; }
+  [data-fold="bottom"][data-folded="true"] { translate: 0 calc(100% + 48px); opacity: 0; pointer-events: none; }
+}
+@media (max-width: 900px) { .mp-fold { display: none; } }
+@media (prefers-reduced-motion: reduce) { [data-fold] { transition: none; } }
+
+/* QA 15/11 (EXO-X1/Haiku): the SIM seal inside the jade stat circle had 1.14:1 contrast (lilac on jade):
+   on jade it becomes a solid lilac chip with dark text (Heloísa's --sim hue, same shape). */
+.mp-stat-core .mp-seal[data-seal="SIM"]{background:#D9C6FA;color:#160B26;border-color:#160B26}
+/* Touch: every control in the MoonProof chrome is at least 44 px on coarse pointers (18 of 42 cockpit controls were 32–40 px at 390). */
+@media (pointer:coarse){
+  :is(.mp-sheet,.mp-ck-left,.mp-ck-right,.mp-player,.mp-links,.mp-scn-dock,.mc-dock) :is(button,input:not([type=range]):not([type=checkbox]):not([type=radio]),select,a.mp-pill,.mp-chip){min-height:44px}
+}
+/* Tablet (701–1100 px): nav pills become icon-only (the label stays as the accessible name), so Explorar/Comparar
+   are no longer scrolled out of view on the left (QA 768: x = -50). */
+@media (min-width:701px) and (max-width:1100px){
+  .mp-nav .mp-pill{font-size:0;gap:0;padding:0 12px;min-width:44px;justify-content:center}
+  .mp-nav .mp-pill svg{width:17px;height:17px}
+}
+/* Phones: the context pill started 4 px under the top bar (top bar sits at 22 px after the fidelity pass). */
+@media (max-width:700px){ .mp-context{top:84px} }
+/* QA 15/11 round 2: PRE/EST/VAL seals inside white pills were light grey on near-white (1.23:1). On light
+   surfaces the seal takes the pill's own dark text colour; same shape and line style (Heloísa's seal grammar). */
+.mp-pill.is-white .mp-seal:not([data-seal="SIM"]),.mp-vis .mp-seal:not([data-seal="SIM"]),.mp-scn .mp-seal:not([data-seal="SIM"]){color:var(--pill-text);border-color:var(--pill-text)}
+/* Phones: the context pill clipped its own action button (recover "Comparar" r=403 at 320, debrief "Alterar").
+   The summary text shrinks first and ellipsizes; the action keeps its full label. */
+@media (max-width:700px){
+  .mp-context{gap:6px;padding-right:5px}
+  .mp-context .mp-ctx-text{flex:1 1 0;min-width:0}
+  .mp-context>:is(a,button).mp-pill,.mp-context .mp-pill{flex:none;padding:0 11px;font-size:12.5px}
+}
+@media (max-width:700px){
+  .mp-context>:not(a):not(button):not(.mp-seal):not(.mp-caveat):not(.deb-dot){min-width:0;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}

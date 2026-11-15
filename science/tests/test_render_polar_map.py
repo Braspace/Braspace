@@ -7,7 +7,8 @@ not with the renderer's own code.
 import json, math, pathlib, struct, unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-ASSETS = ROOT / "web" / "assets"
+# The polar elevation map belongs to the archived legacy web (moved by #321/#330); it stays tested where it lives now.
+ASSETS = ROOT / "archive" / "web-legacy" / "assets"
 META = json.loads((ASSETS / "polar-elevation-87s.json").read_text())
 R = 1737400.0
 

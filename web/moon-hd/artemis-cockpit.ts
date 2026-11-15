@@ -1,0 +1,156 @@
+// Cockpit: the shared Artemis-style lander (artemis.js) hovering over the cockpit's site on the shared 3D Moon.
+// No second Moon: the lander is added to the scene of the page backdrop when it announces itself
+// ("moon-backdrop:ready", or window.moonBackdrop when it is already up). Display only: an illustrative, hypothetical
+// lander at an exaggerated altitude, not telemetry and not a touchdown point.
+import type { Three } from "../api-types.js";
+import { buildArtemisLander, hoverPose, scaleForSpan, globeUp, FOOT_Y } from "./artemis.js";
+import type { ArtemisLander } from "./artemis.js";
+
+/** What the backdrop shares (see backdrop.ts, "Shared scene hooks"). */
+export interface MoonBackdropApi {
+  THREE: Three; scene: Three; camera: Three; moon: Three; renderer: Three;
+  requestDraw(): void; toScene(lat: number, lon: number, r?: number): Three;
+  focusLatLon(lat: number, lon: number, dist?: number): void; selectSite(id: string): void; explore(onOff: boolean): void;
+  onFrame(cb: (dt: number, now: number) => void): () => void;
+  readonly pins: { id: string; name: string; lat: number; lon: number }[]; readonly selectedId: string;
+}
+export interface ArtemisTexts { note: string; tag: string; }
+export interface ArtemisCockpitOptions { lat?: number; lon?: number; texts?: () => ArtemisTexts; }
+
+/** South pole fallback when the page has no site (lat -89.5, lon 0). */
+export const SOUTH_POLE = { lat: -89.5, lon: 0 };
+/** Leg span on the unit Moon: about 0.04 scene units, visible from the explore camera at ~1.6 radii. */
+export const COCKPIT_SPAN = 0.04;
+/** Camera distance (Moon radii) when explore opens, and how far (deg of latitude) it stands off the site so the
+ * lander is seen at an angle instead of straight from above. */
+export const FOCUS_DISTANCE = 1.6, FOCUS_OFFSET_DEG = 3;
+
+/**
+ * Latitude/longitude the camera is sent to: FOCUS_OFFSET_DEG from the site along its meridian, toward the pole when
+ * the backdrop's camera cap (|lat| <= 88) allows it (the lander then shows above the screen centre, clear of the
+ * controls at the bottom), else toward the equator. Either way the lander is seen at an angle, not straight down.
+ */
+export function focusTarget(lat: number, lon: number, off = FOCUS_OFFSET_DEG): { lat: number; lon: number } {
+  const sign = lat < 0 ? -1 : 1, a = Math.abs(lat);
+  return { lat: sign * (a + off <= 88 ? a + off : a - off), lon };
+}
+
+const DEFAULT_TEXTS = (): ArtemisTexts => {
+  const pt = (document.documentElement.lang || navigator.language || "").toLowerCase().startsWith("pt");
+  return pt ? { note: "Ilustrativo — lander hipotético, não é telemetria", tag: "Lander (ilustrativo)" }
+            : { note: "Illustrative — hypothetical lander, not telemetry", tag: "Lander (illustrative)" };
+};
+
+function stylesheet() {
+  const href = new URL("./artemis.css", import.meta.url).href;
+  if ([...document.querySelectorAll("link[rel=stylesheet]")].some(l => (l as HTMLLinkElement).href === href)) return;
+  const link = document.createElement("link"); link.rel = "stylesheet"; link.href = href; document.head.append(link);
+}
+
+/**
+ * Waits for the shared Moon and puts the lander over (lat, lon). Returns setSite / dispose; never throws.
+ * Camera: focused on the site only when the user opens explore mode (it never forces explore on).
+ */
+export function mountArtemisCockpit(options: ArtemisCockpitOptions = {}) {
+  let site = { lat: Number.isFinite(options.lat) ? Number(options.lat) : SOUTH_POLE.lat, lon: Number.isFinite(options.lon) ? Number(options.lon) : SOUTH_POLE.lon };
+  const texts = options.texts || DEFAULT_TEXTS;
+  let api: MoonBackdropApi | null = null, lander: ArtemisLander | null = null, dead = false;
+  const undo: (() => void)[] = [];
+  let note: HTMLElement | null = null, tag: HTMLElement | null = null;
+  const root = document.documentElement;
+  const reduced = typeof matchMedia === "function" ? matchMedia("(prefers-reduced-motion: reduce)") : null;
+  let relabelNow = () => {};
+  let up: Three = null, tether: Three = null, ring: Three = null, sun: Three = null, t = 0;
+
+  const scale = scaleForSpan(COCKPIT_SPAN);
+  const pose = (r: number, throttle: number) => {
+    if (!api || !lander) return;
+    const g = lander.group;
+    g.position.copy(api.toScene(site.lat, site.lon, r));
+    // tether + ground ring reach from the footpads down to the reference sphere (r = 1)
+    const ground = -(r - 1) / scale; // model units: the reference sphere below the origin
+    tether.position.y = FOOT_Y; tether.scale.y = Math.max(0.001, FOOT_Y - ground);
+    ring.position.y = ground;
+    lander.setThrottle(throttle);
+    if (sun) { sun.position.copy(api.moon.lightDir).multiplyScalar(10); }
+  };
+  const orient = () => {
+    if (!api || !lander) return;
+    up = new api.THREE.Vector3(...globeUp(site.lat, site.lon));
+    lander.group.quaternion.setFromUnitVectors(new api.THREE.Vector3(0, 1, 0), up);
+  };
+  const still = () => { const p = hoverPose(0, { reducedMotion: true }); pose(p.r, p.throttle); api?.requestDraw(); };
+  const v = () => api ? new api.THREE.Vector3() : null;
+  const placeTag = () => {
+    if (!api || !lander || !tag) return;
+    const p = v()!.copy(lander.group.position), cam = api.camera.position;
+    const facing = p.clone().normalize().dot(cam) - p.length() > 0.01;
+    p.project(api.camera);
+    const off = !facing || p.z > 1 || Math.abs(p.x) > 1 || Math.abs(p.y) > 1;
+    tag.classList.toggle("is-off", off);
+    if (!off) tag.style.transform = `translate(${((p.x * .5 + .5) * innerWidth).toFixed(1)}px,${((-p.y * .5 + .5) * innerHeight).toFixed(1)}px)`;
+  };
+  const focus = () => { if (api) { const f = focusTarget(site.lat, site.lon); api.focusLatLon(f.lat, f.lon, FOCUS_DISTANCE); } };
+
+  const attach = (a: MoonBackdropApi) => {
+    if (dead || api || !a?.scene || !a.THREE) return;
+    api = a;
+    try {
+      const THREE = a.THREE;
+      stylesheet();
+      lander = buildArtemisLander(THREE, { scale, shadows: false });
+      const g = lander.group;
+      // guide to the ground (illustrative): thin line and a ring on the reference sphere
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -1, 0)]);
+      tether = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0x2ec4a0, transparent: true, opacity: 0.55, depthWrite: false }));
+      tether.name = "artemis-tether"; g.add(tether);
+      ring = new THREE.Mesh(new THREE.RingGeometry(2.3, 2.6, 48), new THREE.MeshBasicMaterial({ color: 0x2ec4a0, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false }));
+      ring.rotation.x = -Math.PI / 2; ring.name = "artemis-ring"; g.add(ring);
+      // the Moon is a ShaderMaterial with its own Sun direction: these lights only reach the lander
+      const lights = new THREE.Group(); lights.name = "artemis-lights";
+      sun = new THREE.DirectionalLight(0xfff3e2, 3.2); lights.add(sun, sun.target);
+      lights.add(new THREE.HemisphereLight(0xb8c4d6, 0x2a2622, 0.9));
+      a.scene.add(g, lights);
+      undo.push(() => { lander?.dispose(); a.scene.remove(lights); lineGeo.dispose(); tether.material.dispose(); ring.geometry.dispose(); ring.material.dispose(); });
+      orient(); still();
+
+      note = document.createElement("p"); note.className = "artemis-note"; note.setAttribute("role", "note");
+      tag = document.createElement("span"); tag.className = "artemis-tag is-off"; tag.setAttribute("aria-hidden", "true");
+      const tagText = document.createElement("span"); tag.append(tagText);
+      const relabel = () => { const x = texts(); note!.textContent = x.note; tagText.textContent = x.tag; };
+      relabel(); document.body.append(note, tag); relabelNow = relabel; root.classList.add("artemis-on");
+      undo.push(() => { note?.remove(); tag?.remove(); relabelNow = () => {}; root.classList.remove("artemis-on"); });
+
+      // The backdrop also flies when explore opens (to the selected pin, or again once the pin catalogue arrives).
+      // The cockpit's site wins: re-focus once when the catalogue shows up shortly after explore opened.
+      let pinCount = a.pins.length, openedAt = root.classList.contains("moon-explore-on") ? performance.now() : -Infinity;
+      undo.push(a.onFrame(dt => {
+        if (!lander) return;
+        const n = a.pins.length;
+        if (n && !pinCount && performance.now() - openedAt < 10000) setTimeout(focus, 0);
+        pinCount = n;
+        if (reduced?.matches) { still(); placeTag(); return; }
+        t += dt; const p = hoverPose(t); pose(p.r, p.throttle); placeTag();
+      }));
+      // explore opened by the user -> fly to the site (never forced on)
+      let was = root.classList.contains("moon-explore-on");
+      if (was) focus();
+      const mo = new MutationObserver(() => { const now = root.classList.contains("moon-explore-on"); if (now && !was) { openedAt = performance.now(); focus(); } was = now; });
+      mo.observe(root, { attributes: true, attributeFilter: ["class"] }); undo.push(() => mo.disconnect());
+    } catch { dispose(); }
+  };
+  const onReady = (e: Event) => attach((e as CustomEvent).detail as MoonBackdropApi);
+  addEventListener("moon-backdrop:ready", onReady); undo.push(() => removeEventListener("moon-backdrop:ready", onReady));
+  const onPin = (e: Event) => { const d = (e as CustomEvent).detail; if (Number.isFinite(d?.lat) && Number.isFinite(d?.lon)) setSite(d.lat, d.lon, false); };
+  addEventListener("moon:site-selected", onPin); undo.push(() => removeEventListener("moon:site-selected", onPin));
+  const existing = (window as unknown as { moonBackdrop?: MoonBackdropApi }).moonBackdrop;
+  if (existing) attach(existing);
+
+  function setSite(lat: number, lon: number, refocus = true) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    site = { lat, lon }; orient(); still();
+    if (refocus && root.classList.contains("moon-explore-on")) focus();
+  }
+  function dispose() { if (dead) return; dead = true; for (const f of undo.splice(0).reverse()) { try { f(); } catch { /* already gone */ } } lander = null; api = null; }
+  return { setSite, dispose, relabel: () => relabelNow(), get lander() { return lander; } };
+}

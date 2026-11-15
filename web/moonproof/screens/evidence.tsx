@@ -18,7 +18,7 @@ type Meta = SiteDoc & { series?: { sha256?: string } };
 import { TEXTS } from "./evidence-texts.js";
 import { TEXTS as CK } from "./cockpit-texts.js";
 import { REGISTRY } from "./evidence-registry.js";
-import { sourceRows, trustRows, buildPassport, pickVersion, parseConfigCommit, registryChip, SECTIONS, TRUST_BLOCKS } from "./evidence-model.js";
+import { sourceRows, trustRows, buildPassport, pickVersion, registryChip, SECTIONS, TRUST_BLOCKS } from "./evidence-model.js";
 import { backendVectorSearch } from "../../lab/backend-bridge.js";
 
 register(TEXTS);
@@ -30,11 +30,9 @@ holdReady();
 const doc = await loadSites();
 if (!doc.sites.some(s => s.id === getState().site)) setState({ site: doc.sites[0].id });
 // Static facts loaded once.
-const [ready, health, caps, layers, apiSites, vector] = await Promise.all([api("/readyz", { timeoutMs: 3000 }), api("/api/health", { timeoutMs: 3000 }), api("/v1/capabilities", { timeoutMs: 3000 }), api("/api/layers", { timeoutMs: 3000 }), api("/api/sites", { timeoutMs: 3000 }), api("/api/vector/status", { timeoutMs: 3000 })]);
+const [ready, health, caps, layers, apiSites, vector, healthz] = await Promise.all([api("/readyz", { timeoutMs: 3000 }), api("/api/health", { timeoutMs: 3000 }), api("/v1/capabilities", { timeoutMs: 3000 }), api("/api/layers", { timeoutMs: 3000 }), api("/api/sites", { timeoutMs: 3000 }), api("/api/vector/status", { timeoutMs: 3000 }), api("/healthz", { timeoutMs: 3000 })]);
 const online = ready.ok;
-let configCommit: string | null = null;
-try { const r = await fetch(new URL("../../config.js", import.meta.url), { cache: "no-store" }); if (r.ok) configCommit = parseConfigCommit(await r.text()); } catch { /* no config.js here */ }
-const version = pickVersion({ configCommit, health: health.ok ? (health.data as { api_version?: unknown; version?: unknown }) : null });
+const version = pickVersion({ buildCommit: healthz.ok ? (healthz.data as { build_commit?: unknown }).build_commit : null, health: health.ok ? (health.data as { api_version?: unknown; version?: unknown }) : null });
 const region = await fetch(DATA_BASE + "region/south_pole_400m.json").then(r => r.ok ? r.json() : null).catch(() => null);
 await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id: string) => setState({ site: id }) });
 let section = "passport", trustOpen = false;
@@ -134,7 +132,7 @@ async function draw() {
     const apiList = apiSites.ok ? (apiSites.data as { sites?: unknown }).sites : undefined;
     const n = Array.isArray(apiList) ? apiList.length : null, hl = (health.ok ? health.data : {}) as { series_science_statuses?: Record<string, number>; sites_with_series?: number };
     const stt = hl.series_science_statuses ? Object.entries(hl.series_science_statuses).map(([k, v]) => `${v} ${k}`).join(" · ") : t("nd");
-    const vd = (vector.ok ? vector.data : null) as { enabled?: boolean; available?: boolean; model_id?: string } | null;
+    const vd = (vector.ok ? vector.data : null) as { enabled?: boolean; available?: boolean; model_id?: string; purpose?: string } | null;
     const vec = vector.ok ? (vd?.enabled && vd?.available ? t("evidence.sync.vecOn") : t("evidence.sync.vecOff")) : t("evidence.sync.vecNa");
     const slot: { out?: HTMLElement } = {};
     const onSubmit = async (ev: Event) => {
@@ -162,8 +160,9 @@ async function draw() {
         {vector.ok && vd?.enabled && vd?.available && <>
           <form class="mp-vec-form" onSubmit={onSubmit}>
             <input class="mp-vec-input" type="search" placeholder="LOLA DEM, SPICE, Malapert..." aria-label={t("evidence.sync.vector")} ref={(e: HTMLInputElement | null) => { inp.current = e; }} />
-            <button class="mp-pill" type="submit">Buscar</button>
+            <button class="mp-pill" type="submit">{t("evidence.sync.search")}</button>
           </form>
+          <p class="mp-label">{t("evidence.sync.purpose", { p: vd?.purpose ?? t("nd") })}</p>
           <div class="mp-vec-results" ref={(e: HTMLElement | null) => { if (e) slot.out = e; }} />
         </>}
       </div>

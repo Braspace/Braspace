@@ -1,4 +1,5 @@
 // MoonProof shell: top navigation, context bar, "Open in", kits Class/Plan, language, mobile bottom nav.
+import { enhancePanels } from "./collapse.js";
 import { t, setLang, pickLang, apply, lang } from "./i18n.js";
 import { getState, setState, hrefTo, LAYERS, type Layer } from "./state.js";
 import { sealEl } from "./layers.js";
@@ -116,6 +117,7 @@ export function mountShell({ screen, context = null, onLang, kit = null }: Shell
   }
   render(); apply();
   wireSheet();
+  enhancePanels(); // fold buttons for #left/#right/#dock/#player (desktop), see core/collapse.ts
   return { setContext(c) { cur = c; renderCtx(); }, render };
 }
 

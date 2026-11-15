@@ -45,10 +45,23 @@ ok "front $FRONT/ -> $code"
 
 # 2. Subrecursos da pagina nao dão erro HTTP (somente script/img/link/css;
 #    ancoras <a href> sao ignoradas propositalmente)
-resources=$(curl -fsS --max-time 30 "$FRONT/" \
-  | grep -oE '<(script|img|iframe|source|link)[^>]+(src|href)="[^"]*"' \
-  | grep -oE '(src|href)="[^"]*"' | sed -E 's/^(src|href)="//;s/"$//' | sort -u)
-resources="$resources ./moon3d.js"
+# `/` is a redirect to the canonical MoonProof entry since the legacy web was archived (#321/#330):
+# check the resources of the real pages — the entry and the cockpit, the panel that matters.
+resources=""
+for page in moonproof/ moonproof/cockpit.html; do
+  # -L: Cloudflare assets answer 307 cockpit.html → /moonproof/cockpit (pretty URLs); the page must end in 200.
+  code=$(curl -sSL -o /dev/null -w "%{http_code}" --max-time 30 "$FRONT/$page" || true)
+  [ "$code" = "200" ] || fail "pagina $FRONT/$page retornou HTTP $code (esperado 200)"
+  ok "pagina $page -> $code"
+  base="${page%/*}"; [ "$base" = "$page" ] && base=""
+  found=$(curl -fsSL --max-time 30 "$FRONT/$page" \
+    | grep -oE '<(script|img|iframe|source|link)[^>]+(src|href)="[^"]*"' \
+    | grep -oE '(src|href)="[^"]*"' | sed -E 's/^(src|href)="//;s/"$//' | sort -u || true)
+  [ -n "$found" ] || fail "pagina $page sem recursos (script/link) — HTML inesperado"
+  for r in $found; do
+    case "$r" in http://*|https://*|/*) resources="$resources $r" ;; *) resources="$resources ${base:+$base/}$r" ;; esac
+  done
+done
 for r in $resources; do
   case "$r" in
     http://*|https://*) url="$r" ;;

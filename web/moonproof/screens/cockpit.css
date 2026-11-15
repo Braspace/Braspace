@@ -167,3 +167,28 @@
 
 /* Series failed to load (offline or cancelled): one status line above the bottom bar, never invented numbers. */
 .mp-ck-loaderr{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:60;max-width:min(560px,calc(100vw - 26px));margin:0;padding:10px 16px;border-radius:18px;font-size:13px;line-height:18px;text-align:center}
+/* "See the lander on the 3D Moon": opens the shared Moon (explore mode) with the illustrative Artemis-style lander. */
+.mp-ck-moon{display:flex;width:100%;justify-content:center;align-items:center;gap:6px;margin:10px 0 12px;border-color:rgba(46,196,160,.55)}
+.mp-ck-moon:hover{border-color:rgba(46,196,160,.9)}
+.mp-ck-moon[disabled]{opacity:.7;cursor:default}
+
+/* QA prod 15/11 (EXO-X1, round 3): phone — time player overlapped the bottom nav by 6 px; tablet — the
+   "Relatório imprimível / Abrir painel" links sat on the same row as the centred player. */
+@media (max-width:700px){
+  .mp-player{bottom:calc(76px + env(safe-area-inset-bottom))}
+  .mp-sheet{bottom:calc(142px + env(safe-area-inset-bottom))}
+}
+@media (min-width:701px) and (max-width:1100px){ .mp-links{bottom:96px} }
+
+/* QA round 4 (EXO-X1): on phones the drawer's last row looked "cut by the player" — it is the scroll edge.
+   A soft fade at the bottom says "more below"; the drawer's content also scrolls clear of the edge. */
+@media (max-width:700px){
+  .mp-sheet{-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 28px),transparent);scroll-padding-bottom:28px}
+  .mp-sheet .mp-ck-left{padding-bottom:28px}
+}
+/* Loading: until the first draw fills the panel (3–4 s on a phone while the API answers), a quiet shimmer instead of an empty box. */
+.mp-ck-left:empty{min-height:220px;border-radius:var(--r-card);background:linear-gradient(100deg,rgba(255,255,255,.03) 30%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.03) 70%) 0 0/200% 100%;animation:mp-ck-shimmer 1.4s linear infinite}
+@keyframes mp-ck-shimmer{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.mp-ck-left:empty{animation:none}}
+/* Touch: the "where do these rules come from?" link was 17 px tall on phones. */
+@media (pointer:coarse){.mp-ck-right a.mp-link,.mp-ck-left a.mp-link,.mp-sheet a.mp-link{display:inline-flex;align-items:center;min-height:44px}}
