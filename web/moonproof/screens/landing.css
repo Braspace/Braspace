@@ -213,3 +213,5 @@
    The row now ends 16 px left of that card; in Free mode the card is hidden and the row stays put. */
 @media (min-width:701px){.lab-mid{left:auto;right:calc(140px + 300px + 16px);transform:none}}
 @media (min-width:701px) and (max-width:1180px){.lab-thr{width:240px}.lab-fuel{width:170px}}
+/* Tablet (701–1100 px): the 250 px right margin pushed Retomar/Reiniciar/Ajuda/EN past the screen (QA 768). */
+@media (min-width:701px) and (max-width:1100px){.lab-bar{margin-right:0;gap:6px;flex-wrap:wrap;border-radius:22px;row-gap:6px;height:auto;min-height:48px}.lab-bar .meta,.lab-bar .ttl{display:none}}
