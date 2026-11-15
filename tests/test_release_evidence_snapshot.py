@@ -23,7 +23,7 @@ def validate(e):
             return False
         observed[check["name"]] = check
     if any(name not in observed or observed[name].get("conclusion") != "success"
-           or observed[name].get("head_sha") != head for name in required):
+           or observed[name].get("head_sha") != head\n           or observed[name].get("status") != "completed" for name in required):
         return False
     return (e.get("review_approved") is True and
             e.get("science_status") in ("PRELIMINARY", "UNVERIFIED") and
@@ -33,7 +33,7 @@ class Tests(unittest.TestCase):
     def setUp(self):
         sha = "a" * 40
         self.e = dict(head_sha=sha, checked_sha=sha, required_checks=["ci"],
-                      checks=[dict(name="ci", head_sha=sha, conclusion="success")],
+                      checks=[dict(name="ci", head_sha=sha, conclusion="success", status="completed")],
                       review_approved=True, science_status="PRELIMINARY", scientific_disclaimer=True)
     def test_consistent(self): self.assertTrue(validate(self.e))
     def test_wrong_sha(self):
@@ -48,7 +48,7 @@ class Tests(unittest.TestCase):
     def test_pending(self):
         self.e["checks"][0]["conclusion"] = None
         self.assertFalse(validate(self.e))
-    def test_review_unknown(self):
+    def test_success_without_execution_status(self):\n        self.e["checks"][0].pop("status")\n        self.assertFalse(validate(self.e))\n    def test_success_but_queued(self):\n        self.e["checks"][0]["status"] = "queued"\n        self.assertFalse(validate(self.e))\n    def test_success_but_in_progress(self):\n        self.e["checks"][0]["status"] = "in_progress"\n        self.assertFalse(validate(self.e))\n    def test_review_unknown(self):
         self.e["review_approved"] = None
         self.assertFalse(validate(self.e))
     def test_disclaimer_missing(self):
