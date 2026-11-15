@@ -47,7 +47,11 @@ function placeBodies() {
     Object.assign(bodies[b].ic.style, { left: p[0] + "px", top: p[1] + "px" });
     // Phone: icons sit wide of the marker and each tag is clamped on screen, so neither covers the marker "1".
     if (narrow()) p[0] = b === "sun" ? Math.max(28, c[0] - 130) : Math.min(innerWidth - 28, c[0] + 130);
-    if (narrow()) Object.assign(bodies[b].ic.style, { left: p[0] + "px" });
+    if (!narrow()) { // desktop: never behind the side panels
+      const L = document.querySelector(".mp-ck-left")?.getBoundingClientRect().right || 0, R = document.querySelector(".mp-ck-right")?.getBoundingClientRect().left || innerWidth;
+      p[0] = Math.min(R - 90, Math.max(L + 90, p[0]));
+      if (b === "earth" && p[0] - c[0] < 120) { p[0] = Math.max(L + 90, c[0] - 170); p[1] = c[1] + 150; } } // no room on the right: below-left, clear of the marker and the Sun
+    Object.assign(bodies[b].ic.style, { left: p[0] + "px", top: p[1] + "px" });
     const half = (bodies[b].tag.offsetWidth || 120) / 2, tx = narrow() ? Math.min(innerWidth - half - 8, Math.max(half + 8, p[0])) : p[0];
     Object.assign(bodies[b].tag.style, { left: tx + "px", top: p[1] + 24 + "px" });
     bodies[b].line.setAttribute("x1", c[0]); bodies[b].line.setAttribute("y1", c[1]); bodies[b].line.setAttribute("x2", p[0]); bodies[b].line.setAttribute("y2", p[1]);
