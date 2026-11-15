@@ -184,7 +184,7 @@ function layerCard(layer: string): HTMLElement {
     [t("proof.definition"), t("rules.def.night")],
     [t("proof.step"), d.step ?? null],
     [t("proof.window"), d.start ? `${d.start.slice(0, 10)} · ${fmtNum(d.hours)} h` : null],
-    [t("proof.source"), night?.source || null],
+    [t("proof.source"), night?.source === "POST /api/compare" ? t("proof.src.compare") : (night?.source || null)],
     [t("proof.sha"), d.sha256 ?? null],
     [t("proof.status"), night?.status ?? null],
   ];
