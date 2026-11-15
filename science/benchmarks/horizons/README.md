@@ -83,9 +83,9 @@ Não são pontos de pouso nem recomendações de pouso.
 
 ## Comparação com o código de ângulos do PR 75
 
-O código de ângulos do PR 75 (`science/spice_lunar_angles.py`, NASA/NAIF SPICE) é source-gated,
+O código de ângulos do PR 75 (`api/cmd/spicelunarangles`, NASA/NAIF SPICE; portado de `science/spice_lunar_angles.py`) é source-gated,
 PRELIMINAR, válido apenas para o sítio Connecting Ridge (-89.4632, -137.49) e exige kernels
-SPICE + `spiceypy`. Não foi executado contra estes 3 sítios neste escopo; se for executado no clone,
+SPICE (o cálculo é feito por `api/naif`, em Go puro). Não foi executado contra estes 3 sítios neste escopo; se for executado no clone,
 os resíduos versus este benchmark devem ser reportados no relato (não aqui).
 
 ## Status científico
