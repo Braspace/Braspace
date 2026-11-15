@@ -6,7 +6,7 @@
 import { h, Fragment, render, Component } from "../../vendor/preact/preact.module.js";
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, apiWindowMetrics, api, sealFor, apiOnline } from "../core/data.js";
+import { loadSites, apiWindowMetrics, api, sealFor, apiOnline, afterPaint, loadSeries } from "../core/data.js";
 import { createLayerCard, statCircle, sealEl } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
@@ -32,11 +32,35 @@ const shell = mountShell({ screen: "cockpit", context: null, onLang: () => draw(
 const doc = await loadSites();
 if (!doc.sites.some(s => s.id === getState().site))
     setState({ site: doc.sites[0].id });
-const online = await apiOnline();
-const terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id) => setState({ site: id }) });
 const narrow = () => matchMedia("(max-width:700px)").matches;
 const siteNow = () => doc.sites.find(s => s.id === getState().site);
 const hoursOf = () => getState().hours || 14 * 24;
+/** Context bar of the simulated operation at hour th of a run that starts at t0 (UTC ms). drawNow() and the first paint use it. */
+function paintContext(t0, th) {
+    const site = siteNow(), clock = t0 == null ? null : clockLabel(t0, th);
+    shell.setContext({ site: t("cockpit.simulated_operation", { site: `${site.n} · ${site.name}` }),
+        date: clock ? `${t("cockpit.day_time", { n: clock.day, h: clock.hhmm })} UTC` : "…", days: fmtNum(hoursOf() / 24), seal: "SIM", online });
+    const ctxEl = document.querySelector(".mp-context");
+    if (ctxEl) {
+        const chip = el("span", "mp-sim-chip", t("cockpit.sim_label"));
+        ctxEl.append(el("span", "mp-label", t("cockpit.profile")), chip);
+    }
+}
+// First paint (mobile LCP): the context bar from what the page already knows (site from the URL/state, start from ?start=
+// or the catalogue's series_window, plus the delay of the chosen fault), panels as the loading shimmer (cockpit.css), "…"
+// for the API status until /readyz answers. drawNow() repaints it from the series; heavy files start after this paint.
+let online = null, mounted = false;
+{
+    const guess = Date.parse(getState().start || String(doc.window?.start_utc ?? ""));
+    const delayH = applyFault(null, { power: { ...H1_PROFILE }, samples: [], delayH: 0 }).delayH;
+    paintContext(Number.isFinite(guess) ? guess + delayH * HOUR_MS : null, 0);
+}
+const onlineP = apiOnline();
+await afterPaint(document.querySelector(".mp-ctx-text"));
+loadSeries(siteNow()).catch(() => { }); // the hourly series of the chosen site downloads alongside the map files
+const terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id) => setState({ site: id }),
+    progressive: true, onDraw: () => { if (mounted)
+        placeBodies(); } });
 /** The shared Artemis-style lander (Three.js) over this site on the shared 3D Moon, loaded on demand by the page's Moon
  * script. Renders nothing in the panel: it lives in the backdrop scene; the component owns its lifetime. */
 class ArtemisLander extends Component {
@@ -131,7 +155,8 @@ function placeBodies() {
                 p[1] = c[1] + 150;
             }
         } // no room on the right: below-left, clear of the marker and the Sun
-        Object.assign(bodies[b].ic.style, { left: p[0] + "px", top: p[1] + "px" });
+        Object.assign(bodies[b].ic.style, { left: p[0] + "px", top: p[1] + "px", visibility: "" });
+        bodies[b].tag.style.visibility = "";
         const half = (bodies[b].tag.offsetWidth || 120) / 2, tx = narrow() ? Math.min(innerWidth - half - 8, Math.max(half + 8, p[0])) : p[0];
         Object.assign(bodies[b].tag.style, { left: tx + "px", top: p[1] + 24 + "px" });
         bodies[b].line.setAttribute("x1", String(c[0]));
@@ -157,6 +182,7 @@ function buildBodies() {
         ic.dataset.body = b;
         const tag = el("div", "mp-ck-tag");
         tag.dataset.body = b;
+        ic.style.visibility = tag.style.visibility = "hidden"; // shown by placeBodies() once the map has drawn the site marker
         document.body.append(ic, tag);
         made[b] = { line, ic, tag };
     }
@@ -434,13 +460,7 @@ async function drawNow() {
     const hh = (v, d = 0, sign = false) => v == null ? t("nd") : (sign && v > 0 ? "+" : "") + fmtNum(v, d) + "h";
     const clock = clockLabel(L.m.t0 + L.f.delayH * HOUR_MS, th);
     const seal = "SIM";
-    shell.setContext({ site: t("cockpit.simulated_operation", { site: `${site.n} · ${site.name}` }),
-        date: `${t("cockpit.day_time", { n: clock.day, h: clock.hhmm })} UTC`, days: fmtNum(H / 24), seal, online });
-    const ctxEl = document.querySelector(".mp-context");
-    if (ctxEl) {
-        const chip = el("span", "mp-sim-chip", t("cockpit.sim_label"));
-        ctxEl.append(el("span", "mp-label", t("cockpit.profile")), chip);
-    }
+    paintContext(L.m.t0 + L.f.delayH * HOUR_MS, th);
     // left panel: battery ring, Sun/Earth now, 3D Moon, daily sunlight card, and the Three.js lander
     const stat = statCircle({ value: charge == null ? t("nd") : fmtNum(100 * charge / cap) + "%", label: t("cockpit.battery"), seal: charge == null ? "N/D" : seal,
         satellites: [{ value: hh(nightH), label: t("cockpit.next_night") }, { value: hh(auto), label: t("cockpit.endurance") },
@@ -553,6 +573,8 @@ onState((s) => { if (s.site !== last) {
     S.dismissed = null;
     frame();
 } draw(); });
+online = await onlineP;
+mounted = true;
 frame();
 await draw();
 frame();
