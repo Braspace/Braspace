@@ -72,3 +72,37 @@ layout, none for a site without media. 390 × 844: no horizontal page scroll.
   here; that needs the pinned NASA rasters.
 - **Not covered:** Chromium step of ci-local, full four-viewport Playwright
   matrix, PR #289 (design tokens; independent, not merged here).
+
+## Round 2 — onto main `cbe0133` (after the TS migration), 15/11/2026
+
+`main` moved after this reconciliation: #300–#302 made 14 more modules TS/TSX-sourced and #304/#305 ported the Python
+tools to Go. Branch `integ/p0-reconcile-main-cbe0133` merges this branch onto it.
+
+**How conflicts were decided**
+- 14 modules had no `.ts` when this branch started, so its fixes lived only in hand-edited `.js`. Their deltas were
+  ported into the `.ts/.tsx` sources (35 hunks by patch, 20 by hand) and all `.js` regenerated with tsc 5.6.3.
+  Patch fuzz misplaced two hunks (`lab/data` `validHours` guard, `backend-bridge` `MODEL_MISMATCH` guard); both were
+  found by tsc and moved back into the functions they belong to.
+- `evidence.tsx`: #279's shared `mountVectorSearch`. `demo-blockers` test: main's TS-aware vm harness.
+- `ds/mission-context.js` and `moon-hd/fallback.js` stay JS, imported with main's `@ts-ignore TS7016` pattern.
+
+**Defect found on main itself**: `web/browser/e2e.mjs` required 13 cockpit tabs; there are 14 since the Navigation
+panel (b964c27). Chromium QA failed on `main`; now the exact tab list is asserted.
+
+**Evidence (HEAD of the integration branch; Fedora 45, Go 1.27.4, Rust 1.100, Node 26.13.1, PostgreSQL 17.12 + pgvector 0.8.7 in a disposable container, Chrome headless with SwiftShader)**
+
+| Check | Result |
+|---|---|
+| `go vet ./...` | exit 0 |
+| `go test -race -count=1 -v ./...` with `TEST_DATABASE_URL`, `TEST_VECTOR_DATABASE_URL`, real Rust engine | 327 PASS, 0 FAIL, 0 SKIP, 15 packages |
+| `cargo test --locked --all-targets` | 24/24 |
+| `scripts/fullstack-e2e.mjs` (real Go + Rust) | 22/22 OpenAPI operations, 71 PASS lines |
+| `npm --prefix web run lint` / `check:ts` / `test` | 0 / 83 of 83 / 424 of 424 |
+| `web/onboard/test` with `ONBOARD_API_URL` (real API) | 72/72, 0 skipped |
+| `web/browser/e2e.mjs` with `BRASPACE_REQUIRE_BACKEND=1` | PASS (lab, classic, studio, cockpit; desktop + mobile; 8 screenshots) |
+| `science/tests` | 32 OK |
+
+**Still open**: GitHub Actions blocked by org billing; science aggregates not regenerated after the solar-disc fix;
+nonsense vector query returns nearest neighbours (P1); production compose must run `vector-ingest -lexical -apply`
+(see "Deploy prerequisite"); cockpit floating "Calcular energia" button covers the "+72 h" card value (P2, visual);
+dashboard stale-response fix is in #307, not here; 13 Go files not gofmt-clean.
