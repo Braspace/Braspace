@@ -35,6 +35,15 @@ const WORDS = {
   en: { help:"View tutorial", welcome:"Want a quick tour?", welcomeBody:"A short walkthrough shows what each area does and where to start. You can close it any time.", start:"Start", skip:"Skip tutorial", close:"Close tutorial", next:"Next", prev:"Back", done:"Start using", progress:"Step", of:"of" }
 };
 export function tourStorageKey(mode) { return "moonproof.tour." + mode + ".v1"; }
+/** One automatic introduction per browser/site, regardless of which MoonProof screen opens first. */
+export const SITE_WELCOME_KEY = "moonproof.tour.welcome.v1";
+export function shouldAutoOpenTour(mode, alreadyWelcomed) {
+  return mode !== "present" && !alreadyWelcomed;
+}
+export function hasCompletedSiteWelcome(storage) {
+  return [SITE_WELCOME_KEY, ...Object.keys(TOUR_STEPS).map(tourStorageKey)]
+    .some(key => storage.getItem(key) === "done");
+}
 export function bestTarget(step, root) {
   for (const selector of step.targets) {
     const node = root.querySelector(selector);
@@ -51,8 +60,9 @@ export function mountTour(mode) {
   const steps = TOUR_STEPS[mode];
   const key = tourStorageKey(mode);
   let index = -1, dialog = null, cover = null, spotlight = null, previousFocus = null;
-  let hasSeen = false;
-  try { hasSeen = localStorage.getItem(key) === "done"; } catch {}
+  // Respect both new site-wide completion and old per-screen completion keys.
+  let alreadyWelcomed = false;
+  try { alreadyWelcomed = hasCompletedSiteWelcome(localStorage); } catch {}
   const lang = () => document.documentElement.lang.toLowerCase().startsWith("pt") ? "pt" : "en";
   const words = () => WORDS[lang()];
   const help = document.createElement("button");
@@ -62,7 +72,7 @@ export function mountTour(mode) {
   help.setAttribute("aria-label", words().help);
   help.addEventListener("click", () => open(false));
   document.body.append(help);
-  const remember = () => { try { localStorage.setItem(key, "done"); } catch {} };
+  const remember = () => { try { localStorage.setItem(key, "done"); localStorage.setItem(SITE_WELCOME_KEY, "done"); } catch {} };
   function close() {
     if (!dialog) return;
     remember();
@@ -160,16 +170,15 @@ export function mountTour(mode) {
     window.addEventListener("scroll", place, true);
     show();
   }
-  let attempts = 0;
-  const timer = setInterval(() => {
-    if (!help.isConnected || attempts++ > 65) { clearInterval(timer); return; }
-    if (!document.documentElement.classList.contains("mp-ready") || !bestTarget(steps[0], document)) return;
-    clearInterval(timer);
-    if (!hasSeen && mode !== "present") open(true); // Presentation tour is on-demand, so it never interrupts a lesson.
-  }, 180);
+  // The welcome screen has no spotlight target: it can open before the API,
+  // terrain and panels finish loading. Waiting for mp-ready could silently
+  // suppress onboarding on a slow connection or an unavailable backend.
+  const timer = setTimeout(() => {
+    if (help.isConnected && shouldAutoOpenTour(mode, alreadyWelcomed)) open(true);
+  }, 350); // Leave one browser paint for locale/shell initialization.
   const langWatcher = new MutationObserver(() => { help.textContent = "? " + words().help; help.setAttribute("aria-label", words().help); if(dialog) show(); });
   langWatcher.observe(document.documentElement,{attributes:true,attributeFilter:["lang"]});
-  return () => {clearInterval(timer);langWatcher.disconnect();close();help.remove();};
+  return () => {clearTimeout(timer);langWatcher.disconnect();close();help.remove();};
 }
 if (typeof document !== "undefined") {
   const script = document.querySelector("script[data-moon-tour]");
