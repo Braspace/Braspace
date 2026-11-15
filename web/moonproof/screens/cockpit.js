@@ -6,7 +6,7 @@ import { createLayerCard, statCircle, sealEl } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { TEXTS } from "./cockpit-texts.js";
-import { CREW_DEFAULT, POWER_FIELDS, CREW_FIELDS, crewRequest, readCrewAnswer, validateInputs } from "./cockpit-crew.js";
+import { CREW_DEFAULT, POWER_FIELDS, CREW_FIELDS, crewRequest, readCrewAnswer, validateInputs, sensitivityVariants, readEnergy, loadSaved, saveScenario, savedExport } from "./cockpit-crew.js";
 import { siteEvaluateBody, FAULTS, H1_PROFILE, SPEEDS, HOUR_MS, applyFault, runScenario, nextChange, dailyFractions, autonomyHours, fmtDuration,
   clockLabel, hourIndex, evaluateRules, rulesMet, longestRun, countRises } from "./cockpit-model.js";
 
@@ -244,7 +244,45 @@ function crewCard() {
   const go = document.createElement("button"); go.type = "submit"; go.className = "mp-pill is-primary"; go.textContent = t("crew.run"); form.append(go);
   const out = document.createElement("div"); out.className = "ck-crew-out"; out.setAttribute("aria-live", "polite");
   const src = document.createElement("p"); src.className = "mp-label"; src.textContent = t("crew.src", { s: CREW_DEFAULT.rate_source });
-  c.append(form, out, src);
+  const tools = document.createElement("div"); tools.className = "ck-crew-tools";
+  const bSens = document.createElement("button"); bSens.type = "button"; bSens.className = "mp-pill"; bSens.textContent = t("crew.sens");
+  const bSave = document.createElement("button"); bSave.type = "button"; bSave.className = "mp-pill"; bSave.textContent = t("crew.save");
+  const bExp = document.createElement("button"); bExp.type = "button"; bExp.className = "mp-pill"; bExp.textContent = t("crew.export");
+  tools.append(bSens, bSave, bExp);
+  const sens = document.createElement("div"); sens.className = "ck-crew-out"; sens.setAttribute("aria-live", "polite");
+  const saved = document.createElement("ul"); saved.className = "ck-saved";
+  const savedMsg = document.createElement("p"); savedMsg.className = "mp-label"; savedMsg.setAttribute("aria-live", "polite");
+  c.append(form, out, tools, sens, savedMsg, saved, src);
+  const store = (() => { try { return globalThis.localStorage; } catch { return null; } })();
+  const readForm = () => { const v = k => Number(form.elements[k].value);
+    return { power: Object.fromEntries(POWER_FIELDS.map(k => [k, v(k)])), crew: { ...CREW_DEFAULT, ...Object.fromEntries(CREW_FIELDS.map(k => [k, v(k)])) } }; };
+  const fill = e => { for (const k of POWER_FIELDS) if (e.power?.[k] != null) form.elements[k].value = String(e.power[k]); for (const k of CREW_FIELDS) if (e.crew?.[k] != null) form.elements[k].value = String(e.crew[k]); };
+  const listSaved = () => { saved.replaceChildren(...loadSaved(store).map(e => { const li = document.createElement("li"); const b = document.createElement("button"); b.type = "button"; b.className = "mp-link";
+    b.textContent = e.label; b.onclick = () => { fill(e); if (e.query && e.query !== location.search) location.search = e.query; }; li.append(b); return li; })); };
+  listSaved();
+  bSave.onclick = () => { const { power, crew } = readForm(), now = new Date(), q = S.reportReq;
+    const label = `${q ? q.candidates[0].site_id : t("nd")} · ${q ? q.start_utc.slice(0, 10) : ""} · ${now.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+    const r = saveScenario(store, { id: now.toISOString(), label, query: location.search, power, crew });
+    savedMsg.textContent = r.ok ? t("crew.saved") : t("crew.saveFail"); listSaved(); };
+  bExp.onclick = () => { const url = URL.createObjectURL(new Blob([JSON.stringify(savedExport(loadSaved(store)), null, 2)], { type: "application/json" }));
+    const a = Object.assign(document.createElement("a"), { href: url, download: "cockpit-scenarios.json" }); a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); };
+  bSens.onclick = async () => {
+    const { power, crew } = readForm(), chk = validateInputs(power, crew);
+    if (!chk.ok) { sens.textContent = t("crew.invalid"); return; }
+    if (!S.reportReq) { sens.textContent = t("cockpit.report.offline"); return; }
+    const q = S.reportReq; bSens.disabled = true; sens.textContent = t("crew.wait");
+    const rows = [];
+    for (const v of sensitivityVariants(power)) {
+      const r = await api("/api/onboard/site-evaluate", { method: "POST", body: crewRequest({ siteId: q.candidates[0].site_id, startIso: q.start_utc, hours: q.duration_hours, maxBlackoutH: q.max_comm_blackout_hours, delayH: q.candidates[0].delay_hours, power: v.power, crew }), timeoutMs: 15000 });
+      rows.push({ id: v.id, e: r.ok ? readEnergy(r.data) : null, err: r.ok ? null : r.error });
+    }
+    bSens.disabled = false;
+    const tb = document.createElement("table"); tb.className = "ck-crew-table"; const hr = tb.createTHead().insertRow();
+    for (const h of ["crew.s.case", "crew.s.min", "crew.s.unserved", "crew.s.end"]) { const th = document.createElement("th"); th.textContent = t(h); hr.append(th); }
+    for (const r of rows) { const tr = tb.insertRow(); const wh = x => x == null ? t("nd") : fmtNum(x, 0) + " Wh";
+      for (const x of [t("crew.s." + r.id), wh(r.e?.minWh), wh(r.e?.unservedWh), r.err ? r.err : (r.e?.endMode || t("nd"))]) tr.insertCell().textContent = x; }
+    sens.replaceChildren(sealEl("SIM"), tb);
+  };
   form.onsubmit = async e => {
     e.preventDefault(); const v = k => Number(form.elements[k].value);
     const power = Object.fromEntries(POWER_FIELDS.map(k => [k, v(k)])), crew = { ...CREW_DEFAULT, ...Object.fromEntries(CREW_FIELDS.map(k => [k, v(k)])) };

@@ -147,3 +147,4 @@
 .ck-crew-form button{grid-column:1/-1;min-height:44px}
 .ck-crew-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px;font-variant-numeric:tabular-nums}
 .ck-crew-table th{text-align:left;color:var(--text-2);font-weight:600;padding:4px 0}.ck-crew-table td{padding:4px 0}
+.ck-crew-tools{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.ck-crew-tools .mp-pill{min-height:44px}.ck-saved{list-style:none;padding:0;margin:6px 0;display:grid;gap:4px}.ck-saved .mp-link{background:none;border:0;color:var(--jade);text-decoration:underline;cursor:pointer;min-height:44px;text-align:left;padding:0}

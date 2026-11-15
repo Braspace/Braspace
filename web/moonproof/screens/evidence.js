@@ -20,7 +20,7 @@ holdReady();
 const doc = await loadSites();
 if (!doc.sites.some(s => s.id === getState().site)) setState({ site: doc.sites[0].id });
 // Static facts loaded once.
-const [ready, health, caps, layers] = await Promise.all([api("/readyz", { timeoutMs: 3000 }), api("/api/health", { timeoutMs: 3000 }), api("/v1/capabilities", { timeoutMs: 3000 }), api("/api/layers", { timeoutMs: 3000 })]);
+const [ready, health, caps, layers, apiSites, vector] = await Promise.all([api("/readyz", { timeoutMs: 3000 }), api("/api/health", { timeoutMs: 3000 }), api("/v1/capabilities", { timeoutMs: 3000 }), api("/api/layers", { timeoutMs: 3000 }), api("/api/sites", { timeoutMs: 3000 }), api("/api/vector/status", { timeoutMs: 3000 })]);
 const online = ready.ok;
 let configCommit = null;
 try { const r = await fetch(apiBase() + "/config.js", { cache: "no-store" }); if (r.ok) configCommit = parseConfigCommit(await r.text()); } catch { /* no config.js here */ }
@@ -107,6 +107,17 @@ async function draw() {
   sh.append(el("h2", null, t("evidence.sources")), el("span", "mp-count", "• " + t("evidence.sources_count", { n: rows.length })));
   $("sources").replaceChildren(sh, ...rows.map(r => { const row = el("div", "mp-src"); const l = el("div"); const sm = el("small", null, sd(r)); sm.title = sm.textContent; l.append(el("b", null, t(names[r.id])), sm);
     row.append(l, r.registryOnly ? Object.assign(el("span", "mp-chipreg", r.detail.redistribution), { title: t("evidence.registry_note", { n: REGISTRY.assets.length, d: REGISTRY.reviewed_at }) }) : sealEl(r.seal)); return row; }));
+  // API sync (legacy Polar Lab backend widget): what the live API serves next to the static data.
+  const sync = el("div", "mp-sync"); sync.append(el("h3", null, t("evidence.sync")));
+  if (!online) sync.append(el("p", "mp-label", t("evidence.sync.off")));
+  else {
+    const n = Array.isArray(apiSites.data?.sites) ? apiSites.data.sites.length : null, h = health.ok ? health.data : {};
+    const st = h.series_science_statuses ? Object.entries(h.series_science_statuses).map(([k, v]) => `${v} ${k}`).join(" · ") : t("nd");
+    const vec = vector.ok ? (vector.data?.enabled ? t("evidence.sync.vecOn") : t("evidence.sync.vecOff")) : t("evidence.sync.vecNa");
+    for (const [k, v] of [["evidence.sync.sites", n == null ? t("nd") : String(n)], ["evidence.sync.series", `${h.sites_with_series ?? t("nd")} (${st})`], ["evidence.sync.local", String(doc.sites.length)], ["evidence.sync.vector", vec]]) {
+      const p = el("p", "mp-label"); p.append(el("b", null, t(k) + ": "), v); sync.append(p); }
+  }
+  $("sources").append(sync);
   // trust
   const th = el("div", "mp-row-between"); th.append(el("h2", null, t("evidence.how_much_trust")));
   const q = el("button", "mp-pill mp-help", "?"); q.type = "button"; q.setAttribute("aria-label", t("evidence.help")); q.setAttribute("aria-expanded", String(trustOpen)); q.onclick = () => { trustOpen = !trustOpen; draw(); }; th.append(q);
