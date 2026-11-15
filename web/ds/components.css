@@ -51,7 +51,8 @@ body.mp { margin: 0; background: var(--c-bg); color: var(--c-t1); font: 500 14px
 .btnA, .btnG, .btnL { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 22px; border-radius: var(--r-pill); font: 700 15px var(--font); text-decoration: none; cursor: pointer; white-space: nowrap; }
 .btnA, .mp a.btnA { background: var(--c-jade); color: var(--c-jade-ink); border: 0; }
 .btnG, .mp a.btnG { background: var(--c-glass-in); color: var(--c-t1); border: 1px solid var(--c-line-strong); font-weight: 600; }
-.btnL, .mp a.btnL { background: var(--c-sim-wash); color: var(--c-sim-t); border: 1px solid var(--c-sim); font-weight: 600; }
+/* secondary link-button: jade outline, never the violet reserved for SIMULATED data */
+.btnL, .mp a.btnL { background: transparent; color: var(--c-jade-soft); border: 1px solid var(--c-jade-ring); font-weight: 600; }
 .btnA:disabled, .btnG:disabled { background: var(--c-disabled); color: var(--c-disabled-t); cursor: not-allowed; border-color: transparent; }
 .btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .circ { width: var(--touch); height: var(--touch); border-radius: 22px; display: inline-flex; align-items: center; justify-content: center; background: var(--c-glass); backdrop-filter: blur(16px); border: 1px solid var(--c-line); color: var(--c-t1); cursor: pointer; padding: 0; text-decoration: none; flex-shrink: 0; font: 800 13px var(--font); }
