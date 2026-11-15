@@ -1,8 +1,10 @@
-// Adapted original 8 tests from PR #312, 84ca9d0. See README for intentional contract corrections.
+// Adapted original 10+ tests from PR #312, 3326aad. Intentional changes are contract corrections.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import worker, { ROUTES, DEFAULT_UPSTREAM, handleAPI, handleMoonAPI } from "./moonproof-worker.mjs";
+import worker, { ROUTES, KIND_TYPES, DEFAULT_UPSTREAM, handleAPI, handleMoonAPI } from "./moonproof-worker.mjs";
+
+const spec = (()=>{try {return JSON.parse(readFileSync(process.env.BRASPACE_OPENAPI_SPEC || new URL("../../api/openapi.json", import.meta.url),"utf8"));} catch (e){if(process.env.BRASPACE_OPENAPI_SPEC || e.code!=="ENOENT")throw e;return JSON.parse(readFileSync(new URL("./openapi-operations.json",import.meta.url),"utf8"));}})();
 
 const origin = "https://braspace-moonproof.example.workers.dev";
 const assets = { ASSETS: { fetch: () => new Response("static") } };
@@ -14,17 +16,19 @@ function withFetch(impl, fn) {
 }
 
 test("allowlist mirrors api/openapi.json exactly (no drift either way)", () => {
-  let fromSpec;
-  try {
-    const spec = JSON.parse(readFileSync(process.env.BRASPACE_OPENAPI_SPEC || new URL("../../api/openapi.json", import.meta.url), "utf8"));
-    fromSpec = Object.entries(spec.paths).flatMap(([p, ops]) =>
-      Object.keys(ops).filter((m) => ["get", "post", "put", "patch", "delete", "head", "options"].includes(m)).map((m) => `${m.toUpperCase()} ${p}`)).sort();
-  } catch (e) {
-    if(process.env.BRASPACE_OPENAPI_SPEC || e.code !== "ENOENT") throw e;
-    fromSpec = JSON.parse(readFileSync(new URL("./openapi-operations.json", import.meta.url), "utf8")).operations
-      .map(({method,path}) => `${method} ${path}`).sort();
-  }
+  const fromSpec = Object.entries(spec.paths).flatMap(([p, ops]) =>
+    Object.keys(ops).filter((m) => ["get", "post", "put", "patch", "delete"].includes(m)).map((m) => `${m.toUpperCase()} ${p}`)).sort();
   assert.deepEqual(ROUTES.map(([m, p]) => `${m} ${p}`).sort(), fromSpec);
+});
+
+test("every success media type the OpenAPI declares is allowed for that route", () => {
+  for (const [method, path, kind] of ROUTES) {
+    const op = spec.paths[path][method.toLowerCase()];
+    for (const [code, r] of Object.entries(op.responses || {})) {
+      if (!/^2/.test(code)) continue;
+      for (const ct of Object.keys(r.content || {})) assert.ok(KIND_TYPES[kind].includes(ct), `${method} ${path} ${code} ${ct} not allowed for kind ${kind}`);
+    }
+  }
 });
 
 test("non-API paths fall through to ASSETS untouched", async () => {
@@ -53,7 +57,7 @@ test("POST bodies are bounded; JSON shape/duplicates remain Go-owned", async () 
     assert.equal((await run("null")).status, 400);
     assert.equal((await run("x".repeat(131073))).status, 413);
     assert.equal((await run("{}", "application/json", "?x=1")).status, 400);
-    assert.equal(calls.length, 3); // malformed JSON, array and null forwarded unchanged so Go owns validation
+    assert.equal(calls.length, 3); // malformed JSON, array and null reach Go unchanged
   });
 });
 
@@ -88,6 +92,28 @@ test("non-JSON upstream is rejected except for layer assets", async () => {
   await withFetch(() => new Response(new Uint8Array([255, 216]), { headers: { "Content-Type": "image/jpeg" } }), async () => {
     const r = await handleAPI(new Request(origin + "/api/layers/lola-80m/asset"));
     assert.equal(r.status, 200); assert.equal(r.headers.get("content-type"), "image/jpeg");
+  });
+});
+
+test("text/plain upstream errors keep their status as structured JSON (missing route stays 404)", async () => {
+  await withFetch(() => new Response("404 page not found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } }), async () => {
+    const r = await handleAPI(new Request(origin + "/api/onboard/navigation", { method: "POST", body: "{}", headers: { "Content-Type": "application/json" } }));
+    assert.equal(r.status, 404);
+    assert.deepEqual(await r.json(), { code: "UPSTREAM_ROUTE_NOT_FOUND", error: "404 page not found", upstream_status: 404 });
+  });
+  await withFetch(() => new Response("invalid mission scenario", { status: 422, headers: { "Content-Type": "text/plain" } }), async () => {
+    const r = await handleAPI(new Request(origin + "/api/onboard/report", { method: "POST", body: "{}", headers: { "Content-Type": "application/json" } }));
+    assert.equal(r.status, 422); assert.equal((await r.json()).code, "UPSTREAM_ERROR");
+  });
+  await withFetch(() => new Response("ok", { status: 200, headers: { "Content-Type": "text/plain" } }), async () => {
+    assert.equal((await handleAPI(new Request(origin + "/api/health"))).status, 502); // a non-JSON 200 is never a success
+  });
+});
+
+test("HTML reports pass through with the upstream CSP", async () => {
+  await withFetch(() => new Response("<h1>r</h1>", { headers: { "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": "default-src 'none'" } }), async () => {
+    const r = await handleAPI(new Request(origin + "/api/onboard/report", { method: "POST", body: "{}", headers: { "Content-Type": "application/json" } }));
+    assert.equal(r.status, 200); assert.match(r.headers.get("content-security-policy"), /sandbox/); assert.match(r.headers.get("content-security-policy"), /default-src \'none\'/);
   });
 });
 

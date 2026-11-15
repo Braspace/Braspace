@@ -25,7 +25,8 @@ Guarantees (covered by `moonproof-worker.test.mjs`):
 - Upstream pinned; `redirect: "error"`; no Cookie, Authorization, Origin or client-IP headers forwarded.
 - POST bodies: `application/json` only, ≤ 128 KiB (Go's bound), must be a JSON object; no query string.
 - Go status codes and error bodies pass through unchanged (a 422 stays a 422).
-- Non-JSON upstream → 502 `INVALID_UPSTREAM_RESPONSE` (except `/api/layers/{id}/asset`, which may be an image).
+- Per-route success media types mirror the OpenAPI (`image/jpeg`, `model/gltf-binary` for layer assets; `text/html` reports keep the upstream CSP). Anything else on a 2xx → 502 `INVALID_UPSTREAM_RESPONSE`.
+- `text/plain` upstream errors keep their status as JSON (`UPSTREAM_ROUTE_NOT_FOUND` for 404, else `UPSTREAM_ERROR`).
 - Network failure → 502 `API_UNAVAILABLE`; timeout (24 s) → 504 `API_TIMEOUT`. Never a fake success.
 - Unknown API path → 404 `ROUTE_NOT_FOUND`; wrong method → 405 with `Allow`; no CORS headers emitted.
 
@@ -53,4 +54,4 @@ Rollback: redeploy the previous Worker version (`npx wrangler rollback`); the AP
 
 ## Stacked contract corrections
 
-Run all three test suites. The exact parent revision reproduces 8/8 differential failures; the candidate passes 48/48 in Node using an in-memory upstream (not Cloudflare production). Reports are HTML and sandboxed; GLB is `model/gltf-binary`; single Range, conditional requests and 304 are retained. JSON is passed without loss of duplicate keys, and vector/navigation requests are limited to 16 KiB. Reject cross-site and unsupported query keys. Test the actual runtime and existing Worker config with staging before any deployment. Do not copy the example over a live config; retain existing routes and save the current Worker version for rollback. `healthz` must identify the expected backend revision. The proxy does not repair the old Go build or validate PostgreSQL, pgvector, science or the PWA migration. Do not publish before gates pass.
+The updated parent 3326aad fixes GLB and legacy 404 normalization; all 11 parent checks are preserved/adapted. Six of eight differential probes still fail on that parent; the reconciled candidate passes 51/51 in Node with in-memory upstream and the pinned main OpenAPI spec. Reports receive a non-weakenable sandbox policy; single Range, conditional requests and 304 are retained. JSON byte forwarding preserves duplicate keys for Go, vector/navigation have 16 KiB limits, cross-site and unsupported queries are rejected. Retain parent structured legacy errors. Run all suites; test the actual Cloudflare runtime and existing config in staging before deployment. Do not copy the example over a live config. Save existing Worker version for rollback and confirm the correct Go SHA. No production or fullstack validation is implied.

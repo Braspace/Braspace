@@ -118,7 +118,7 @@ test('preserves structured and legacy upstream errors; refuses redirects and une
     const r=await handleMoonAPI(request('/api/vector/search',options('POST')),()=>json(status,{code:'UPSTREAM'}));
     assert.equal(r.status,status);assert.equal((await r.json()).code,'UPSTREAM');
   }
-  const old=await handleMoonAPI(request('/api/onboard/navigation',options('POST')),()=>new Response('404 page not found',{status:404,headers:{'Content-Type':'text/plain; charset=utf-8'}}));assert.equal(old.status,404);assert.match(await old.text(),/not found/);
+  const old=await handleMoonAPI(request('/api/onboard/navigation',options('POST')),()=>new Response('404 page not found',{status:404,headers:{'Content-Type':'text/plain; charset=utf-8'}}));assert.equal(old.status,404);assert.deepEqual(await old.json(),{code:'UPSTREAM_ROUTE_NOT_FOUND',error:'404 page not found',upstream_status:404});
   const redirect=await handleMoonAPI(request('/api/sites'),()=>Response.redirect('https://evil.test',302));assert.equal(redirect.status,502);
   const mime=await handleMoonAPI(request('/api/layers/site/asset'),()=>new Response('wrong mime',{headers:{'Content-Type':'text/html'}}));assert.equal(mime.status,502);
 });

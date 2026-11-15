@@ -89,5 +89,250 @@
       "method": "POST",
       "path": "/api/vector/search"
     }
-  ]
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/sites": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/sites/{id}": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/compare": {
+      "post": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios/delay": {
+      "post": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/onboard/site-evaluate": {
+      "post": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/layers": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/layers/{id}": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/layers/{id}/asset": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "image/jpeg": {},
+              "model/gltf-binary": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/sites/{id}/media": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/onboard/site-report": {
+      "post": {
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/onboard/report": {
+      "post": {
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/onboard/navigation": {
+      "post": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/onboard/evaluate": {
+      "post": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/openapi.json": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/v1/capabilities": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/v1/visibility": {
+      "post": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/sites/{id}/sky": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/vector/status": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/vector/search": {
+      "post": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    }
+  }
 }

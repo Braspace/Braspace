@@ -24,6 +24,7 @@ export const routes = Object.freeze([
 ]);
 // Preserve the public exports introduced by #312 (#309 used handleMoonAPI).
 export const ROUTES = Object.freeze(routes.map(({method,template,kind})=>Object.freeze([method,template,kind])));
+export const KIND_TYPES=Object.freeze({json:Object.freeze(["application/json"]),asset:Object.freeze(["image/jpeg","model/gltf-binary"]),report:Object.freeze(["text/html"])});
 export const reserved = path => /^\/(?:api(?:\/|$)|v1(?:\/|$)|healthz(?:\/|$)|readyz(?:\/|$))/.test(path);
 export function matchRoute(pathname) { return reserved(pathname) ? {pathname,hits:routes.filter(r=>r.pattern.test(pathname))} : null; }
 const security = csp => ({"Cache-Control":"no-store","Content-Security-Policy":csp,"X-Content-Type-Options":"nosniff","X-Frame-Options":"DENY","Referrer-Policy":"no-referrer","Cross-Origin-Resource-Policy":"same-origin"});
@@ -84,6 +85,17 @@ function safeAssetHeaders(request, headers) {
     if (value && value.length <= 512) headers.set(name,value);
   }
 }
+// Preserve #312's structured legacy errors without buffering an unbounded upstream body.
+async function legacyError(upstream) {
+  const reader=upstream.body?.getReader();let text="";
+  if(reader){
+    const bytes=new Uint8Array(200);let n=0;
+    try {while(n<bytes.length){const {done,value}=await reader.read();if(done)break;const chunk=value.subarray(0,bytes.length-n);bytes.set(chunk,n);n+=chunk.length;}}
+    catch {} finally {void reader.cancel().catch(()=>{});reader.releaseLock();}
+    text=new TextDecoder().decode(bytes.subarray(0,n)).trim();
+  }
+  return Response.json({code:upstream.status===404?"UPSTREAM_ROUTE_NOT_FOUND":"UPSTREAM_ERROR",error:text||"upstream error",upstream_status:upstream.status},{status:upstream.status,headers:security(BASIC_CSP)});
+}
 export async function handleMoonAPI(request, fetcher = fetch) {
   const url = new URL(request.url);
   if (!reserved(url.pathname)) return null;
@@ -116,7 +128,14 @@ export async function handleMoonAPI(request, fetcher = fetch) {
   try {
     const upstream=await fetcher(target,{method,headers,body,signal,redirect:"error",cache:"no-store"});
     if (!permittedResponse(upstream,route.kind,method,headers.has("Range"))) { void upstream.body?.cancel().catch(()=>{}); return fail(502,"INVALID_UPSTREAM_RESPONSE"); }
+    if(upstream.status>=400&&(upstream.headers.get("content-type")||"").split(";")[0].trim().toLowerCase()==="text/plain")return legacyError(upstream);
     const output=new Headers(security(route.kind === "report" && upstream.ok ? REPORT_CSP : BASIC_CSP));
+    if(route.kind === "report" && upstream.ok) {
+      const policy=upstream.headers.get("Content-Security-Policy");
+      if(policy)output.append("Content-Security-Policy",policy); // both policies enforced; upstream cannot weaken ours
+      const disposition=upstream.headers.get("Content-Disposition");if(disposition)output.set("Content-Disposition",disposition);
+    }
+    const retry=upstream.headers.get("Retry-After");if(retry&&retry.length<=128)output.set("Retry-After",retry);
     const mime=upstream.headers.get("Content-Type");
     if (mime) output.set("Content-Type",mime);
     if (route.kind === "asset" && (upstream.status===200 || upstream.status===206 || upstream.status===304)) {
