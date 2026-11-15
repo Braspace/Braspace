@@ -9,12 +9,12 @@ import { h, Fragment, render } from "../../vendor/preact/preact.module.js";
 import { mountSheet } from "./sheet.js";
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, apiOnline } from "../core/data.js";
+import { loadSites, apiOnline, loadSeries, afterPaint, sealFor } from "../core/data.js";
 import { sealEl, createLayerCard } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { judge, slack, computeExits, longestRun, parseHash, buildHash } from "./scenario-calc.js";
-import { loadAll, staticMetrics, flagsOf, apiDelayMetrics, HOUR_MS } from "./scenario-data.js";
+import { staticMetrics, flagsOf, apiDelayMetrics, HOUR_MS } from "./scenario-data.js";
 // Replan search horizon: about one synodic lunar day, independent of the mission length (AUD-12).
 const SEARCH_DAYS = 30;
 register({
@@ -23,7 +23,7 @@ register({
         "rec.step1": "Step 1 · how long is the delay?", "rec.hours": "hours", "rec.newland": "New landing", "rec.end": "Mission end", "rec.endval": "{d} · {n} days after",
         "rec.step2": "Step 2 · what changed", "rec.night": "Longest night", "rec.slack": "Margin to the rule", "rec.earth": "Earth visible", "rec.loss": "Longest Earth loss",
         "rec.step3": "Step 3 · choose an option", "rec.exit.wait": "Wait until {d}", "rec.exit.wait.s": "same site · window moves", "rec.exit.switch": "Land at {name}", "rec.exit.switch.s": "same date · other site",
-        "rec.exit.shorten": "Mission of {n} days", "rec.exit.shorten.s": "same site · shorter window", "rec.slackWord": "margin", "rec.none": "No option meets every rule in the search done. Nothing is shown without a calculation.", "rec.nearby.title": "Live API · nearby catalog sites at the delayed start (PRE)", "rec.nearby.ok": "meets the rules", "rec.nearby.no": "breaks a rule", "rec.nearby.nd": "no data ({r})", "rec.coverage": "Searched: waits up to +{d} days, the other {n} catalog sites at the same start, shorter windows. Options come from the stored hourly series (web/data), even when the delay itself came from the API.",
+        "rec.exit.shorten": "Mission of {n} days", "rec.exit.shorten.s": "same site · shorter window", "rec.slackWord": "margin", "rec.searching": "Searching exits…", "rec.none": "No option meets every rule in the search done. Nothing is shown without a calculation.", "rec.nearby.title": "Live API · nearby catalog sites at the delayed start (PRE)", "rec.nearby.ok": "meets the rules", "rec.nearby.no": "breaks a rule", "rec.nearby.nd": "no data ({r})", "rec.coverage": "Searched: waits up to +{d} days, the other {n} catalog sites at the same start, shorter windows. Options come from the stored hourly series (web/data), even when the delay itself came from the API.",
         "rec.step4": "Step 4 · compare and decide", "rec.step4.short": "Compare", "rec.head.break": "The delay makes the longest night {v} h, above the assumed limit of {lim} h.", "rec.head.ok": "With this delay every rule is still met.", "rec.head.nd": "No data for this delay.",
         "rec.timeline": "Sun over the window · red = rule-breaking night", "rec.planned": "Planned", "rec.after": "+{d} h", "rec.nightOf": "night of {v} h", "rec.exitLine": "Exit {L} · {what}",
         "rec.src.api": "Live API (delay scenario)", "rec.src.static": "stored hourly series (web/data)", "rec.src": "Source", "rec.rules": "Rules", "rec.assumed": "assumed limit",
@@ -36,7 +36,7 @@ register({
         "rec.step1": "Passo 1 · quanto o pouso atrasou?", "rec.hours": "horas", "rec.newland": "Novo pouso", "rec.end": "Fim da missão", "rec.endval": "{d} · {n} dias depois",
         "rec.step2": "Passo 2 · o que mudou", "rec.night": "Maior noite", "rec.slack": "Folga até a regra", "rec.earth": "Terra visível", "rec.loss": "Maior perda da Terra",
         "rec.step3": "Passo 3 · escolha uma saída", "rec.exit.wait": "Esperar até {d}", "rec.exit.wait.s": "mesmo local · a janela anda", "rec.exit.switch": "Pousar em {name}", "rec.exit.switch.s": "mesma data · outro local",
-        "rec.exit.shorten": "Missão de {n} dias", "rec.exit.shorten.s": "mesmo local · janela menor", "rec.slackWord": "folga", "rec.none": "Nenhuma saída atende a todas as regras na busca feita. Sem cálculo, nada aparece.", "rec.nearby.title": "API ao vivo · locais vizinhos do catálogo no início atrasado (PRE)", "rec.nearby.ok": "atende às regras", "rec.nearby.no": "quebra uma regra", "rec.nearby.nd": "sem dado ({r})", "rec.coverage": "Buscado: esperar até +{d} dias, os outros {n} locais do catálogo no mesmo início e janelas menores. As saídas vêm das séries horárias gravadas (web/data), mesmo quando o atraso veio da API.",
+        "rec.exit.shorten": "Missão de {n} dias", "rec.exit.shorten.s": "mesmo local · janela menor", "rec.slackWord": "folga", "rec.searching": "Buscando saídas…", "rec.none": "Nenhuma saída atende a todas as regras na busca feita. Sem cálculo, nada aparece.", "rec.nearby.title": "API ao vivo · locais vizinhos do catálogo no início atrasado (PRE)", "rec.nearby.ok": "atende às regras", "rec.nearby.no": "quebra uma regra", "rec.nearby.nd": "sem dado ({r})", "rec.coverage": "Buscado: esperar até +{d} dias, os outros {n} locais do catálogo no mesmo início e janelas menores. As saídas vêm das séries horárias gravadas (web/data), mesmo quando o atraso veio da API.",
         "rec.step4": "Passo 4 · comparar e decidir", "rec.step4.short": "Comparar", "rec.head.break": "O atraso leva a maior noite a {v} h, acima do limite assumido de {lim} h.", "rec.head.ok": "Com este atraso todas as regras ainda valem.", "rec.head.nd": "Sem dado para este atraso.",
         "rec.timeline": "Sol na janela · vermelho = noite que quebra a regra", "rec.planned": "Planejado", "rec.after": "+{d} h", "rec.nightOf": "noite de {v} h", "rec.exitLine": "Saída {L} · {what}",
         "rec.src.api": "API ao vivo (cenário de atraso)", "rec.src.static": "série horária gravada (web/data)", "rec.src": "Fonte", "rec.rules": "Regras", "rec.assumed": "limite assumido",
@@ -63,7 +63,7 @@ function Node({ node }) {
 export const DELAYS = [12, 24, 48, 72, 96]; // Step 1 range (+12 h … +96 h), per the screen specification
 const DAY = 24, EXIT_LETTERS = ["B′", "D", "B″"];
 const $ = (id) => document.getElementById(id);
-const shell = mountShell({ screen: "recover", context: null, onLang: () => draw() });
+const shell = mountShell({ screen: "recover", context: null, onLang: () => { paintContext(); draw(); } });
 mountSheet($("sheet"));
 { // phone: the site dock lives inside the sheet, under its handle (as in Mission), never loose over the map
     const sheet = $("sheet"), dock = $("dock"), phone = matchMedia("(max-width:700px)");
@@ -76,7 +76,7 @@ mountSheet($("sheet"));
     phone.addEventListener?.("change", place);
     place();
 }
-const doc = (await loadSites()), all = await loadAll(doc), online = await apiOnline();
+const doc = (await loadSites());
 const siteOf = (id) => doc.sites.find(s => s.id === id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls)
     e.className = cls; if (text != null)
@@ -93,10 +93,32 @@ function scenario() {
         d: DELAYS.includes(h.d) ? h.d : DELAYS[Math.floor(DELAYS.length / 2)], x: h.x };
 }
 const write = (patch) => { const s = { ...scenario(), ...patch }; history.replaceState(null, "", location.search + "#" + buildHash({ sc: [{ site: s.site, start: s.start, hours: s.hours }], d: s.d, x: s.x })); draw(); };
-const metricsAt = (id, startMs, hours) => { const m = staticMetrics(all.get(id), startMs, hours, doc.status, id); return m ? { ...m, dark: m.dark, blackout: m.blackout } : null; };
+// First paint (mobile LCP): the context bar comes from the URL hash and the catalogue (seal), the panels show the loading
+// shimmer (scenario.css), and only after that paint do the series start. Step 1-2 need the series of the chosen site only;
+// the exit search needs all of them (every other site at the delayed start), so it runs after the panels are painted,
+// shows "Searching exits…" meanwhile and fills Step 3 when it finishes. Same algorithm and numbers as before.
+let online = null, drawRev = 0;
+const onlineP = apiOnline().then(v => { online = v; paintContext(); return v; });
+const loaded = new Map(); // series already downloaded (metricsAt reads them synchronously)
+/** The hourly series of a site, fetched on demand (one download per site, shared). Background loads are low priority. */
+async function seriesOf(id, priority) {
+    const s = await loadSeries(siteOf(id), priority ? { priority } : {});
+    loaded.set(id, s);
+    return s;
+}
+function paintContext() {
+    const sc = scenario(), site = siteOf(sc.site), t1 = Date.parse(sc.start) + sc.d * HOUR_MS;
+    shell.setContext({ site: t("rec.ctx", { L: "B", site: String(site.n) }), date: fmtDay(t1), days: fmtNum(sc.hours / DAY),
+        seal: ctxSeal ?? sealFor(doc.status), online, action: { label: t("rec.step4.short"), href: hrefTo("compare.html") + "#" + compareHash(sc, ctxChosen) } });
+}
+let ctxSeal = null, ctxChosen = null;
+const exitCache = new Map(); // one search per site, window, delay and rules
+const metricsAt = (id, startMs, hours) => { const m = staticMetrics(loaded.get(id), startMs, hours, doc.status, id); return m ? { ...m, dark: m.dark, blackout: m.blackout } : null; };
 async function draw() {
+    const rev = ++drawRev;
     const sc = scenario(), st = getState(), rules = { night: st.night, blackout: st.blackout };
-    const site = siteOf(sc.site), series = all.get(sc.site), t0 = Date.parse(sc.start), t1 = t0 + sc.d * HOUR_MS;
+    const t0 = Date.parse(sc.start), t1 = t0 + sc.d * HOUR_MS;
+    const [series] = await Promise.all([seriesOf(sc.site), onlineP]); // the chosen site's series downloads while /readyz answers
     let base = metricsAt(sc.site, t0, sc.hours), delayed = metricsAt(sc.site, t1, sc.hours), apiNearby = null;
     if (online) {
         const r = await apiDelayMetrics({ siteId: sc.site, startIso: new Date(t0).toISOString(), hours: sc.hours, delayH: sc.d, rules });
@@ -106,104 +128,126 @@ async function draw() {
         }
         apiNearby = r.nearby || [];
     }
+    if (rev !== drawRev)
+        return; // a newer draw started meanwhile: it paints
     const jd = judge(delayed, rules);
-    const exits = computeExits({ metricsAt, siteId: sc.site, siteIds: doc.sites.map(s => s.id), startMs: t0, hours: sc.hours, delayH: sc.d, rules, searchDays: SEARCH_DAYS });
-    const chosen = exits.find(e => e.kind === sc.x) || exits[0] || null;
-    shell.setContext({ site: t("rec.ctx", { L: "B", site: String(site.n) }), date: fmtDay(t1), days: fmtNum(sc.hours / DAY),
-        seal: (delayed || base)?.seal || "N/D", online, action: { label: t("rec.step4.short"), href: hrefTo("compare.html") + "#" + compareHash(sc, chosen) } });
-    const n = jd.status === "nd" ? null : jd.reasons.length;
-    const alert = one(h("span", { class: "mp-alert" + (n === 0 ? " is-ok" : "") }, n == null ? t("rec.nd") : n === 0 ? t("rec.ok") : n === 1 ? t("rec.violated1") : t("rec.violated", { n })));
-    // Step 1 + 2 (left)
-    const sats = DELAYS.filter(x => x !== sc.d).slice(0, 4);
-    const line = (label, a, b, bad) => h(Fragment, null,
-        h("span", { class: "mp-label" }, label),
-        h("s", null, a),
-        h("b", { class: bad ? "is-fail" : undefined }, b));
-    const left = build(h(Fragment, null,
-        h("div", { class: "mp-step1" },
-            h("p", { class: "mp-label mp-q" }, t("rec.step1")),
-            h("div", { class: "mp-dial", role: "radiogroup", "aria-label": t("rec.step1") },
-                h("div", { class: "mp-stat-core" },
-                    h("span", { class: "mp-num" }, "+" + fmtNum(sc.d)),
-                    h("small", null, t("rec.hours"))),
-                sats.map((x, k) => h("button", { class: "mp-sat", type: "button", "data-pos": String(k), role: "radio", "aria-checked": false, "aria-label": t("rec.delay.aria", { n: x }), onClick: () => write({ d: x, x: null }) }, "+" + fmtNum(x))))),
-        h("div", { class: "mp-pills" },
-            pill("is-white", t("rec.newland"), fmtDate(t1)),
-            pill("is-white", t("rec.end"), t("rec.endval", { d: fmtDay(t1 + sc.hours * HOUR_MS), n: fmtNum(sc.hours / DAY) }))),
-        h("div", { class: "mp-card" },
-            h("p", { class: "mp-label mp-q" }, t("rec.step2")),
-            h("div", { class: "mp-change" },
-                line(t("rec.night"), hv(base?.dark ?? null), hv(delayed?.dark ?? null), delayed && (delayed.dark ?? 0) > rules.night),
-                line(t("rec.slack"), signed(slack(base, rules)), signed(slack(delayed, rules)), (slack(delayed, rules) ?? 0) < 0),
-                line(t("rec.earth"), pv(base?.earthPct ?? null), pv(delayed?.earthPct ?? null), false),
-                line(t("rec.loss"), hv(base?.blackout ?? null), hv(delayed?.blackout ?? null), delayed && (delayed.blackout ?? 0) > rules.blackout)),
-            seals(delayed, base))));
-    $("left").replaceChildren(...left);
-    document.querySelector(".mp-context")?.querySelectorAll(".mp-alert").forEach(a => a.remove());
-    document.querySelector(".mp-context")?.prepend(alert);
-    // Step 3 (right)
-    const head = jd.status === "nd" ? t("rec.head.nd") : jd.reasons.some(r => r.key === "night") ? t("rec.head.break", { v: fmtNum(delayed.dark), lim: fmtNum(rules.night) }) : jd.status === "pass" ? t("rec.head.ok") : t("rec.head.break", { v: fmtNum(delayed.dark), lim: fmtNum(rules.night) });
-    const compareLink = hrefTo("compare.html") + "#" + compareHash(sc, chosen);
-    // AUD-12/13: say what was actually searched and where the options come from.
-    // AUD-13: API nearby sites are a separate block with their own source; never ranked with the static exits.
-    const list = one(h("div", { class: "mp-exits", role: "radiogroup", "aria-label": t("rec.step3") },
-        exits.map((e, i) => {
-            const [name, sub] = exitText(e);
-            return (h("button", { class: "mp-exit", type: "button", role: "radio", "aria-checked": e === chosen, tabIndex: e === chosen ? 0 : -1, onClick: () => write({ x: e.kind }), onKeyDown: (ev) => { const d = ev.key === "ArrowDown" ? 1 : ev.key === "ArrowUp" ? -1 : 0; if (d) {
-                    ev.preventDefault();
-                    write({ x: exits[(i + d + exits.length) % exits.length].kind });
-                    document.querySelector('.mp-exit[aria-checked="true"]')?.focus();
-                } } },
-                h("span", { class: "mp-scn-letter" }, EXIT_LETTERS[["wait", "switch", "shorten"].indexOf(e.kind)]),
-                h("span", { class: "mp-exit-name" },
-                    name,
-                    h("small", null, sub)),
-                h("span", { class: "mp-exit-slack" },
-                    h("small", null, t("rec.slackWord")),
-                    h("b", null, signed(e.slack)))));
-        }),
-        !exits.length ? h("p", { class: "mp-label" }, t("rec.none")) : null,
-        apiNearby && apiNearby.length ? (h("div", { class: "mp-nearby" },
-            h("p", { class: "mp-label" }, t("rec.nearby.title")),
-            apiNearby.map(nb => (h("p", { class: "mp-nearby-row" },
-                h("b", null, nb.siteId),
-                " · " + (nb.km == null ? t("nd") : fmtNum(nb.km, 1) + " km") + " · ",
-                h("span", { class: nb.admissible === true ? "is-ok" : nb.admissible === false ? "is-fail" : undefined }, nb.admissible === true ? t("rec.nearby.ok") : nb.admissible === false ? t("rec.nearby.no") : t("rec.nearby.nd", { r: nb.reason }))))))) : null,
-        h("p", { class: "mp-label mp-coverage" }, t("rec.coverage", { d: fmtNum(SEARCH_DAYS), n: fmtNum(doc.sites.length - 1) }))));
-    const go = one(h("a", { class: "mp-pill is-primary", href: compareLink, style: { justifyContent: "center" } }, t("rec.step4")));
-    const m = delayed || base;
-    const src = m
-        ? h("span", null,
-            (m.origin === "api" ? t("rec.src.api") : t("rec.src.static")) + " · ",
-            h(Node, { node: sealEl(m.seal) }),
-            m.sha ? h(Fragment, null,
-                h("br", null),
-                h("code", { class: "mp-coord" }, m.sha)) : null)
-        : h("span", null,
-            t("rec.outside"),
-            " ",
-            h(Node, { node: sealEl("N/D") }));
-    const add = (k, v) => h("tr", null,
-        h("th", { scope: "row" }, k),
-        h("td", null, v));
-    const proof = one(h("table", { class: "mp-proof" },
-        h("tbody", null,
-            add(t("rec.def"), t("rec.def.txt")),
-            add(t("rec.rules"), t("rec.assumed") + `: ${fmtNum(rules.night)} h · ${fmtNum(rules.blackout)} h`),
-            add(t("rec.battery"), t("rec.battery.nd")),
-            add(t("rec.src"), src))));
-    const card = createLayerCard({ id: "exits", title: t("rec.step3"), status: m ? m.status : "NO_SERIES_DATA", answer: head, why: list, proof, layer: st.layer, onLayer: (layer) => setState({ layer }) });
-    // exits are the content of Step 3, so they stay visible in every layer: move them under the answer
-    card.el.querySelector(".mp-layer-answer").after(list);
-    card.el.querySelector(".mp-chips").before(go);
-    $("right").replaceChildren(card.el);
-    // timeline
-    $("time").replaceChildren(one(h("section", { class: "mp-glass mp-scn-time" },
-        h("p", { class: "mp-label mp-q" }, t("rec.timeline")),
-        trackRow(t("rec.planned"), series, t0, sc.hours, rules),
-        trackRow(t("rec.after", { d: sc.d }), series, t1, sc.hours, rules))));
-    drawDock();
-    markMap(sc, chosen, delayed);
+    const paint = (exits) => {
+        const chosen = exits ? exits.find(e => e.kind === sc.x) || exits[0] || null : null;
+        ctxSeal = (delayed || base)?.seal || "N/D";
+        ctxChosen = chosen;
+        paintContext();
+        const n = jd.status === "nd" ? null : jd.reasons.length;
+        const alert = one(h("span", { class: "mp-alert" + (n === 0 ? " is-ok" : "") }, n == null ? t("rec.nd") : n === 0 ? t("rec.ok") : n === 1 ? t("rec.violated1") : t("rec.violated", { n })));
+        // Step 1 + 2 (left)
+        const sats = DELAYS.filter(x => x !== sc.d).slice(0, 4);
+        const line = (label, a, b, bad) => h(Fragment, null,
+            h("span", { class: "mp-label" }, label),
+            h("s", null, a),
+            h("b", { class: bad ? "is-fail" : undefined }, b));
+        const left = build(h(Fragment, null,
+            h("div", { class: "mp-step1" },
+                h("p", { class: "mp-label mp-q" }, t("rec.step1")),
+                h("div", { class: "mp-dial", role: "radiogroup", "aria-label": t("rec.step1") },
+                    h("div", { class: "mp-stat-core" },
+                        h("span", { class: "mp-num" }, "+" + fmtNum(sc.d)),
+                        h("small", null, t("rec.hours"))),
+                    sats.map((x, k) => h("button", { class: "mp-sat", type: "button", "data-pos": String(k), role: "radio", "aria-checked": false, "aria-label": t("rec.delay.aria", { n: x }), onClick: () => write({ d: x, x: null }) }, "+" + fmtNum(x))))),
+            h("div", { class: "mp-pills" },
+                pill("is-white", t("rec.newland"), fmtDate(t1)),
+                pill("is-white", t("rec.end"), t("rec.endval", { d: fmtDay(t1 + sc.hours * HOUR_MS), n: fmtNum(sc.hours / DAY) }))),
+            h("div", { class: "mp-card" },
+                h("p", { class: "mp-label mp-q" }, t("rec.step2")),
+                h("div", { class: "mp-change" },
+                    line(t("rec.night"), hv(base?.dark ?? null), hv(delayed?.dark ?? null), delayed && (delayed.dark ?? 0) > rules.night),
+                    line(t("rec.slack"), signed(slack(base, rules)), signed(slack(delayed, rules)), (slack(delayed, rules) ?? 0) < 0),
+                    line(t("rec.earth"), pv(base?.earthPct ?? null), pv(delayed?.earthPct ?? null), false),
+                    line(t("rec.loss"), hv(base?.blackout ?? null), hv(delayed?.blackout ?? null), delayed && (delayed.blackout ?? 0) > rules.blackout)),
+                seals(delayed, base))));
+        $("left").replaceChildren(...left);
+        document.querySelector(".mp-context")?.querySelectorAll(".mp-alert").forEach(a => a.remove());
+        document.querySelector(".mp-context")?.prepend(alert);
+        // Step 3 (right)
+        const head = jd.status === "nd" ? t("rec.head.nd") : jd.reasons.some(r => r.key === "night") ? t("rec.head.break", { v: fmtNum(delayed.dark), lim: fmtNum(rules.night) }) : jd.status === "pass" ? t("rec.head.ok") : t("rec.head.break", { v: fmtNum(delayed.dark), lim: fmtNum(rules.night) });
+        const compareLink = hrefTo("compare.html") + "#" + compareHash(sc, chosen);
+        // AUD-12/13: say what was actually searched and where the options come from.
+        // AUD-13: API nearby sites are a separate block with their own source; never ranked with the static exits.
+        const list = one(h("div", { class: "mp-exits", role: exits ? "radiogroup" : "status", "aria-label": t("rec.step3") },
+            !exits ? h("p", { class: "mp-label" }, t("rec.searching")) : null,
+            (exits || []).map((e, i) => {
+                const [name, sub] = exitText(e);
+                return (h("button", { class: "mp-exit", type: "button", role: "radio", "aria-checked": e === chosen, tabIndex: e === chosen ? 0 : -1, onClick: () => write({ x: e.kind }), onKeyDown: (ev) => { const d = ev.key === "ArrowDown" ? 1 : ev.key === "ArrowUp" ? -1 : 0; if (d) {
+                        ev.preventDefault();
+                        {
+                            const xs = exits;
+                            write({ x: xs[(i + d + xs.length) % xs.length].kind });
+                        }
+                        document.querySelector('.mp-exit[aria-checked="true"]')?.focus();
+                    } } },
+                    h("span", { class: "mp-scn-letter" }, EXIT_LETTERS[["wait", "switch", "shorten"].indexOf(e.kind)]),
+                    h("span", { class: "mp-exit-name" },
+                        name,
+                        h("small", null, sub)),
+                    h("span", { class: "mp-exit-slack" },
+                        h("small", null, t("rec.slackWord")),
+                        h("b", null, signed(e.slack)))));
+            }),
+            exits && !exits.length ? h("p", { class: "mp-label" }, t("rec.none")) : null,
+            apiNearby && apiNearby.length ? (h("div", { class: "mp-nearby" },
+                h("p", { class: "mp-label" }, t("rec.nearby.title")),
+                apiNearby.map(nb => (h("p", { class: "mp-nearby-row" },
+                    h("b", null, nb.siteId),
+                    " · " + (nb.km == null ? t("nd") : fmtNum(nb.km, 1) + " km") + " · ",
+                    h("span", { class: nb.admissible === true ? "is-ok" : nb.admissible === false ? "is-fail" : undefined }, nb.admissible === true ? t("rec.nearby.ok") : nb.admissible === false ? t("rec.nearby.no") : t("rec.nearby.nd", { r: nb.reason }))))))) : null,
+            h("p", { class: "mp-label mp-coverage" }, t("rec.coverage", { d: fmtNum(SEARCH_DAYS), n: fmtNum(doc.sites.length - 1) }))));
+        const go = one(h("a", { class: "mp-pill is-primary", href: compareLink, style: { justifyContent: "center" } }, t("rec.step4")));
+        const m = delayed || base;
+        const src = m
+            ? h("span", null,
+                (m.origin === "api" ? t("rec.src.api") : t("rec.src.static")) + " · ",
+                h(Node, { node: sealEl(m.seal) }),
+                m.sha ? h(Fragment, null,
+                    h("br", null),
+                    h("code", { class: "mp-coord" }, m.sha)) : null)
+            : h("span", null,
+                t("rec.outside"),
+                " ",
+                h(Node, { node: sealEl("N/D") }));
+        const add = (k, v) => h("tr", null,
+            h("th", { scope: "row" }, k),
+            h("td", null, v));
+        const proof = one(h("table", { class: "mp-proof" },
+            h("tbody", null,
+                add(t("rec.def"), t("rec.def.txt")),
+                add(t("rec.rules"), t("rec.assumed") + `: ${fmtNum(rules.night)} h · ${fmtNum(rules.blackout)} h`),
+                add(t("rec.battery"), t("rec.battery.nd")),
+                add(t("rec.src"), src))));
+        const card = createLayerCard({ id: "exits", title: t("rec.step3"), status: m ? m.status : "NO_SERIES_DATA", answer: head, why: list, proof, layer: st.layer, onLayer: (layer) => setState({ layer }) });
+        // exits are the content of Step 3, so they stay visible in every layer: move them under the answer
+        card.el.querySelector(".mp-layer-answer").after(list);
+        card.el.querySelector(".mp-chips").before(go);
+        $("right").replaceChildren(card.el);
+        // timeline
+        $("time").replaceChildren(one(h("section", { class: "mp-glass mp-scn-time" },
+            h("p", { class: "mp-label mp-q" }, t("rec.timeline")),
+            trackRow(t("rec.planned"), series, t0, sc.hours, rules),
+            trackRow(t("rec.after", { d: sc.d }), series, t1, sc.hours, rules))));
+        drawDock();
+        markMap(sc, chosen, delayed, series);
+    };
+    const key = [sc.site, sc.start, sc.hours, sc.d, rules.night, rules.blackout].join("|");
+    const cached = exitCache.get(key) ?? null;
+    paint(cached);
+    if (cached)
+        return;
+    // Exit search: needs every site's series, so it starts after the panels above are on screen (two frames), downloads the
+    // other series at low priority and computes with the unchanged computeExits. A newer draw makes this one stale.
+    await afterPaint(null);
+    await Promise.all(doc.sites.map(x => seriesOf(x.id, "low")));
+    if (rev !== drawRev)
+        return;
+    const exits = computeExits({ metricsAt, siteId: sc.site, siteIds: doc.sites.map(x => x.id), startMs: t0, hours: sc.hours, delayH: sc.d, rules, searchDays: SEARCH_DAYS });
+    exitCache.set(key, exits);
+    paint(exits);
 }
 function seals(a, b) {
     const m = a || b;
@@ -258,12 +302,12 @@ const route = []; // read by the terrain on every redraw; filled in place (B the
 let chips = [];
 let mo = new MutationObserver(() => { });
 // Imperative on purpose: core/terrain.js rebuilds the markers on every redraw, so they are relabelled in place.
-function markMap(sc, chosen, delayed) {
+function markMap(sc, chosen, delayed, series) {
     const sw = chosen?.kind === "switch";
     route.splice(0, route.length, ...(sw ? [sc.site, chosen.siteId] : []));
     terrain && terrain.select(sc.site);
     const rules = { night: getState().night };
-    const worst = delayed ? longestRun(flagsOf(all.get(sc.site), Date.parse(sc.start) + sc.d * HOUR_MS, sc.hours).sun, false).len : 0;
+    const worst = delayed ? longestRun(flagsOf(series, Date.parse(sc.start) + sc.d * HOUR_MS, sc.hours).sun, false).len : 0;
     chips = [];
     if (delayed && worst > rules.night)
         chips.push({ site: sc.site, cls: "is-red", text: t("rec.nightOf", { v: fmtNum(worst) }) });
@@ -280,7 +324,7 @@ function markMap(sc, chosen, delayed) {
     mo = new MutationObserver(() => fixM());
     mo.observe($("terrain"), { childList: true, subtree: true });
 }
-terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: scenario().site, route, onSelect: (id) => write({ site: id, x: null }) });
+function mountMap() { return mountTerrain($("terrain"), { sites: doc.sites, selected: scenario().site, route, progressive: true, onSelect: (id) => write({ site: id, x: null }) }); }
 // Map chips follow their marker (the terrain rebuilds markers on redraw, so measure after the next frame).
 function placeChips() {
     document.querySelectorAll(".mp-dist").forEach(c => c.remove());
@@ -296,6 +340,13 @@ function placeChips() {
     });
 }
 addEventListener("resize", () => placeChips());
+paintContext();
+await afterPaint(document.querySelector(".mp-ctx-text"));
+// After the paint, in parallel: the chosen site's series and API figures (draw) and the map (relief draws when the heights arrive).
+const first = draw().catch(() => { $("left").replaceChildren(one(h("p", { class: "mp-label" }, t("nd")))); });
+terrain = await mountMap();
+await first;
+terrain.select(scenario().site);
+placeChips();
 onState(() => draw());
 addEventListener("hashchange", () => draw());
-draw();
