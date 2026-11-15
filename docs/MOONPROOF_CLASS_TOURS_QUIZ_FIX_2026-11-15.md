@@ -32,3 +32,13 @@ O Kit Aula / Apresentar avaliava as quatro perguntas com o mesmo gabarito: escur
 
 ## Fora do escopo
 Nenhum número NASA foi alterado. Nenhuma hipótese de voo foi validada. Não implementa bloqueio técnico de permissões do aluno, sala ao vivo, armazenamento remoto de respostas ou autenticação; só corrige o quiz/apresentador existente. A comparação de horizonte 100 km × 200 km permanece como limitação científica separada.
+
+
+## Atualização de integração — Comparar → Kit Aula → Apresentar
+- O botão **Dar aula com estes cenários** em Comparar preserva no hash `#sc=` os sítios, datas UTC e durações escolhidos, incluindo o mesmo sítio em duas janelas distintas.
+- `class-scenarios.ts/.js` resolve apenas IDs existentes no catálogo e mantém o fallback anterior (três primeiros sítios) quando a aula é aberta diretamente.
+- Kit Aula transporta os cenários no QR/link; Apresentar usa `apiWindowMetrics` com a janela de cada cenário e preserva o contexto ao voltar para o Kit Aula.
+- Os rótulos de quiz não afirmam a existência de uma conexão de rádio certificada: o cálculo usa tempo sem visibilidade geométrica da Terra.
+- Resposta selecionada com dados ausentes permanece **inconclusiva**, inclusive se outra opção for comprovadamente válida; ausência integral de cenários também não produz um falso "Nenhum".
+- Novos testes: `class-scenarios.test.mjs` (seleção, tempos, repetição e integração estática), além de casos adicionais em `class-quiz-grading.test.mjs`.
+- **Verificação parcial local:** 7/7 casos isolados de quiz, 3/3 cenários dinâmicos do hash, paridade de TS/JS dos módulos puros com TypeScript 5.8.3. A versão exata de CI (5.6.3), o navegador real, todos os testes do repositório e a produção continuam pendentes.
