@@ -116,6 +116,7 @@ canvas.hstrip { display: block; width: 100%; height: 14px; border-radius: 4px; i
   .bottomnav a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: var(--touch); justify-content: center; border-radius: var(--r-pill); color: var(--c-t2); text-decoration: none; font-size: 11px; font-weight: 700; }
   .bottomnav a[aria-current="page"] { background: var(--c-jade); color: var(--c-jade-ink); }
   .bottomnav svg { width: 18px; height: 18px; }
+  .bottomnav.glass { background: rgba(10,13,16,.95); -webkit-backdrop-filter: blur(20px) saturate(1.2); backdrop-filter: blur(20px) saturate(1.2); } /* content scrolling under it stays unreadable-through */
   .foot { padding-bottom: 96px; }
   .task { min-height: 0; }
   .page-head h1 { font-size: 24px; line-height: 30px; overflow-wrap: anywhere; }

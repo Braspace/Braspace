@@ -156,6 +156,15 @@ try{
   await mobile.waitForTimeout(1500);
   const o=await mobile.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
   assert(o.viewport===390&&o.width<=o.viewport+4,"v3 mobile overflow on "+page+": "+JSON.stringify(o));
+  // iPhone review geometry: marker clear of the context bar, dock pill text fits, stat circle / delay dial whole inside the sheet.
+  await mobile.waitForTimeout(2500);
+  const g=await mobile.evaluate(()=>{const R=q=>{const e=document.querySelector(q);return e&&e.getBoundingClientRect();};
+   const ctx=R(".mp-context"),mk=R(".mp-marker[aria-pressed=true]"),sheet=R(".mp-sheet")||R(".mc-panels"),sel=document.querySelector(".mp-scn-dock .mp-sel");
+   const circ=[...document.querySelectorAll(".mp-sheet .mp-stat .mp-sat,.mp-sheet .mp-dial .mp-sat,.mp-sheet .mp-stat-core")].map(e=>e.getBoundingClientRect());
+   return {markerHitsCtx:!!(ctx&&mk&&!ctx.hidden&&ctx.height>0&&mk.top<ctx.bottom&&mk.bottom>ctx.top),
+    pillOverflow:sel?sel.scrollWidth-sel.clientWidth:0,
+    circleOut:sheet?circ.filter(c=>c.top<sheet.top||c.bottom>sheet.bottom+1||c.left<sheet.left||c.right>sheet.right).length:0};});
+  assert(!g.markerHitsCtx&&g.pillOverflow<=0&&g.circleOut===0,"v3 phone geometry on "+page+": "+JSON.stringify(g));
  }
  const mobileCockpit=await mobile.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});
  assert(mobileCockpit?.status()===200,"mobile cockpit HTTP status");

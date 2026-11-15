@@ -47,6 +47,10 @@ export const DELAYS = [12, 24, 48, 72, 96]; // Step 1 range (+12 h … +96 h), p
 const DAY = 24, EXIT_LETTERS = ["B′", "D", "B″"];
 const shell = mountShell({ screen: "recover", context: null, onLang: () => draw() });
 mountSheet(document.getElementById("sheet"));
+{ // phone: the site dock lives inside the sheet, under its handle (as in Mission), never loose over the map
+  const sheet = document.getElementById("sheet"), dock = document.getElementById("dock"), phone = matchMedia("(max-width:700px)");
+  const place = () => { if (phone.matches) { if (dock.parentElement !== sheet) sheet.querySelector(".mp-sheet-handle").after(dock); } else if (dock.parentElement !== document.body) document.body.append(dock); };
+  phone.addEventListener?.("change", place); place(); }
 const doc = await loadSites(), all = await loadAll(doc), online = await apiOnline();
 const siteOf = id => doc.sites.find(s => s.id === id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -167,7 +171,7 @@ function drawDock() {
   const list = doc.sites, sc = scenario(), i = list.findIndex(s => s.id === sc.site), n = list.length;
   const b = (txt, aria, fn, cls = "") => { const x = el("button", "mp-pill " + cls, txt); x.type = "button"; x.setAttribute("aria-label", aria); x.onclick = fn; return x; };
   document.getElementById("dock").replaceChildren(b("‹", "previous", () => write({ site: list[(i + n - 1) % n].id, x: null })),
-    b(`${t("rec.site")} ${list[i].n} · ${list[i].name}`, list[i].name, () => {}, "is-primary mp-sel"), b("›", "next", () => write({ site: list[(i + 1) % n].id, x: null })));
+    (x => (x.replaceChildren(el("span", "mp-ellip", x.textContent)), x))(b(`${t("rec.site")} ${list[i].n} · ${list[i].name}`, list[i].name, () => {}, "is-primary mp-sel")), b("›", "next", () => write({ site: list[(i + 1) % n].id, x: null })));
 }
 let terrain = null;
 const route = []; // read by the terrain on every redraw; filled in place (B then the chosen exit site)
