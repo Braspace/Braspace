@@ -6,6 +6,13 @@ O BRASPACE / MoonProof é um protótipo educacional e de engenharia para avaliar
 
 ---
 
+
+## Entrada canônica no Cockpit — candidato de release (15/11/2026)
+
+Por decisão explícita do responsável pelo produto, `/moonproof/` deve abrir o **Cockpit único** com a mesma Lua 3D de Joel, a nave Artemis educacional e os nove grupos independentes de painéis (integração #411 pendente). A antiga seleção Explorar / Aula / Planejar permanece acessível em `/moonproof/tasks.html`, sem exclusão dos módulos, dados ou links existentes. O redirecionamento preserva parâmetros e fragmentos da missão e não cria um segundo renderizador Three.js.
+
+**Candidato não publicado neste PR**: exigir QA real, build TypeScript, testes e deploy do SHA exato com Go/Rust/PostgreSQL/pgvector, GPU e fallback antes de anunciar produção.
+
 ## Demo no Ar e API
 
 Verificado em produção em **2026-11-15** (main `dc2411b`, Worker `c792c009`, publicado com `deploy/cloudflare/deploy.sh`; imagem da API `ad83cfe7517c`):
