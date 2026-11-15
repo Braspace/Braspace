@@ -23,6 +23,9 @@
       "id": "haworth",
       "name": "Haworth",
       "kind": "artemis_iii_candidate_region",
+      "series_file": "series/haworth.json",
+      "series_sha256": "b8f054eaa86e6d3957374d21943ff7030dcb1a7f224785aed527ee6cbbd135ab",
+      "note": "PRELIMINARY series derived from NASA LOLA + NAIF SPICE (api/cmd/threesitepipeline -> api/cmd/exportapiseries); not independently validated.",
       "coordinate": {
         "latitude_deg": -86.7639,
         "longitude_deg": -22.777,
@@ -54,6 +57,9 @@
       "id": "nobile-rim-2",
       "name": "Nobile Rim 2",
       "kind": "artemis_iii_candidate_region",
+      "series_file": "series/nobile-rim-2.json",
+      "series_sha256": "f171bf0bb953d07807cb78d66aaedec568977e065e256754819f8565af9c0617",
+      "note": "PRELIMINARY series derived from NASA LOLA + NAIF SPICE (api/cmd/threesitepipeline -> api/cmd/exportapiseries); not independently validated.",
       "coordinate": {
         "latitude_deg": -83.954,
         "longitude_deg": 58.82206,
@@ -102,6 +108,9 @@
       "id": "connecting-ridge-extension",
       "name": "Connecting Ridge Extension",
       "kind": "artemis_iii_candidate_region",
+      "series_file": "series/connecting-ridge-extension.json",
+      "series_sha256": "111bd2b1d7e4387abbbc797b5baf3ce1ac71935ac5ec547ad694d63352e7fed4",
+      "note": "PRELIMINARY series derived from NASA LOLA + NAIF SPICE (api/cmd/threesitepipeline -> api/cmd/exportapiseries); not independently validated.",
       "coordinate": {
         "latitude_deg": -89.0324,
         "longitude_deg": -101.999,
@@ -116,6 +125,9 @@
       "id": "de-gerlache-rim-1",
       "name": "de Gerlache Rim 1",
       "kind": "artemis_iii_candidate_region",
+      "series_file": "series/de-gerlache-rim-1.json",
+      "series_sha256": "92aafb0a84aa7a2cd2a75d91f015bef44201ad2d412871485dd688a50965b19b",
+      "note": "PRELIMINARY series derived from NASA LOLA + NAIF SPICE (api/cmd/threesitepipeline -> api/cmd/exportapiseries); not independently validated.",
       "coordinate": {
         "latitude_deg": -88.6834,
         "longitude_deg": -67.9321,
@@ -130,6 +142,9 @@
       "id": "de-gerlache-rim-2",
       "name": "de Gerlache Rim 2",
       "kind": "artemis_iii_candidate_region",
+      "series_file": "series/de-gerlache-rim-2.json",
+      "series_sha256": "41219abd5b46911495f7b6a221c7b45a7c807aee285fb66148a4167c2cb79df7",
+      "note": "PRELIMINARY series derived from NASA LOLA + NAIF SPICE (api/cmd/threesitepipeline -> api/cmd/exportapiseries); not independently validated.",
       "coordinate": {
         "latitude_deg": -88.23,
         "longitude_deg": -64.6284,
@@ -144,6 +159,9 @@
       "id": "de-gerlache-kocher-massif",
       "name": "de Gerlache-Kocher Massif",
       "kind": "artemis_iii_candidate_region",
+      "series_file": "series/de-gerlache-kocher-massif.json",
+      "series_sha256": "6affcceca486f4f6602980285b84e44ab535de1fb7a32f5c18a8a7fb14956b4b",
+      "note": "PRELIMINARY series derived from NASA LOLA + NAIF SPICE (api/cmd/threesitepipeline -> api/cmd/exportapiseries); not independently validated.",
       "coordinate": {
         "latitude_deg": -85.8296,
         "longitude_deg": -116.322,
@@ -158,6 +176,9 @@
       "id": "leibnitz-beta-plateau",
       "name": "Leibnitz Beta Plateau",
       "kind": "artemis_iii_candidate_region",
+      "series_file": "series/leibnitz-beta-plateau.json",
+      "series_sha256": "e24ff02105a2adce49f9f4ab1ca5e975217d25a6c94b0bd66cfdee452101478e",
+      "note": "PRELIMINARY series derived from NASA LOLA + NAIF SPICE (api/cmd/threesitepipeline -> api/cmd/exportapiseries); not independently validated.",
       "coordinate": {
         "latitude_deg": -85.4266,
         "longitude_deg": 31.74276,
@@ -172,6 +193,9 @@
       "id": "faustini-rim-a",
       "name": "Faustini Rim A",
       "kind": "artemis_iii_candidate_region",
+      "series_file": "series/faustini-rim-a.json",
+      "series_sha256": "fa1d327aa8dbba62a759e4d4b5743a34ed12ab003da678d23b5e0cff33c86590",
+      "note": "PRELIMINARY series derived from NASA LOLA + NAIF SPICE (api/cmd/threesitepipeline -> api/cmd/exportapiseries); not independently validated.",
       "coordinate": {
         "latitude_deg": -87.8897,
         "longitude_deg": 90.0,
@@ -186,6 +210,9 @@
       "id": "amundsen-rim",
       "name": "Amundsen Rim",
       "kind": "artemis_iii_candidate_region",
+      "series_file": "series/amundsen-rim.json",
+      "series_sha256": "72af660f1d746741102f1bdc5526b36fe20b9edb680be13e9580e40b030ae9fc",
+      "note": "PRELIMINARY series derived from NASA LOLA + NAIF SPICE (api/cmd/threesitepipeline -> api/cmd/exportapiseries); not independently validated.",
       "coordinate": {
         "latitude_deg": -84.2287,
         "longitude_deg": 69.44396,
