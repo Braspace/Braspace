@@ -34,12 +34,17 @@ Run: `node --test deploy/cloudflare/*.test.mjs` (also a step in `scripts/ci-loca
 
 ## Deploy
 
-The production Worker lives on a Cloudflare account outside this repository. Whoever owns it:
+The production Worker lives on a Cloudflare account outside this repository. Whoever owns it publishes
+**from a clean checkout of `main`** with the versioned script (same steps every time):
 
 ```bash
-cd deploy/cloudflare && cp wrangler.toml.example wrangler.toml   # set `name` to the live Worker
-npx wrangler deploy
+CLOUDFLARE_ACCOUNT_ID=<account id> deploy/cloudflare/deploy.sh "#PR note"
 ```
+
+It refuses a dirty tree, runs the Worker tests, writes `BRASPACE_COMMIT` into `web/config.js` only for the
+upload (Evidence and Plan show the published commit; a manual `wrangler deploy` loses it), publishes with
+the message `main <sha> (note)` and prints the rollback command. The live config matches
+`wrangler.toml.example` (verified 15/11: compatibility_date 2026-11-01, `ASSETS` binding, `fetch` handler).
 
 If the live Worker already has its own entrypoint, import `handleAPI` and call it first:
 `return (await handleAPI(request)) ?? existingRouter(request, env)`.
