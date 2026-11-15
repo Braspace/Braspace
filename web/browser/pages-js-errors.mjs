@@ -18,7 +18,9 @@ try {
     const errors = [], server = [];
     p.on("pageerror", e => errors.push(String(e).slice(0, 160)));
     p.on("response", r => { if (r.status() >= 500) server.push(`${r.status()} ${new URL(r.url()).pathname}`); });
-    await p.goto(`${base}/moonproof/${page}`, {waitUntil: "load", timeout: 45000});
+    const resp = await p.goto(`${base}/moonproof/${page}`, {waitUntil: "load", timeout: 45000});
+    // A 404 page has no JS to throw: count it as a failure, or the sweep would pass without testing the screen.
+    if (!resp || resp.status() !== 200) server.push(`${resp ? resp.status() : "no response"} /moonproof/${page} (document)`);
     await p.waitForTimeout(3000);
     loads++;
     if (errors.length || server.length) { failed++; console.log(`FAIL ${width}px /moonproof/${page}`, JSON.stringify({errors, server})); }
