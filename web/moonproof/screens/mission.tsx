@@ -9,7 +9,7 @@ import { h, Fragment, render } from "../../vendor/preact/preact.module.js";
 import type { ComponentChild } from "../../vendor/preact/preact.module.js";
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, windowMetrics, dailySun, sealFor, apiOnline, api, loadRegion, sourced } from "../core/data.js";
+import { loadSites, windowMetrics, apiWindowMetrics, dailySun, sealFor, apiOnline, api, loadRegion, sourced } from "../core/data.js";
 import type { Site, SitesDoc, SiteSeriesLike, Sourced } from "../core/data.js";
 import { createLayerCard, statCircle, barEl, sealEl } from "../core/layers.js";
 import { t, fmtNum, lang } from "../core/i18n.js";
@@ -118,7 +118,7 @@ function satellites(r: Runs | null, labels: string[]) {
 }
 
 async function compute(s: MissionSite): Promise<Computed> {
-  const m = (await windowMetrics(doc, s, getState().start, hours())) as unknown as Metrics;
+  const m = (await apiWindowMetrics(doc, s, getState().start, hours())) as unknown as Metrics;
   const i0 = Math.ceil((m.t0 - m.series.start) / H);
   return { m, sunR: runs(m.series.sunMargin, i0, hours()), earthR: runs(m.series.earthMargin, i0, hours()), geo: m.series.at(m.t0) };
 }

@@ -8,7 +8,7 @@
 import { h, Fragment, render } from "../../vendor/preact/preact.module.js";
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, windowMetrics, sealFor, apiOnline, loadRegion, sourced, api } from "../core/data.js";
+import { loadSites, apiWindowMetrics, sealFor, apiOnline, loadRegion, sourced, api } from "../core/data.js";
 import { createLayerCard, sealEl } from "../core/layers.js";
 import { t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
@@ -194,7 +194,7 @@ overlay.addEventListener("click", e => {
 function pointAt(lat, lon) { const [x, y] = southStereoForward(lat, lon); point = grid.contains(x, y) ? { x, y, lat, lon } : { x, y, lat, lon, outside: true }; }
 async function draw() {
     const st = getState(), s = site();
-    const m = (await windowMetrics(doc, s, st.start, hours()));
+    const m = (await apiWindowMetrics(doc, s, st.start, hours()));
     const fmtDate = (d) => new Intl.DateTimeFormat(lang(), { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(d) + " UTC";
     shell.setContext({ site: point ? t("ex.point") : `${s.n} · ${s.name}`, date: fmtDate(new Date(m.t0)), days: fmtNum(hours() / DAY), seal: sealFor(doc.status), online,
         action: { label: t("ex.addCompare"), href: hrefTo("compare.html") } });

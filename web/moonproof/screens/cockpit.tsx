@@ -4,7 +4,7 @@
 // positioned from live layout measurements, and the crew form is built once so typed values survive redraws.
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, windowMetrics, api, sealFor, apiOnline } from "../core/data.js";
+import { loadSites, windowMetrics, apiWindowMetrics, api, sealFor, apiOnline } from "../core/data.js";
 import { createLayerCard, statCircle, sealEl } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
@@ -88,7 +88,7 @@ addEventListener("resize", () => { frame(); lightDraw(); });
 async function compute() {
   const st = getState(), site = (doc.sites.find(s => s.id === st.site) as Site), key = [st.site, st.start, hoursOf(), S.fault, st.battery].join("|");
   if (key === S.siteKey) return; S.siteKey = key;
-  const m = await windowMetrics(doc, site, st.start, hoursOf());
+  const m = await apiWindowMetrics(doc, site, st.start, hoursOf());
   const series = m.series, i0 = Math.ceil((m.t0 - series.start) / HOUR_MS);
   const base = { power: { ...H1_PROFILE }, samples: [], delayH: 0 };
   const win = (off: number, n: number) => Array.from({ length: Math.max(0, Math.min(n, series.count - i0 - off)) }, (_, h) => ({ sun_visible: series.sunMargin[i0 + off + h] >= 0, earth_visible: series.earthMargin[i0 + off + h] >= 0 }));

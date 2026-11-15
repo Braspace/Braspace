@@ -2,7 +2,28 @@ const BASE = new URL("../data/moonhd/", import.meta.url).href;
 export const MAX_PIXEL_RATIO = 1.5;
 export const FRAME_MS = 1000 / 30;
 const PHONE_WIDTH = 720, WIDE_WIDTH = 1600, ORBIT_SECONDS = 900;
-export const normalizeOptions = (options = {}) => ({ view: options.view === "globe" ? "globe" : "pole", interactive: false });
+/** interactive defaults to true; lazy = the page keeps its own (functional) background and the Moon only opens on demand. */
+export const normalizeOptions = (options = {}) => ({ view: options.view === "globe" ? "globe" : "pole", interactive: options.interactive !== false, lazy: options.lazy === true });
+/** Default camera of each view: latitude (deg) and distance (Moon radii). Far enough that the whole Moon is in frame. */
+export const VIEW_DEFAULTS = { globe: { lat: -12, distance: 7.5 }, pole: { lat: -62, distance: 4.4 } };
+export const MIN_DISTANCE = 1.35, MAX_DISTANCE = 14, MAX_LAT = 88;
+export const clampDistance = (d) => Math.min(MAX_DISTANCE, Math.max(MIN_DISTANCE, Number.isFinite(d) ? d : MAX_DISTANCE));
+export const clampLat = (lat) => Math.min(MAX_LAT, Math.max(-MAX_LAT, Number.isFinite(lat) ? lat : 0));
+/** Selector of what is NOT background: a drag that starts on any of these belongs to the page, never to the Moon. */
+export const INTERACTIVE_SELECTOR = "a,button,input,select,textarea,label,summary,details,option,video,audio,iframe,canvas,svg,img,[role=button],[role=link],[role=slider],[role=tab],[role=menuitem],[role=dialog],[tabindex],[contenteditable],[draggable=true],[data-no-moon-drag]";
+/** Whether a pointer down on `el` may turn the Moon: empty background only (no control, no own text). */
+export function isBackgroundTarget(el) {
+    if (!el || typeof el.closest !== "function")
+        return false;
+    if (el.closest(".moon-backdrop"))
+        return true;
+    if (el.closest(INTERACTIVE_SELECTOR))
+        return false;
+    for (const n of Array.from(el.childNodes || []))
+        if (n.nodeType === 3 && String(n.textContent || "").trim())
+            return false; // text stays selectable
+    return true;
+}
 /** What to download and how fine to draw, from the viewport width (CSS px) and the GPU's texture limit. */
 export function pickAssets({ width, maxTextureSize }) {
     const phone = !(width >= PHONE_WIDTH);
@@ -55,10 +76,11 @@ export function backdropTime(search, hash, now) {
 /** The loop runs only while the tab is visible, the canvas is on screen and motion is allowed. */
 export const shouldAnimate = ({ hidden, onScreen, reducedMotion }) => !hidden && onScreen && !reducedMotion;
 /** Camera position (unit Moon radius, +Y north) on a slow orbit around the polar axis. */
-export function cameraPosition(view, angle) {
-    const [lat, distance] = view === "globe" ? [-12, 4.6] : [-84, 2.05];
-    const phi = lat * Math.PI / 180, c = Math.cos(phi) * distance;
-    return [c * Math.cos(angle), Math.sin(phi) * distance, -c * Math.sin(angle)];
+export function cameraPosition(view, angle, lat, distance) {
+    const d = VIEW_DEFAULTS[view === "globe" ? "globe" : "pole"];
+    const la = clampLat(lat ?? d.lat), dist = clampDistance(distance ?? d.distance);
+    const phi = la * Math.PI / 180, c = Math.cos(phi) * dist;
+    return [c * Math.cos(angle), Math.sin(phi) * dist, -c * Math.sin(angle)];
 }
 function stylesheet(doc) {
     const href = new URL("./backdrop.css", import.meta.url).href;

@@ -198,7 +198,8 @@ async function draw() {
             vector.ok && vd?.enabled && vd?.available && h(Fragment, null,
                 h("form", { class: "mp-vec-form", onSubmit: onSubmit },
                     h("input", { class: "mp-vec-input", type: "search", placeholder: "LOLA DEM, SPICE, Malapert...", "aria-label": t("evidence.sync.vector"), ref: (e) => { inp.current = e; } }),
-                    h("button", { class: "mp-pill", type: "submit" }, "Buscar")),
+                    h("button", { class: "mp-pill", type: "submit" }, t("evidence.sync.search"))),
+                h("p", { class: "mp-label" }, t("evidence.sync.purpose", { p: vd?.purpose ?? t("nd") })),
                 h("div", { class: "mp-vec-results", ref: (e) => { if (e)
                         slot.out = e; } }))));
     };
