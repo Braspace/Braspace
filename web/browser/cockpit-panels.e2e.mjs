@@ -35,6 +35,25 @@ export async function verifyCockpitPanels(page) {
     await control.click();
     assert.notEqual(await page.locator(selector).evaluate(el => getComputedStyle(el).display), "none", id + " visible again");
   }
+  // Real responsive geometry; do not fake 75% via browser zoom or shrink the touch targets.
+  if (await menu.evaluate(el => el.open)) await menu.locator("summary").click();
+  for (const [width, height] of [[320, 720], [390, 844], [768, 1024], [1024, 768], [1440, 900], [1920, 1080]]) {
+    await page.setViewportSize({ width, height });
+    const toolbar = page.locator("#ck-panel-controls .ck-panel-toolbar");
+    await toolbar.waitFor({ state: "visible" });
+    const box = await toolbar.boundingBox();
+    assert.ok(box && box.x >= -1 && box.x + box.width <= width + 1,
+      `panel toolbar overflows ${width}px viewport: ${JSON.stringify(box)}`);
+    for (const element of [
+      page.locator("#ck-panel-controls button.ck-panel-focus"),
+      page.locator("#ck-panel-controls .ck-panel-menu summary"),
+    ]) {
+      const target = await element.boundingBox();
+      assert.ok(target && target.height >= 44 && target.width >= 44,
+        `touch target under 44px at ${width}px: ${JSON.stringify(target)}`);
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
   // The button asks the existing lazy Moon controller to explore, never creates another renderer.
   const moonOnly = page.locator("#ck-panel-controls button.ck-panel-focus");
   await moonOnly.click();
