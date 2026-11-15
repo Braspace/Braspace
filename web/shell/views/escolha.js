@@ -36,6 +36,8 @@ export function render(outlet, ctx) {
           h("span", { class: "t2", text: t.line }),
           h("ul", {}, t.bullets.map(b => h("li", { text: b }))),
           h("span", { class: "go" }, h("span", { class: "lbl-s", text: "Abrir" }), h("span", { class: "chipa", "aria-hidden": "true", text: "→" }))))),
-      h("a", { class: "chipg", href: buildHash("/evidencias", q), text: "Ver fontes e limitações →" }),
-      h("p", { class: "t3 small", text: "Fundo: relevo LOLA do polo sul (elevação, uso ilustrativo — não é iluminação)." })));
+      h("div", { class: "row" },
+        h("a", { class: "chipg", href: buildHash("/evidencias", q), text: "Ver fontes e limitações →" }),
+        h("a", { class: "chipg", href: "./moon-hd.html?view=pole&lang=pt", text: "Ver a Lua em 3D (polo sul) →" })),
+      h("p", { class: "t3 small", text:"Fundo: Lua 3D (imagens LRO, relevo LOLA, Sol pelo SPICE) quando o navegador tem WebGL; sem ele, o relevo LOLA do polo sul. Uso ilustrativo, sem validação independente." })));
 }

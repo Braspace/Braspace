@@ -59,6 +59,12 @@ export function moonproofFile(pathname){
  if(ext!==".html"&&!sub.includes("/"))return null;
  return {name:path.normalize(pathname.slice(1)),type:labTypes[ext]};
 }
+// Moon HD viewer (web/moon-hd.html): one page, its modules and stylesheet. Its data is under /data/moonhd/ (labFile).
+export function moonHdFile(pathname){
+ if(pathname==="/moon-hd.html")return {name:"moon-hd.html",type:labTypes[".html"]};
+ if(!/^\/moon-hd\/[a-z0-9\-]+\.(js|css)$/.test(pathname))return null;
+ return {name:path.normalize(pathname.slice(1)),type:labTypes[pathname.slice(pathname.lastIndexOf("."))]};
+}
 // Restrict Onboard Cockpit static access to reviewed HTML and JS files.
 // No arbitrary directory traversal, Python server source or local secrets.
 const onboardTypes=new Map([
@@ -163,7 +169,7 @@ export function createServer(){
   if(pathname==="/onboard/"||pathname==="/onboard/index.html"||pathname==="/onboard/cockpit.html"){
    res.setHeader("Content-Security-Policy",csp.replace("style-src 'self'","style-src 'self' 'unsafe-inline'"));
   }
-  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname)||studioFile(pathname)||moonproofFile(pathname)||v3File(pathname);
+  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname)||studioFile(pathname)||moonproofFile(pathname)||v3File(pathname)||moonHdFile(pathname);
   if(!file){res.writeHead(404);res.end("Not found");return;}
   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
   try{

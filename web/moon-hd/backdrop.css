@@ -1,0 +1,15 @@
+/* Moon HD page backdrop (backdrop.js). Everything here applies only once the Moon is actually drawing:
+   without WebGL, or if an asset fails, the page keeps the background it already had. */
+.moon-backdrop { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; opacity: 0; transition: opacity .9s ease; }
+.moon-backdrop.is-on { opacity: 1; }
+.moon-backdrop canvas { display: block; width: 100%; height: 100%; }
+/* Veil: keeps text over the sunlit Moon at AA contrast (same alpha as the glass tokens). */
+.moon-backdrop::after { content: ""; position: absolute; inset: 0; background: rgba(5, 6, 8, .72); }
+html.moon-backdrop-on { background: #050608; }
+html.moon-backdrop-on body { background: transparent; }
+/* Decorative backgrounds the Moon replaces: Escolha's elevation image, the unmarked LOLA relief. */
+html.moon-backdrop-on .backdrop,
+html.moon-backdrop-on #terrain { visibility: hidden; }
+/* Debrief: the trajectory canvas stays on top; only its empty areas show the Moon. */
+html.moon-backdrop-on .deb-map { background: transparent; }
+@media (prefers-reduced-motion: reduce) { .moon-backdrop { transition: none; } }
