@@ -5,7 +5,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const js = await readFile(new URL("../screens/evidence.js", import.meta.url), "utf8");
+const js = await readFile(new URL("../screens/evidence.tsx", import.meta.url), "utf8");
 
 test("evidence.js does not overwrite a positional child of the context bar", () => {
   assert.doesNotMatch(js, /ctxEl\.childNodes\[\d+\]\.textContent/);

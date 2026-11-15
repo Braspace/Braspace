@@ -50,7 +50,7 @@ test("registry copy equals data/ASSET_REGISTRY.json and the licence matrix (fail
   for (const m of REGISTRY.matrix) assert.ok(md.includes(m.status), m.status);
 });
 test("evidence screen: no VAL literal, no 20 m/px, download button wired, resolution from the data", async () => {
-  const js = await readFile(new URL("../screens/evidence.js", import.meta.url), "utf8");
+  const js = await readFile(new URL("../screens/evidence.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(js, /["']VAL["']/); assert.doesNotMatch(js, /20 m\/px/); assert.match(js, /download/); assert.match(js, /Blob/); assert.match(js, /spacing_m/);
   const html = await readFile(new URL("../evidence.html", import.meta.url), "utf8"); assert.doesNotMatch(html, /\bVAL\b|validated/i);
 });
