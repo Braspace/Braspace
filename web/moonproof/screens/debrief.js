@@ -9,7 +9,6 @@ import { sealEl } from "../core/layers.js";
 // @ts-ignore TS7016
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, hrefTo } from "../core/state.js";
-// @ts-ignore TS7016
 import { TerrainGrid } from "../../lab/terrain.js";
 // @ts-ignore TS7016
 import { TEXTS } from "./landing-texts.js";

@@ -92,7 +92,7 @@ test("slow frames end the animation: four in a row over 120 ms, and a fast frame
  assert.equal(slowStreak(streak,33),0,"one frame on time clears the streak");
  assert.equal(slowStreak(streak,500),4);
  assert.equal(slowStreak(0,120),0,"exactly at the limit is not slow");
- const source=readFileSync(new URL("../moon-hd/backdrop.js",import.meta.url),"utf8");
+ const source=readFileSync(new URL("../moon-hd/backdrop.ts",import.meta.url),"utf8");
  assert.match(source,/streak >= SLOW_FRAMES_TO_STOP\) \{ still = true;/,"the loop stops for good");
  assert.match(source,/if \(!raf && !dead && !still\)/,"and is not restarted by resize, visibility or motion changes");
 });

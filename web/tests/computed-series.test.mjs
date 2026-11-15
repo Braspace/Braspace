@@ -5,7 +5,7 @@ import path from "node:path";
 import {fileURLToPath} from "node:url";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
-const app=await readFile(path.join(root,"app.js"),"utf-8");
+const app=await readFile(path.join(root,"app.ts"),"utf-8");
 const html=await readFile(path.join(root,"classic.html"),"utf-8");
 
 test("sites with an ingested series use server-computed visibility",()=>{
