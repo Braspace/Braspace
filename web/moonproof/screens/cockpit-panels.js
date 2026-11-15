@@ -19,10 +19,13 @@ export function layoutState(hidden) {
     return { left, right, sheet: left && right, timeline: hidden.has("timeline"), report: hidden.has("report") };
 }
 /** Uses the existing lazy Three.js Moon button; never creates another WebGL renderer. */
-export function requestSharedMoon() {
-    if (typeof document === "undefined")
+export function requestSharedMoon(isStillWanted = () => true) {
+    if (typeof document === "undefined" || !isStillWanted())
         return false;
     const open = () => {
+        // A lazy backdrop must not open after the user has already restored panels.
+        if (!isStillWanted())
+            return false;
         const btn = document.querySelector(".moon-ui .moon-open");
         if (!btn || btn.disabled)
             return false;
@@ -80,7 +83,7 @@ export function mountCockpitPanels(host) {
                 else {
                     previous = new Set(hidden);
                     hidden = new Set(PANEL_IDS);
-                    requestSharedMoon();
+                    requestSharedMoon(() => hidden.size === PANEL_IDS.length);
                 } paint(); } }, clear ? (pt ? "Restaurar painéis" : "Restore panels") : (pt ? "Só a Lua" : "Moon only")),
             h("details", { class: "ck-panel-menu", onKeyDown: e => { if (e.key === "Escape") {
                     e.currentTarget.open = false;
