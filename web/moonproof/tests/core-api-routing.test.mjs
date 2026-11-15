@@ -31,3 +31,16 @@ test("MoonProof requests the live API on official GitHub Pages and the same-orig
     if (oldOverride) Object.defineProperty(globalThis, "BRASPACE_API_BASE", oldOverride); else delete globalThis.BRASPACE_API_BASE;
   }
 });
+
+test("API preserves typed errors and accepts only HTML reports", async () => {
+  const originalFetch=globalThis.fetch;
+  try {
+    globalThis.fetch=async()=>new Response(JSON.stringify({code:"OUTSIDE_COVERAGE"}),{status:422,headers:{"content-type":"application/json"}});
+    const bad=await api("/api/onboard/site-evaluate",{method:"POST",body:{}});
+    assert.equal(bad.code,"OUTSIDE_COVERAGE"); assert.equal(bad.httpStatus,422); assert.equal(bad.offline,false);
+    globalThis.fetch=async()=>new Response("not a report",{headers:{"content-type":"text/plain"}});
+    assert.equal((await api("/api/onboard/report",{as:"text"})).error,"INVALID_REPORT_TYPE");
+    globalThis.fetch=async()=>new Response("<!doctype html><h1>Report</h1>",{headers:{"content-type":"text/html; charset=utf-8"}});
+    assert.equal((await api("/api/onboard/report",{as:"text"})).ok,true);
+  } finally {globalThis.fetch=originalFetch;}
+});

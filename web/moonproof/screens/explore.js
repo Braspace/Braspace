@@ -9,12 +9,14 @@ import { createLayerCard, sealEl } from "../core/layers.js";
 import { t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { southStereoInverse, southStereoForward } from "../../lab/coords.js";
+import { createMediaLoader } from "../core/media-client.js";
 import { coordText, parseCoord, pgdaAt, rampColor, rampCss, horizonPoints, elRange, fmtVal } from "./mission-calc.js";
 import "./mission-i18n.js";
 
 const DAY = 24, $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const nd = () => t("nd");
+const loadMedia = createMediaLoader(api);
 export const LAYERS = [
   { id: "altitude", key: "ex.l.altitude", unit: "ex.u.m", ramp: "altitude", legend: "ex.leg.altitude", status: null },
   { id: "natural", key: "ex.l.natural", unit: "ex.u.vis", ramp: null, legend: "ex.leg.natural", status: "VISUALIZATION" },
@@ -153,8 +155,18 @@ function legend() {
 
 function drawRight(s, m) {
   const right = $("right"); right.replaceChildren(card(s, m), fromHere(s, m, DESK_HORIZON));
-  if (online && !point) mediaCard(s).then(c => { if (c && site()?.id === s.id) right.append(c); });
-  $("sheet-body").replaceChildren(card(s, m, true), fromHere(s, m));
+  const mobile = $("sheet-body"); mobile.replaceChildren(card(s, m, true), fromHere(s, m));
+  if (!point) {
+    // Each render owns its own slot, so late results cannot duplicate a card or
+    // attach it to a different site/coordinate. Both responsive layouts use the same request.
+    for (const target of [right, mobile]) {
+      const slot = el("div"); target.append(slot);
+      mediaCard(s).then(c => {
+        if (!slot.isConnected || point || site()?.id !== s.id) return;
+        if (c) slot.replaceWith(c); else slot.remove();
+      });
+    }
+  }
 }
 
 function rows(list) { const tb = el("table", "ex-rows"); for (const [k, v, seal] of list) { const tr = tb.insertRow(); tr.append(el("th", null, k)); const td = tr.insertCell(); td.append(v); if (seal) td.append(" ", sealEl(seal)); } return tb; }
@@ -266,10 +278,14 @@ draw();
 
 // Official LROC images related to the site (GET /api/sites/{id}/media, from the legacy onboard "Visual" tab).
 // Links only: the API returns page links and credits, never image bytes (LROC website terms).
-const mediaCache = new Map();
 async function mediaCard(s) {
-  if (!mediaCache.has(s.id)) mediaCache.set(s.id, api(`/api/sites/${encodeURIComponent(s.id)}/media`));
-  const r = await mediaCache.get(s.id); const items = r.ok ? r.data?.media || [] : [];
+  const items = await loadMedia(s.id);
+  if (items === null) {
+    const c = el("article", "mp-card ex-media"); c.append(el("h3", null, t("ex.media")));
+    const pt = lang() === "pt-BR", retry = el("button", "mp-pill", pt ? "Tentar novamente" : "Retry links"); retry.type = "button";
+    retry.onclick = () => draw(); c.append(el("p", "mp-label", pt ? "Links oficiais indisponíveis; os dados locais permanecem utilizáveis." : "Official source links unavailable; local data remain usable."), retry);
+    return c;
+  }
   if (!items.length) return null;
   const c = el("article", "mp-card ex-media"); c.append(el("h3", null, t("ex.media")));
   for (const it of items.slice(0, 4)) { const a = el("a", "ex-media-link", it.title); a.href = it.page_url; a.target = "_blank"; a.rel = "noopener noreferrer";

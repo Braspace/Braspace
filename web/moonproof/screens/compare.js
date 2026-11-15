@@ -4,7 +4,7 @@
 import { mountSheet } from "./sheet.js";
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, sealFor, apiOnline } from "../core/data.js";
+import { loadSites, sealFor } from "../core/data.js";
 import { createLayerCard, sealEl, barEl } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
@@ -64,7 +64,7 @@ const shell = mountShell({ screen: "compare", context: null, onLang: () => draw(
 mountSheet(document.getElementById("sheet"));
 const doc = await loadSites();
 const all = await loadAll(doc);
-const online = await apiOnline();
+let drawGeneration = 0;
 const siteOf = id => doc.sites.find(s => s.id === id);
 const hoursDefault = () => getState().hours || 14 * DAY;
 const t0Default = () => getState().start || doc.window.start_utc;
@@ -82,9 +82,9 @@ let sel = 0;
 const save = list => { history.replaceState(null, "", location.search + "#" + buildHash({ sc: list })); draw(); };
 
 async function metricsFor(sc) {
-  const startMs = Date.parse(sc.start), site = siteOf(sc.site);
-  if (online) { const r = await apiCompareMetrics(sc.site, new Date(startMs).toISOString(), sc.hours); if (r.metrics) return r.metrics; }
-  return staticMetrics(all.get(sc.site), startMs, sc.hours, doc.status, sc.site) ;
+  const startMs = Date.parse(sc.start);
+  const r = await apiCompareMetrics(sc.site, new Date(startMs).toISOString(), sc.hours);
+  return { online: r.online, metrics: r.metrics || staticMetrics(all.get(sc.site), startMs, sc.hours, doc.status, sc.site) };
 }
 const fmtDate = ms => new Intl.DateTimeFormat(lang(), { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(ms);
 const hv = x => (x == null ? t("nd") : fmtNum(x, 0) + "\u00a0h");
@@ -94,9 +94,12 @@ function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.
 function ndSeal() { return sealEl("N/D"); }
 
 async function draw() {
+  const generation = ++drawGeneration;
   const list = scenarios(); if (sel >= list.length) sel = 0;
   const st = getState(), rules = { night: st.night, blackout: st.blackout };
-  const ms = await Promise.all(list.map(metricsFor));
+  const loaded = await Promise.all(list.map(metricsFor));
+  if (generation !== drawGeneration) return;
+  const ms = loaded.map(x => x.metrics), online = loaded.some(x => x.online);
   const judged = ms.map(m => judge(m, rules));
   const verdict = verdictOf(judged, ms.map(m => m?.bothPct ?? null));
   const L = i => LETTERS[i];
@@ -238,3 +241,4 @@ markRoute();
 onState(() => draw());
 addEventListener("hashchange", () => draw());
 draw();
+

@@ -14,6 +14,8 @@ test("validation refuses impossible inputs", () => {
   assert.deepEqual(validateInputs({ ...power, initial_charge_wh: 30000 }, CREW_DEFAULT).errors, ["initial_charge_wh"]);
   assert.ok(validateInputs(power, { ...CREW_DEFAULT, size: 1.5 }).errors.includes("size"));
   assert.ok(validateInputs({ ...power, load_w: NaN }, CREW_DEFAULT).errors.includes("load_w"));
+  assert.ok(validateInputs({ ...power, battery_capacity_wh: 0 }, CREW_DEFAULT).errors.includes("battery_capacity_wh"));
+  for (const [key,value] of [["size",13],["o2_kg_per_person_day",0],["reserve_hours",721],["rate_source",""],["aboard_during_delay",null]]) assert.ok(validateInputs(power,{...CREW_DEFAULT,[key]:value}).errors.includes(key));
 });
 test("missing consumables stay null, not zero", () => {
   const a = readCrewAnswer({ candidates: [{ consumables: { status: "OK", items: [{ resource: "oxygen", unit: "kg", autonomy_hours: 85.7, margin_hours: null }] } }] });
@@ -40,5 +42,7 @@ test("saved scenarios survive a broken store and export as versioned JSON", () =
   mem.set(SAVED_KEY, "{not json"); assert.deepEqual(loadSaved(st), []);
   const broken = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } };
   assert.deepEqual(loadSaved(broken), []); assert.equal(saveScenario(broken, { id: "c" }).ok, false);
+  assert.equal(saveScenario(null, {id:"d"}).ok, false);
   const e = savedExport([{ id: "a" }], new Date("2025-01-01T00:00:00Z")); assert.equal(e.schema, "braspace.cockpit-scenarios"); assert.equal(e.version, 1);
 });
+
