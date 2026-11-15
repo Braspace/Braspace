@@ -12,7 +12,8 @@ permissions:
 jobs:
   browser:
     name: Real Chromium desktop/mobile and live Go-Rust backend
-    runs-on: ubuntu-latest
+    # See ci.yml: CI_RUNS_ON selects the runner (self-hosted exo-x1 while hosted minutes are blocked).
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +34,8 @@ jobs:
         working-directory: web
         run: |
           npm install --no-save playwright@1.56.1
-          npx playwright install --with-deps chromium
+          # --with-deps uses apt (Ubuntu runners); self-hosted Fedora already has Chromium's system libraries.
+          if command -v apt-get >/dev/null 2>&1; then npx playwright install --with-deps chromium; else npx playwright install chromium; fi
       - name: Start real backend and run Chromium QA
         env:
           RUST_ENGINE_BIN: ${{ github.workspace }}/engine/target/debug/braspace-lunar-engine

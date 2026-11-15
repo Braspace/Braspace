@@ -82,20 +82,34 @@ export function siteMetric(doc: Pick<SitesDoc, "status" | "window" | "generated"
 /** Tolerance of the science review against NASA PGDA (docs/SCIENCE_REVIEW_ONBOARD_BS061.md, section 2.2). */
 export const PGDA_SUN_TOLERANCE_PP = 5;
 /**
- * null, or why the sunlight figures of a site are to be read as an upper bound: our series shows more
- * sunlight than the NASA PGDA average map by more than the tolerance. Decided from sites.json alone
- * (metrics.mean_solar_disc_visible_pct against pgda_sun_pct), never from a site id.
+ * Sunlight caveat for the committed 100 km series. The PGDA comparison uses the review tolerance;
+ * the two reach cases come from docs/HORIZON_REACH_STUDY.md. Match the committed metrics as well as
+ * the site id so this warning does not silently attach to regenerated series.
  */
-export function sunCaveat(site: Site | null | undefined): Readonly<{ kind: "SUN_UPPER_BOUND"; ours: number; pgda: number; diff: number }> | null {
+export function sunCaveat(site: Partial<Pick<Site, "id" | "metrics" | "pgda_sun_pct">> | null | undefined): Readonly<{ kind: "SUN_UPPER_BOUND"; ours: number; pgda: number; diff: number; reach?: Readonly<{ sun100: number; sun200: number; dark100: number; dark200: number }> }> | null {
   const ours = site?.metrics?.mean_solar_disc_visible_pct, pgda = site?.pgda_sun_pct;
-  if (typeof ours !== "number" || typeof pgda !== "number" || !Number.isFinite(ours) || !Number.isFinite(pgda) || ours - pgda <= PGDA_SUN_TOLERANCE_PP) return null;
-  return Object.freeze({ kind: "SUN_UPPER_BOUND" as const, ours, pgda, diff: ours - pgda });
+  if (typeof ours !== "number" || typeof pgda !== "number" || !Number.isFinite(ours) || !Number.isFinite(pgda)) return null;
+  const cases: Record<string, { sun100: number; sun200: number; dark100: number; dark200: number }> = {
+    "malapert-massif": { sun100: 38.44, sun200: 33.84, dark100: 670, dark200: 3389 },
+    "peak-near-shackleton": { sun100: 80.38, sun200: 75.52, dark100: 345, dark200: 381 },
+  };
+  const candidate = site?.id ? cases[site.id] : undefined;
+  const reach = candidate && site?.metrics?.sun_center_visible_pct === candidate.sun100 &&
+    site?.metrics?.longest_darkness_h === candidate.dark100 ? Object.freeze(candidate) : undefined;
+  if (!reach && ours - pgda <= PGDA_SUN_TOLERANCE_PP) return null;
+  return Object.freeze({ kind: "SUN_UPPER_BOUND" as const, ours, pgda, diff: ours - pgda, ...(reach ? { reach } : {}) });
 }
 
 const seriesCache = new Map<string, Promise<SiteSeriesLike>>();
 export function loadSeries(site: Pick<Site, "id" | "series">): Promise<SiteSeriesLike> {
   // SiteSeriesLike is the screens' loose view of SiteSeries (a NOT_COMPUTED window carries no metrics), hence the cast.
-  if (!seriesCache.has(site.id)) seriesCache.set(site.id, SiteSeries.load(DATA_BASE + site.series) as unknown as Promise<SiteSeriesLike>);
+  if (!seriesCache.has(site.id)) {
+    const pending = (SiteSeries.load(DATA_BASE + site.series) as unknown as Promise<SiteSeriesLike>).catch(error => {
+      if (seriesCache.get(site.id) === pending) seriesCache.delete(site.id);
+      throw error;
+    });
+    seriesCache.set(site.id, pending);
+  }
   return seriesCache.get(site.id) as Promise<SiteSeriesLike>;
 }
 

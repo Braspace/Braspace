@@ -1,4 +1,4 @@
-// Sunlight shown as an upper bound where our series exceeds NASA PGDA by more than the review tolerance.
+// Sunlight caveat from the PGDA review and the 100 km horizon reach study.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
@@ -7,20 +7,26 @@ import { sunCaveat, PGDA_SUN_TOLERANCE_PP } from "../core/data.js";
 const read = p => readFileSync(new URL(p, import.meta.url), "utf8");
 const sites = JSON.parse(read("../../data/sites.json")).sites;
 
-test("the rule is data-driven: only sites over the PGDA tolerance are flagged, and today that is one site", () => {
+test("the two 100 km reach cases are flagged, including Malapert below the PGDA tolerance", () => {
   assert.equal(PGDA_SUN_TOLERANCE_PP, 5);
   const flagged = sites.filter(s => sunCaveat(s)).map(s => s.id);
-  assert.deepEqual(flagged, ["peak-near-shackleton"]);
+  assert.deepEqual(flagged, ["malapert-massif", "peak-near-shackleton"]);
+  const malapert = sunCaveat(sites.find(s => s.id === "malapert-massif"));
+  assert.deepEqual(malapert.reach, { sun100: 38.44, sun200: 33.84, dark100: 670, dark200: 3389 });
   const c = sunCaveat(sites.find(s => s.id === "peak-near-shackleton"));
   assert.equal(c.kind, "SUN_UPPER_BOUND");
   // 80.43 - 71.9 = 8.53 after the solar-disc fix (9.0 with the inverted fraction); still the only site over 5 pp.
   assert.ok(Math.abs(c.diff - (c.ours - c.pgda)) < 1e-12 && c.diff > 8.4 && c.diff < 8.7, "difference " + c.diff);
   assert.ok(Object.isFrozen(c));
+  assert.deepEqual(c.reach, { sun100: 80.38, sun200: 75.52, dark100: 345, dark200: 381 });
+  const updated = structuredClone(sites.find(s => s.id === "malapert-massif"));
+  updated.metrics.sun_center_visible_pct = 33.84;
+  assert.equal(sunCaveat(updated), null, "a warning for the old series must not attach to regenerated data");
 });
 
 // The web stage of the Docker gate copies web/ only; there the science gate pins the same values itself.
 const gateFile = new URL("../../../api/cmd/validatehorizons/reference_tolerances_test.go", import.meta.url);
-test("same tolerance and same set of sites as the science gate", { skip: !existsSync(gateFile) && "science/ not in this build context" }, () => {
+test("the independent PGDA tolerance still matches the science gate", { skip: !existsSync(gateFile) && "science/ not in this build context" }, () => {
   const gate = readFileSync(gateFile, "utf8");
   assert.match(gate, /pgdaSunTolerancePP = 5\.0/);
   assert.match(gate, /pgdaSunOutside = \[\]string\{"peak-near-shackleton"\}/);
@@ -39,10 +45,10 @@ test("the shell shows the flag for the selected site, in both languages, and the
   const shell = read("../core/shell.ts"), i18n = read("../core/i18n.ts"), css = read("../core/components.css");
   assert.match(shell, /sunCaveat\(catalogue\?\.sites\.find\(s => s\.id === st\.site\)\)/);
   assert.match(shell, /t\("ctx\.sunCapWhy", \{ ours: .*pgda: .*diff: /);
-  for (const key of ["ctx.sunCap", "ctx.sunCapWhy"]) assert.equal(i18n.split(`"${key}"`).length - 1, 2, key + " in en and pt-BR");
+  for (const key of ["ctx.sunCap", "ctx.sunCapWhy", "ctx.reachCap", "ctx.reachCapWhy"]) assert.equal(i18n.split(`"${key}"`).length - 1, 2, key + " in en and pt-BR");
   assert.ok(i18n.includes("Sun: upper bound") && i18n.includes("Sol: teto"));
   assert.ok(css.includes(".mp-caveat{"));
   const hd = read("../../moon-hd/app.js");
-  assert.match(hd, /m\.mean_solar_disc_visible_pct - site\.pgda_sun_pct > 5/);
+  assert.match(hd, /sunCaveat\(site\)/);
   assert.ok(hd.includes('"≤ "') && read("../../moon-hd.html").includes('id="site-caveat"'));
 });
