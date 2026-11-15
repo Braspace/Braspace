@@ -238,3 +238,17 @@
   .ck-crew-form{grid-template-columns:minmax(0,1fr)}
   .ck-crew-form input{width:100%}
 }
+
+/* QA #425: at 320 px the time player squeezed ↻ and ▶ to 18×44; the round buttons never shrink, the slider does. */
+.mp-player>.mp-round{flex:none;min-width:44px}
+.mp-player input[type=range]{min-width:40px}
+/* QA #425 follow-up: at ≤ 360 px the fixed 44 px ↻/▶ pushed the speed select 15 px off screen (320).
+   The day labels give way first and the select narrows; every control stays ≥ 44 px tall. */
+@media (max-width:360px){
+  .mp-player{gap:4px;padding-left:6px;padding-right:6px}
+  .mp-player input[type=range]{min-width:24px}
+  .mp-player select{width:auto;min-width:76px;padding:0 24px 0 10px;background-position:right 7px center;background-size:12px}
+  .mp-player .mp-day,.mp-player [id$="-end"],.mp-player .mp-time{font-size:11px}
+  .mp-player>*{min-width:0}
+  .mp-player>.mp-round{flex:none;min-width:44px}
+}

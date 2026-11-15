@@ -8,12 +8,15 @@ O BRASPACE / MoonProof é um protótipo educacional e de engenharia para avaliar
 
 ## Demo no Ar e API
 
-Verificado em produção em **2026-11-15** (frontend `9dab20c`, Worker `ec490d15`; backend `2b62474`):
+Verificado em produção em **2026-11-15** (main `dc2411b`, Worker `c792c009`, publicado com `deploy/cloudflare/deploy.sh`; imagem da API `ad83cfe7517c`):
 
 - **MoonProof, o produto:** https://braspace-moonproof.almeida-me.workers.dev/moonproof/. Um Cloudflare Worker serve `web/` e repassa cada rota da OpenAPI à API Go na mesma origem. Polar Lab, Onboard, Studio, Classic e o shell antigo estão arquivados em `archive/web-legacy/`.
 - **API pública:** https://braspace-api.srv1898743.hstgr.cloud: [`/api/health`](https://braspace-api.srv1898743.hstgr.cloud/api/health), [`/readyz`](https://braspace-api.srv1898743.hstgr.cloud/readyz), [`/v1/capabilities`](https://braspace-api.srv1898743.hstgr.cloud/v1/capabilities), [`/api/sites`](https://braspace-api.srv1898743.hstgr.cloud/api/sites), [`/api/vector/status`](https://braspace-api.srv1898743.hstgr.cloud/api/vector/status).
 - **Último QA de produção (#351, #374):** 13 telas × 320/390/768/1024/1440/1920 = 78 execuções. Todas com HTTP 200, 0 overflow, 0 controles cortados, 0 erros de console, 0 erros HTTP, 246 chamadas de API todas 200. Sondas do backend 7/7: pgvector `index_ready`, busca serve só fontes auditadas, janela de 720 h, JSON estrito.
 
+- **QA de produção, main `dc2411b` (EXO-X1, Chrome):** matriz de rotas `web/browser/route-matrix.mjs` (16 páginas × 320–1920 px) 96/96 com GPU real e 95/96 sem WebGL (1 troca de rede local); axe-core WCAG 2/2.1 A+AA **0 violações** nas 13 telas × 2 viewports (#398); Lighthouse com borda aquecida: Index 97, Cockpit 89, Mission 85–88 (LCP 3,4 s).
+- **Desempenho:** three.js 0.181.0 vendorizado em `web/vendor/three` (sem CDN, uma instância de THREE, #365); grids binários derivados da NASA comprimidos com gzip pelo Worker, −48% na rede (#406, #417); o relevo 2D não é desenhado enquanto o relevo Moon HD carrega (#420).
+- **CI:** os runners hospedados do GitHub estão bloqueados pela cobrança do Actions; o `ci.yml` e o workflow de navegador rodam nos runners self-hosted `exo-x1`, escolhidos pela variável de repositório `CI_RUNS_ON` (#383, #388). Apagar a variável volta ao `ubuntu-latest`.
 - **Documentação e operação:**
   - release [`v2026.11.15-prod-2b62474`](https://github.com/Braspace/Braspace/releases/tag/v2026.11.15-prod-2b62474);
   - referência da API [`docs/API.md`](docs/API.md), 22 operações, gerada do `api/openapi.json` e conferida no CI;

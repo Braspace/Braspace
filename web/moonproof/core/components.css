@@ -222,3 +222,11 @@ html:not(.mp-ready) body{visibility:hidden;animation:mp-reveal 0s 2s forwards}
 /* 2D map: a site name that would collide with another (14 sites near the pole) shows on hover/focus only. */
 .mp-marker.is-quiet .mp-marker-label{display:none}
 .mp-marker.is-quiet:hover .mp-marker-label,.mp-marker.is-quiet:focus-visible .mp-marker-label{display:block;z-index:3}
+/* QA #425 (WCAG 2.2 · 2.5.8, target size ≥ 24 px): the 75% density left some small controls at 13–22 px.
+   The look stays compact; only the hit area grows (an invisible ::after around buttons/links, min-height on selects). */
+:is(.lab-seg button,button.lnk,a.mp-link){position:relative}
+:is(.lab-seg button,button.lnk,a.mp-link)::after{content:"";position:absolute;inset:-6px -2px;min-height:24px}
+/* .mp-switch::after is the knob and .mp-chip::after already gives 44 px: the switch gets its hit area on ::before. */
+.mp-switch{position:relative}
+.mp-switch::before{content:"";position:absolute;inset:-6px -4px}
+select:is(.mc-win,.mc-vs){min-height:24px}
