@@ -53,7 +53,7 @@ register({
     "act.students": "students",
     "act.access": "Students can open the link without an account. Discuss answers together; responses are not collected automatically.",
     "act.qrLabel": "QR code of the share link",
-    "act.layers": "Layers"
+    "act.layers": "Layers", "act.previewLayer.answer": "Quick answer: compare the three places.", "act.previewLayer.why": "Understand how sunlight and Earth visibility change the mission.", "act.previewLayer.proof": "Check where the numbers come from; data are preliminary."
   },
   "pt-BR": {
     "act.kit": "Kit Aula",
@@ -98,7 +98,7 @@ register({
     "act.students": "alunos",
     "act.access": "A turma abre o link sem cadastro. Respostas são discutidas em aula; não há coleta automática.",
     "act.qrLabel": "QR code do link de compartilhamento",
-    "act.layers": "Camadas"
+    "act.layers": "Camadas", "act.previewLayer.answer": "Resposta rápida: compare os três lugares.", "act.previewLayer.why": "Entenda como luz do Sol e visão da Terra mudam a missão.", "act.previewLayer.proof": "Veja de onde vêm os números; os dados são preliminares."
   }
 });
 
@@ -223,6 +223,7 @@ function draw() {
       <div class="mp-pv-q mp-glass">
         <strong>{t("act.prompt")}</strong>
         <span>{t("act.promptSub")}</span>
+        <span class="mp-pv-layer-note">{t("act.previewLayer." + cfg.openLayer)}</span>
       </div>
     </div>
     <div class="mp-act-head mp-act-open">
