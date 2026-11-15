@@ -39,12 +39,21 @@ try{
  const desktop=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
  desktop.on("pageerror",error=>errors.push("desktop: "+error.message));
 
- // / redirects to the product.
+ // / -> /moonproof/ -> single cockpit, with a reversible secondary task chooser.
  const home=await desktop.goto(base+"/",{waitUntil:"load",timeout:30000});
  assert(home?.status()===200,"root HTTP status");
- await desktop.waitForURL(/\/moonproof\/$/,{timeout:15000});
- await desktop.locator("#cards [role=listitem], #cards > *").first().waitFor({state:"visible",timeout:20000});
+ await desktop.waitForURL(u=>/\/moonproof\/cockpit(?:\.html)?$/.test(u.pathname),{timeout:15000});
+ await desktop.locator("#player").waitFor({state:"visible",timeout:20000});
+ assert(await desktop.locator("#cards .mp-task").count()===0,"the cockpit is canonical, not the three-task chooser");
  await desktop.screenshot({path:path.join(out,"moonproof-entry.png")});
+ // Preserve the exact mission context and fragment through the entry (no new WebGL renderer).
+ await desktop.goto(base+"/moonproof/?site=malapert-massif&lang=pt-BR&battery=30#scene",{waitUntil:"domcontentloaded",timeout:30000});
+ await desktop.waitForURL(u=>/\/moonproof\/cockpit(?:\.html)?$/.test(u.pathname)
+   && u.searchParams.get("site")==="malapert-massif" && u.searchParams.get("lang")==="pt-BR"
+   && u.searchParams.get("battery")==="30" && u.hash==="#scene",{timeout:15000});
+ await desktop.locator("#player").waitFor({state:"visible",timeout:20000});
+ // The former task flow remains functional, but is no longer the root experience.
+ await open(desktop,"/moonproof/tasks.html","#cards .mp-task");
 
  // Mission: every catalogue site is a marker on the shared map.
  await open(desktop,"/moonproof/mission.html","#dock .mp-marker, .mp-marker");
