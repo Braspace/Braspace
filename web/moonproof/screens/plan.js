@@ -1,4 +1,5 @@
 import { mountShell } from "../core/shell.js";
+import { holdReady, markReady } from "../core/ready.js";
 import { mountTerrain } from "../core/terrain.js";
 import { loadSites, loadSeries, siteMetric, api, sealFor } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
@@ -154,6 +155,7 @@ register({
 
 
 const shell = mountShell({ screen: "compare", onLang: draw });
+holdReady();
 const doc = await loadSites();
 const siteOf = (id) => doc.sites.find((s) => s.id === id);
 // The three scenarios are the ones Compare shows (#sc= in the link, else its derived defaults), each with its own site, start and duration.
@@ -372,4 +374,4 @@ async function draw() {
 }
 
 onState(() => draw());
-draw();
+draw().finally(markReady);

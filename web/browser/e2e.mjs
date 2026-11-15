@@ -111,7 +111,9 @@ try{
  const mobileResponse=await mobile.goto(base+"/lab.html",{waitUntil:"domcontentloaded",timeout:30000});
  assert(mobileResponse?.status()===200,"mobile lab status");
  await mobile.locator("#tabs button[data-view='evidence']").click();
- assert((await mobile.locator("#panel-body").innerText()).length>60,"mobile evidence empty");
+ // Same as desktop: wait for the provenance to load instead of racing the "Loading provenance…" placeholder.
+ await mobile.waitForFunction(()=>{const ev=document.querySelector("#ev");return !!ev&&!ev.textContent.includes("Loading provenance")&&ev.textContent.trim().length>200;},null,{timeout:30000});
+ assert((await mobile.locator("#panel-body").innerText()).length>260,"mobile evidence empty");
  await mobile.screenshot({path:path.join(out,"polar-lab-mobile.png"),fullPage:true});
  const overflow=await mobile.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
  assert(overflow.width<=overflow.viewport+4,"mobile horizontal overflow: "+JSON.stringify(overflow));
