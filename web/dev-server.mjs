@@ -15,6 +15,9 @@ const staticFiles=new Map([
   ["/vector-embed.js",{name:"vector-embed.js",type:"text/javascript; charset=utf-8"}],
   ["/favicon.ico",{name:"favicon.ico",type:"image/x-icon"}],
   ["/config.js",{name:"config.js",type:"text/javascript; charset=utf-8"}],
+  ["/vendor/three/three.module.min.js",{name:"vendor/three/three.module.min.js",type:"text/javascript; charset=utf-8"}],
+  ["/vendor/three/three.core.min.js",{name:"vendor/three/three.core.min.js",type:"text/javascript; charset=utf-8"}],
+  ["/vendor/three/addons/controls/OrbitControls.js",{name:"vendor/three/addons/controls/OrbitControls.js",type:"text/javascript; charset=utf-8"}],
   ["/vendor/preact/preact.module.js",{name:"vendor/preact/preact.module.js",type:"text/javascript; charset=utf-8"}],
 ]);
 // Shared lab modules (physics, scene, coords, terrain, data) used by MoonProof and the NASA-derived data.
@@ -54,7 +57,7 @@ export function moonHdFile(pathname){
 }
 const csp=[
   "default-src 'none'",
-  "script-src 'self' https://cdn.jsdelivr.net",
+  "script-src 'self'",
   "style-src 'self'",
   "img-src 'self' https://svs.gsfc.nasa.gov data: blob:",
   "connect-src 'self' blob:",

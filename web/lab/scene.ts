@@ -8,8 +8,8 @@
 // Geometry is computed from NASA LOLA heights; colours/lighting are visual encodings
 // of data documented in the legend. Stars are decorative.
 
-// @ts-ignore TS2307: remote ES module (CDN), no local types
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.181.0/+esm";
+// @ts-ignore TS2307: vendored three.js 0.181.0 (web/vendor/three), no local types
+import * as THREE from "../vendor/three/three.module.min.js";
 import type { Three } from "../api-types.js";
 import type { TerrainGrid } from "./terrain.js";
 import { latLonToBodyFixed, southStereoInverse, enuToBody, R_REF } from "./coords.js";
