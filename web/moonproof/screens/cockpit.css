@@ -139,3 +139,11 @@
   .mp-tl input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radius:50%;background:#fff}
   .mp-player select{-webkit-appearance:none;appearance:none;width:86px;min-height:48px;height:48px;padding:0 30px 0 18px;background:var(--jade) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2304110D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center/14px}
 }
+.ck-crew summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
+.ck-crew-form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.ck-crew-form label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-2)}
+.ck-crew-form input{min-height:40px;border-radius:12px;border:1px solid var(--line-2);background:#0d1014;color:#fff;padding:0 10px}
+.ck-crew-form input[aria-invalid="true"]{border-color:var(--fail-text)}
+.ck-crew-form button{grid-column:1/-1;min-height:44px}
+.ck-crew-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px;font-variant-numeric:tabular-nums}
+.ck-crew-table th{text-align:left;color:var(--text-2);font-weight:600;padding:4px 0}.ck-crew-table td{padding:4px 0}

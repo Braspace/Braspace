@@ -148,6 +148,7 @@ function coreTiles() {
     tile.append(el("h3", "", t(`rules.core.${id}.t`)), el("p", "", t(`rules.core.${id}.d`, { n })));
     if (id === "seal") {
       const list = el("div", "mp-rules-seals");
+      list.dataset.mpLegend = ""; // seal legend, not a value
       for (const k of SEALS) { const row = el("div"); row.append(sealEl(k), t("seal." + k)); list.append(row); }
       tile.append(list);
     }

@@ -4,7 +4,7 @@
 // Tapping the terrain or typing a coordinate creates a point (3 decimals). Spec: designer/B-explore.designer.mds.
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, windowMetrics, sealFor, apiOnline, loadRegion, sourced } from "../core/data.js";
+import { loadSites, windowMetrics, sealFor, apiOnline, loadRegion, sourced, api } from "../core/data.js";
 import { createLayerCard, sealEl } from "../core/layers.js";
 import { t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
@@ -152,6 +152,7 @@ function legend() {
 
 function drawRight(s, m) {
   const right = $("right"); right.replaceChildren(card(s, m), fromHere(s, m, DESK_HORIZON));
+  if (online && !point) mediaCard(s).then(c => { if (c && site()?.id === s.id) right.append(c); });
   $("sheet-body").replaceChildren(card(s, m, true), fromHere(s, m));
 }
 
@@ -261,3 +262,16 @@ handle.onkeydown = e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") { e.
 addEventListener("resize", () => frame());
 onState(() => draw());
 draw();
+
+// Official LROC images related to the site (GET /api/sites/{id}/media, from the legacy onboard "Visual" tab).
+// Links only: the API returns page links and credits, never image bytes (LROC website terms).
+const mediaCache = new Map();
+async function mediaCard(s) {
+  if (!mediaCache.has(s.id)) mediaCache.set(s.id, api(`/api/sites/${encodeURIComponent(s.id)}/media`));
+  const r = await mediaCache.get(s.id); const items = r.ok ? r.data?.media || [] : [];
+  if (!items.length) return null;
+  const c = el("article", "mp-card ex-media"); c.append(el("h3", null, t("ex.media")));
+  for (const it of items.slice(0, 4)) { const a = el("a", "ex-media-link", it.title); a.href = it.page_url; a.target = "_blank"; a.rel = "noopener noreferrer";
+    const p = el("p", "mp-label"); p.append(a, el("br"), `${it.credit}${it.illustrative_only ? " · " + t("ex.media.ill") : ""}`); c.append(p); }
+  return c;
+}
