@@ -78,7 +78,7 @@ async function loadNatural() {
         return natural;
     try {
         const img = new Image();
-        img.src = new URL("../../data/moon/lroc_color_2k.jpg", import.meta.url).href;
+        img.src = new URL("../../data/moonhd/color_4k.jpg", import.meta.url).href;
         await img.decode();
         const c = document.createElement("canvas");
         c.width = img.width;
@@ -240,7 +240,7 @@ function legend() {
     const { L, min, max } = legendModel(layer, RANGES);
     const status = L.status || doc.status;
     const d = L.id === "slope" ? 1 : 0;
-    const src = L.id === "altitude" || L.id === "slope" ? `${grid.h.source} · ${grid.h.method}` : L.id === "natural" ? "NASA SVS 4720 · lroc_color_2k.jpg" : grid.h.layers["pgda_" + L.id].product + " · " + grid.h.layers["pgda_" + L.id].resolution_m + " m";
+    const src = L.id === "altitude" || L.id === "slope" ? `${grid.h.source} · ${grid.h.method}` : L.id === "natural" ? "Joel Moon HD · NASA SVS 4720 · color_4k.jpg" : grid.h.layers["pgda_" + L.id].product + " · " + grid.h.layers["pgda_" + L.id].resolution_m + " m";
     return one(h("div", { class: "mp-card ex-legend" },
         h("div", { class: "ex-legend-head" },
             h("b", null, t(L.key)),

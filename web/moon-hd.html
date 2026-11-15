@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html data-moon-preview="viewer" lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BRASPACE Moon HD</title>
 <link rel="stylesheet" href="./moon-hd/moon-hd.css">
+<link rel="stylesheet" href="./moon-hd/preview.css">
 </head>
 <body>
 <canvas id="view" aria-label="3D view of the Moon" role="img"></canvas>
@@ -76,7 +77,7 @@
   <span data-i18n="credits">Imagery and elevation: NASA's Scientific Visualization Studio (CGI Moon Kit) · Terrain: NASA LRO/LOLA (LDEM_80S_80M) · Geometry: NASA/JPL NAIF SPICE (DE440) · Names: IAU/USGS Gazetteer · Earth: NASA Blue Marble. Not a NASA product; not endorsed by NASA.</span>
 </footer>
 
-<div id="loading" role="status"><span data-i18n="loading">Loading NASA data…</span></div>
-<script type="module" src="./moon-hd/app.js"></script>
+<div id="loading" role="status"><span data-i18n="loading">Loading NASA data…</span><nav class="moon-preview-actions" aria-label="3D fallback"><button id="moon-preview-retry" type="button">Retry 3D</button><a id="moon-preview-map" href="./moonproof/explore.html">Open south pole map</a></nav></div>
+<script type="module" src="./moon-hd/bootstrap.js"></script>
 </body>
 </html>

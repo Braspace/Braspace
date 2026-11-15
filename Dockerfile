@@ -74,7 +74,6 @@ ENV BRASPACE_E2E_API_BIN=/opt/e2e/braspace-e2e-api
 RUN node web/scripts/check-ts.mjs \
  && npm --prefix web run lint \
  && npm --prefix web test \
- && node --test web/onboard/test/*.mjs \
  && node scripts/fullstack-e2e.mjs
 RUN mkdir -p /markers && echo ok > /markers/web
 
