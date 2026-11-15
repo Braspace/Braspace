@@ -6,7 +6,7 @@ import {cases,sizes} from "./route-matrix-config.mjs";
 const base=(process.env.BASE||"http://127.0.0.1:5380").replace(/\/$/,"");
 const out=process.env.MATRIX_OUT||"browser/artifacts/joel-matrix";
 await mkdir(out,{recursive:true});
-const browser=await chromium.launch({headless:true,args:["--disable-webgl"],executablePath:process.env.CHROME_PATH||undefined});
+const browser=await chromium.launch({headless:true,args:process.env.MATRIX_GPU?["--enable-gpu","--ignore-gpu-blocklist","--use-angle=vulkan"]:["--disable-webgl"],executablePath:process.env.CHROME_PATH||undefined});
 const results=[];
 try{
  for(const size of sizes){
@@ -26,20 +26,11 @@ try{
      r.status=response?.status();if(r.status!==200)throw Error("HTTP "+r.status);
      if(entry.click)await page.locator(entry.click).first().click({timeout:15000});
      if(entry.active)await page.locator(entry.active).first().waitFor({state:"visible",timeout:15000});
-     await page.locator(entry.ready).first().waitFor({state:"visible",timeout:35000});
+     await page.locator(entry.ready).filter({visible:true}).first().waitFor({state:"visible",timeout:35000});
      if(entry.blockMoon){
       const image=await page.locator("#loading").evaluate(el=>getComputedStyle(el).backgroundImage);
       if(!image.includes("pole-preview.webp"))throw Error("Moon HD failure lost canonical poster");
       await page.locator("#loading .moon-preview-actions a").waitFor({state:"visible"});
-     }
-     if(entry.family==="classic"&&entry.id==="explore"){
-      const image=await page.locator(".fallback-sphere").evaluate(el=>getComputedStyle(el).backgroundImage);
-      if(!image.includes("pole-preview.webp"))throw Error("Classic failure lost poster");
-     }
-     if(entry.family==="cockpit"&&entry.id==="navegacao"){
-      if(!page.url().includes("/navegacao"))throw Error("Missing navigation route");
-      await page.reload({waitUntil:"domcontentloaded"});
-      await page.locator(entry.active).waitFor({state:"visible"});
      }
      r.overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
      if(r.overflow>1)throw Error("Horizontal document overflow: "+r.overflow);

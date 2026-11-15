@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { showFallback, fallbackText, startViewer } from '../moon-hd/bootstrap.js';
 
@@ -20,8 +20,8 @@ test('preview is a checked lightweight WebP, not a fabricated asset',()=>{
   assert.equal(file.toString('ascii',8,12),'WEBP'); assert.ok(file.length<100000);
   assert.equal(createHash('sha256').update(file).digest('hex'),'9eacf3af78202bb35ee41d5c795621ecb1cf168a30260e5cda39f26eba4e99b7');
 });
-test('all 22 shipped entry pages link the common preview stylesheet',()=>{
-  for (const page of ['index.html','classic.html','dashboard/index.html','lab.html','moon-hd.html','moonproof/activity.html','moonproof/cockpit.html','moonproof/compare.html','moonproof/debrief.html','moonproof/evidence.html','moonproof/explore.html','moonproof/index.html','moonproof/landing.html','moonproof/mission.html','moonproof/plan.html','moonproof/present.html','moonproof/recover.html','moonproof/rules.html','onboard/cockpit.html','onboard/index.html','polar-map-demo.html','studio/index.html']) {
+test('every MoonProof page and the 3D viewer link the common preview stylesheet',()=>{
+  for (const page of ['moon-hd.html',...readdirSync(new URL('../moonproof/',import.meta.url)).filter(f=>f.endsWith('.html')).map(f=>'moonproof/'+f)]) {
     const html=readFileSync(new URL('../'+page,import.meta.url),'utf8');
     assert.match(html,/moon-hd\/preview\.css/,page);
     if (/moonproof\/(mission|explore|compare|recover|cockpit|landing|plan|present|activity)\.html/.test(page)) assert.match(html,/data-moon-preview="map"/,page);

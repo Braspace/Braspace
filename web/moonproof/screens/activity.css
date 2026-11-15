@@ -290,13 +290,17 @@
   .mp-act-layout {
     position: static;
     margin: 76px 13px 84px 13px;
-    grid-template-columns: 1fr;
+    /* minmax(0, 1fr): a 1fr column grows to its widest child's min-content (the share bar), 517 px on a 390 px phone. */
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
   }
   .mp-act-steps, .mp-act-preview, .mp-act-controls, .mp-act-share {
     grid-column: 1;
     grid-row: auto;
+    min-width: 0;
   }
+  .mp-act-share { flex-wrap: wrap; }
+  .mp-act-share .mp-share-btns { flex-wrap: wrap; margin-left: 0; }
   .mp-chip, .mp-layer-tab { min-height: 36px; height: 36px; }
 }
 

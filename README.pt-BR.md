@@ -11,9 +11,7 @@ O BRASPACE / MoonProof é um protótipo educacional e de engenharia para avaliar
 Conferido em **2026-11-14** (`HTTP 200`):
 
 - **Aplicação Web (GitHub Pages):** https://braspace.github.io/
-  - Polar Lab: https://braspace.github.io/lab.html
-  - Computador de Bordo (Onboard Cockpit): https://braspace.github.io/onboard/cockpit.html
-  - Demo do Mapa Polar: https://braspace.github.io/polar-map-demo.html
+  - **MoonProof (o produto):** https://braspace-moonproof.almeida-me.workers.dev/moonproof/ — Polar Lab, Onboard, Studio, Classic e o shell antigo estão arquivados em `archive/web-legacy/` (15/11/2026).
 - **API Pública:** https://braspace-api.srv1898743.hstgr.cloud
   - Saúde: https://braspace-api.srv1898743.hstgr.cloud/api/health
   - Prontidão: https://braspace-api.srv1898743.hstgr.cloud/readyz
@@ -110,7 +108,7 @@ Veja [`docs/TESTING.md`](docs/TESTING.md) para detalhes.
 |---|---|
 | `api/` | Servidor HTTP Go (`braspace.mission.v1`), especificação OpenAPI (`api/openapi.json`), catálogo e séries (`api/sitedata/`). |
 | `engine/` | Motor determinístico em Rust (`braspace-lunar-engine`). |
-| `web/` | Frontend estático, Polar Lab (`lab.html`), Computador de Bordo (`onboard/cockpit.html`), demo polar (`polar-map-demo.html`) e dados pré-computados (`web/data/`). |
+| `web/` | MoonProof (`web/moonproof/`, Preact TSX), visualizador 3D Moon HD em Three.js (`moon-hd.html`), módulos compartilhados do Lab e dados pré-computados (`web/data/`). Superfícies antigas: `archive/web-legacy/`. |
 | `science/` | Pipeline offline em Python para DEMs LOLA da NASA, kernels NAIF SPICE e benchmarks PGDA/Horizons. |
 | `docs/` | Documentação de arquitetura, API, proveniência de dados, testes, deploy e time ([`docs/README.md`](docs/README.md)). |
 | `scripts/` | Scripts de auditoria, smoke-test (`smoke-publico.sh`) e verificação. |

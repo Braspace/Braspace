@@ -103,7 +103,7 @@ browser_qa() {
   export BRASPACE_API_PORT=$qp
   sed "s#from \"playwright\"#from \"playwright-core\"#; s#chromium.launch({#chromium.launch({executablePath:\"$(command -v google-chrome)\",#" web/browser/e2e.mjs > "$BTMP/web/browser/e2e.mjs"
   ( cd "$BTMP" && cp -r "$OLDPWD/data" "$OLDPWD/examples" . 2>/dev/null; NODE_PATH="$BTMP/web/node_modules" BRASPACE_REQUIRE_BACKEND=1 BRASPACE_BROWSER_ARTIFACTS="$BTMP/shots" \
-    ONBOARD_API_URL=http://127.0.0.1:$qp node --test web/onboard/test/*.mjs && BRASPACE_REQUIRE_BACKEND=1 BRASPACE_BROWSER_ARTIFACTS="$BTMP/shots" node web/browser/e2e.mjs ); local rc=$?
+    BRASPACE_REQUIRE_BACKEND=1 BRASPACE_BROWSER_ARTIFACTS="$BTMP/shots" node web/browser/e2e.mjs ); local rc=$?
   kill $ap 2>/dev/null; return $rc
 }
 

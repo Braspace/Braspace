@@ -121,7 +121,18 @@ const rulesCard = el("article", "mp-card mp-rules"), alertCard = el("article", "
 const left = $("left"), right = $("right");
 const sheet = $("sheet");
 
-async function draw() {
+// Every caller fires draw() without awaiting it: a failed series fetch (offline, or cancelled by navigation)
+// must not become an unhandled rejection. Show it, and clear the cache key so the next draw retries.
+function draw(): Promise<void> {
+  return drawNow().then(() => { document.querySelector(".mp-ck-loaderr")?.remove(); }, (err: unknown) => {
+    S.siteKey = "";
+    let note = document.querySelector<HTMLElement>(".mp-ck-loaderr");
+    if (!note) { note = el("p", "mp-ck-loaderr mp-glass"); note.setAttribute("role", "status"); document.body.append(note); }
+    note.textContent = t("cockpit.load_failed");
+    note.dataset.error = String((err as Error)?.message || err);
+  });
+}
+async function drawNow() {
   await compute();
   const th = hourIndex(S.t, hoursOf()); // series and API trace are hourly: read them at a whole hour, keep S.t continuous
   const st = getState(), site = (doc.sites.find(s => s.id === st.site) as Site), L = S.light as Light, run = S.run, series = L.series, H = hoursOf();
@@ -138,7 +149,7 @@ async function draw() {
   const seal = "SIM";
 
   shell.setContext({ site: t("cockpit.simulated_operation", { site: `${site.n} · ${site.name}` }),
-    date: `${t("cockpit.day_time", { n: clock.day, h: clock.hhmm })} UTC`, days: fmtNum(H / 24), seal, online, ...(narrow() ? { action: { label: t("cockpit.onboard"), href: "../onboard/" } } : {}) }); // desktop has the bottom-left link; the phone hides it
+    date: `${t("cockpit.day_time", { n: clock.day, h: clock.hhmm })} UTC`, days: fmtNum(H / 24), seal, online });
   const ctxEl = document.querySelector(".mp-context");
   if (ctxEl) { const chip = el("span", "mp-sim-chip", t("cockpit.sim_label")); ctxEl.append(el("span", "mp-label", t("cockpit.profile")), chip); }
 
@@ -219,7 +230,6 @@ async function draw() {
   $("time").textContent = clock.text; $("end").textContent = "D" + fmtNum(H / 24);
   $("play").textContent = S.playing ? "⏸" : "▶"; $("play").setAttribute("aria-label", t(S.playing ? "cockpit.pause" : "cockpit.play"));
   $("restart").setAttribute("aria-label", t("cockpit.restart")); $("speed").setAttribute("aria-label", t("cockpit.speed")); rg.setAttribute("aria-label", t("cockpit.time"));
-  $("onboard").textContent = t("cockpit.onboard"); $<HTMLAnchorElement>("onboard").href = "../onboard/";
   // Printable site report from the onboard computer API (was only in the legacy onboard panel).
   const rep = $<HTMLButtonElement>("report"); rep.textContent = t("cockpit.report"); rep.disabled = !S.reportReq; rep.title = S.reportReq ? t("cockpit.report.hint") : t("cockpit.report.offline");
   $("handle").setAttribute("aria-label", t("cockpit.sheet"));

@@ -11,39 +11,15 @@ const upstreamHost="127.0.0.1",upstreamPort=Number.parseInt(process.env.BRASPACE
 const staticFiles=new Map([
   ["/",{name:"index.html",type:"text/html; charset=utf-8"}],
   ["/index.html",{name:"index.html",type:"text/html; charset=utf-8"}],
-  ["/styles.css",{name:"styles.css",type:"text/css; charset=utf-8"}],
   ["/api-base.js",{name:"api-base.js",type:"text/javascript; charset=utf-8"}],
   ["/vector-embed.js",{name:"vector-embed.js",type:"text/javascript; charset=utf-8"}],
   ["/vendor/preact/preact.module.js",{name:"vendor/preact/preact.module.js",type:"text/javascript; charset=utf-8"}],
-  ["/app.js",{name:"app.js",type:"text/javascript; charset=utf-8"}],
-  ["/moon3d.js",{name:"moon3d.js",type:"text/javascript; charset=utf-8"}],
-  ["/classic.html",{name:"classic.html",type:"text/html; charset=utf-8"}],
-  ["/polar-map-demo.html",{name:"polar-map-demo.html",type:"text/html; charset=utf-8"}],
-  ["/polar-map.js",{name:"polar-map.js",type:"text/javascript; charset=utf-8"}],
-  ["/polar-map.css",{name:"polar-map.css",type:"text/css; charset=utf-8"}],
-  ["/assets/polar-elevation-87s.json",{name:"assets/polar-elevation-87s.json",type:"application/json; charset=utf-8"}],
-  ["/assets/polar-elevation-87s.webp",{name:"assets/polar-elevation-87s.webp",type:"image/webp"}],
 ]);
-// v3 shell: design system (ds/), route views (shell/) and static images (assets/).
-// Fixed prefixes, strict character set, known extensions only.
-const v3Types={".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".woff2":"font/woff2",
- ".json":"application/json; charset=utf-8",".webp":"image/webp"};
-export function v3File(pathname){
- const m=/^\/(ds|shell|assets)\/[A-Za-z0-9_\-\/]+\.(js|css|woff2|json|webp)$/.exec(pathname);
- if(!m||pathname.includes(".."))return null;
- const ext=pathname.slice(pathname.lastIndexOf("."));
- if(m[1]==="assets"&&![".json",".webp"].includes(ext))return null;
- if(m[1]!=="assets"&&[".json",".webp"].includes(ext))return null;
- const name=path.normalize(pathname.slice(1));
- if(!name.startsWith(m[1]+path.sep))return null;
- return {name,type:v3Types[ext]};
-}
-// Polar Lab / Landing Lab: static page, modules and precomputed NASA-derived data.
+// Shared lab modules (physics, scene, coords, terrain, data) used by MoonProof and the NASA-derived data.
 // Only fixed prefixes, a strict character set and known extensions are served.
 const labTypes={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",
  ".json":"application/json; charset=utf-8",".bin":"application/octet-stream",".jpg":"image/jpeg"};
 export function labFile(pathname){
- if(pathname==="/lab.html")return {name:"lab.html",type:labTypes[".html"]};
  if(!/^\/(lab|data)\/[A-Za-z0-9_\-\/]+\.(js|css|json|bin|jpg)$/.test(pathname)||pathname.includes(".."))return null;
  const ext=pathname.slice(pathname.lastIndexOf("."));
  if(pathname.startsWith("/lab/")&&![".js",".css"].includes(ext))return null;
@@ -71,42 +47,6 @@ export function moonHdFile(pathname){
  if(pathname==="/moon-hd/pole-preview.webp")return {name:"moon-hd/pole-preview.webp",type:"image/webp"};
  if(!/^\/moon-hd\/[a-z0-9\-]+\.(js|css)$/.test(pathname))return null;
  return {name:path.normalize(pathname.slice(1)),type:labTypes[pathname.slice(pathname.lastIndexOf("."))]};
-}
-// Restrict Onboard Cockpit static access to reviewed HTML and JS files.
-// No arbitrary directory traversal, Python server source or local secrets.
-const onboardTypes=new Map([
- ["index.html","text/html; charset=utf-8"],
- ["cockpit.html","text/html; charset=utf-8"],
- ["cockpit.css","text/css; charset=utf-8"],
- ...["app.js","api.js","cockpit.js","config.js","features.js","live.js","model.js","nav.js","request.js","sim.js"].map(name=>[name,"text/javascript; charset=utf-8"])
-]);
-export function onboardFile(pathname){
- if(pathname==="/onboard/")return {name:"onboard/index.html",type:onboardTypes.get("index.html")};
- if(!pathname.startsWith("/onboard/"))return null;
- const name=pathname.slice("/onboard/".length);
- const type=onboardTypes.get(name);
- return type?{name:"onboard/"+name,type}:null;
-}
-// Mission Studio has a fixed allowlist; source specs, secrets and local files
-// are deliberately inaccessible through this same-origin preview.
-const studioTypes=new Map([
- ["index.html","text/html; charset=utf-8"],
- ["app.js","text/javascript; charset=utf-8"],
- ["api.js","text/javascript; charset=utf-8"],
- ["studio.css","text/css; charset=utf-8"]
-]);
-export function studioFile(pathname){
- if(pathname==="/studio/")return {name:"studio/index.html",type:studioTypes.get("index.html")};
- if(!pathname.startsWith("/studio/"))return null;
- const name=pathname.slice("/studio/".length);
- const type=studioTypes.get(name);
- return type?{name:"studio/"+name,type}:null;
-}
-// Dashboard is static; never serve its dev server, README or tests.
-export function dashboardFile(pathname){
- if(pathname==="/dashboard/")pathname="/dashboard/index.html";
- const files={"/dashboard/index.html":"text/html; charset=utf-8","/dashboard/dashboard.js":"text/javascript; charset=utf-8","/dashboard/dashboard.css":"text/css; charset=utf-8"};
- return Object.hasOwn(files,pathname)?{name:pathname.slice(1),type:files[pathname]}:null;
 }
 const csp=[
   "default-src 'none'",
@@ -192,11 +132,7 @@ export function createServer(){
    res.end(body);
    return;
   }
-  // Cockpit HTML uses scoped inline CSS; do not relax the global CSP.
-  if(pathname==="/onboard/"||pathname==="/onboard/index.html"||pathname==="/onboard/cockpit.html"){
-   res.setHeader("Content-Security-Policy",csp.replace("style-src 'self'","style-src 'self' 'unsafe-inline'"));
-  }
-  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname)||studioFile(pathname)||moonproofFile(pathname)||v3File(pathname)||moonHdFile(pathname)||dashboardFile(pathname);
+  const file=staticFiles.get(pathname)||labFile(pathname)||moonproofFile(pathname)||moonHdFile(pathname);
   if(!file){res.writeHead(404);res.end("Not found");return;}
   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
   try{
@@ -204,7 +140,11 @@ export function createServer(){
    res.writeHead(200,{"content-type":file.type,"content-length":bytes.length});
    if(req.method==="HEAD"){res.end();return;}
    res.end(bytes);
-  }catch{res.writeHead(500);res.end("Static asset failed to load");}
+  }catch(err){
+   // An allowed pattern that matches no file (e.g. an archived module) is a plain 404, not a server error.
+   if(err?.code==="ENOENT"||err?.code==="EISDIR"){res.writeHead(404);res.end("Not found");return;}
+   res.writeHead(500);res.end("Static asset failed to load");
+  }
  });
  server.requestTimeout=30000;
  server.headersTimeout=10000;

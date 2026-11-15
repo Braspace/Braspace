@@ -164,3 +164,6 @@
   .mp-ck-left .mp-sat{width:56px;height:56px;margin:-28px 0 0 -28px}
   .mp-ck-left .mp-sat b{font-size:12px}.mp-ck-left .mp-sat span{font-size:9px;line-height:1.1;max-width:52px;white-space:normal;text-align:center}
 }
+
+/* Series failed to load (offline or cancelled): one status line above the bottom bar, never invented numbers. */
+.mp-ck-loaderr{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:60;max-width:min(560px,calc(100vw - 26px));margin:0;padding:10px 16px;border-radius:18px;font-size:13px;line-height:18px;text-align:center}
