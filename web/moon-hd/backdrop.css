@@ -37,3 +37,24 @@ html.moon-explore-on { overflow: hidden; }
 /* Phones: clear the bottom navigation bar of the MoonProof shell. */
 @media (max-width: 720px) { .moon-ui { bottom: calc(84px + env(safe-area-inset-bottom)); } .moon-ui:not(.is-explore) .moon-open { padding: 8px 12px; } }
 @media print { .moon-ui, .moon-backdrop { display: none !important; } }
+
+/* ---- Sites on the 3D Moon (from GET /api/sites): dots behind the panels, labelled buttons in explore mode ---- */
+.moon-pins { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.moon-pin { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 6px; margin: 0; padding: 0; border: 0; background: none;
+  color: #f2f4f7; font: 600 12px/1.1 system-ui, -apple-system, "Segoe UI", sans-serif; white-space: nowrap; cursor: pointer; pointer-events: none;
+  transform-origin: 0 0; will-change: transform; }
+.moon-pin.is-off { visibility: hidden; }
+.moon-pin i { flex: none; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px rgba(5,6,8,.6), 0 0 10px rgba(255,255,255,.5); }
+.moon-pin.has-series i { background: #2EC4A0; box-shadow: 0 0 0 2px rgba(5,6,8,.6), 0 0 12px rgba(46,196,160,.8); }
+.moon-pin[aria-pressed="true"] i { width: 14px; height: 14px; margin: -7px 0 0 -7px; background: #ffd166; box-shadow: 0 0 0 3px rgba(255,209,102,.35), 0 0 16px rgba(255,209,102,.9); }
+.moon-pin span { display: none; padding: 4px 9px; border-radius: 999px; background: rgba(10,13,18,.78); border: 1px solid rgba(255,255,255,.16);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); transform: translateY(-50%); margin-top: -1px; }
+.moon-backdrop.is-explore .moon-pin { pointer-events: auto; }
+.moon-backdrop.is-explore .moon-pin span, .moon-pin[aria-pressed="true"] span { display: inline-block; }
+.moon-backdrop.is-explore .moon-pin:hover span, .moon-pin:focus-visible span { border-color: #2EC4A0; }
+.moon-pin:focus-visible { outline: none; }
+.moon-pin:focus-visible i { outline: 2px solid #2EC4A0; outline-offset: 3px; }
+/* the veil sits above the canvas but below the pins */
+.moon-backdrop::after { z-index: 0; pointer-events: none; }
+.moon-backdrop:not(.is-explore) .moon-pin { opacity: .75; }
+@media (max-width: 720px) { .moon-backdrop.is-explore .moon-pin span { font-size: 11px; padding: 3px 7px; } }

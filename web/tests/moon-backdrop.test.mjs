@@ -150,7 +150,10 @@ test("backdrop source: three.js only on demand, same pinned version as the viewe
  assert.doesNotMatch(src,/console\.|alert\(|throw /,"fails silently");
  assert.match(src,/webglcontextlost/);assert.match(src,/prefers-reduced-motion/);assert.match(src,/visibilitychange/);assert.match(src,/IntersectionObserver/);
  assert.match(src,/aria-hidden/);
- assert.doesNotMatch(src,/\.style\b|cssText|style=/,"all styling lives in backdrop.css (CSP style-src 'self')");
+ // CSP style-src 'self' blocks style attributes and cssText, not CSSOM property writes: only the pin position
+ // (el.style.transform, computed per frame) is set from script; every other rule lives in backdrop.css.
+ assert.doesNotMatch(src,/cssText|style=|setAttribute\("style"/,"no style attribute (CSP style-src 'self')");
+ assert.deepEqual([...src.matchAll(/\.style\.(\w+)/g)].map(m=>m[1]),["transform"],"only the per-frame pin transform is set from script");
  assert.doesNotMatch(src,/holdReady|markReady|ready\.js/,"never touches the first-paint gate");
  const css=await read("moon-hd/backdrop.css");
  assert.match(css,/\.moon-backdrop\s*\{[^}]*position:\s*fixed[^}]*inset:\s*0[^}]*z-index:\s*-1[^}]*pointer-events:\s*none/);

@@ -172,6 +172,76 @@ export async function mountMoonBackdrop(options?: BackdropOptions): Promise<{ di
 
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     let onScreen = true, last = 0, streak = 0, still = false, idleUntil = 0, pending = 0, exploring = false;
+    const frameCallbacks = new Set<(dt: number, now: number) => void>();
+
+    // ---- Sites from the API as pins on the globe (display only: cited feature centres, not touchdown points) ----
+    const pinLayer = document.createElement("div"); pinLayer.className = "moon-pins"; wrap.append(pinLayer);
+    interface Pin { id: string; name: string; lat: number; lon: number; p: Three; el: HTMLButtonElement; }
+    let pins: Pin[] = [], selectedId = "";
+    const v3 = new THREE.Vector3(), camDir = new THREE.Vector3();
+    const toScene = (lat: number, lon: number, r = 1) => new THREE.Vector3(...E.toGlobeScene(E.bodyDirection(lat, lon))).multiplyScalar(r);
+    function placePins() {
+      if (!pins.length) return;
+      const w = innerWidth, h = innerHeight;
+      camDir.copy(camera.position);
+      for (const pin of pins) {
+        // visible when the pin's outward normal faces the camera (horizon test on the unit sphere)
+        const facing = pin.p.dot(camDir) - pin.p.lengthSq() > 0.02;
+        v3.copy(pin.p).project(camera);
+        const off = !facing || v3.z > 1 || Math.abs(v3.x) > 1.05 || Math.abs(v3.y) > 1.05;
+        pin.el.classList.toggle("is-off", off);
+        if (!off) pin.el.style.transform = `translate(${((v3.x * .5 + .5) * w).toFixed(1)}px,${((-v3.y * .5 + .5) * h).toFixed(1)}px)`;
+      }
+    }
+    // Camera tween to a site (angle/lat/distance), used by pins and by other screens (moonBackdrop.focusSite).
+    let tween: { t0: number; from: number[]; to: number[] } | null = null;
+    const stepTween = (now: number) => {
+      if (!tween) return;
+      const k = Math.min(1, (now - tween.t0) / 900), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      [angle, lat, distance] = tween.from.map((f, i) => f + (tween!.to[i] - f) * e);
+      if (k >= 1) tween = null;
+    };
+    const focusLatLon = (la: number, lo: number, dist = 2.4) => {
+      const d = toScene(la, lo);
+      let a = Math.atan2(-d.z, d.x);
+      while (a - angle > Math.PI) a -= 2 * Math.PI; while (angle - a > Math.PI) a += 2 * Math.PI;
+      tween = { t0: performance.now(), from: [angle, lat, distance], to: [a, clampLat(Math.asin(Math.max(-1, Math.min(1, d.y))) * 180 / Math.PI), clampDistance(dist)] };
+      idleUntil = performance.now() + 12000;
+      const run = (t: number) => { stepTween(t); draw(); if (tween && !dead) requestAnimationFrame(run); };
+      requestAnimationFrame(run);
+    };
+    const selectSite = (id: string, focus = true) => {
+      const pin = pins.find(p => p.id === id); if (!pin) return;
+      selectedId = id;
+      for (const p of pins) p.el.setAttribute("aria-pressed", String(p.id === id));
+      if (focus) focusLatLon(pin.lat, pin.lon);
+      window.dispatchEvent(new CustomEvent("moon:site-selected", { detail: { id: pin.id, name: pin.name, lat: pin.lat, lon: pin.lon } }));
+    };
+    const loadPins = async () => {
+      try {
+        const { apiURL } = await import("../api-base.js");
+        const res = await fetch(apiURL("/api/sites"), { headers: { accept: "application/json" } });
+        if (!res.ok) return;
+        const body = await res.json();
+        const list = Array.isArray(body?.sites) ? body.sites : [];
+        for (const s of list) {
+          const la = Number(s?.coordinate?.latitude_deg), lo = Number(s?.coordinate?.longitude_deg);
+          if (!Number.isFinite(la) || !Number.isFinite(lo) || typeof s?.id !== "string") continue;
+          const el = document.createElement("button");
+          el.type = "button"; el.className = "moon-pin" + (s.series_file ? " has-series" : "");
+          el.setAttribute("aria-pressed", "false");
+          el.title = `${s.name || s.id} · ${la.toFixed(2)}°, ${lo.toFixed(2)}°`;
+          const dot = document.createElement("i"), label = document.createElement("span");
+          label.textContent = String(s.name || s.id); el.append(dot, label);
+          el.addEventListener("click", () => selectSite(s.id));
+          pinLayer.append(el);
+          pins.push({ id: s.id, name: String(s.name || s.id), lat: la, lon: lo, p: toScene(la, lo, 1.004), el });
+        }
+        const wanted = new URLSearchParams(location.search).get("site") || new URLSearchParams(String(location.hash).split("?")[1] || "").get("site");
+        if (wanted) selectSite(wanted, false);
+        requestDraw();
+      } catch { /* no pins: the Moon stays a complete backdrop */ }
+    };
     const draw = () => {
       camera.position.set(...cameraPosition(view, angle, lat, distance));
       camera.lookAt(0, 0, 0);
@@ -179,6 +249,7 @@ export async function mountMoonBackdrop(options?: BackdropOptions): Promise<{ di
       stars?.position.copy(camera.position);
       if (cap) S.setPolarFrame(cap, moon.lightDir, camera);
       renderer.render(scene, camera);
+      placePins();
     };
     /** One frame on demand (user input), even when auto-orbit is stopped, slow or reduced-motion. */
     const requestDraw = () => { if (!pending && !dead) pending = requestAnimationFrame(() => { pending = 0; if (!dead) draw(); }); };
@@ -191,7 +262,10 @@ export async function mountMoonBackdrop(options?: BackdropOptions): Promise<{ di
       // stop animating and keep what is drawn as a still background (user input still redraws on demand).
       streak = slowStreak(streak, now - last);
       if (streak >= SLOW_FRAMES_TO_STOP) { still = true; cancelAnimationFrame(raf); raf = 0; return; }
-      if (now > idleUntil) angle += Math.min(0.25, (now - last) / 1000) * 2 * Math.PI / ORBIT_SECONDS;
+      const dt = Math.min(0.25, (now - last) / 1000);
+      if (now > idleUntil && !tween) angle += dt * 2 * Math.PI / ORBIT_SECONDS;
+      stepTween(now);
+      for (const cb of frameCallbacks) { try { cb(dt, now); } catch { frameCallbacks.delete(cb); } }
       last = now;
       draw();
     };
@@ -224,6 +298,7 @@ export async function mountMoonBackdrop(options?: BackdropOptions): Promise<{ di
     const down = (e: PointerEvent) => {
       if (e.button > 0) return;
       const target = e.target as Element | null;
+      if (target?.closest?.(".moon-pin")) return; // pins are buttons: a tap selects, never drags
       const mine = exploring ? !!target?.closest?.(".moon-backdrop") : (!lazy && e.pointerType !== "touch" && isBackgroundTarget(target));
       if (!mine) return;
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -265,8 +340,8 @@ export async function mountMoonBackdrop(options?: BackdropOptions): Promise<{ di
 
     // Explore mode: the Moon comes in front of the page, without veil, with its own controls (works on touch).
     const pt = (document.documentElement.lang || navigator.language || "").toLowerCase().startsWith("pt");
-    const T = pt ? { open: "Explorar a Lua", close: "Voltar", zin: "Aproximar", zout: "Afastar", reset: "Centralizar", hint: "Arraste para girar · role ou pince para zoom · Esc para sair" }
-                 : { open: "Explore the Moon", close: "Back", zin: "Zoom in", zout: "Zoom out", reset: "Reset view", hint: "Drag to turn · scroll or pinch to zoom · Esc to leave" };
+    const T = pt ? { open: "Explorar a Lua", close: "Mostrar painéis", zin: "Aproximar", zout: "Afastar", reset: "Centralizar", hint: "Arraste para girar · role ou pince para zoom · toque num local para ir até ele · Esc volta aos painéis" }
+                 : { open: "Explore the Moon", close: "Show panels", zin: "Zoom in", zout: "Zoom out", reset: "Reset view", hint: "Drag to turn · scroll or pinch to zoom · tap a site to fly to it · Esc returns to the panels" };
     const ui = document.createElement("div");
     ui.className = "moon-ui";
     const button = (cls: string, label: string, text: string, act: () => void) => {
@@ -312,6 +387,21 @@ export async function mountMoonBackdrop(options?: BackdropOptions): Promise<{ di
     wrap.classList.add("is-on");
     kick();
     if (options?.explore) setExplore(true);
+    loadPins();
+
+    // Shared scene hooks: other modules (e.g. the Artemis lander in the cockpit) add objects to THIS scene instead of
+    // creating a second Moon. Display only; nothing here feeds a calculation.
+    const api = {
+      THREE, scene, camera, moon, renderer,
+      requestDraw, toScene, focusLatLon, selectSite, explore: setExplore,
+      onFrame(cb: (dt: number, now: number) => void) { frameCallbacks.add(cb); kick(); return () => frameCallbacks.delete(cb); },
+      get pins() { return pins.map(({ id, name, lat, lon }) => ({ id, name, lat, lon })); },
+      get selectedId() { return selectedId; },
+    };
+    (window as unknown as { moonBackdrop?: unknown }).moonBackdrop = api;
+    cleanups.push(() => { const w = window as unknown as { moonBackdrop?: unknown }; if (w.moonBackdrop === api) delete w.moonBackdrop; });
+    on(window, "moon:focus-site", ((e: CustomEvent) => { if (e.detail?.id) selectSite(String(e.detail.id)); }) as EventListener);
+    window.dispatchEvent(new CustomEvent("moon-backdrop:ready", { detail: api }));
 
     // South cap (LOLA 320 m, terrain shadows): after the first frame, never on phones.
     if (want.cap) S.createCap({ renderer, base: BASE, manifest, moon, segments: want.capSegments, steps: want.capSteps, wideOnly: true }).then(made => {
