@@ -74,6 +74,7 @@ Serve with `cd web && node dev-server.mjs` (set `BRASPACE_WEB_PORT` if 5173 is t
 - **Explore the Moon ↔ Show panels** on every screen: Joel's Moon HD (`web/moon-hd/backdrop.ts`) behind the panels or full screen, with the catalogue sites from `GET /api/sites` as pins; the camera orbits the selected site in perspective. Map screens keep their LOLA relief and load the 3D only on demand.
 - **Cockpit:** an illustrative Artemis-style lander (`web/moon-hd/artemis.ts`) over the south pole on that same scene — the same model as the gamified Landing Lab. Not telemetry.
 - **Density** (`web/moonproof/core/density.css`) and collapsible panels within Heloísa's design system; ≥ 44 px touch targets; Lighthouse A11y/SEO 100.
+- **Transient catalogue/series errors:** `web/moonproof/core/data.ts` shares in-flight loads and discards rejected promises, allowing a later retry instead of permanently caching a failed fetch. Regression: `web/moonproof/tests/data-cache-retry.test.mjs` (related to #385); this does not replace live browser/asset checksum verification.
 - Details, public `window.moonBackdrop` API and the Worker deploy runbook: [`docs/MOONPROOF_FRONT_RUNTIME.md`](docs/MOONPROOF_FRONT_RUNTIME.md).
 
 ---
