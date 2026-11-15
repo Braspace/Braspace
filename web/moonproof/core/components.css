@@ -22,7 +22,7 @@
 .mp-seal[data-seal="EST"]{border-style:dashed}
 .mp-seal[data-seal="SIM"]{border-color:var(--sim);color:var(--sim);background:repeating-linear-gradient(135deg,rgba(180,140,242,.22) 0 3px,transparent 3px 6px)}
 .mp-seal[data-seal="N/D"]{border-color:var(--unknown);color:var(--unknown);background:repeating-linear-gradient(135deg,rgba(128,140,153,.2) 0 3px,transparent 3px 6px)}
-.mp-seal[data-seal="FALHA"]{background:var(--fail);border-color:var(--fail-text);color:#fff}
+.mp-seal[data-seal="FALHA"]{background:var(--fail-fill);border-color:var(--fail-text);color:#fff}
 .mp-seal[data-seal="FALHA"]::before{content:"✕ "}
 /* Long origin states break only at "_" (layers.js inserts <wbr>), never mid-word. */
 .mp-proof td.mp-state{overflow-wrap:normal;word-break:normal}
