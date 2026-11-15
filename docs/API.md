@@ -26,7 +26,7 @@ Every 4xx/5xx body is JSON with a stable `code` (see each operation). Science fi
 | `GET` | [`/api/layers/{id}/asset`](#get-api-layers-id-asset) | Same-origin copy of a proxy layer, fetched only from its registered source_url and served only if size and SHA-256 match | 200, 404, 502 |
 | `GET` | [`/api/sites/{id}/media`](#get-api-sites-id-media) | Gallery links related to a site | 200, 404 |
 | `POST` | [`/api/onboard/site-report`](#post-api-onboard-site-report) | Printable mission report (#72) for the site-evaluate input, with crew consumables and the combined decision | 200, 400, 404, 413, 415, 422, 500, 502, 503, 504 |
-| `POST` | [`/api/onboard/report`](#post-api-onboard-report) | Printable mission report for an onboard request (owned by #72) | 200, 400, 413, 415, 422 |
+| `POST` | [`/api/onboard/report`](#post-api-onboard-report) | Printable mission report for an onboard request (owned by #72) | 200, 400, 413, 415, 422, 500 |
 | `POST` | [`/api/onboard/navigation`](#post-api-onboard-navigation) | Synthetic lunar GNSS geometry for one site over a time window (premises are assumptions, not a validated navigation model) | 200, 400, 413, 415, 422 |
 | `POST` | [`/api/onboard/evaluate`](#post-api-onboard-evaluate) | Onboard simulator v1 with caller-supplied visibility booleans (owned by #70) | 200, 400, 413, 415, 422 |
 | `GET` | [`/api/openapi.json`](#get-api-openapi-json) | This document | 200 |
@@ -225,10 +225,11 @@ Request body (required): `application/json` `StandaloneOnboardRequest`
 | Status | Content | Meaning |
 |---|---|---|
 | 200 | `text/html` — | HTML |
-| 400 | — | Invalid JSON |
-| 413 | — | Too large |
-| 415 | — | Content-Type |
-| 422 | — | Invalid scenario |
+| 400 | `application/json` `Error` | Invalid JSON |
+| 413 | `application/json` `Error` | Too large |
+| 415 | `application/json` `Error` | Content-Type |
+| 422 | `application/json` `Error` | Invalid scenario |
+| 500 | `application/json` `Error` | Report generation failed |
 
 ### POST /api/onboard/navigation
 
