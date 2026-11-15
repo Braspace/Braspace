@@ -2,7 +2,8 @@
 // Real process integration: every documented OpenAPI operation is exercised
 // through both the Go HTTP service and the same-origin web preview. Synthetic
 // fixtures are engineering tests, never scientific validation. No NASA or
-// pgvector network services are required by this default offline matrix.
+// pgvector network services are required by default. Set the dedicated E2E
+// database URL to exercise the same matrix over an ingested PostgreSQL catalog.
 import assert from "node:assert/strict";
 import {spawn} from "node:child_process";
 import {readFile} from "node:fs/promises";
@@ -14,6 +15,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const apiBinary = process.env.BRASPACE_E2E_API_BIN || "/tmp/braspace-e2e-api";
 const rustBinary = process.env.BRASPACE_E2E_RUST_BIN ||
   join(root, "engine/target/debug/braspace-lunar-engine");
+const catalogDatabase = process.env.BRASPACE_E2E_DATABASE_URL || "";
 const children = [];
 const diagnostics = [];
 const coverage = new Map();
@@ -68,12 +70,13 @@ try {
     Object.keys(operations).filter(method => methods.has(method)).map(method => `${method.toUpperCase()} ${path}`)));
   const apiChild = launch(apiBinary, [], {
     cwd: join(root, "api"),
-    // This lane intentionally exercises embedded storage and disabled optional
-    // vector metadata; dedicated Compose tests cover PostgreSQL/pgvector.
+    // Never use an ambient DATABASE_URL; this lane is opt-in.
+    // Optional vector metadata is tested separately.
     env: {...process.env, LISTEN_ADDR: `127.0.0.1:${apiPort}`, RUST_ENGINE_BIN: rustBinary,
-      DATABASE_URL: "", VECTOR_DATABASE_URL: "", BRASPACE_VECTOR_ENABLED: "0"}
+      DATABASE_URL: catalogDatabase, VECTOR_DATABASE_URL: "", BRASPACE_VECTOR_ENABLED: "0"}
   });
   await waitUntilReady(baseAPI, "/readyz", apiChild);
+  console.log("Catalog:", catalogDatabase ? "PostgreSQL" : "embedded");
   const webChild = launch(process.execPath, ["web/dev-server.mjs"], {
     cwd: root, env: {...process.env, BRASPACE_WEB_PORT: String(webPort), BRASPACE_API_PORT: String(apiPort)}
   });

@@ -21,3 +21,18 @@ O comando `vector-ingest` da linha atual usa a projeção lexical `braspace-lexi
 O teste de integração cobre rollback provocado por uma linha rejeitada, repetição idempotente, ordenação por cosseno e recusa de modelo diferente. O contrato de busca usa 384 números e limite de 1 a 10. O limite padrão de 5 só se aplica quando o campo é omitido. Empates são resolvidos pelo identificador da fonte, em ordenação binária.
 
 Valide também a busca nas duas telas de Evidências com `BRASPACE_VECTOR_ENABLED=1`, `BRASPACE_VECTOR_MODEL_ID=braspace-lexical-384-v1` e o índice carregado. A busca deve retornar nome e referência da fonte e manter `scientifically_validated: false`. Os resultados são metadados. As amostras de missão continuam no PostgreSQL convencional ou no catálogo embarcado.
+
+Para rodar a matriz HTTP também com PostgreSQL, use o banco descartável do
+catálogo. O teste compara a resposta direta da API com a resposta do proxy web
+em cada operação documentada. Use um banco já carregado com os dados do checkout:
+
+```sh
+mkdir -p tmp
+(cd api && go build -o ../tmp/braspace-e2e-api .)
+(cd api && DATABASE_URL="$TEST_DATABASE_URL" ../tmp/braspace-e2e-api ingest)
+BRASPACE_E2E_API_BIN="$PWD/tmp/braspace-e2e-api" \
+BRASPACE_E2E_DATABASE_URL="$TEST_DATABASE_URL" node scripts/fullstack-e2e.mjs
+```
+
+Sem `BRASPACE_E2E_DATABASE_URL`, a matriz usa o catálogo embarcado. Nos dois
+modos a busca vetorial fica desligada por padrão e tem sua própria suíte.
