@@ -162,7 +162,7 @@ details.alarm .sev-CRITICAL { color: var(--c-bad-t); } details.alarm .sev-HIGH {
 @media (max-width: 860px) {
   .app { grid-template-columns: minmax(0, 1fr); }
   /* sidebar becomes a bottom navigation bar */
-  aside.side { position: fixed; left: 8px; right: 8px; bottom: 8px; top: auto; height: auto; z-index: 40; padding: 6px; border: 1px solid var(--c-line); border-radius: var(--r-pill); flex-direction: row; overflow: visible; }
+  aside.side { position: static; margin: 8px 8px 0; height: auto; padding: 6px; border: 1px solid var(--c-line); border-radius: var(--r-pill); flex-direction: row; overflow: visible; }
   .side .brand, .side-foot { display: none; }
   nav.tabs { flex-direction: row; overflow-x: auto; gap: 4px; scrollbar-width: none; scroll-snap-type: x proximity; }
   nav.tabs::-webkit-scrollbar { display: none; }
@@ -170,9 +170,10 @@ details.alarm .sev-CRITICAL { color: var(--c-bad-t); } details.alarm .sev-HIGH {
   nav.tabs button { flex: 0 0 auto; min-height: var(--touch); scroll-snap-align: start; }
   header.top { position: static; padding: 10px 12px; }
   .status { margin-left: 0; }
-  .content { padding: 12px 12px 140px; }
+  .content { padding: 12px 12px calc(24px + env(safe-area-inset-bottom, 0px)); }
   .table { display: block; overflow-x: auto; max-width: 100%; }
-  .fab { bottom: 82px; right: 12px; }
+  /* in flow inside the header (cockpit.js moves it), so it never floats over text */
+  .fab { position: static; align-self: stretch; justify-content: center; margin: 4px 0 0; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
