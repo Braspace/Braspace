@@ -171,3 +171,11 @@
 .mp-ck-moon{display:flex;width:100%;justify-content:center;align-items:center;gap:6px;margin:10px 0 12px;border-color:rgba(46,196,160,.55)}
 .mp-ck-moon:hover{border-color:rgba(46,196,160,.9)}
 .mp-ck-moon[disabled]{opacity:.7;cursor:default}
+
+/* QA prod 15/11 (EXO-X1, round 3): phone — time player overlapped the bottom nav by 6 px; tablet — the
+   "Relatório imprimível / Abrir painel" links sat on the same row as the centred player. */
+@media (max-width:700px){
+  .mp-player{bottom:calc(76px + env(safe-area-inset-bottom))}
+  .mp-sheet{bottom:calc(142px + env(safe-area-inset-bottom))}
+}
+@media (min-width:701px) and (max-width:1100px){ .mp-links{bottom:96px} }
