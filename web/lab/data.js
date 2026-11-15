@@ -5,6 +5,20 @@
 
 export const HOUR_MS = 3600 * 1000;
 
+// Durations the Lab offers (days). The SPA hands over 7/14/28/56; the Lab menu adds 2 and 365.
+export const LAB_DURATION_DAYS = [2, 7, 14, 28, 56, 365];
+
+/** Window length in whole hours: finite, positive, an integer number of hours. */
+export function validHours(h) { return typeof h === "number" && Number.isFinite(h) && h > 0 && Number.isInteger(h); }
+
+/** Check a duration in days against the Lab's supported set. {ok:true,hours} or {ok:false,reason}. */
+export function checkDurationDays(days) {
+  if (typeof days !== "number" || !Number.isFinite(days)) return { ok: false, reason: `Duration ${days} is not a finite number of days.` };
+  if (days <= 0) return { ok: false, reason: `Duration ${days} d must be positive.` };
+  if (!LAB_DURATION_DAYS.includes(days)) return { ok: false, reason: `Duration ${days} d is not supported (use ${LAB_DURATION_DAYS.join(", ")} d).` };
+  return { ok: true, hours: days * 24 };
+}
+
 export function decodeSeries(buf, count) {
   if (buf.byteLength !== count * 8) throw new Error("series has unexpected byte length");
   const u16 = new Uint16Array(buf), i16 = new Int16Array(buf);
@@ -74,6 +88,7 @@ export class SiteSeries {
 
   /** Window metrics over [t0, t0 + hours). {status:"NOT_COMPUTED"} if out of range. */
   window(t0, hours) {
+    if (!validHours(hours)) return { status: "INVALID_DURATION", reason: `Window of ${hours} h is invalid: it must be a finite, positive whole number of hours.` };
     const i0 = Math.ceil((t0 - this.start) / HOUR_MS);
     const i1 = i0 + hours;
     if (i0 < 0 || i1 > this.count) return { status: "NOT_COMPUTED", reason: "Requested dates are outside the computed ephemeris window." };
@@ -146,6 +161,12 @@ export function parseEntryHash(hash, sites, start, end) {
   const id = q.get("site"); if (id && sites.some(s => s.id === id)) out.siteId = id;
   const raw = q.get("t");
   if (raw) { const t = Date.parse(raw.length === 10 ? raw + "T00:00Z" : /Z|[+-]\d\d:?\d\d$/.test(raw) ? raw : raw + "Z"); if (Number.isFinite(t)) out.t = Math.min(Math.max(Math.floor(t / HOUR_MS) * HOUR_MS, start), end); }
-  const d = Number(q.get("d")); if (d > 0) out.compareH = d * 24;
+  const rawD = q.get("d");
+  if (rawD !== null && rawD !== "") {
+    const d = Number(rawD), max = LAB_DURATION_DAYS[LAB_DURATION_DAYS.length - 1];
+    // Too long for the Lab: use the longest supported window and say so, with the numbers. Anything else invalid keeps the default and reports why.
+    if (Number.isFinite(d) && d > max) { out.compareH = max * 24; out.durationNotice = { kind: "clamped", requestedDays: d, usedDays: max, message: `Requested ${d} d exceeds the longest supported window; using ${max} d.` }; }
+    else { const c = checkDurationDays(d); if (c.ok) out.compareH = c.hours; else out.durationNotice = { kind: "invalid", requestedDays: rawD, message: `${c.reason} Keeping the default window.` }; }
+  }
   return out;
 }
