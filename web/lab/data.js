@@ -1,7 +1,7 @@
 // Loads the precomputed NASA-derived products and computes time-window metrics.
-// The metric logic mirrors science/three_site_pipeline.py (centre of the disc vs
+// The metric logic mirrors api/cmd/threesitepipeline (centre of the disc vs
 // LOLA terrain horizon). Inputs are quantised to 0.01°, so window metrics can differ
-// from the Python summary only for samples within 0.01° of the horizon.
+// from the pipeline summary only for samples within 0.01° of the horizon.
 export const HOUR_MS = 3600 * 1000;
 export function decodeSeries(buf, count) {
     if (buf.byteLength !== count * 8)

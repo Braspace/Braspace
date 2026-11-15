@@ -104,7 +104,7 @@ test("80 m south-pole grid: centred, native spacing, Shackleton is a deep crater
  assert.throws(()=>makeGrid({...meta,origin_x_m:0},grid.dn));
 });
 
-// Cross-check of two independent computations on the same NASA inputs. The team series (science/three_site_pipeline.py)
+// Cross-check of two independent computations on the same NASA inputs. The team series (api/cmd/threesitepipeline)
 // compares the Sun's elevation seen from the site (SPICE, spkcpo) with a 360-azimuth LOLA horizon. The viewer marches a
 // ray over the 80 m grid toward the sub-solar direction. Agreement is not validation against an external reference.
 test("shadow march agrees with the team's site series on whether the Sun centre is above the terrain",async()=>{

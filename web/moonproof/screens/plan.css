@@ -202,18 +202,16 @@
 }
 @media (max-width: 900px) {
   .mp-plan-layout {
-    position: static;
+    position: relative; /* static dropped z-index 15: the fixed #terrain canvas covered the rule labels */
+    inset: auto;
     margin: 76px 13px 84px 13px;
-    /* minmax(0, 1fr): a bare 1fr column grows to the metrics table's min-content (978 px). */
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
   }
   .mp-plan-rules, .mp-plan-export, .mp-plan-table {
     grid-column: 1;
     grid-row: auto;
-    min-width: 0;
   }
-  .mp-table-wrap { overflow-x: auto; }
   .mp-rule-select { min-height: 44px; }
   .mp-rule-select select { height: 44px; }
 }
