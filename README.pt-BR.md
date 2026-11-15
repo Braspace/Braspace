@@ -12,6 +12,7 @@ Verificado em produção em **2026-11-15** (frontend `9dab20c`, Worker `ec490d15
 
 - **MoonProof, o produto:** https://braspace-moonproof.almeida-me.workers.dev/moonproof/. Um Cloudflare Worker serve `web/` e repassa cada rota da OpenAPI à API Go na mesma origem. Polar Lab, Onboard, Studio, Classic e o shell antigo estão arquivados em `archive/web-legacy/`.
 - **API pública:** https://braspace-api.srv1898743.hstgr.cloud: [`/api/health`](https://braspace-api.srv1898743.hstgr.cloud/api/health), [`/readyz`](https://braspace-api.srv1898743.hstgr.cloud/readyz), [`/v1/capabilities`](https://braspace-api.srv1898743.hstgr.cloud/v1/capabilities), [`/api/sites`](https://braspace-api.srv1898743.hstgr.cloud/api/sites), [`/api/vector/status`](https://braspace-api.srv1898743.hstgr.cloud/api/vector/status).
+- **Verificação adicional da API pública (15/11/2026):** `GET /api/health` retornou `sites=16`, `sites_with_series=16`, `PRELIMINARY=14`, `SYNTHETIC=2`, `engine=ready`, `data_source=postgres`. Os endpoints de detalhe dos nove novos locais reais responderam HTTP 200 com `series_sha256` de 64 dígitos hexadecimais, grade horária `step_seconds=3600` e `science_status=PRELIMINARY`. Essa checagem de endpoints/metadados **não** equivale a recalcular checksums dos binários, QA completo no navegador ou validação científica. `/moonproof/` ainda mostrava o seletor de perfis nessa consulta; a entrada direta está no PR draft #403.
 - **Último QA de produção (#351, #374):** 13 telas × 320/390/768/1024/1440/1920 = 78 execuções. Todas com HTTP 200, 0 overflow, 0 controles cortados, 0 erros de console, 0 erros HTTP, 246 chamadas de API todas 200. Sondas do backend 7/7: pgvector `index_ready`, busca serve só fontes auditadas, janela de 720 h, JSON estrito.
 
 - **Documentação e operação:**
@@ -28,7 +29,7 @@ Verificado em produção em **2026-11-15** (frontend `9dab20c`, Worker `ec490d15
 
 | Fonte NASA / Externa | Produto no Repositório | Estado | Observações |
 |---|---|---|---|
-| **NASA LOLA (`LDEM_80S_80M`) + NAIF SPICE** | `api/sitedata/series/{connecting-ridge,malapert-massif,mons-mouton-im2,nobile-rim-1,peak-near-shackleton}.json` e `web/data/sites/*`, `web/data/terrain/*` | **PRELIMINARY** (não validado para voo) | Pipeline offline (`science/`) calcula horizonte do terreno e ângulos Sol/Terra. |
+| **NASA LOLA (`LDEM_80S_80M`) + NAIF SPICE** | `api/sitedata/series/*.json` (14 locais reais derivados de fontes), `web/data/sites/*`, `web/data/terrain/*` | **PRELIMINARY** (não validado para voo) | Pipeline offline (`science/`) calcula horizonte e ângulos Sol/Terra; fontes com SHA fixado, ainda sem validação científica independente. Mais dois locais de demonstração são `SYNTHETIC`. |
 | **Séries sintéticas de demonstração** | `api/sitedata/series/synthetic-demo-{a,b}.json` | **SYNTHETIC** | Séries rotuladas como sintéticas para testes ponta a ponta e demonstração. |
 | **Bateria de bordo / consumíveis da tripulação** | `api/onboard/`, `api/consumables.go` e o cockpit do MoonProof (`web/moonproof/screens/cockpit*`) | **SIMULAÇÃO** | Modelo educacional do computador de bordo; não certificado para voo. Taxas de O2/comida são provisórias, a conferir com o NASA BVAD. |
 | **NASA PGDA e JPL Horizons** | `web/data/validation/validation_{pgda,horizons}.json` | **BENCHMARK** | Conjuntos de referência para checagens científicas offline. |
