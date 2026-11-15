@@ -89,7 +89,9 @@ function placeLabel(label, camera, visible) {
   if (show) {
     x = (projected.x + 1) / 2 * innerWidth + 8; y = (1 - projected.y) / 2 * innerHeight - 10;
     // No label over another label or over a panel (phone: names were piling up and running under the readout).
-    const box = { l: x, t: y, r: x + label.el.textContent.length * (label.kind === "mare" ? 8.5 : 7) + 22, b: y + 20 };
+    const w = label.el.textContent.length * (label.kind === "mare" ? 8.5 : 7) + 22;
+    if (x + w > innerWidth - 4) { x = innerWidth - 4 - w; label.el.style.maxWidth = (innerWidth - 8) + "px"; } if (x < 4) x = 4; // never off the screen edge
+    const box = { l: x, t: y, r: x + w, b: y + 20 };
     free = !taken.some(q => box.l < q.r && box.r > q.l && box.t < q.b && box.b > q.t);
     if (free) taken.push(box);
   }
@@ -367,10 +369,23 @@ async function main() {
 
   function resize() {
     renderer.setSize(innerWidth, innerHeight, false);
-    for (const view of [globe, pole]) { view.camera.aspect = innerWidth / innerHeight; view.camera.updateProjectionMatrix(); }
+    for (const view of [globe, pole]) { view.camera.aspect = innerWidth / innerHeight; view.camera.clearViewOffset(); view.camera.updateProjectionMatrix(); }
+    frameGlobe();
+  }
+  // Phone: the globe sits whole in the gap between the readout (top) and the controls (bottom), not under their glass.
+  function frameGlobe() {
+    const W = innerWidth, H = innerHeight, cam = globe.camera; cam.clearViewOffset();
+    if (W > 720) return cam.updateProjectionMatrix();
+    const top = Math.max(...[".top", ".views", ".readout"].map(q => document.querySelector(q)?.getBoundingClientRect().bottom || 0)) + 8;
+    const bottom = (document.querySelector(".panel")?.getBoundingClientRect().top || H) - 8;
+    const d = cam.position.length() || 6.4, diam = Math.tan(Math.asin(1 / d)) / Math.tan(cam.fov * Math.PI / 360) * H;
+    const fit = Math.min(bottom - top, W - 16); if (fit < 80) return cam.updateProjectionMatrix();
+    const k = Math.max(1, diam / fit), fw = W / k, fh = H / k; // full frame smaller than the window = zoom out
+    cam.setViewOffset(fw, fh, fw / 2 - W / 2, fh / 2 - (top + bottom) / 2, W, H);
   }
   addEventListener("resize", resize);
   resize();
+  new ResizeObserver(frameGlobe).observe(document.querySelector(".panel"));
 
   // ---- loop
   const toCamera = new THREE.Vector3(), right = new THREE.Vector3(), upCam = new THREE.Vector3(), back = new THREE.Vector3();
@@ -412,6 +427,7 @@ async function main() {
   applyTime();
   // First view: from the sunlit side, looking up from the south so the polar region is in frame.
   globe.camera.position.copy(sunDir).multiplyScalar(0.75).add(earthDir.clone().multiplyScalar(0.45)).setY(-0.62).normalize().multiplyScalar(small ? 6.4 : 4.6);
+  frameGlobe();
   await setMode(params.get("view") === "pole" ? "pole" : "globe", false);
   globe.controls.enabled = mode === "globe"; pole.controls.enabled = mode === "pole";
   $("loading").classList.add("done");
