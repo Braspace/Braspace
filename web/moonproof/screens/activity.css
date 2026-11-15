@@ -313,3 +313,12 @@
 /* BR94 round 4: lead-ins as in the drawing (bold head, muted tail), no stray handle, lighter edge vignette */
 .mp-teacher-notes strong .mp-muted { font-weight: 500; color: var(--text-3, #8E99A6); }
 .mp-act-tip b { font-weight: 800; color: var(--text); }
+
+/* Phones/tablets: the single column must never be wider than the screen (390 px had 127 px of horizontal overflow:
+   a 1fr track grows to its content's min-content width). */
+@media (max-width: 900px) {
+  .mp-act-layout { grid-template-columns: minmax(0, 1fr); }
+  .mp-act-layout > * { min-width: 0; max-width: 100%; box-sizing: border-box; }
+  .mp-act-steps *, .mp-act-preview * { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+  .mp-share-url { max-width: 100%; }
+}
