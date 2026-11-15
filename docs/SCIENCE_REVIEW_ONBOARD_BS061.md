@@ -71,6 +71,10 @@ Every disagreement is "series lit, viewer in shadow". This is agreement between 
 
 ### 2.4 Finding: Peak Near Shackleton probably has too much sunlight in our series
 
+> **Update, 2026-11-15:** tested in `docs/HORIZON_REACH_STUDY.md`. Tracing the horizon to 200 km instead of 100 km lowers
+> the Sun figure here from 80.4 % to 75.5 %, and also lowers Malapert Massif from 38.4 % to 33.8 % (its longest darkness
+> goes from 670 h to 3,389 h). The text below is the suspicion as written before that test.
+
 Two independent indications agree in sign:
 
 1. PGDA gives 9.0 pp less sunlight there than our series (2.2).
