@@ -50,3 +50,24 @@ Informado pelo responsável e **não reverificado nesta rodada**:
 
 - `api/openapi.json` ainda marca `start_utc`, `duration_hours` e `step_minutes` como opcionais em `/api/onboard/navigation` (só `lat` e `lon` são obrigatórios). A decisão em `DECISIONS.md` exige os três. Alinhar o contrato e o código antes de fechar o PR #323.
 - O caminho do navigation é `/api/onboard/navigation`, não `/api/navigation`.
+
+## Deploy da API `ad83cfe7517c` — 15/11/2026 12:47 BRT (15:47Z)
+
+Feito pela sessão do #296 com autorização do Gustavo. O integrador MAC estava fora do ar.
+
+- **Código:** main `ad83cfe` (#345). Inclui `/api/health.store` (`ok`/`degraded`, `last_ping_ms`), `vector/search` rejeitando `limit` 0/null com 422 e `migrate` imprimindo `[]`.
+- **Imagem:** `braspace-api:ad83cfe7517c` (`14fc2b6ae3da`, alvo `release`), construída no EXO-X1 e carregada com `docker save | docker load`. Smoke local com Postgres: `store.status=ok`.
+- **Backup:** `backup/pre-ad83cfe7517c-20261115-154625.dump` (2,8 MB, 9 tabelas, checado com `pg_restore -l`) e `backup/env-antes-ad83cfe7517c-20261115-154625` (permissão 600).
+- **Subida:** `.env` com `IMAGEM=ad83cfe7517c`, depois `docker compose up -d` (`ingest` → `vector-ingest`, 10 upserts → `api` healthy).
+- **Rollback:** `IMAGEM=62bf446e386d` no `.env` e `docker compose up -d`. A imagem anterior continua no host.
+
+Smoke pós-deploy, direto e pela borda do Worker:
+- `/api/health`: 200, `data_source: postgres`, `store.status: ok`, 16 locais, 7 com série.
+- `/readyz` e `/api/sites`: 200.
+- `vector/search` com `limit: 0`: 422.
+
+Matriz `web/browser/route-matrix.mjs` em produção (16 páginas × 6 tamanhos), Worker `3f1b9c03` (main `acbd5d6`):
+- Antes deste deploy, 96/96 sem WebGL e 96/96 com GPU.
+- Depois, 95/96 em cada trilha. A única falha de cada uma foi `net::ERR_NETWORK_CHANGED` ao baixar o three.js de `cdn.jsdelivr.net`: a rede do host de teste oscilou, não é defeito da aplicação.
+
+Risco anotado: o three.js vem do CDN jsDelivr (CSP `script-src`). Se o CDN falhar, a cena 3D cai no poster. Vendorizar o three.js em `web/vendor/` eliminaria essa dependência externa; ainda não foi feito.
