@@ -203,6 +203,126 @@ export const REGISTRY = {
    "author_credit": "IAU Gazetteer of Planetary Nomenclature, USGS Astrogeology Science Center. Source file MOON_nomenclature_center_pts.zip (metadata pubdate 2012-10-02, public domain), accessed 2026-11-14 UTC.",
    "redistribution_status": "public_domain_source_cited",
    "scientific_role": "labels_only"
+  },
+  {
+   "asset_id": "braspace-moonhd-color-4k",
+   "category": "global_albedo_visualization",
+   "source_page": "https://svs.gsfc.nasa.gov/4720/",
+   "file_id": "color_4k.jpg",
+   "sha256": "4d579d6e85e1f81e95ec8b9922f6fde251ec3ba8e63c8f3ce30c002abd99203c",
+   "author_credit": "NASA's Scientific Visualization Studio (CGI Moon Kit, SVS 4720); LROC WAC colour mosaic (Arizona State University). Resampling: BRASPACE (science/build_moon_hd_assets.py).",
+   "redistribution_status": "project_derived_from_nasa_svs",
+   "scientific_role": "visualization_only"
+  },
+  {
+   "asset_id": "braspace-moonhd-color-8k",
+   "category": "global_albedo_visualization",
+   "source_page": "https://svs.gsfc.nasa.gov/4720/",
+   "file_id": "color_8k.jpg",
+   "sha256": "5b8c60f57ef2b4f9c27b1eb3e73d2a9c472458dcd7a7c5f4e561ed8214aa3056",
+   "author_credit": "NASA's Scientific Visualization Studio (CGI Moon Kit, SVS 4720); LROC WAC colour mosaic (Arizona State University). Resampling: BRASPACE (science/build_moon_hd_assets.py).",
+   "redistribution_status": "project_derived_from_nasa_svs",
+   "scientific_role": "visualization_only"
+  },
+  {
+   "asset_id": "braspace-moonhd-height-4k",
+   "category": "global_relief_visualization",
+   "source_page": "https://svs.gsfc.nasa.gov/4720/",
+   "file_id": "height_4k.jpg",
+   "sha256": "1b427d5c427dd58b74fdb85ff7ba3abfd2e7872d92c598818c969cd6064b7388",
+   "author_credit": "NASA's Scientific Visualization Studio (CGI Moon Kit, SVS 4720); LOLA 16 px/deg elevation (ldem_16.tif). Resampling: BRASPACE (science/build_moon_hd_assets.py).",
+   "redistribution_status": "project_derived_from_nasa_svs",
+   "scientific_role": "visualization_only"
+  },
+  {
+   "asset_id": "braspace-moonhd-normal-4k",
+   "category": "global_relief_visualization",
+   "source_page": "https://svs.gsfc.nasa.gov/4720/",
+   "file_id": "normal_4k.jpg",
+   "sha256": "c8c7ab2e69edb179dabc5237bfd7476bdcffb591e943e0d85b9931a2ebee4837",
+   "author_credit": "NASA's Scientific Visualization Studio (CGI Moon Kit, SVS 4720); LOLA 16 px/deg elevation (ldem_16.tif). Resampling: BRASPACE (science/build_moon_hd_assets.py).",
+   "redistribution_status": "project_derived_from_nasa_svs",
+   "scientific_role": "visualization_only"
+  },
+  {
+   "asset_id": "braspace-moonhd-stars-4k",
+   "category": "star_background",
+   "source_page": "https://svs.gsfc.nasa.gov/4851/",
+   "file_id": "stars_4k.jpg",
+   "sha256": "4328f598aade1a7fb868dd62d382d317e2fd214f1520d0faf0d155e8944f7bda",
+   "author_credit": "NASA's Scientific Visualization Studio (Deep Star Maps 2020, SVS 4851). Tone mapping: BRASPACE (science/build_moon_hd_assets.py).",
+   "redistribution_status": "project_derived_from_nasa_svs",
+   "scientific_role": "illustrative_only"
+  },
+  {
+   "asset_id": "braspace-moonhd-earth-2k",
+   "category": "earth_visualization",
+   "source_page": "https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/",
+   "file_id": "earth_2k.jpg",
+   "sha256": "5189fd3cebb90cf48495ae98aa92d6c695be9c776a9b3b7ab003ef6102834d97",
+   "author_credit": "NASA Earth Observatory, Blue Marble Next Generation (December 2004 composite with topography and bathymetry). Resampling: BRASPACE (science/build_moon_hd_assets.py).",
+   "redistribution_status": "project_derived_from_nasa_blue_marble",
+   "scientific_role": "illustrative_only"
+  },
+  {
+   "asset_id": "braspace-moonhd-south-pole-80m",
+   "category": "project_derived_terrain_grid",
+   "source_page": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm",
+   "file_id": "south_pole_80m.bin",
+   "sha256": "a1244e43cb392feb55aa63ee2289de5a7a098847f2511ce5fba2fcafceccf23c",
+   "author_credit": "Elevation: NASA LRO/LOLA Science Team, PDS Geosciences Node (LRO-L-LOLA-4-GDR-V1.0, LDEM_80S_80M). Centre crop: BRASPACE (science/build_moon_hd_assets.py).",
+   "redistribution_status": "project_derived_from_nasa_pds",
+   "scientific_role": "visualization_only"
+  },
+  {
+   "asset_id": "braspace-moonhd-south-pole-320m",
+   "category": "project_derived_terrain_grid",
+   "source_page": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm",
+   "file_id": "south_pole_320m.bin",
+   "sha256": "2c44c11438246c878d82841047b859fcd394eccac0b61ca64a21746a5c1d0299",
+   "author_credit": "Elevation: NASA LRO/LOLA Science Team, PDS Geosciences Node (LRO-L-LOLA-4-GDR-V1.0, LDEM_80S_80M). 4 x 4 block mean: BRASPACE (science/build_moon_hd_assets.py).",
+   "redistribution_status": "project_derived_from_nasa_pds",
+   "scientific_role": "visualization_only"
+  },
+  {
+   "asset_id": "braspace-moonhd-ephemeris",
+   "category": "project_derived_ephemeris",
+   "source_page": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/",
+   "file_id": "ephemeris.bin",
+   "sha256": "bb2e7661e9de2c250543b237b5021692af4840a4abb32f0598c554774ad6044d",
+   "author_credit": "NASA/JPL NAIF SPICE generic kernels (DE440). Computation: BRASPACE (science/build_moon_hd_assets.py).",
+   "redistribution_status": "project_derived_from_naif_spice",
+   "scientific_role": "visualization_only"
+  },
+  {
+   "asset_id": "braspace-moonhd-earth-orientation",
+   "category": "project_derived_ephemeris",
+   "source_page": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/",
+   "file_id": "earth_orientation.bin",
+   "sha256": "80449193e0376819eacf35178c9632cde6e304c53c9254fb2afe7d62ec307073",
+   "author_credit": "NASA/JPL NAIF SPICE generic kernels (DE440). Computation: BRASPACE (science/build_moon_hd_assets.py).",
+   "redistribution_status": "project_derived_from_naif_spice",
+   "scientific_role": "illustrative_only"
+  },
+  {
+   "asset_id": "braspace-moonhd-features",
+   "category": "feature_names",
+   "source_page": "https://planetarynames.wr.usgs.gov/",
+   "file_id": "features.json",
+   "sha256": "62361ecd3b0002b2be9c4efe9526df6ec0203e4bd1fca882b093ce36e7276826",
+   "author_credit": "IAU Gazetteer of Planetary Nomenclature, USGS Astrogeology Science Center. Source file MOON_nomenclature_center_pts.zip (public domain).",
+   "redistribution_status": "public_domain_source_cited",
+   "scientific_role": "labels_only"
+  },
+  {
+   "asset_id": "braspace-moonhd-manifest",
+   "category": "project_metadata",
+   "source_page": "docs/MOON_HD.md",
+   "file_id": "manifest.json",
+   "sha256": "baab41d5f7f8a2e9f7fedcf7c18f1d391f018e5b73dfd13d8753dae4a5915ccc",
+   "author_credit": "BRASPACE (science/build_moon_hd_assets.py).",
+   "redistribution_status": "project_metadata",
+   "scientific_role": "none"
   }
  ],
  "matrix": [
@@ -320,6 +440,66 @@ export const REGISTRY = {
    "class": "LROC Featured Image 1105",
    "example": "media `LROC-1105",
    "status": "external_link_only"
+  },
+  {
+   "class": "`color_4k.jpg` (Moon HD)",
+   "example": "braspace-moonhd-color-4k",
+   "status": "project_derived_from_nasa_svs"
+  },
+  {
+   "class": "`color_8k.jpg` (Moon HD)",
+   "example": "braspace-moonhd-color-8k",
+   "status": "project_derived_from_nasa_svs"
+  },
+  {
+   "class": "`height_4k.jpg` (Moon HD)",
+   "example": "braspace-moonhd-height-4k",
+   "status": "project_derived_from_nasa_svs"
+  },
+  {
+   "class": "`normal_4k.jpg` (Moon HD)",
+   "example": "braspace-moonhd-normal-4k",
+   "status": "project_derived_from_nasa_svs"
+  },
+  {
+   "class": "`stars_4k.jpg` (Moon HD)",
+   "example": "braspace-moonhd-stars-4k",
+   "status": "project_derived_from_nasa_svs"
+  },
+  {
+   "class": "`earth_2k.jpg` (Moon HD)",
+   "example": "braspace-moonhd-earth-2k",
+   "status": "project_derived_from_nasa_blue_marble"
+  },
+  {
+   "class": "`south_pole_80m.bin` (Moon HD)",
+   "example": "braspace-moonhd-south-pole-80m",
+   "status": "project_derived_from_nasa_pds"
+  },
+  {
+   "class": "`south_pole_320m.bin` (Moon HD)",
+   "example": "braspace-moonhd-south-pole-320m",
+   "status": "project_derived_from_nasa_pds"
+  },
+  {
+   "class": "`ephemeris.bin` (Moon HD)",
+   "example": "braspace-moonhd-ephemeris",
+   "status": "project_derived_from_naif_spice"
+  },
+  {
+   "class": "`earth_orientation.bin` (Moon HD)",
+   "example": "braspace-moonhd-earth-orientation",
+   "status": "project_derived_from_naif_spice"
+  },
+  {
+   "class": "`features.json` (Moon HD)",
+   "example": "braspace-moonhd-features",
+   "status": "public_domain_source_cited"
+  },
+  {
+   "class": "`manifest.json` (Moon HD)",
+   "example": "braspace-moonhd-manifest",
+   "status": "project_metadata"
   }
  ]
 };

@@ -43,6 +43,29 @@ Open locally: `cd web && node dev-server.mjs`, then `/moon-hd.html`. Deep links:
 
 No landing metric is computed on this page.
 
+## Page backdrop (`web/moon-hd/backdrop.js`)
+
+The same Moon, without controls, labels or panel, drawn behind other pages. The scene code (shaders, globe, south cap)
+lives in `web/moon-hd/scene.js` and is shared by the viewer and the backdrop.
+
+```html
+<script type="module" src="../moon-hd/backdrop.js" data-moon-backdrop="pole"></script>
+```
+
+or `mountMoonBackdrop({ view: "pole" | "globe", interactive: false })`. It adds a fixed canvas behind the content
+(`pointer-events: none`, `aria-hidden`), lit by the Sun at the current time or at the page's `?start=`, on a slow orbit.
+
+| Item | Behaviour |
+|---|---|
+| Pages | Escolha and every route of the v3 shell (`web/index.html`), the onboard cockpit (`web/onboard/cockpit.html`), `web/moonproof/{index,rules,evidence,debrief}.html`, `web/classic.html` |
+| Not used on | `web/moonproof/{mission,explore,compare,recover,cockpit,landing,plan,present,activity}.html`: the LOLA relief there is the functional map (markers, routes and clicks use its projection). `web/studio/` and `web/onboard/index.html` have opaque or light layouts. These screens link to the viewer instead |
+| Data | `color_4k.jpg` (or `color_8k.jpg` when the viewport is at least 1600 px wide and the GPU takes 8192 px textures), `normal_4k.jpg`, `height_4k.jpg`, `ephemeris.bin`; from 720 px up also `stars_4k.jpg` and `south_pole_320m.bin`. The 80 m grid, the Earth and the names are not loaded: at this distance one pixel covers kilometres |
+| Size | about 8.0 MB on phones, 17.6 MB on desktops, 22.3 MB with the 8k colour map |
+| Cost | device pixel ratio capped at 1.5, 30 frames per second, paused when the tab is hidden or the canvas is off screen; with `prefers-reduced-motion` a single frame is drawn |
+| Failure | no WebGL 2, a lost context or a failed download removes the canvas and the page keeps its previous background. three.js is only requested after the page has loaded and a WebGL 2 context exists |
+| Legibility | a dark veil (`backdrop.css`, alpha .72) sits between the Moon and the content |
+| Honesty | same limits as the viewer: display only, no landing metric. Credits are in the page footers and in the help popover of the MoonProof screens |
+
 ## Cross-check with the site series
 
 `web/tests/moon-hd.test.mjs` compares, for Connecting Ridge and Peak Near Shackleton, whether the Sun's centre is above the
@@ -83,8 +106,8 @@ other; it is not a validation against an independent reference.
 
 `web/data/moonhd/manifest.json` lists every source URL with its full SHA-256 and size, and the SHA-256 and size of every
 published file. NASA media are generally not copyrighted; credit lines used on the page: "NASA's Scientific Visualization
-Studio", "NASA LRO/LOLA Science Team", "NASA/JPL NAIF". This file does not replace `docs/ASSET_LICENSE_MATRIX.md`; the rows
-there are still to be added (left out of this PR to avoid conflicts with the open PRs that edit it).
+Studio", "NASA LRO/LOLA Science Team", "NASA/JPL NAIF". This file does not replace `docs/ASSET_LICENSE_MATRIX.md`: every file
+of `web/data/moonhd/` has a row there and an entry in `data/ASSET_REGISTRY.json` (`braspace-moonhd-*`).
 
 ## Regenerating the data
 
@@ -100,9 +123,7 @@ JPEG hashes in the manifest; the `.bin` files are deterministic.
 
 ## Not done
 
-- No link to this page from the hub or the MoonProof screens.
 - The GitHub Pages publish step has to copy `moon-hd.html`, `moon-hd/` and `data/moonhd/` (about 31 MB).
 - The Earth in the sky was checked numerically (sub-Moon point and rotation rate in `moon-hd.test.mjs`), not by eye: the browser pane was not available for a screenshot after it was added.
 - Feature names between 80° S and 80.5° S and craters under 20 km are left out to keep the labels readable.
 - Not tested on a real phone or on Windows; checked in a desktop Chromium pane and in a 375 px emulated viewport.
-- Rows in `docs/ASSET_LICENSE_MATRIX.md` and `data/ASSET_REGISTRY.json`.
