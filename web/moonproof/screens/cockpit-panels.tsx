@@ -24,6 +24,7 @@ export function layoutState(hidden: ReadonlySet<PanelId>) {
 /** Uses the existing lazy Three.js Moon button; never creates another WebGL renderer. */
 export function requestSharedMoon(isStillWanted: () => boolean = () => true): boolean {
   if (typeof document === "undefined" || !isStillWanted()) return false;
+  if (document.documentElement.classList.contains("moon-explore-on")) return true;
   const open = () => {
     // A lazy backdrop must not open after the user has already restored panels.
     if (!isStillWanted()) return false;
@@ -42,10 +43,31 @@ export function requestSharedMoon(isStillWanted: () => boolean = () => true): bo
   return false;
 }
 
+/** Close only the Moon's existing immersive view, not its shared renderer. */
+export function exitSharedMoon(): boolean {
+  if (typeof document === "undefined" || !document.documentElement.classList.contains("moon-explore-on")) return false;
+  const button = document.querySelector<HTMLButtonElement>(".moon-ui.is-explore .moon-open");
+  if (!button || button.disabled) return false;
+  button.click();
+  return true;
+}
+
 export function mountCockpitPanels(host: HTMLElement): () => void {
   let hidden = new Set<PanelId>();
   let previous = new Set<PanelId>();
   let moonRequestRevision = 0; // invalidate callbacks across Moon-only -> restore -> Moon-only
+  let closeWhenReady = false;
+  const restoreMoon = () => {
+    // A lazy click may already be loading textures; closing immediately is then impossible.
+    closeWhenReady = !!document.querySelector(".moon-ui .moon-open.is-loading");
+    exitSharedMoon();
+  };
+  const onMoonReady = () => {
+    if (!closeWhenReady || hidden.size === PANEL_IDS.length) return;
+    exitSharedMoon();
+    closeWhenReady = false;
+  };
+  window.addEventListener("moon-backdrop:ready", onMoonReady);
   let context: Element | null = null;
   const root = document.body;
   const language = (): Language => document.documentElement.lang.toLowerCase().startsWith("pt") ? "pt-BR" : "en";
@@ -69,16 +91,16 @@ export function mountCockpitPanels(host: HTMLElement): () => void {
   const paint = () => {
     sync();
     const l = language(), pt = l === "pt-BR", clear = hidden.size === PANEL_IDS.length;
-    const change = (id: PanelId) => { hidden = togglePanel(hidden, id); paint(); };
+    const change = (id: PanelId) => { const wasMoonOnly = hidden.size === PANEL_IDS.length; ++moonRequestRevision; hidden = togglePanel(hidden, id); if (wasMoonOnly) restoreMoon(); paint(); };
     render(<div class="ck-panel-toolbar" role="group" aria-label={pt ? "Visibilidade dos painéis do cockpit" : "Cockpit panel visibility"}>
-      <button type="button" class="mp-pill ck-panel-focus" aria-pressed={clear} onClick={() => { const request = ++moonRequestRevision; if (clear) hidden = new Set(previous); else { previous = new Set(hidden); hidden = new Set(PANEL_IDS); requestSharedMoon(() => request === moonRequestRevision && hidden.size === PANEL_IDS.length); } paint(); }}>
+      <button type="button" class="mp-pill ck-panel-focus" aria-pressed={clear} onClick={() => { const request = ++moonRequestRevision; if (clear) { hidden = new Set(previous); restoreMoon(); } else { previous = new Set(hidden); hidden = new Set(PANEL_IDS); closeWhenReady = false; requestSharedMoon(() => request === moonRequestRevision && hidden.size === PANEL_IDS.length); } paint(); }}>
         {clear ? (pt ? "Restaurar painéis" : "Restore panels") : (pt ? "Só a Lua" : "Moon only")}
       </button>
       <details class="ck-panel-menu" onKeyDown={e => { if (e.key === "Escape") { e.currentTarget.open = false; e.currentTarget.querySelector("summary")?.focus(); } }}>
         <summary class="mp-pill">{pt ? "Painéis" : "Panels"} · {PANEL_IDS.length - hidden.size}/{PANEL_IDS.length}</summary>
         <div class="ck-panel-options">
           {PANEL_IDS.map(id => <button key={id} data-panel={id} type="button" class="mp-pill" aria-pressed={!hidden.has(id)} onClick={() => change(id)}><span aria-hidden="true">{hidden.has(id) ? "+" : "−"}</span>{LABELS[l][id]}</button>)}
-          <button type="button" class="mp-pill" onClick={() => { hidden = new Set(); paint(); }}>{pt ? "Abrir todos" : "Open all"}</button>
+          <button type="button" class="mp-pill" onClick={() => { ++moonRequestRevision; hidden = new Set(); restoreMoon(); paint(); }}>{pt ? "Abrir todos" : "Open all"}</button>
         </div>
       </details>
     </div>, host);
@@ -90,7 +112,7 @@ export function mountCockpitPanels(host: HTMLElement): () => void {
   langObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
   resize.observe(host);
   observeContext(); paint();
-  return () => { observer.disconnect(); langObserver.disconnect(); resize.disconnect(); render(null, host); delete root.dataset.ckHidden; for (const key of Object.keys(layoutState(hidden))) root.removeAttribute(`data-ck-hide-${key}`); root.style.removeProperty("--ck-panels-top"); };
+  return () => { ++moonRequestRevision; window.removeEventListener("moon-backdrop:ready", onMoonReady); observer.disconnect(); langObserver.disconnect(); resize.disconnect(); render(null, host); delete root.dataset.ckHidden; for (const key of Object.keys(layoutState(hidden))) root.removeAttribute(`data-ck-hide-${key}`); root.style.removeProperty("--ck-panels-top"); };
 }
 
 const host = typeof document !== "undefined" ? document.getElementById("ck-panel-controls") : null;
