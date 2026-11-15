@@ -1,7 +1,7 @@
 // Sunlight shown as an upper bound where our series exceeds NASA PGDA by more than the review tolerance.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { sunCaveat, PGDA_SUN_TOLERANCE_PP } from "../core/data.js";
 
 const read = p => readFileSync(new URL(p, import.meta.url), "utf8");
@@ -17,8 +17,10 @@ test("the rule is data-driven: only sites over the PGDA tolerance are flagged, a
   assert.ok(Object.isFrozen(c));
 });
 
-test("same tolerance and same set of sites as the science gate", () => {
-  const gate = read("../../../science/tests/test_reference_tolerances.py");
+// The web stage of the Docker gate copies web/ only; there the science gate pins the same values itself.
+const gateFile = new URL("../../../science/tests/test_reference_tolerances.py", import.meta.url);
+test("same tolerance and same set of sites as the science gate", { skip: !existsSync(gateFile) && "science/ not in this build context" }, () => {
+  const gate = readFileSync(gateFile, "utf8");
   assert.match(gate, /PGDA_SUN_TOLERANCE_PP = 5\.0/);
   assert.match(gate, /PGDA_SUN_OUTSIDE = \{"peak-near-shackleton"\}/);
 });
