@@ -29,7 +29,7 @@ def validate(record):
         errors.append("CI is not successful")
     url = record.get("ci_run_url")
     if not isinstance(url, str) or not re.fullmatch(
-        r"https://github\\.com/Braspace/Braspace/actions/runs/[0-9]+", url
+        r"https://github\.com/Braspace/Braspace/actions/runs/[0-9]+", url
     ):
         errors.append("missing canonical GitHub Actions run URL")
     checks = record.get("required_checks")
