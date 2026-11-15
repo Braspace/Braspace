@@ -75,7 +75,7 @@ const onboardTypes=new Map([
  ["index.html","text/html; charset=utf-8"],
  ["cockpit.html","text/html; charset=utf-8"],
  ["cockpit.css","text/css; charset=utf-8"],
- ...["app.js","api.js","cockpit.js","config.js","features.js","live.js","model.js","request.js","sim.js"].map(name=>[name,"text/javascript; charset=utf-8"])
+ ...["app.js","api.js","cockpit.js","config.js","features.js","live.js","model.js","nav.js","request.js","sim.js"].map(name=>[name,"text/javascript; charset=utf-8"])
 ]);
 export function onboardFile(pathname){
  if(pathname==="/onboard/")return {name:"onboard/index.html",type:onboardTypes.get("index.html")};

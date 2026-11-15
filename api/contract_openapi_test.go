@@ -53,6 +53,7 @@ func contractCases(t *testing.T) map[string]contractCase {
 		"POST /api/onboard/site-evaluate": {contractCall{"POST", "/api/onboard/site-evaluate", brExample(t, "onboard-site-evaluate.request.json"), []int{200}}, postBad("/api/onboard/site-evaluate")},
 		"POST /api/onboard/site-report":   {contractCall{"POST", "/api/onboard/site-report", brExample(t, "onboard-site-evaluate.request.json"), []int{200}}, postBad("/api/onboard/site-report")},
 		"POST /api/onboard/report":        {contractCall{"POST", "/api/onboard/report", brOnboardBody(t), []int{200}}, postBad("/api/onboard/report")},
+		"POST /api/onboard/navigation":    {contractCall{"POST", "/api/onboard/navigation", `{"lat":-89.45,"lon":-137.31,"start_utc":"2026-12-01T00:00:00Z","duration_hours":24,"step_minutes":60}`, []int{200}}, postBad("/api/onboard/navigation")},
 		"POST /api/onboard/evaluate":      {contractCall{"POST", "/api/onboard/evaluate", brOnboardBody(t), []int{200}}, postBad("/api/onboard/evaluate")},
 		"GET /api/layers":                 {contractCall{"GET", "/api/layers", "", []int{200}}, contractCall{"DELETE", "/api/layers", "", []int{404, 405}}},
 		"GET /api/layers/{id}":            {contractCall{"GET", "/api/layers/lroc-color-2k", "", []int{200}}, contractCall{"GET", "/api/layers/no-such-layer", "", []int{404}}},
