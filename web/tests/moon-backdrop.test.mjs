@@ -156,8 +156,8 @@ test("pages with a decorative background mount the backdrop; functional-map scre
 });
 
 test("links to the full viewer and credits without endorsement",async()=>{
- const escolha=await read("shell/views/escolha.js"),home=await read("index.html"),cockpit=await read("onboard/cockpit.html"),classic=await read("classic.html");
- assert.match(escolha,/href: "\.\/moon-hd\.html\?view=pole&lang=pt"/);
+ const escolha=await read("shell/views/escolha.tsx"),home=await read("index.html"),cockpit=await read("onboard/cockpit.html"),classic=await read("classic.html");
+ assert.match(escolha,/href="\.\/moon-hd\.html\?view=pole&lang=pt"/);
  assert.match(cockpit,/href="\.\.\/moon-hd\.html\?view=pole&amp;lang=pt"/);
  for(const text of [home,cockpit]){assert.match(text,/NASA LRO\/LOLA/);assert.match(text,/NAIF SPICE/);assert.match(text,/CGI Moon Kit/);assert.match(text,/não é um produto da NASA/);}
  assert.match(home,/IAU\/USGS/);assert.match(home,/Blue Marble/);
