@@ -24,6 +24,25 @@ export function isBackgroundTarget(el) {
             return false; // text stays selectable
     return true;
 }
+/**
+ * Greedy label decluttering: boxes are placed from the highest priority down (ties: left to right) and any box that
+ * overlaps one already placed is hidden. Returns the ids whose label must be hidden (their dot stays visible).
+ */
+export function declutterLabels(boxes, pad = 3) {
+    const order = [...boxes].filter(b => [b.x, b.y, b.w, b.h].every(Number.isFinite)).sort((a, b) => b.priority - a.priority || a.x - b.x || a.y - b.y);
+    const placed = [], hidden = new Set();
+    for (const b of order) {
+        const hit = placed.some(o => b.x < o.x + o.w + pad && o.x < b.x + b.w + pad && b.y < o.y + o.h + pad && o.y < b.y + b.h + pad);
+        if (hit)
+            hidden.add(b.id);
+        else
+            placed.push(b);
+    }
+    for (const b of boxes)
+        if (!order.includes(b))
+            hidden.add(b.id);
+    return hidden;
+}
 /** What to download and how fine to draw, from the viewport width (CSS px) and the GPU's texture limit. */
 export function pickAssets({ width, maxTextureSize }) {
     const phone = !(width >= PHONE_WIDTH);
@@ -278,15 +297,35 @@ export async function mountMoonBackdrop(options) {
                 return;
             const w = innerWidth, h = innerHeight;
             const cam = camera.position.toArray();
+            const boxes = [];
             for (const pin of pins) {
                 // horizon test: the camera-to-pin vector against the pin's outward normal (any camera position)
                 const facing = facesCamera(pin.p.toArray(), cam);
                 v3.copy(pin.p).project(camera);
                 const off = !facing || v3.z > 1 || v3.z < -1 || Math.abs(v3.x) > 1.05 || Math.abs(v3.y) > 1.05;
                 pin.el.classList.toggle("is-off", off);
-                if (!off)
-                    pin.el.style.transform = `translate(${((v3.x * .5 + .5) * w).toFixed(1)}px,${((-v3.y * .5 + .5) * h).toFixed(1)}px)`;
+                if (off)
+                    continue;
+                const sx = (v3.x * .5 + .5) * w, sy = (-v3.y * .5 + .5) * h;
+                pin.el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
+                // label size, measured once while labels are shown (explore mode); dots-only mode skips decluttering
+                if (exploring) {
+                    if (!pin.lw) {
+                        const span = pin.el.lastElementChild;
+                        const r = span?.getBoundingClientRect();
+                        if (r && r.width) {
+                            pin.lw = r.width;
+                            pin.lh = r.height;
+                        }
+                    }
+                    if (pin.lw)
+                        boxes.push({ id: pin.id, x: sx + 6, y: sy - (pin.lh || 22) / 2, w: pin.lw, h: pin.lh || 22, priority: (pin.id === selectedId ? 3 : 0) + (pin.el.classList.contains("has-series") ? 1 : 0) });
+                }
             }
+            // overlapping labels: keep the selected / with-series ones, the others show their name on hover or focus
+            const quiet = exploring ? declutterLabels(boxes) : new Set();
+            for (const pin of pins)
+                pin.el.classList.toggle("is-quiet", quiet.has(pin.id));
         }
         // Camera tween between two poses (position, target, up), used by pins, explore, reset and other screens.
         // The end state (global angle/lat/distance or local target/yaw/pitch/range) is applied when it lands.
