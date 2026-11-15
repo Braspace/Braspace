@@ -66,7 +66,7 @@ const BOTTOM = [
 function isCurrent(path, current) { return current === path || (path !== "/" && current.startsWith(path + "/") && path !== "/comparar"); }
 
 function paintChrome(ctx) {
-  const q = { site: ctx.site };
+  const q = { site: ctx.site, t: ctx.query.t, d: ctx.query.d }; // scenario travels with every nav link
   const nav = document.getElementById("nav");
   nav.replaceChildren(...NAV.map(n => h("a", { class: "navp" + (n.cls ? " " + n.cls : ""), href: buildHash(n.path, q), "aria-current": isCurrent(n.path, ctx.path) || (n.path === "/comparar" && ctx.path === "/comparar") ? "page" : null }, icon(ICONS[n.ic]), n.label)));
   document.getElementById("kits").replaceChildren(...KITS.map(k => h("a", { class: "navp", href: buildHash(k.path, q), "aria-current": ctx.path === k.path || ctx.path.startsWith(k.path + "/") ? "page" : null }, k.label)));

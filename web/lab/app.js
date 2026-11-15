@@ -73,7 +73,7 @@ async function loadIndex() {
   const handed = scenarioFromHash(location.hash, state.index.sites.map(s => s.id), state.windowStart, state.windowEnd);
   if (handed.siteId) state.siteId = handed.siteId;
   if (handed.t !== null) state.t = handed.t;
-  if (handed.rejected.length) status("Scenario from the link not applied: " + handed.rejected.join(", ") + ". Showing the defaults instead.");
+  state.handoffNote = handed.rejected.length ? "Scenario from the link not applied: " + handed.rejected.join(", ") + ". Showing the defaults instead." : "";
 }
 const siteById = id => state.index.sites.find(s => s.id === id);
 function series(id) {
@@ -91,7 +91,7 @@ async function region() {
   const get = async f => { const r = await fetch("./data/region/" + f); if (!r.ok) throw new Error(f); return new Uint8Array(await r.arrayBuffer()); };
   const [sun, earth] = await Promise.all([get(grid.h.layers.pgda_sun.file), get(grid.h.layers.pgda_earth.file)]);
   state.pgda = { sun, earth }; state.slope = grid.slopeField(); state.region = grid;
-  status("");
+  status(state.handoffNote || ""); // keep a rejected-link notice visible after loading
   return grid;
 }
 

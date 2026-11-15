@@ -38,3 +38,7 @@ test("shell Terreno 3D route forwards t and d to the lab", () => {
   assert.match(app, /lab\.html" \+ labHash\(ctx\.query\)/);
   assert.match(app, /p\.set\("t", q\.t\)/);
 });
+test("shell nav links carry the whole scenario (site, t, d)", () => {
+  const app = readFileSync(new URL("../shell/app.js", import.meta.url), "utf8");
+  assert.match(app, /const q = \{ site: ctx\.site, t: ctx\.query\.t, d: ctx\.query\.d \}/);
+});
