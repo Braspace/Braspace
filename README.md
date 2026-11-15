@@ -53,6 +53,8 @@ flowchart LR
 
 ## MoonProof screens (`web/moonproof/`)
 
+**Cockpit-first entry (release candidate, not yet deployed):** The proposed canonical `/moonproof/` and `/moonproof/index.html` load only a small CSP-compatible adapter and forward with `location.replace()` to `/moonproof/cockpit.html`, preserving encoded search parameters and fragment (site, start UTC, duration, layer, locale, battery). The former Explore/Teach/Plan persona selector stays recoverable from `archive/moonproof-persona-entry.md` and Git history. Auxiliary learning, evidence and planning pages retain their explicit URLs; they are not separate product home pages. See `web/moonproof/tests/entry-redirect.test.mjs` and the EXO-X1 release gate. **Production still serves the prior entry until the tested candidate is merged and its exact commit deployed.**
+
 Design by @lisanogueira (Heloísa), implemented on the shared core (`core/`: tokens, shell, terrain, layers, i18n, state). Every number comes from `web/data/` or the API; the design sheet's illustrative numbers are never in the code (`core-no-design-numbers.test.mjs`).
 
 | Page | Screen | Designer spec |
