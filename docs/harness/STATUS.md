@@ -16,9 +16,9 @@ Horas em BRT (America/Sao_Paulo). Horas UTC entre parênteses quando informadas 
 
 ## API em produção (harness, `/docker/braspace`)
 
-- Imagem: `2b6247498db4-sha` (main `2b62474`, #374), publicada às 13:39 BRT (16:39Z). Release `v2026.11.15-prod-2b62474`.
-- Backup antes do deploy: `backup/pre-2b6247498db4-sha-20261115-163914.dump`.
-- Rollback: `IMAGEM=41dedbb4705b-sha` (anterior), depois `ad83cfe7517c-sha`. Se for preciso desfazer a migração do pgvector, restaurar o dump.
+- Imagem: `5f06ee30aa2c-sha` (main `5f06ee3`, #404), publicada às 14:47 BRT (17:47Z) com `swap-api.sh`, sem downtime.
+- Backup antes do deploy: `backup/pre-5f06ee30aa2c-sha-*.dump`, gerado pelo próprio script.
+- Rollback: `./swap-api.sh 2b6247498db4-sha`. Depois disso, `41dedbb4705b-sha`.
 
 ## Verificado ao vivo pela borda
 
@@ -116,3 +116,23 @@ Procedimento usado nos dois deploys:
 7. Contrato com `BRASPACE_EXPECT_COMMIT` e `BRASPACE_COCKPIT_PACE_MS=150` (49/49 pela borda e direto), `smoke-publico.sh` e QA do cockpit em 6 viewports com toque e GPU real.
 
 Estado do pgvector depois do deploy: `index_ready`, 4 auditados com manifesto `8fdc414e…`, 10 legados em quarentena (`legacy_unverified`, não servidos; as linhas não foram apagadas).
+
+## Deploy da API `5f06ee30aa2c-sha` — 15/11/2026 17:47Z, EXO-X1, primeiro com `swap-api.sh`
+
+- **Conteúdo (#404):** códigos de erro alinhados ao enum do OpenAPI.
+  - 415 passa a ser `UNSUPPORTED_MEDIA_TYPE` em navigation, onboard e no Worker.
+  - Dado sobrando no corpo passa a ser `INVALID_JSON`.
+  - `INVALID_INPUT` entrou no enum.
+  - Teste Go que garante código ⊂ enum.
+  - `tests/` agora roda no stage `test-science`.
+- **Procedimento:**
+  - `ci-local --browser` com 13/13 GREEN;
+  - build com `BRASPACE_GIT_SHA`;
+  - `docker load` na harness;
+  - `/docker/braspace/swap-api.sh 5f06ee30aa2c-sha`, que faz o dump, roda ingest e vector-ingest (exit 0) e sobe a réplica nova antes de derrubar a antiga.
+- **Disponibilidade durante a troca:** um watcher em `/readyz` pela borda, a cada 250 ms, teve **184/184 respostas 200**. No deploy de 16:39Z, com `compose up -d api`, foram alguns segundos de 404.
+- **Verificado depois do deploy:**
+  - contrato com `BRASPACE_EXPECT_COMMIT=5f06ee3…`: 49/49 pela borda e 49/49 direto;
+  - `smoke-publico.sh` passou;
+  - 415 responde `UNSUPPORTED_MEDIA_TYPE` direto e pela borda;
+  - vector em `index_ready` (4 auditados).
