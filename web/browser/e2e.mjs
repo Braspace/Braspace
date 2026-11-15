@@ -39,25 +39,40 @@ try{
  const desktop=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
  desktop.on("pageerror",error=>errors.push("desktop: "+error.message));
 
- // / -> /moonproof/ -> single cockpit, with a reversible secondary task chooser.
+ // / -> /moonproof/ -> three-mode selector; no JS-only redirect or white fallback.
  const home=await desktop.goto(base+"/",{waitUntil:"load",timeout:30000});
  assert(home?.status()===200,"root HTTP status");
- await desktop.waitForURL(u=>/\/moonproof\/cockpit(?:\.html)?$/.test(u.pathname),{timeout:15000});
- await desktop.locator("#player").waitFor({state:"visible",timeout:20000});
- // First access to the SITE (/) must offer onboarding in the canonical Cockpit.
- // This is a clean browser context: there are no prior completion keys.
- await desktop.locator(".mp-tour-dialog").waitFor({state:"visible",timeout:15000});
- assert.match(await desktop.locator("#mp-tour-title").innerText(),/quick tour|conhecer esta tela/i);
- assert(await desktop.locator("#mp-tour-close").isVisible(),"first-visit welcome is dismissible");
- assert(await desktop.locator("#cards .mp-task").count()===0,"the cockpit is canonical, not the three-task chooser");
+ await desktop.waitForURL(u=>/\/moonproof\/(?:index\.html)?$/.test(u.pathname),{timeout:15000});
+ const entryCards=desktop.locator("#cards .mp-task");
+ await entryCards.first().waitFor({state:"visible",timeout:20000});
+ assert(await entryCards.count()===3,"home must show Explore, Teach and Plan");
+ // Welcome automatically appears on the chooser, before selecting a mode.
+ const welcome=desktop.locator(".mp-tour-dialog");
+ await welcome.waitFor({state:"visible",timeout:15000});
+ assert(/quick tour|conhecer esta tela/i.test(await desktop.locator("#mp-tour-title").innerText()),
+   "first visit offers tutorial on the actual three-mode entry");
+ await desktop.locator("#mp-tour-skip").click();
+ await welcome.waitFor({state:"hidden"});
  await desktop.screenshot({path:path.join(out,"moonproof-entry.png")});
- // Preserve the exact mission context and fragment through the entry (no new WebGL renderer).
+ // All three cards must navigate to their own real screen, not to Cockpit.
+ for(const [task,page,layer] of [["explore","explore.html","answer"],["class","activity.html","why"],["plan","plan.html","proof"]]){
+   await desktop.goto(base+"/moonproof/",{waitUntil:"domcontentloaded",timeout:30000});
+   const link=desktop.locator(`#cards .mp-task[data-task="${task}"]`);
+   await link.waitFor({state:"visible",timeout:15000});
+   await link.click();
+   await desktop.waitForURL(u=>u.pathname.endsWith("/moonproof/"+page)
+     && u.searchParams.get("task")===task && u.searchParams.get("layer")===layer,{timeout:15000});
+ }
+ // The selector preserves scenario and language when opened with a deep link.
  await desktop.goto(base+"/moonproof/?site=malapert-massif&lang=pt-BR&battery=30#scene",{waitUntil:"domcontentloaded",timeout:30000});
- await desktop.waitForURL(u=>/\/moonproof\/cockpit(?:\.html)?$/.test(u.pathname)
-   && u.searchParams.get("site")==="malapert-massif" && u.searchParams.get("lang")==="pt-BR"
-   && u.searchParams.get("battery")==="30" && u.hash==="#scene",{timeout:15000});
- await desktop.locator("#player").waitFor({state:"visible",timeout:20000});
- // The former task flow remains functional, but is no longer the root experience.
+ await desktop.waitForURL(u=>/\/moonproof\/(?:index\.html)?$/.test(u.pathname)
+   && u.searchParams.get("site")==="malapert-massif" && u.hash==="#scene",{timeout:15000});
+ await desktop.waitForFunction(()=>document.querySelector('#cards .mp-task[data-task="plan"]')?.getAttribute('href')?.includes('site=malapert-massif'),null,{timeout:15000});
+ const planURL=new URL(await desktop.locator('#cards .mp-task[data-task="plan"]').getAttribute("href"),base+"/moonproof/");
+ assert(planURL.pathname.endsWith("/moonproof/plan.html"),"Plan card destination");
+ for(const [key,value] of [["site","malapert-massif"],["lang","pt-BR"],["battery","30"],["task","plan"],["layer","proof"]])
+   assert(planURL.searchParams.get(key)===value,"Plan link carries "+key);
+ // The former tasks.html remains an equivalent optional entry, not a dead page.
  await open(desktop,"/moonproof/tasks.html","#cards .mp-task");
 
  // Mission: every catalogue site is a marker on the shared map.

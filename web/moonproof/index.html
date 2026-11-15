@@ -1,16 +1,51 @@
 <!doctype html>
-<html lang="en">
+<html data-moon-preview="decorative" lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MoonProof · Cockpit</title>
-<meta name="description" content="MoonProof cockpit: one shared lunar south pole 3D Moon, Artemis educational lander, preliminary site series and onboard mission simulations.">
-<script type="module" src="screens/cockpit-entry.js"></script>
+<title>MoonProof · Escolha seu modo</title>
+<meta name="description" content="MoonProof turns lunar polar illumination, Earth visibility and battery margin into plain-language answers for choosing a landing site. Pick a task to start.">
+<link rel="stylesheet" href="core/tokens.css"><link rel="stylesheet" href="core/components.css"><link rel="stylesheet" href="screens/entry.css">
+<link rel="stylesheet" href="screens/tour.css">
+<script type="module" src="screens/entry.js"></script>
+<script type="module" src="screens/tour.js" data-moon-tour="entry"></script>
+<script type="module" src="../moon-hd/backdrop.js" data-moon-backdrop="pole"></script>
+<link rel="stylesheet" href="../moon-hd/preview.css">
 </head>
-<body>
+<body class="mp-entry">
+<div id="terrain" aria-hidden="true"></div>
+<header class="mp-entry-top"><a class="mp-brand" href="./"><svg class="mp-logo" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13.5" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M16 2.5a13.5 13.5 0 0 1 0 27a9 13.5 0 0 0 0-27z" fill="#2EC4A0"/></svg><span data-i18n="brand">moonproof</span></a>
+<div class="mp-entry-actions"><button type="button" class="mp-pill" id="lang" data-i18n="nav.lang">Português</button><a id="skip" class="mp-entry-skip" href="explore.html" data-i18n="entry.skip">Pular</a></div></header>
 <main>
-<h1>MoonProof · Cockpit</h1>
-<p><a id="cockpit-entry" href="./cockpit.html">Open Cockpit · <span lang="pt-BR">Abrir Cockpit</span></a></p>
-<p><a href="./tasks.html">Other tools: Explore, Teach and Plan · <span lang="pt-BR">Outras ferramentas: Explorar, Aula e Planejar</span></a></p>
+<p class="mp-entry-eyebrow" data-i18n="entry.eyebrow">Explore o polo sul da Lua</p>
+<h1 data-i18n="entry.title">O que você quer fazer hoje?</h1>
+<p class="mp-entry-lead" data-i18n="entry.lead">Escolha como usar o MoonProof: explore o terreno, prepare uma aula ou planeje cenários.</p>
+<div class="mp-entry-cards" id="cards" role="list">
+  <!-- Functional no-JavaScript fallback. The Preact entry enhances these cards,
+       preserving selected task, language, scenario and mission constraints. -->
+  <a class="mp-task" role="listitem" data-task="explore" href="explore.html?task=explore&amp;layer=answer">
+    <span class="mp-task-icon" aria-hidden="true">☾</span>
+    <h2>Explorar a Lua</h2>
+    <p class="who">Para curiosos, estudantes e visitantes</p>
+    <ul><li>Conheça os locais</li><li>Veja Sol, Terra e relevo</li><li>Experimente o pouso lunar</li></ul>
+    <p class="opens">Começar a explorar</p>
+  </a>
+  <a class="mp-task" role="listitem" data-task="class" href="activity.html?task=class&amp;layer=why">
+    <span class="mp-task-icon" aria-hidden="true">▤</span>
+    <h2>Dar uma aula</h2>
+    <p class="who">Para professores e educadores</p>
+    <ul><li>Monte uma atividade</li><li>Apresente perguntas à turma</li><li>Compartilhe por link ou QR</li></ul>
+    <p class="opens">Abrir o Kit Aula</p>
+  </a>
+  <a class="mp-task" role="listitem" data-task="plan" href="plan.html?task=plan&amp;layer=proof">
+    <span class="mp-task-icon" aria-hidden="true">⌖</span>
+    <h2>Planejar uma missão</h2>
+    <p class="who">Para equipes e pesquisadores</p>
+    <ul><li>Compare cenários</li><li>Ajuste regras da missão</li><li>Consulte dados e incertezas</li></ul>
+    <p class="opens">Abrir planejamento</p>
+  </a>
+</div>
+<p class="mp-entry-hint" id="hint">Você pode voltar e escolher outro modo quando quiser.</p>
+<p class="mp-label" data-i18n="nav.moon3d.credit"></p>
 </main>
 </body>
 </html>
