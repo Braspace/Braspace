@@ -7,6 +7,12 @@ export const TOUR_STEPS = {
     { targets: ["#right #card-horizon", "#sheet-body", "#right"], en: ["Why light and Earth matter", "Sunlight helps power equipment. Seeing Earth helps send messages. Hills can block either view."], pt: ["Por que Sol e Terra importam", "A luz ajuda a gerar energia. Ver a Terra ajuda na comunicação. Morros podem bloquear os dois."] },
     { targets: ["#dock", "#sheet"], en: ["Keep exploring", "Use these controls to switch places. When ready, compare possibilities or try the landing activity."], pt: ["Continue explorando", "Use estes controles para mudar de lugar. Depois, compare regiões ou experimente um pouso."] }
   ],
+  present: [
+    { targets: ["#present-question"], en: ["One question at a time", "Read the question and the mission rules before choosing a place."], pt: ["Uma pergunta por vez", "Leia a pergunta e as regras da missão antes de escolher um lugar."] },
+    { targets: ["#present-cards"], en: ["Choose an answer", "Select A, B or C. More than one scenario may work. The numbers help you decide."], pt: ["Escolha uma resposta", "Selecione A, B ou C. Pode haver mais de uma resposta válida. Use os números para decidir."] },
+    { targets: ["#btn-none"], en: ["None is also an answer", "If no place meets the rule, choose None. If data are missing, the quiz says it cannot decide."], pt: ["Nenhum também vale", "Se nenhum lugar atender à regra, escolha Nenhum. Se faltarem dados, o quiz dirá que não é possível concluir."] },
+    { targets: ["#btn-reveal", "#btn-next"], en: ["Reveal, then continue", "Reveal the answer and its explanation. Next question starts a new round."], pt: ["Revele e avance", "Mostre a resposta e a explicação. Próxima pergunta começa uma nova rodada."] }
+  ],
   class: [
     { targets: ["#act-steps"], en: ["Plan your class", "These four steps help you prepare an activity, from choosing places to sharing it."], pt: ["Prepare sua aula", "Estes quatro passos ajudam a montar uma atividade, da escolha dos lugares ao compartilhamento."] },
     { targets: ["#act-preview"], en: ["See the student view", "Preview what your class will see on a laptop or phone before presenting."], pt: ["Veja como a turma verá", "Confira como a atividade aparece no computador ou no celular dos alunos."] },
@@ -150,7 +156,7 @@ export function mountTour(mode) {
     if (!help.isConnected || attempts++ > 65) { clearInterval(timer); return; }
     if (!document.documentElement.classList.contains("mp-ready") || !bestTarget(steps[0], document)) return;
     clearInterval(timer);
-    if (!hasSeen) open(true);
+    if (!hasSeen && mode !== "present") open(true); // Presentation tour is on-demand, so it never interrupts a lesson.
   }, 180);
   const langWatcher = new MutationObserver(() => { help.textContent = "? " + words().help; help.setAttribute("aria-label", words().help); if(dialog) show(); });
   langWatcher.observe(document.documentElement,{attributes:true,attributeFilter:["lang"]});
