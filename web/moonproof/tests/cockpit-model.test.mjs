@@ -69,10 +69,10 @@ test("cockpit screen: literals are limited, seals by origin, texts in both langu
   const js = await readFile(new URL("../screens/cockpit.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(js, /["']VAL["']/); assert.doesNotMatch(js, /\bvalidated\b/i);
   assert.match(js, /"\/api\/sites\/|\/api\/sites\/\$\{/); assert.match(js, /next_transitions|hours_from_start/);
-  assert.match(js, /\.\.\/onboard\//, "link to the onboard panel");
+  assert.doesNotMatch(js, /\.\.\/onboard\//, "the onboard panel is archived (MoonProof-only product)");
   assert.match(js, /api\(/);
   const html = await readFile(new URL("../cockpit.html", import.meta.url), "utf8");
-  assert.match(html, /\.\.\/onboard\//); assert.doesNotMatch(html, /\b\d{2,}\s?%/);
+  assert.doesNotMatch(html, /\.\.\/onboard\//); assert.doesNotMatch(html, /\b\d{2,}\s?%/);
 });
 
 test("the clock is a whole hour, so the hourly charge trace never reads a fraction (bug seen while playing at 6 h/s)", () => {

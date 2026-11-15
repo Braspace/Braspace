@@ -11,9 +11,9 @@ after(() => new Promise((resolve) => server.close(resolve)));
 test("static assets are guarded by CSP, MIME and no-store", async () => {
   for (const [pathname, mime] of [
     ["/", "text/html"],
-    ["/app.js", "text/javascript"],
-    ["/moon3d.js", "text/javascript"],
-    ["/styles.css", "text/css"]
+    ["/moonproof/screens/entry.js", "text/javascript"],
+    ["/lab/physics.js", "text/javascript"],
+    ["/moonproof/core/tokens.css", "text/css"]
   ]) {
     const response = await fetch(base + pathname);
     assert.equal(response.status, 200, pathname);
@@ -26,8 +26,8 @@ test("static assets are guarded by CSP, MIME and no-store", async () => {
 });
 
 test("HEAD shares content length with GET without returning a body", async () => {
-  const get = await fetch(base + "/app.js");
-  const head = await fetch(base + "/app.js", {method: "HEAD"});
+  const get = await fetch(base + "/moonproof/screens/entry.js");
+  const head = await fetch(base + "/moonproof/screens/entry.js", {method: "HEAD"});
   assert.equal(head.status, 200);
   assert.equal(head.headers.get("content-length"), get.headers.get("content-length"));
   assert.equal((await head.text()).length, 0);
