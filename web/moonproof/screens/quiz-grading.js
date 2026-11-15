@@ -1,3 +1,7 @@
+/** A failed scientific lookup has no numeric evidence; never turn it into zero or a false answer. */
+export function unavailableQuizMetric() {
+    return { longestDarkH: { value: null }, longestBlackoutH: { value: null } };
+}
 export function evaluateQuestion(question, metrics, limits) {
     if (!metrics.length)
         return { verdicts: [], correctIds: [], status: "unknown" };
