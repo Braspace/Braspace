@@ -133,7 +133,9 @@ func (v *vectorAPI) diagnose(ctx context.Context)vectorState{
  err:=pool.QueryRow(c,`WITH cur AS `+currentManifestSQL+`
   SELECT (SELECT manifest_sha256 FROM cur),
    count(*) FILTER (WHERE model_id=$1 AND ingest_manifest_sha256=(SELECT manifest_sha256 FROM cur)),
-   count(*) FILTER (WHERE model_id=$1 AND ingest_manifest_sha256 IS DISTINCT FROM (SELECT manifest_sha256 FROM cur)),
+   -- Legacy = same model but NOT audited. A NULL manifest is always legacy: with no ingest run yet,
+   -- NULL IS DISTINCT FROM NULL is false and would hide unaudited rows from the quarantine.
+   count(*) FILTER (WHERE model_id=$1 AND (ingest_manifest_sha256 IS NULL OR ingest_manifest_sha256 IS DISTINCT FROM (SELECT manifest_sha256 FROM cur))),
    count(*) FILTER (WHERE model_id<>$1)
   FROM source_semantic_index`,v.modelID).Scan(&man,&s.Audited,&s.Legacy,&s.OtherModel)
  if err!=nil{return vectorState{State:"schema_unavailable"}}
