@@ -76,7 +76,7 @@ export function mountShell({ screen, context = null, onLang, kit = null } = { sc
             mo.observe(document.body, { childList: true, subtree: true });
         }
     }
-    let cur = context;
+    let cur = context, ctxText = null;
     // Site catalogue, only to flag a site whose sunlight figures are an upper bound (data.js sunCaveat).
     let catalogue = null;
     loadSites().then(doc => { catalogue = doc; renderCtx(); }).catch(() => { });
@@ -106,16 +106,23 @@ export function mountShell({ screen, context = null, onLang, kit = null } = { sc
         if (!cur)
             return;
         const st = getState();
-        const b = document.createElement("b");
-        b.textContent = cur.site ?? t("nd");
-        const txt = document.createElement("span");
-        txt.className = "mp-ctx-text";
-        txt.append(b, " • ", cur.date ?? t("nd"), " • ", cur.days != null ? t("ctx.days", { n: cur.days }) : t("nd"));
+        // The text keeps its element while it reads the same: screens repaint the bar several times while their data arrive,
+        // and a new element would be a new (later) Largest Contentful Paint for the same words.
+        const parts0 = [cur.site ?? t("nd"), cur.date ?? t("nd"), cur.days != null ? t("ctx.days", { n: cur.days }) : t("nd")], key = parts0.join("\u0001");
+        let txt = ctxText;
+        if (!txt || txt.dataset.k !== key) {
+            const b = document.createElement("b");
+            b.textContent = parts0[0];
+            txt = ctxText = document.createElement("span");
+            txt.className = "mp-ctx-text";
+            txt.dataset.k = key;
+            txt.append(b, " • ", parts0[1], " • ", parts0[2]);
+        }
         const parts = [txt];
         const seal = sealEl(cur.seal || "N/D");
         const net = document.createElement("span");
         net.className = "mp-label";
-        net.textContent = cur.online ? t("ctx.online") : t("ctx.offline");
+        net.textContent = cur.online == null ? "…" : cur.online ? t("ctx.online") : t("ctx.offline"); // null: /readyz has not answered yet
         const lab = document.createElement("label");
         lab.className = "mp-label";
         lab.textContent = t("ctx.openIn") + " ";
