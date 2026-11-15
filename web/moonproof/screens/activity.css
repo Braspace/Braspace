@@ -329,3 +329,7 @@
   .mp-act-steps *, .mp-act-preview * { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
   .mp-share-url { max-width: 100%; }
 }
+
+/* Classroom layer tabs change real explanatory text in the student preview. */
+.mp-pv-layer-note{display:block;margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,.13);font-size:11.5px;line-height:1.4;color:#9DE2D0}
+.mp-act-suggest{margin:10px 0 0;padding:10px 12px;border-radius:12px;border:1px solid rgba(46,196,160,.20);color:var(--text-2);font-size:12px;line-height:1.5}
