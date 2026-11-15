@@ -2,9 +2,13 @@ name: BRASPACE Optional pgvector Metadata
 on:
   pull_request:
     paths:
-      - "api/vector.go"
-      - "api/vector_test.go"
-      - "api/db/optional-vector.sql"
+      - "api/vector*.go"
+      - "api/cli.go"
+      - "api/go.mod"
+      - "api/go.sum"
+      - "api/sitedata/catalog.json"
+      - "api/db/**"
+      - "data/ASSET_REGISTRY.json"
       - "compose.vector.yaml"
       - ".github/workflows/pgvector-metadata.yml"
   push:

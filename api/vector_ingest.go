@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/fs"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -86,43 +87,53 @@ func ingestVectorMetadata(ctx context.Context, pool *pgxpool.Pool, fsys fs.FS) (
 	if pool == nil {
 		return nil, errors.New("vector database pool is nil")
 	}
-	if _, err := pool.Exec(ctx, optionalVectorSQL); err != nil {
-		return nil, fmt.Errorf("apply optional-vector.sql: %w", err)
-	}
 	entries, err := buildProvenanceSeedEntries(fsys)
 	if err != nil {
 		return nil, err
 	}
-	inserted := 0
-	for _, e := range entries {
-		vec, err := embedProvenanceText(e.Text)
-		if err != nil {
-			return nil, fmt.Errorf("embed %s: %w", e.SourceRef, err)
+	// Publish the optional schema and all seed rows in one transaction.
+	if err := pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('braspace:vector-ingest', 0))`); err != nil {
+			return fmt.Errorf("lock vector ingest: %w", err)
 		}
-		lit, err := vectorLiteral(vec)
-		if err != nil {
-			return nil, fmt.Errorf("literal %s: %w", e.SourceRef, err)
+		if _, err := tx.Exec(ctx, optionalVectorSQL); err != nil {
+			return fmt.Errorf("apply optional-vector.sql: %w", err)
 		}
-		_, err = pool.Exec(ctx, `
-			INSERT INTO source_semantic_index(source_ref, title, source_url, sha256, model_id, embedding)
-			VALUES ($1, $2, $3, $4, $5, $6::vector)
-			ON CONFLICT (source_ref) DO UPDATE SET
-				title = EXCLUDED.title,
-				source_url = EXCLUDED.source_url,
-				sha256 = EXCLUDED.sha256,
-				model_id = EXCLUDED.model_id,
-				embedding = EXCLUDED.embedding,
-				updated_at = now()`,
-			e.SourceRef, e.Title, e.SourceURL, e.SHA256, vectorLexicalModelID, lit)
-		if err != nil {
-			return nil, fmt.Errorf("upsert %s: %w", e.SourceRef, err)
+		for _, e := range entries {
+			vec, err := embedProvenanceText(e.Text)
+			if err != nil {
+				return fmt.Errorf("embed %s: %w", e.SourceRef, err)
+			}
+			lit, err := vectorLiteral(vec)
+			if err != nil {
+				return fmt.Errorf("literal %s: %w", e.SourceRef, err)
+			}
+			_, err = tx.Exec(ctx, `
+				INSERT INTO source_semantic_index AS current_index(source_ref, title, source_url, sha256, model_id, embedding)
+				VALUES ($1, $2, $3, $4, $5, $6::vector)
+				ON CONFLICT (source_ref) DO UPDATE SET
+					title = EXCLUDED.title,
+					source_url = EXCLUDED.source_url,
+					sha256 = EXCLUDED.sha256,
+					model_id = EXCLUDED.model_id,
+					embedding = EXCLUDED.embedding,
+					updated_at = now()
+				WHERE (current_index.title, current_index.source_url, current_index.sha256, current_index.model_id, current_index.embedding)
+				      IS DISTINCT FROM (EXCLUDED.title, EXCLUDED.source_url, EXCLUDED.sha256, EXCLUDED.model_id, EXCLUDED.embedding)`,
+				e.SourceRef, e.Title, e.SourceURL, e.SHA256, vectorLexicalModelID, lit)
+			if err != nil {
+				return fmt.Errorf("upsert %s: %w", e.SourceRef, err)
+			}
 		}
-		inserted++
+		return nil
+	}); err != nil {
+		return nil, err
 	}
+
 	return map[string]any{
 		"status":    "ok",
 		"model_id":  vectorLexicalModelID,
 		"dimension": vectorDimensions,
-		"upserted":  inserted,
+		"upserted":  len(entries),
 	}, nil
 }

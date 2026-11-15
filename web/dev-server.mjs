@@ -13,6 +13,7 @@ const staticFiles=new Map([
   ["/index.html",{name:"index.html",type:"text/html; charset=utf-8"}],
   ["/styles.css",{name:"styles.css",type:"text/css; charset=utf-8"}],
   ["/api-base.js",{name:"api-base.js",type:"text/javascript; charset=utf-8"}],
+  ["/vector-embed.js",{name:"vector-embed.js",type:"text/javascript; charset=utf-8"}],
   ["/vendor/preact/preact.module.js",{name:"vendor/preact/preact.module.js",type:"text/javascript; charset=utf-8"}],
   ["/app.js",{name:"app.js",type:"text/javascript; charset=utf-8"}],
   ["/moon3d.js",{name:"moon3d.js",type:"text/javascript; charset=utf-8"}],
@@ -207,6 +208,6 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1]
  if(!(port>1023&&port<65536))throw new Error("invalid local web port");
  createServer().listen(port,"127.0.0.1",()=>{
   process.stdout.write("MoonProof web preview: http://127.0.0.1:"+port+"\n");
-  process.stdout.write("Private Go API expected: http://127.0.0.1:8080\n");
+  process.stdout.write("Private Go API expected: http://"+upstreamHost+":"+upstreamPort+"\n");
  });
 }

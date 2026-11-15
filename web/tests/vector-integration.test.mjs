@@ -1,5 +1,7 @@
+import { once } from "node:events";
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { createServer } from "../dev-server.mjs";
 import { embedProvenanceText, VECTOR_DIMENSIONS, VECTOR_MODEL_ID } from "../vector-embed.js";
 import { backendVectorAvailability, backendVectorSearch } from "../lab/backend-bridge.js";
 
@@ -51,4 +53,15 @@ test("backendVectorAvailability and backendVectorSearch enforce contract and fai
     json: async () => ({ error: "disabled", code: "VECTOR_UNAVAILABLE" })
   });
   await assert.rejects(() => backendVectorSearch("LOLA DEM", {}, unavailable));
+});
+
+
+test("preview serves the lexical module imported by Evidence and Polar Lab", async t => {
+  const server = createServer().listen(0, "127.0.0.1");
+  t.after(() => server.close());
+  await once(server, "listening");
+  const res = await fetch(`http://127.0.0.1:${server.address().port}/vector-embed.js`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get("content-type"), /^text\/javascript/);
+  assert.ok((await res.text()).includes(VECTOR_MODEL_ID));
 });
