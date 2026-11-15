@@ -9,10 +9,10 @@ const web = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const out = mkdtempSync(path.join(tmpdir(), "ts-check-"));
 execFileSync("npx", ["-y", "-p", "typescript@5.6.3", "tsc", "-p", path.join(web, "tsconfig.json"), "--outDir", out, "--rootDir", web], {stdio: "inherit"});
 const walk = d => readdirSync(d).flatMap(f => { const p = path.join(d, f); return statSync(p).isDirectory() ? (f === "node_modules" ? [] : walk(p)) : [p]; });
-const ts = walk(web).filter(f => f.endsWith(".ts") && !f.endsWith(".d.ts"));
+const ts = walk(web).filter(f => (f.endsWith(".ts") || f.endsWith(".tsx")) && !f.endsWith(".d.ts") && !f.includes(path.sep + "vendor" + path.sep));
 let bad = 0;
 for (const f of ts) {
-  const rel = path.relative(web, f).replace(/\.ts$/, ".js");
+  const rel = path.relative(web, f).replace(/\.tsx?$/, ".js");
   const fresh = readFileSync(path.join(out, rel), "utf-8"), committed = readFileSync(path.join(web, rel), "utf-8");
   if (fresh !== committed) { console.error("out of date: web/" + rel + " (run npm --prefix web run build:ts)"); bad++; }
 }
