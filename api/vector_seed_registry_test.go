@@ -1,34 +1,43 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
-	"testing/fstest"
 )
 
-// Every SHA-256 written into the provenance seed must be one the repository
-// already records in data/ (zero false validation: no invented checksums).
+// Every source SHA-256 that the lexical ingestion manifest indexes must be one
+// the repository already records in data/ or the embedded layer registry
+// (zero false validation: no invented checksums). Ported from #284 to the
+// registry-pinned manifest of #279.
 func TestVectorSeedSHA256AreRegistered(t *testing.T) {
-	var registry strings.Builder
-	for _, f := range []string{"../data/ASSET_REGISTRY.json", "../data/manifest.json"} {
+	var recorded strings.Builder
+	for _, f := range []string{"../data/ASSET_REGISTRY.json", "../data/manifest.json", "sitedata/layers.json"} {
 		b, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)
 		}
-		registry.Write(b)
+		recorded.Write(b)
 	}
-	// Empty FS: only the hard-coded entries, not the catalog-derived ones.
-	entries, err := buildProvenanceSeedEntries(fstest.MapFS{})
+	registry, sha, err := vectorLayerRegistry()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(entries) == 0 {
-		t.Fatal("no seed entries")
+	raw, err := lexicalVectorManifest(registry, sha)
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, e := range entries {
-		if len(e.SHA256) != 64 || !strings.Contains(registry.String(), e.SHA256) {
-			t.Errorf("%s: sha256 %q is not recorded in data/ASSET_REGISTRY.json or data/manifest.json", e.SourceRef, e.SHA256)
+	var m vectorIngestManifest
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatal(err)
+	}
+	if len(m.Entries) == 0 {
+		t.Fatal("no manifest entries")
+	}
+	for _, e := range m.Entries {
+		if len(e.SourceSHA256) != 64 || !strings.Contains(recorded.String(), e.SourceSHA256) {
+			t.Errorf("%s: sha256 %q is not recorded in data/ or sitedata/layers.json", e.LayerID, e.SourceSHA256)
 		}
 	}
 }

@@ -15,19 +15,32 @@ import (
 
 func TestScienceGridDoesNotRound(t *testing.T) {
 	st, err := loadDefaultStore()
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	ser, ok := st.seriesFor("synthetic-demo-a")
-	if !ok { t.Fatal("fixture missing") }
+	if !ok {
+		t.Fatal("fixture missing")
+	}
 	start := time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)
-	if _, _, ok := span(ser, start, 2); !ok { t.Fatal("aligned time rejected") }
-	for _, tc := range []struct{ at time.Time; hours float64 }{
-		{start.Add(30*time.Minute), 2},
+	if _, _, ok := span(ser, start, 2); !ok {
+		t.Fatal("aligned time rejected")
+	}
+	for _, tc := range []struct {
+		at    time.Time
+		hours float64
+	}{
+		{start.Add(30 * time.Minute), 2},
 		{start, 1.5},
-		{start.Add(5*time.Second), 2},
+		{start.Add(5 * time.Second), 2},
 		{start, 0.5},
 	} {
-		if gridAligned(ser, tc.at, tc.hours) { t.Errorf("aligned incorrectly: %+v", tc) }
-		if _, _, ok := span(ser, tc.at, tc.hours); ok { t.Errorf("rounded incorrectly: %+v", tc) }
+		if gridAligned(ser, tc.at, tc.hours) {
+			t.Errorf("aligned incorrectly: %+v", tc)
+		}
+		if _, _, ok := span(ser, tc.at, tc.hours); ok {
+			t.Errorf("rounded incorrectly: %+v", tc)
+		}
 	}
 }
 
@@ -35,7 +48,9 @@ func TestScienceGridPublicRoutes(t *testing.T) {
 	h, _ := testAPI(t, "ok")
 	body := `{"site_ids":["synthetic-demo-a"],"start_utc":"2026-12-01T00:30:00Z","duration_hours":2}`
 	rec := do(h, "POST", "/api/compare", body)
-	if rec.Code != 200 { t.Fatalf("compare: %d %s", rec.Code, rec.Body.String()) }
+	if rec.Code != 200 {
+		t.Fatalf("compare: %d %s", rec.Code, rec.Body.String())
+	}
 	result := decode(t, rec)["results"].([]any)[0].(map[string]any)
 	if result["data_status"] != "GRID_NOT_ALIGNED" || result["evaluation"] != nil {
 		t.Fatalf("off-grid comparison must never report metrics: %v", result)
@@ -59,15 +74,25 @@ func TestScienceGridPublicRoutes(t *testing.T) {
 
 func TestScienceStoreRejectsUnattestedAndTrailingData(t *testing.T) {
 	cat, err := embeddedSiteData.ReadFile("sitedata/catalog.json")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	_, err = loadStore(fstest.MapFS{"catalog.json": {Data: append(cat, []byte("\n{}")...)}})
-	if err == nil { t.Fatal("trailing catalog document accepted") }
+	if err == nil {
+		t.Fatal("trailing catalog document accepted")
+	}
 	raw, err := embeddedSiteData.ReadFile("sitedata/series/synthetic-demo-a.json")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	var parsed siteSeries
-	if err := json.Unmarshal(raw, &parsed); err != nil { t.Fatal(err) }
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		t.Fatal(err)
+	}
 	parsed.ScienceStatus = "VALIDATED"
-	if err := validateSeries(&parsed); err == nil { t.Fatal("fake scientific VALIDATED status accepted") }
+	if err := validateSeries(&parsed); err == nil {
+		t.Fatal("fake scientific VALIDATED status accepted")
+	}
 	var doc siteSeries
 	if err := decodeStrict(append(raw, []byte("\n{}")...), &doc); err == nil {
 		t.Fatal("trailing series JSON accepted")
@@ -76,19 +101,27 @@ func TestScienceStoreRejectsUnattestedAndTrailingData(t *testing.T) {
 
 func TestScienceValidationCannotIgnoreMissingSites(t *testing.T) {
 	good := siteResult{DataStatus: "AVAILABLE", ScienceStatus: "VALIDATED", EngineScienceStatus: "VALIDATED"}
-	if scientificallyValidated(good, siteResult{DataStatus: "NO_SERIES_DATA"}) { t.Fatal("missing site ignored") }
-	if scientificallyValidated(good, siteResult{DataStatus: "GRID_NOT_ALIGNED"}) { t.Fatal("off-grid site ignored") }
-	if scientificallyValidated() { t.Fatal("empty result is not validated") }
+	if scientificallyValidated(good, siteResult{DataStatus: "NO_SERIES_DATA"}) {
+		t.Fatal("missing site ignored")
+	}
+	if scientificallyValidated(good, siteResult{DataStatus: "GRID_NOT_ALIGNED"}) {
+		t.Fatal("off-grid site ignored")
+	}
+	if scientificallyValidated() {
+		t.Fatal("empty result is not validated")
+	}
 }
 
 func TestScienceEngineRejectsForgedOutput(t *testing.T) {
-	if runtime.GOOS == "windows" { t.Skip("POSIX shell fixture") }
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX shell fixture")
+	}
 	req := visibilityRequest{
 		SiteID: "synthetic", EpochUTC: "2026-11-14T00:00:00Z",
-		Sun: direction{AzimuthDeg: 0, ElevationDeg: 2},
-		Earth: direction{AzimuthDeg: 180, ElevationDeg: -1},
+		Sun:            direction{AzimuthDeg: 0, ElevationDeg: 2},
+		Earth:          direction{AzimuthDeg: 180, ElevationDeg: -1},
 		TerrainHorizon: []horizonSample{{AzimuthDeg: 0, ElevationDeg: 0}, {AzimuthDeg: 180, ElevationDeg: 0}},
-		Provenance: provenance{TerrainDatasetID: "TEST", EphemerisID: "TEST", Frame: "MOON_ME"},
+		Provenance:     provenance{TerrainDatasetID: "TEST", EphemerisID: "TEST", Frame: "MOON_ME"},
 	}
 	valid := map[string]any{
 		"site_id": req.SiteID, "epoch_utc": req.EpochUTC, "science_status": "UNVERIFIED_INPUTS",
@@ -97,24 +130,30 @@ func TestScienceEngineRejectsForgedOutput(t *testing.T) {
 		"sun_visible": true, "earth_visible": false, "simultaneous_visibility": false,
 	}
 	cases := map[string]func(map[string]any){
-		"self-validated": func(m map[string]any) { m["science_status"] = "VALIDATED" },
-		"wrong-site": func(m map[string]any) { m["site_id"] = "another-site" },
-		"wrong-epoch": func(m map[string]any) { m["epoch_utc"] = "2025-01-01T00:00:00Z" },
-		"missing-margin": func(m map[string]any) { delete(m, "sun_margin_deg") },
-		"falsified-margin": func(m map[string]any) { m["sun_margin_deg"] = 1.5 },
-		"falsified-visibility": func(m map[string]any) { m["sun_visible"] = false },
+		"self-validated":         func(m map[string]any) { m["science_status"] = "VALIDATED" },
+		"wrong-site":             func(m map[string]any) { m["site_id"] = "another-site" },
+		"wrong-epoch":            func(m map[string]any) { m["epoch_utc"] = "2025-01-01T00:00:00Z" },
+		"missing-margin":         func(m map[string]any) { delete(m, "sun_margin_deg") },
+		"falsified-margin":       func(m map[string]any) { m["sun_margin_deg"] = 1.5 },
+		"falsified-visibility":   func(m map[string]any) { m["sun_visible"] = false },
 		"falsified-simultaneous": func(m map[string]any) { m["simultaneous_visibility"] = true },
 	}
 	for name, mutate := range cases {
 		t.Run(name, func(t *testing.T) {
 			record := map[string]any{}
-			for k, v := range valid { record[k] = v }
+			for k, v := range valid {
+				record[k] = v
+			}
 			mutate(record)
 			b, err := json.Marshal(record)
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			path := filepath.Join(t.TempDir(), "engine.sh")
 			script := "#!/bin/sh\nprintf '%s\\n' '" + string(b) + "'\n"
-			if err := os.WriteFile(path, []byte(script), 0o700); err != nil { t.Fatal(err) }
+			if err := os.WriteFile(path, []byte(script), 0o700); err != nil {
+				t.Fatal(err)
+			}
 			_, err = newEngineClient(path).call(context.Background(), req)
 			if !errors.Is(err, errEngineContract) {
 				t.Fatalf("accepted forged engine response %s: %v", name, err)

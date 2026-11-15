@@ -73,8 +73,21 @@ func lazyStorePing(url string) func(context.Context) error {
 }
 
 // migrate applies embedded migrations in name order, each in its own transaction.
+// The database/schema-scoped transaction lock serializes DDL and tracking-row
+// checks across deploying workers; checking before the transaction can race.
+func lockMigration(ctx context.Context, tx pgx.Tx) error {
+	_, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('braspace:migrate:' || current_schema()::text, 0))`)
+	return err
+}
+
 func migrate(ctx context.Context, db *pgxpool.Pool) ([]string, error) {
-	if _, err := db.Exec(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`); err != nil {
+	if err := pgx.BeginTxFunc(ctx, db, pgx.TxOptions{IsoLevel: pgx.ReadCommitted}, func(tx pgx.Tx) error {
+		if err := lockMigration(ctx, tx); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`)
+		return err
+	}); err != nil {
 		return nil, err
 	}
 	names, err := fs.Glob(migrationFiles, "db/migrations/*.sql")
@@ -85,28 +98,37 @@ func migrate(ctx context.Context, db *pgxpool.Pool) ([]string, error) {
 	applied := []string{}
 	for _, name := range names {
 		base := path.Base(name)
-		var done bool
-		if err := db.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE name = $1)`, base).Scan(&done); err != nil {
-			return nil, err
-		}
-		if done {
-			continue
-		}
-		sql, err := migrationFiles.ReadFile(name)
-		if err != nil {
-			return nil, err
-		}
-		err = pgx.BeginFunc(ctx, db, func(tx pgx.Tx) error {
+		var changed bool
+		err = pgx.BeginTxFunc(ctx, db, pgx.TxOptions{IsoLevel: pgx.ReadCommitted}, func(tx pgx.Tx) error {
+			if err := lockMigration(ctx, tx); err != nil {
+				return err
+			}
+			var done bool
+			if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE name = $1)`, base).Scan(&done); err != nil {
+				return err
+			}
+			if done {
+				return nil
+			}
+			sql, err := migrationFiles.ReadFile(name)
+			if err != nil {
+				return err
+			}
 			if _, err := tx.Exec(ctx, string(sql)); err != nil {
 				return err
 			}
-			_, err := tx.Exec(ctx, `INSERT INTO schema_migrations (name) VALUES ($1)`, base)
-			return err
+			if _, err := tx.Exec(ctx, `INSERT INTO schema_migrations (name) VALUES ($1)`, base); err != nil {
+				return err
+			}
+			changed = true
+			return nil
 		})
 		if err != nil {
 			return nil, fmt.Errorf("migration %s: %w", base, err)
 		}
-		applied = append(applied, base)
+		if changed {
+			applied = append(applied, base)
+		}
 	}
 	return applied, nil
 }
@@ -434,12 +456,23 @@ type readbackReport struct {
 // verifyReadback compares the database against the source files and manifest:
 // file hashes, canonical content hashes and the manifest checksum.
 func verifyReadback(ctx context.Context, db *pgxpool.Pool, fsys fs.FS, manifest []byte) (*readbackReport, error) {
-	rep := &readbackReport{Checks: map[string]string{}, Problems: []string{}}
 	src, err := loadStore(fsys)
 	if err != nil {
 		return nil, err
 	}
-	dbStore, err := loadStoreFromDB(ctx, db)
+	// All evidence must describe the same committed generation, including the
+	// file/manifest hashes queried after the series and catalog are reassembled.
+	tx, err := db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	return verifyReadbackSnapshot(ctx, tx, src, fsys, manifest)
+}
+
+func verifyReadbackSnapshot(ctx context.Context, db querier, src *siteStore, fsys fs.FS, manifest []byte) (*readbackReport, error) {
+	rep := &readbackReport{Checks: map[string]string{}, Problems: []string{}}
+	dbStore, err := loadStoreFromSnapshot(ctx, db)
 	if err != nil {
 		rep.Problems = append(rep.Problems, "database load: "+err.Error())
 		return rep, nil
@@ -464,9 +497,14 @@ func verifyReadback(ctx context.Context, db *pgxpool.Pool, fsys fs.FS, manifest 
 			continue
 		}
 		have, _ := contentHash(got)
-		raw, _ := fs.ReadFile(fsys, path.Clean(src.byID[id].SeriesFile))
+		raw, err := fs.ReadFile(fsys, path.Clean(src.byID[id].SeriesFile))
+		if err != nil {
+			return nil, fmt.Errorf("read source for %s: %w", id, err)
+		}
 		var fileHash string
-		_ = db.QueryRow(ctx, `SELECT file_sha256 FROM site_series WHERE site_id = $1`, id).Scan(&fileHash)
+		if err := db.QueryRow(ctx, `SELECT file_sha256 FROM site_series WHERE site_id = $1`, id).Scan(&fileHash); err != nil {
+			return nil, fmt.Errorf("read file hash for %s: %w", id, err)
+		}
 		switch {
 		case want != have:
 			rep.Problems = append(rep.Problems, id+": content differs from source")

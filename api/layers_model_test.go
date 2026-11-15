@@ -160,6 +160,38 @@ func TestModelAssetRejectsWrongSHA(t *testing.T) {
 	}
 }
 
+func TestModelCacheRejectsCorruptedBytesAndSymlink(t *testing.T) {
+	for _, symlink := range []bool{false, true} {
+		name := "same-size corruption"
+		if symlink {
+			name = "symlink"
+		}
+		t.Run(name, func(t *testing.T) {
+			body := []byte("glTF-good")
+			l, h, up := standIn(t, body, "model/gltf-binary")
+			ly := l.byID[modelID]
+			ly.Bytes, ly.SHA256 = int64(len(body)), sha256Hex(body)
+			path := filepath.Join(l.assets.dir, ly.SHA256+".glb")
+			if symlink {
+				target := filepath.Join(t.TempDir(), "external.glb")
+				if err := os.WriteFile(target, body, 0o600); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(target, path); err != nil {
+					t.Skipf("symlink unavailable: %v", err)
+				}
+			} else if err := os.WriteFile(path, []byte("glTF-evil"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			up.Close()
+			rec := do(h, "GET", "/api/layers/"+modelID+"/asset", "")
+			if rec.Code != 502 || rec.Header().Get("ETag") != "" {
+				t.Fatalf("untrusted cache must not be served with its claimed SHA: %d %q", rec.Code, rec.Body.String())
+			}
+		})
+	}
+}
+
 func TestModelAssetRejectsWrongContentType(t *testing.T) {
 	body := bytes.Repeat([]byte("x"), 1000)
 	l, h, _ := standIn(t, body, "text/html")

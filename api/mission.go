@@ -10,11 +10,12 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"mime"
 	"net/http"
 	"sort"
-	"strings"
 	"time"
 
+	"github.com/Braspace/Braspace/api/internal/jsoncontract"
 	"github.com/Braspace/Braspace/api/onboard"
 )
 
@@ -176,12 +177,15 @@ func (m *missionAPI) getSite(w http.ResponseWriter, r *http.Request) {
 
 // decodeJSON enforces content type, size, known fields and a single document.
 func decodeJSON(r *http.Request, v any) error {
-	if ct := r.Header.Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+	if media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil || media != "application/json" {
 		return errf(http.StatusUnsupportedMediaType, "UNSUPPORTED_MEDIA_TYPE", "application/json required")
 	}
 	raw, err := io.ReadAll(io.LimitReader(r.Body, maxRequestBytes+1))
 	if err != nil || len(raw) > maxRequestBytes {
 		return errf(http.StatusRequestEntityTooLarge, "REQUEST_TOO_LARGE", "request too large")
+	}
+	if err := jsoncontract.Check(raw); err != nil {
+		return errf(http.StatusBadRequest, "INVALID_JSON", "invalid JSON document")
 	}
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.DisallowUnknownFields()
@@ -232,7 +236,7 @@ func gridAligned(s *siteSeries, start time.Time, hours float64) bool {
 	if math.Abs(value-rounded) > 1 {
 		return false
 	} // sub-ns float tolerance
-	return start.Sub(s.start)%s.step == 0 && time.Duration(rounded)%s.step == 0
+	return rounded >= float64(s.step) && start.Sub(s.start)%s.step == 0 && time.Duration(rounded)%s.step == 0
 }
 
 // span maps the exact [start, start+hours) onto sample indices; never rounds.
@@ -343,7 +347,7 @@ func (m *missionAPI) compare(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	req.StartUTC = start.Format(time.RFC3339)
+	req.StartUTC = start.Format(time.RFC3339Nano)
 
 	ctx, cancel := context.WithTimeout(r.Context(), requestDeadline)
 	defer cancel()
@@ -438,7 +442,7 @@ func (m *missionAPI) delayScenario(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	req.StartUTC = start.Format(time.RFC3339)
+	req.StartUTC = start.Format(time.RFC3339Nano)
 	ser, ok := m.store.seriesFor(s.ID)
 	if !ok {
 		writeError(w, errf(http.StatusUnprocessableEntity, "DATA_NOT_AVAILABLE", "no horizon/ephemeris series has been ingested for site %q; nothing can be recalculated", s.ID))
@@ -459,7 +463,7 @@ func (m *missionAPI) delayScenario(w http.ResponseWriter, r *http.Request) {
 		at := start.Add(time.Duration(delay * float64(time.Hour)))
 		// Options are only comparable on horizons computed for the same observer height.
 		if ts, ok := m.store.seriesFor(target.ID); ok && ts.ObserverHeightM != ser.ObserverHeightM {
-			return scenarioOption{Kind: kind, SiteID: target.ID, DelayHours: delay, DistanceKm: dist, StartUTC: at.Format(time.RFC3339),
+			return scenarioOption{Kind: kind, SiteID: target.ID, DelayHours: delay, DistanceKm: dist, StartUTC: at.Format(time.RFC3339Nano),
 				DataStatus: "OBSERVER_HEIGHT_MISMATCH", Checks: []constraintCheck{}, Breached: []constraintCheck{},
 				Reason: fmt.Sprintf("series computed for observer_height_m=%g, baseline uses %g", ts.ObserverHeightM, ser.ObserverHeightM)}, nil
 		}
@@ -467,7 +471,7 @@ func (m *missionAPI) delayScenario(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return scenarioOption{}, err
 		}
-		o := scenarioOption{Kind: kind, SiteID: target.ID, DelayHours: delay, DistanceKm: dist, StartUTC: at.Format(time.RFC3339),
+		o := scenarioOption{Kind: kind, SiteID: target.ID, DelayHours: delay, DistanceKm: dist, StartUTC: at.Format(time.RFC3339Nano),
 			DataStatus: res.DataStatus, Reason: res.Reason, ScienceStatus: res.ScienceStatus, EngineScienceStatus: res.EngineScienceStatus,
 			Checks: []constraintCheck{}, Breached: []constraintCheck{}}
 		if res.Evaluation != nil {

@@ -193,7 +193,7 @@ func (m *missionAPI) runSiteOnboard(r *http.Request) (*siteOnboardResult, error)
 	if err != nil {
 		return nil, err
 	}
-	req.StartUTC = start.Format(time.RFC3339)
+	req.StartUTC = start.Format(time.RFC3339Nano)
 
 	ctx, cancel := context.WithTimeout(r.Context(), requestDeadline)
 	defer cancel()
