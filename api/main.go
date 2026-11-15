@@ -213,7 +213,11 @@ func routes(binary string) http.Handler {
 	if err != nil {
 		panic(fmt.Errorf("site data: %w", err))
 	}
-	(&missionAPI{store: store, engine: newEngineClient(binary)}).register(mux)
+	mission := &missionAPI{store: store, engine: newEngineClient(binary)}
+	if store.source == "postgres" {
+		mission.storePing = lazyStorePing(os.Getenv("DATABASE_URL"))
+	}
+	mission.register(mux)
 	registerLayers(mux, store)
 	registerVectorAPI(mux) // optional, disabled by default; never changes mission physics
 	return mux

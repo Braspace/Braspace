@@ -1,0 +1,7 @@
+78a79,80
+>   // Resposta antecipada (413/405) com corpo ainda nao lido: nao reaproveitar a conexao keep-alive.
+>   if(!req.complete){res.shouldKeepAlive=false;req.resume();}
+119c121
+<    if(!["GET","POST","HEAD","OPTIONS"].includes(req.method)){res.writeHead(405);res.end("Method not allowed");return;}
+---
+>    if(!["GET","POST","HEAD","OPTIONS"].includes(req.method)){req.resume();res.shouldKeepAlive=false;res.writeHead(405);res.end("Method not allowed");return;}

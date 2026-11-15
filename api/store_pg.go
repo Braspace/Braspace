@@ -57,6 +57,21 @@ func openPool(ctx context.Context, url string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
+// lazyStorePing devolve uma sonda que não conecta no boot (o pool é criado sem
+// conexão), então funciona mesmo que o banco esteja fora quando a API sobe.
+func lazyStorePing(url string) func(context.Context) error {
+	cfg, err := pgxpool.ParseConfig(url)
+	if err != nil {
+		return func(context.Context) error { return errors.New("DATABASE_URL is not a valid postgres URL") }
+	}
+	cfg.MaxConns, cfg.MinConns = 1, 0
+	pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
+	if err != nil {
+		return func(context.Context) error { return err }
+	}
+	return pool.Ping
+}
+
 // migrate applies embedded migrations in name order, each in its own transaction.
 func migrate(ctx context.Context, db *pgxpool.Pool) ([]string, error) {
 	if _, err := db.Exec(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`); err != nil {
@@ -67,7 +82,7 @@ func migrate(ctx context.Context, db *pgxpool.Pool) ([]string, error) {
 		return nil, err
 	}
 	sort.Strings(names)
-	var applied []string
+	applied := []string{}
 	for _, name := range names {
 		base := path.Base(name)
 		var done bool
