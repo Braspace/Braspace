@@ -1,0 +1,30 @@
+name: Source-derived NAIF series integrity
+on:
+  push:
+    branches: [test/naif-source-artifact-integrity-20261114]
+    paths:
+      - "scripts/validate_derived_series.py"
+      - "tests/test_derived_series_integrity.py"
+      - ".github/workflows/naif-series-integrity.yml"
+  pull_request:
+    paths:
+      - "scripts/validate_derived_series.py"
+      - "tests/test_derived_series_integrity.py"
+      - ".github/workflows/naif-series-integrity.yml"
+      - "science/evidence/**"
+      - "api/sitedata/**"
+permissions:
+  contents: read
+jobs:
+  provenance:
+    name: Pinned NASA artifact and false-claim regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m py_compile scripts/validate_derived_series.py tests/test_derived_series_integrity.py
+      - run: python3 scripts/validate_derived_series.py
+      - run: python -m unittest discover -s tests -p "test_derived_series_integrity.py" -v
