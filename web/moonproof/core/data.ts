@@ -66,7 +66,7 @@ export function sourced<T = unknown>(value: T | null | undefined, { unit = "", s
 }
 
 let sitesP: Promise<SitesDoc> | null = null;
-/** The five real sites of web/data/sites.json, numbered 1..n in file order. */
+/** The real sites of web/data/sites.json (currently 14), numbered 1..n in file order. */
 export function loadSites(): Promise<SitesDoc> {
   if (!sitesP) {
     const pending = fetch(DATA_BASE + "sites.json").then(r => { if (!r.ok) throw new Error("sites.json " + r.status); return r.json(); })

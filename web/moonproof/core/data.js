@@ -37,7 +37,7 @@ export function sourced(value, { unit = "", status, source = "", detail = {} } =
         seal: missing ? (status === "ERROR" ? "FALHA" : "N/D") : sealFor(status), source, detail });
 }
 let sitesP = null;
-/** The five real sites of web/data/sites.json, numbered 1..n in file order. */
+/** The real sites of web/data/sites.json (currently 14), numbered 1..n in file order. */
 export function loadSites() {
     if (!sitesP) {
         const pending = fetch(DATA_BASE + "sites.json").then(r => { if (!r.ok)
