@@ -11,3 +11,4 @@ docs/*
 **/.env.*
 .DS_Store
 !docs/SCIENTIFIC_ACCEPTANCE.md
+!docs/SOLAR_ANGLE_VS_POWER.md
