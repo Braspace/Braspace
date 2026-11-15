@@ -44,6 +44,11 @@ try{
  assert(home?.status()===200,"root HTTP status");
  await desktop.waitForURL(u=>/\/moonproof\/cockpit(?:\.html)?$/.test(u.pathname),{timeout:15000});
  await desktop.locator("#player").waitFor({state:"visible",timeout:20000});
+ // First access to the SITE (/) must offer onboarding in the canonical Cockpit.
+ // This is a clean browser context: there are no prior completion keys.
+ await desktop.locator(".mp-tour-dialog").waitFor({state:"visible",timeout:15000});
+ assert.match(await desktop.locator("#mp-tour-title").innerText(),/quick tour|conhecer esta tela/i);
+ assert(await desktop.locator("#mp-tour-close").isVisible(),"first-visit welcome is dismissible");
  assert(await desktop.locator("#cards .mp-task").count()===0,"the cockpit is canonical, not the three-task chooser");
  await desktop.screenshot({path:path.join(out,"moonproof-entry.png")});
  // Preserve the exact mission context and fragment through the entry (no new WebGL renderer).
@@ -71,6 +76,12 @@ try{
  assert(await desktop.waitForFunction(()=>document.querySelector('#left [role=radio][data-layer="slope"]')?.getAttribute("aria-checked")==="true",null,{timeout:10000}).then(()=>true,()=>false),"explore layer switch");
 
  // Cockpit: the onboard computer runs on the Go API (site-evaluate, falling back to evaluate).
+ // Isolate the seven-step tutorial regression from earlier navigation through Explore:
+ // simulate a fresh visitor for this test, without affecting real user storage.
+ await desktop.evaluate(() => {
+   for (const mode of ["welcome","cockpit","explore","class","present"])
+     localStorage.removeItem("moonproof.tour." + mode + ".v1");
+ });
  const onboard=requireBackend?desktop.waitForResponse(r=>/\/api\/onboard\/(site-)?evaluate$/.test(new URL(r.url()).pathname),{timeout:40000}):null;
  await open(desktop,"/moonproof/cockpit.html","#player");
  if(onboard){const r=await onboard;assert(r.status()===200||r.status()===422,"onboard API status "+r.status());}
