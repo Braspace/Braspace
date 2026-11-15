@@ -40,6 +40,7 @@
     sites: () => call("GET", "/api/sites"),
     compare: body => call("POST", "/api/compare", body),
     scenarioDelay: body => call("POST", "/api/scenarios/delay", body),
+    navigation: body => call("POST", "/api/onboard/navigation", body),
     siteEvaluate: body => call("POST", "/api/onboard/site-evaluate", body),
     // Printable report: returns HTML text, rendered by the caller in a new tab.
     report: body => call("POST", "/api/onboard/report", body, true),

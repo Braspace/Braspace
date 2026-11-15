@@ -9,7 +9,7 @@ await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
 const root="http://127.0.0.1:"+server.address().port;
 after(()=>new Promise(resolve=>server.close(resolve)));
 
-test("13-tab cockpit is navigable from classic and Polar Lab",async()=>{
+test("14-tab cockpit (with Navegação, #250) is navigable from classic and Polar Lab",async()=>{
  const home=await (await fetch(root+"/classic.html")).text();
  const lab=await (await fetch(root+"/lab.html")).text();
  assert.match(home,/href="\.\/onboard\/cockpit\.html"/);
@@ -20,7 +20,7 @@ test("13-tab cockpit is navigable from classic and Polar Lab",async()=>{
  assert.match(html,/PROTÓTIPO · sintético/);
  assert.match(html,/Não validado/);
  assert.match(html,/Sem recomendação de voo/);
- assert.equal((html.match(/<button[^>]*data-tab="/g)||[]).length,13);
+ assert.equal((html.match(/<button[^>]*data-tab="/g)||[]).length,14);
 });
 test("every script the cockpit and the training form load is on the allowlist",()=>{
  for(const f of ["cockpit.html","index.html"]){
