@@ -1223,7 +1223,7 @@
     },
     "/api/vector/status": {
       "get": {
-        "summary": "Optional metadata-only vector capability and model configuration; default disabled",
+        "summary": "Optional metadata-only vector index state; only state=index_ready (current audited ingest manifest) serves search",
         "operationId": "getVectorStatus",
         "responses": {
           "200": {
@@ -1238,7 +1238,8 @@
                       "type": "boolean"
                     },
                     "available": {
-                      "type": "boolean"
+                      "type": "boolean",
+                      "description": "true only when state is index_ready"
                     },
                     "dimension": {
                       "type": "integer",
@@ -1257,6 +1258,38 @@
                       "enum": [
                         false
                       ]
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "disabled",
+                        "db_down",
+                        "schema_unavailable",
+                        "empty",
+                        "model_mismatch",
+                        "legacy_unverified",
+                        "index_ready"
+                      ],
+                      "description": "disabled: BRASPACE_VECTOR_ENABLED!=1. db_down: no connection. schema_unavailable: extension, table or audit columns missing (run vector-ingest). empty: no rows. model_mismatch: rows exist only for another model_id. legacy_unverified: rows for this model exist but none from the current audited ingest manifest (quarantined, never served, never deleted). index_ready: audited rows available."
+                    },
+                    "audited_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "rows of the configured model in the current audited manifest"
+                    },
+                    "legacy_unverified_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "quarantined rows of the configured model (no or stale ingest_manifest_sha256)"
+                    },
+                    "other_model_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "rows of other model_ids (never served)"
+                    },
+                    "ingest_manifest_sha256": {
+                      "type": "string",
+                      "description": "current audited manifest for the model, or empty"
                     }
                   },
                   "required": [
@@ -1265,7 +1298,12 @@
                     "dimension",
                     "model_id",
                     "purpose",
-                    "scientifically_validated"
+                    "scientifically_validated",
+                    "state",
+                    "audited_count",
+                    "legacy_unverified_count",
+                    "other_model_count",
+                    "ingest_manifest_sha256"
                   ]
                 }
               }
@@ -1306,7 +1344,8 @@
                 "required": [
                   "model_id",
                   "vector"
-                ]
+                ],
+                "description": "Keys are exact and case-sensitive; duplicate keys are 400 INVALID_JSON. vector: exactly 384 finite numbers, no null, not all zero (422 INVALID_VECTOR). limit: omitted means 5; null, 0, >10 or non-integer is 422 INVALID_LIMIT."
               }
             }
           }
@@ -1371,6 +1410,10 @@
                           "similarity"
                         ]
                       }
+                    },
+                    "ingest_manifest_sha256": {
+                      "type": "string",
+                      "description": "audited manifest the results come from"
                     }
                   },
                   "required": [
@@ -1492,6 +1535,10 @@
               "INVALID_VECTOR",
               "INVALID_VISIBILITY_INPUT"
             ]
+          },
+          "state": {
+            "type": "string",
+            "description": "VECTOR_UNAVAILABLE only: the /api/vector/status state that blocked the search"
           }
         },
         "additionalProperties": false,
