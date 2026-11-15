@@ -1,0 +1,8 @@
+[Unit]
+Description=Off-site copy of the MoonProof production database (pg_dump over Tailscale, verified, keep 7)
+After=network-online.target tailscaled.service
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/share/braspace-ops/pull-backup.sh
+TimeoutStartSec=900

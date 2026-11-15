@@ -136,3 +136,14 @@ Estado do pgvector depois do deploy: `index_ready`, 4 auditados com manifesto `8
   - `smoke-publico.sh` passou;
   - 415 responde `UNSUPPORTED_MEDIA_TYPE` direto e pela borda;
   - vector em `index_ready` (4 auditados).
+
+## Vigilância contínua e backup fora da VPS (EXO-X1, desde 15/11/2026 17:57Z)
+
+- **`braspace-prod-watch.timer`** (systemd do usuário no EXO-X1, a cada 10 min) roda `deploy/ops/prod-watch.sh`. Cada execução confere:
+  - `/healthz` igual pela borda e direto;
+  - o contrato do cockpit com `BRASPACE_EXPECT_COMMIT` igual ao commit no ar, pela borda e direto;
+  - `vector/status` em `index_ready`.
+
+  O log fica em `~/.local/state/braspace/prod-watch.log`. Quando o estado muda (ok → falha ou falha → ok), sai uma notificação no desktop. Um 429 conta como `INCONCLUSIVE`, não como falha.
+- **`braspace-backup.timer`** (diário, 06:00 UTC) roda `deploy/ops/pull-backup.sh`. Ele faz um `pg_dump -Fc` novo pela Tailscale, confere com `pg_restore -l` e guarda as 7 cópias mais recentes em `~/backups/braspace/`, com `.sha256`. Antes disso, os dumps ficavam só em `/docker/braspace/backup`, na mesma VPS do banco.
+- Instalação idempotente: `deploy/ops/install.sh`. Para ver: `systemctl --user list-timers 'braspace-*'` e `journalctl --user -u braspace-prod-watch`.
