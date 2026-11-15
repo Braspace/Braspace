@@ -7,7 +7,7 @@ import { sealEl } from "../core/layers.js";
 import { register, t, fmtNum, pickLang, setLang } from "../core/i18n.js";
 import { getState, hrefTo, DEFAULT_RULES } from "../core/state.js";
 import { evaluateQuestion, gradeChoice } from "./quiz-grading.js";
-import { classroomWindows } from "./class-scenarios.js";
+import { classroomWindows, classroomWindowLabel } from "./class-scenarios.js";
 register({
     en: {
         "present.badge": "Presenting · Mission",
@@ -31,7 +31,9 @@ register({
     "present.answer": "Qualifying scenario(s): {choices}.", "present.noPossible": "None of these scenarios meets this question’s rule.",
     "present.unknown": "There are not enough computed values to determine an answer. Missing data are not marked wrong.",
         "present.unknownChoice": "This scenario has missing measurements, so your choice cannot be graded.",
-    "present.timerPaused": "Timer paused. Press to continue."
+    "present.timerPaused": "Timer paused. Press to continue.",
+    "present.window": "UTC window: {start} · {hours} h",
+    "present.windowDefault": "Default window · {hours} h (start not specified)"
     },
     "pt-BR": {
         "present.badge": "Apresentando · Missão",
@@ -55,7 +57,9 @@ register({
     "present.answer": "Cenário(s) que atende(m): {choices}.", "present.noPossible": "Nenhum destes cenários atende à regra desta pergunta.",
     "present.unknown": "Ainda não há dados suficientes para concluir. Dados ausentes não contam como erro.",
         "present.unknownChoice": "Faltam medições para este cenário; sua escolha não pode ser avaliada.",
-    "present.timerPaused": "Cronômetro pausado. Pressione para continuar."
+    "present.timerPaused": "Cronômetro pausado. Pressione para continuar.",
+    "present.window": "Janela UTC: {start} · {hours} h",
+    "present.windowDefault": "Janela padrão · {hours} h (início não informado)"
     }
 });
 // No shell on this page: honour ?lang= (set by the other screens) and the browser language, and keep <html lang> in sync.
@@ -147,13 +151,15 @@ function draw() {
         const pass = answer.verdicts[idx];
         const nVal = m.longestDarkH.value == null ? t("nd") : `${fmtNum(m.longestDarkH.value)} h`;
         const bVal = m.longestBlackoutH.value == null ? t("nd") : `${fmtNum(m.longestBlackoutH.value)} h`;
+        const win = classroomWindowLabel(chosenWindows[idx]);
         return (h("article", { class: "mp-glass mp-sc-card" + (chosen === String(s.n) ? " is-chosen" : "") + (revealed && pass === true ? " is-winner" : "") + (revealed && chosen === String(s.n) && pass === false ? " is-fail" : "") },
             h("button", { type: "button", class: "mp-quiz-pick", "aria-pressed": chosen === String(s.n), onClick: () => { chosen = String(s.n); draw(); } }, t("present.pick"), " ", s.n),
             h("div", { class: "mp-sc-head" },
                 h("span", { class: "mp-sc-letter" }, s.n),
                 h("span", { class: "mp-sc-title" },
                     h("span", { class: "mp-sc-name" }, t("present.scenario", { n: s.n })),
-                    h("span", { class: "mp-sc-site" }, s.name)),
+                    h("span", { class: "mp-sc-site" }, s.name),
+                    h("span", { class: "mp-sc-window" }, win.startUtc ? t("present.window", { start: win.startUtc, hours: win.hours }) : t("present.windowDefault", { hours: win.hours }))),
                 h("span", { class: "mp-sc-seal" },
                     h(Node, { node: sealEl(sealFor(m.longestDarkH.value == null || m.longestBlackoutH.value == null ? "NOT_COMPUTED" : doc.status)) }))),
             h("div", { class: "mp-sc-row" },
