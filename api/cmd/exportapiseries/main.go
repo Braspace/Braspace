@@ -25,7 +25,8 @@ import (
 	"github.com/Braspace/Braspace/api/internal/pyfmt"
 )
 
-var sites = []string{"mons-mouton-im2", "malapert-massif", "nobile-rim-1", "connecting-ridge", "peak-near-shackleton"}
+var sites = []string{"mons-mouton-im2", "malapert-massif", "nobile-rim-1", "connecting-ridge", "peak-near-shackleton",
+	"haworth", "nobile-rim-2", "connecting-ridge-extension", "de-gerlache-rim-1", "de-gerlache-rim-2", "de-gerlache-kocher-massif", "leibnitz-beta-plateau", "faustini-rim-a", "amundsen-rim"}
 
 // fail is Python's SystemExit(message): message on stderr, exit status 1.
 type fail string

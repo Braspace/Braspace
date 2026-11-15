@@ -86,3 +86,38 @@ summary, and the new PGDA differences match a second session's independent regen
 | `web/data/sites/mons-mouton-im2.json` | `4ede8ca1841b4f90…` | `7b9390284cea6af7…` |
 | `web/data/sites/nobile-rim-1.json` | `784bee0841930d80…` | `1a64d2a2be5d40f9…` |
 | `web/data/sites/peak-near-shackleton.json` | `1731df3d7b6f31dd…` | `65ba82deb0f672de…` |
+
+
+## 15/11/2026: series for the 9 remaining catalog sites
+
+Every real site in `api/sitedata/catalog.json` now has a LOLA + SPICE series (14 real + 2 synthetic = 16). The nine
+added sites use the NASA Lunar Surface Data Book ACD-50044 Rev. A App. A2 coordinates already in the catalog, the
+same pipeline (`cmd/threesitepipeline` → `science/build_web_assets.py` → `cmd/exportapiseries`), the same window
+(2025-01-01, 35 064 h, 60 min), the same ray parameters (100 km, 160 m, 1°) and the same SHA-verified NASA/NAIF/PGDA
+inputs as above. Status is **PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED**.
+
+The original five sites' outputs are **byte-identical**: series, web `.bin`, terrain tiles and API series. Only
+`sites.json`, `summary.json` and `validation_pgda.json` gain the new rows.
+
+| Site | lat, lon | Sun centre % | Solar disc % | PGDA % | Δ pp | Earth % | web `.bin` SHA-256 | API series SHA-256 |
+|---|---|---|---|---|---|---|---|---|
+| haworth | -86.7639, -22.777 | 12.42 | 12.31 | 11.9 | +0.41 | 38.72 | `57d2ef4459ab…` | `b8f054eaa86e…` |
+| nobile-rim-2 | -83.954, 58.82206 | 41.61 | 41.6 | 41.1 | +0.50 | 63.38 | `74384f0d0a35…` | `f171bf0bb953…` |
+| connecting-ridge-extension | -89.0324, -101.999 | 33.63 | 33.58 | 35.2 | -1.62 | 0.0 | `79b6383ec3b0…` | `111bd2b1d7e4…` |
+| de-gerlache-rim-1 | -88.6834, -67.9321 | 70.83 | 70.75 | 62.8 | +7.95 | 56.07 | `b769e8f38b13…` | `92aafb0a84aa…` |
+| de-gerlache-rim-2 | -88.23, -64.6284 | 37.13 | 37.1 | 36.7 | +0.40 | 49.54 | `d7b51abd1ed3…` | `41219abd5b46…` |
+| de-gerlache-kocher-massif | -85.8296, -116.322 | 83.06 | 83.04 | 75.4 | +7.64 | 57.14 | `3118f7a14226…` | `6affcceca486…` |
+| leibnitz-beta-plateau | -85.4266, 31.74276 | 23.01 | 22.99 | 20.4 | +2.59 | 37.67 | `e1208df5f04b…` | `e24ff02105a2…` |
+| faustini-rim-a | -87.8897, 90.0 | 31.05 | 31.03 | 30.4 | +0.63 | 50.97 | `7c3264a94ed9…` | `fa1d327aa8db…` |
+| amundsen-rim | -84.2287, 69.44396 | 36.93 | 36.93 | 38.6 | -1.67 | 49.54 | `2d35de2e5d70…` | `72af660f1d74…` |
+
+**Science review (PGDA band ±5 pp).** 7 of the 9 new sites agree with NASA PGDA within ±2.6 pp. Two exceed the band,
+de Gerlache Rim 1 (+7.95 pp) and de Gerlache-Kocher Massif (+7.64 pp). They follow the pattern already reviewed for
+Peak near Shackleton (+8.53 pp): high-illumination ridges and massifs near Shackleton, where the 100 km ray reach
+under-counts the distant horizon (the reach study shows Peak dropping 4.2 pp at 150 km). All three are listed in the
+science gate (`api/cmd/validatehorizons`, `pgdaSunOutside`) and shown in the UI as `SUN_UPPER_BOUND`, not as
+confirmed values. JPL Horizons cross-checks still cover only the original five sites.
+
+**Tests.** Handler tests that cover the "real site without series" path (DATA_NOT_AVAILABLE, 404 NO_SERIES_DATA,
+N/D) now use an explicit fixture (`api/nodata_fixture_test.go`) instead of relying on Haworth having no data.
+API memory with 16 series: RSS 117.5 MB under load (was 54–63 MB with 7), against the 256 MB container limit.

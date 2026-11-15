@@ -146,7 +146,7 @@ Conforme [`docs/TEAM_ROLES_AND_HANDOFFS_2026.md`](docs/TEAM_ROLES_AND_HANDOFFS_2
 ## Limitações Honestas
 
 - **Sem certificação de voo:** `/readyz` retorna `UNVERIFIED_INPUTS` e `/v1/capabilities` retorna `scientifically_validated: false`.
-- **Cobertura parcial de séries:** 16 sítios no catálogo, dos quais 7 têm série armazenada (5 `PRELIMINARY`, 2 `SYNTHETIC`). Os outros 9 mostram N/D.
+- **Cobertura de séries:** todos os 14 sítios reais do catálogo têm série LOLA + SPICE armazenada (`PRELIMINARY`), mais 2 sítios de demonstração `SYNTHETIC`. Três cristas muito iluminadas perto de Shackleton (Peak near Shackleton, de Gerlache Rim 1, de Gerlache-Kocher Massif) passam do NASA PGDA em mais de 5 pp e aparecem como limite superior.
 - **Fração do disco solar:** corrigida em 2026-11-15 (#369). O port em Go tinha herdado uma fórmula invertida, então os valores derivados foram regenerados a partir de entradas NASA com SHA verificado (Peak near Shackleton continua o único sítio mais de 5 pp acima do NASA PGDA, agora 8,54 pp). No mais, Sol e Terra são tratados como pontos contra o horizonte LOLA.
 - **pgvector:** só recuperação de metadados. 10 linhas antigas sem manifesto de ingestão ficam isoladas (`legacy_unverified`) e não são servidas.
 - **Deploys:** os deploys do backend usam `deploy/harness/swap-api.sh` (#389), uma troca *start-first* que só roteia para a réplica nova saudável: 1 requisição com falha em cerca de 570, contra 43 falhas em 5,4 s com um `compose up` simples.
