@@ -13,5 +13,5 @@ test("plan.html has a (screen-reader) h1 that plan.js translates", async () => {
 });
 
 test("present.js picks the language itself (no shell on this page)", async () => {
-  assert.match(await read("screens/present.js"), /setLang\(pickLang\(getState\(\)\.lang\)\)/);
+  assert.match(await read("screens/present.tsx"), /setLang\(pickLang\(getState\(\)\.lang\)\)/);
 });
