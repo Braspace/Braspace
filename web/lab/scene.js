@@ -190,7 +190,10 @@ export class Viewer {
     clear() {
         if (this.scene)
             disposeTree(this.scene);
+        if (this.moonHD)
+            this.onMoonHD?.(null);
         this.moonHD = null;
+        this.regionSunDir = null;
         this.renderer.domElement.style.visibility = "";
         this.labelLayer.style.visibility = "";
         this.scene = null;
@@ -252,8 +255,11 @@ export class Viewer {
             this.followLander(dt);
         else
             this.orbit.update(dt);
-        if (this.moonHD)
+        if (this.moonHD?.kind === "globe")
             this.moonHD.S.setPolarFrame(this.moonHD.cap, this.moonHD.moon.lightDir, { position: this.camera.position.clone().divideScalar(R_REF / KM) });
+        // The region frame (toRegion, km) is the cap's polar frame, so the camera position is used as is.
+        else if (this.moonHD?.kind === "region")
+            this.moonHD.cap.camPolar.copy(this.camera.position);
         this.renderer.render(this.scene, this.camera);
         const w = this.container.clientWidth, h = this.container.clientHeight;
         for (const l of this.labels) {
@@ -310,7 +316,7 @@ export class Viewer {
                     moon.shared.realLight.value = 0;
                 }
                 group.add(moon.mesh);
-                const cap = await S.createCap({ renderer: this.renderer, base, manifest, moon, segments: 160, steps: 48, wideOnly: this.container.clientWidth < 720 });
+                const cap = await S.createCap({ renderer: this.renderer, base, manifest, moon, segments: 160, steps: 24, wideOnly: this.container.clientWidth < 720 });
                 group.add(cap.mesh);
                 if (!current())
                     return;
@@ -318,9 +324,10 @@ export class Viewer {
                 group.scale.setScalar(R);
                 scene.add(group);
                 attached = true;
-                this.moonHD = { S, moon, cap };
+                this.moonHD = { S, moon, cap, kind: "globe" };
                 this.renderer.domElement.style.visibility = "";
                 this.labelLayer.style.visibility = "";
+                this.onMoonHD?.("globe");
             }
             catch {
                 if (current())
@@ -453,13 +460,83 @@ export class Viewer {
         this.orbit.radius = 420;
         this.orbit.theta = Math.PI * 0.25;
         this.orbit.phi = 0.75;
+        if (exaggeration === 1)
+            void this.loadRegionMoonHD(scene);
     }
     setRegionSun(sunEnu, refSite) {
         if (!this.sunLight || !refSite || !sunEnu)
             return;
         const d = dirToRegion(enuToBody(sunEnu, refSite.lat, refSite.lon));
         this.sunLight.target.position.set(0, 0, 0);
+        this.regionSunDir = d.clone();
+        if (this.moonHD?.kind === "region") {
+            this.moonHD.cap.lightPolar.copy(d);
+            this.moonHD.moon.shared.realLight.value = 1;
+        }
         this.sunLight.position.copy(d.multiplyScalar(800));
+    }
+    // Joel Moon HD south cap (LOLA LDEM_80S_80M, 80 m native) as the natural relief of the region view.
+    // The cap's polar frame equals toRegion (km; x toward 0°E, y up at the pole, z toward 90°E), so the
+    // mesh needs no transform and every marker, ring and label keeps its catalogue coordinates.
+    // Analysis layers (elevation, slope, PGDA) and exaggerated views keep the Lab's 400 m grid.
+    async loadRegionMoonHD(scene) {
+        const base = new URL("../data/moonhd/", import.meta.url).href;
+        const textures = new Set();
+        let cancelled = false, attached = false, cap = null;
+        const current = () => !cancelled && this.scene === scene && this.mode === "region";
+        const timer = setTimeout(() => { cancelled = true; }, 30000);
+        try {
+            // Same rule as the Moon HD backdrop (PR #252): no ray-marched cap on software WebGL.
+            const { isSoftwareRenderer } = await import("../moon-hd/backdrop.js");
+            const gl = this.renderer.getContext(), info = gl.getExtension("WEBGL_debug_renderer_info");
+            if (isSoftwareRenderer(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)))
+                return;
+            const S = await import("../moon-hd/scene.js");
+            if (!current())
+                return;
+            const manifest = await S.fetchJSON(base + "manifest.json");
+            if (!current())
+                return;
+            const colorTex = await S.textureLoader(this.renderer, base)("color_4k.jpg", true);
+            textures.add(colorTex);
+            if (!current())
+                return;
+            // Only the cap is drawn; the globe material shares its colour map and light uniforms.
+            const moon = S.createMoon({ manifest, colorTex, normalTex: colorTex, heightTex: colorTex, lon: 8, lat: 4, steps: 1 });
+            moon.mesh.geometry.dispose();
+            moon.mesh.material.dispose();
+            cap = await S.createCap({ renderer: this.renderer, base, manifest, moon, // The Lab redraws every frame (the viewer draws on demand): 24 shadow steps keep an integrated GPU
+                // responsive; 48 steps lost the WebGL context on an AMD Radeon 890M at 1440×900.
+                segments: 192, steps: 24, wideOnly: this.container.clientWidth < 720 });
+            if (!current())
+                return;
+            cap.mesh.matrix.identity();
+            if (this.regionSunDir)
+                cap.lightPolar.copy(this.regionSunDir);
+            else
+                moon.shared.realLight.value = 0;
+            scene.add(cap.mesh);
+            attached = true;
+            this.moonHD = { S, moon, cap, kind: "region" };
+            if (this.region)
+                this.setRegionLayer(this.region.layer);
+            this.onMoonHD?.("region");
+        }
+        catch { /* keep the Lab's own 400 m relief */ }
+        finally {
+            clearTimeout(timer);
+            cancelled = true;
+            if (!attached) {
+                if (cap) {
+                    cap.mesh.geometry.dispose();
+                    for (const u of Object.values(cap.mesh.material.uniforms || {}))
+                        if (u.value?.isTexture)
+                            textures.add(u.value);
+                    cap.mesh.material.dispose();
+                }
+                textures.forEach(t => t.dispose());
+            }
+        }
     }
     setRegionLayer(layer) {
         const r = this.region;
@@ -487,6 +564,10 @@ export class Viewer {
         }
         r.geo.getAttribute("color").needsUpdate = true;
         const natural = layer === "natural" || layer === "candidates";
+        const hd = natural && r.exaggeration === 1 && this.moonHD?.kind === "region";
+        if (this.moonHD?.kind === "region")
+            this.moonHD.cap.mesh.visible = hd;
+        r.mesh.visible = !hd;
         this.ambient.intensity = natural ? 0.04 : 1.6;
         this.sunLight.intensity = natural ? 3.2 : 0.9;
         r.layer = layer;

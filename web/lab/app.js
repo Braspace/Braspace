@@ -225,6 +225,8 @@ function setLegend() {
         html = `<strong>Average solar illumination</strong>${bar(inf, "0%", "100%", "Fraction of the solar disc visible, long-term average (black = permanent shadow)", "NASA GSFC PGDA AVGVISIB_75S_120M (Mazarico et al. 2011)")}`;
     else if (state.layer === "earth" && state.level === "region")
         html = `<strong>Average Earth visibility</strong>${bar("ear", "0%", "100%", "Fraction of time any part of Earth is above the horizon (geometric)", "NASA GSFC PGDA AVGVISIB_75S_120M_EARTH")}`;
+    else if (state.level === "region" && viewer?.moonHD?.kind === "region")
+        html = `<strong>Sun-lit relief · Joel Moon HD</strong><small>NASA LRO/LOLA LDEM_80S_80M (80 m near the pole, 320 m to 80°S), integration Joel/BRASPACE. Light = Sun at ${iso(state.t)} from JPL/NAIF SPICE (site ${esc(siteById(state.siteId)?.name || "")}). Visual only; quantitative visibility uses the horizon model.</small>`;
     else
         html = `<strong>Sun-lit relief</strong><small>Light direction = Sun at ${iso(state.t)} from JPL/NAIF SPICE (site ${esc(siteById(state.siteId)?.name || "")}). GPU shadows and the weak fill light are illustrative; quantitative visibility uses the horizon model.</small>`;
     if (state.level === "region" && state.exag !== 1)
@@ -896,6 +898,7 @@ async function boot() {
     }
     try {
         viewer = new Viewer($("#stage"), { onFrame, reducedMotion: state.reduced });
+        viewer.onMoonHD = () => setLegend();
         viewer.onTextureError = () => status("Moon HD unavailable; showing the original LOLA south-pole preview. Analysis panels remain available.");
     }
     catch (e) {
