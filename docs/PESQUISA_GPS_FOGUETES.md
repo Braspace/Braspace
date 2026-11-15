@@ -136,3 +136,54 @@ Existem dois caminhos distintos, e eles não são equivalentes:
 2. Baixar um almanaque Yuma público (NAVCEN) e um RINEX de navegação (IGS/CDDIS), e validar um cálculo de posição estática contra a solução de referência.
 3. Acompanhar a publicação do AD5 e do MSG-G4 (LunaNet). Enquanto não houver, o caminho B fica como simulação.
 4. Ler na íntegra o artigo do SL-15 (ION), por URL de PDF direta, quando estiver disponível.
+
+## 10. Como fica no nosso projeto (estado em 2026-11-14)
+
+Esta seção descreve o que o projeto já faz, o que está em andamento e o que ainda depende de dados ou decisões. Ela substitui a lista de próximos passos da seção 9 para o trabalho de navegação.
+
+### 10.1 O que já existe
+
+- **Aba Navegação** na dashboard (PR #250, em rascunho). Calcula, a cada passo, quantos satélites GPS-like estariam visíveis para um lugar lunar, o GDOP e se há solução, com três limites de GDOP (6, 50 e 1000). Tudo rotulado SINTÉTICO.
+- **Geometria** em `web/onboard/nav.js`: referencial centrado na Lua, posição do lugar pela latitude e longitude, Terra no ponto sub-Terra com libração aproximada, 24 satélites em 6 planos, máscara de 5°, bloqueio pela Lua e pela Terra.
+- **Testes:** 10 testes de geometria, incluindo GDOP calculado à mão (valor 2).
+
+### 10.2 Como vai ser a API
+
+- Um endpoint `POST /api/onboard/navigation` no Go, com a mesma geometria de `nav.js`. A dashboard passa a consumir o resultado da API, em vez de calcular no navegador.
+- Entrada: lugar (ou latitude e longitude), janela de tempo, passo, e os limites de GDOP e de satélites.
+- Saída: uma linha por passo (satélites visíveis, GDOP, solução sim ou não), o resumo e as interrupções, com as premissas usadas, para a dashboard mostrar a origem de cada número.
+- Dois cálculos (JavaScript e Go) devem dar o mesmo resultado para a mesma entrada. Um teste de paridade garante isso.
+
+### 10.3 O que vem do almanaque real (depois)
+
+- **Efemérides GPS reais** (almanaque Yuma, publicado pelo NAVCEN) substituem a constelação genérica. Isso exige decidir a fonte, verificar a licença e salvar a data do almanaque no repositório.
+- **Processamento offline:** a conversão do almanaque para uma tabela de posições fica fora da API, como manda o ADR-0001. A API só lê a tabela.
+- **Validação:** a geometria com almanaque real deve bater com um cálculo de referência em um ponto conhecido (ver seção 9, passo 2).
+
+### 10.4 O que depende de dados que ainda não existem publicamente
+
+- **MSG-G4 (efemérides lunares) e AD5 (referencial e tempo lunar):** sem eles, não há posição lunar real via LANS. O projeto continua com a constelação GPS-like (simulação) até esses documentos serem publicados.
+- **Sinais de lóbulo lateral:** o LuGRE mostra que parte das soluções na Lua vem desses sinais. O modelo atual não os inclui, então a disponibilidade calculada é uma estimativa conservadora para o caso de feixe principal.
+
+### 10.5 O que a dashboard vai afirmar e o que não vai
+
+- **Vai afirmar:** quando, na simulação, a geometria dos satélites GPS-like daria solução com cada limite de GDOP, e por quanto tempo essas soluções faltam.
+- **Não vai afirmar:** precisão de posição em metros. Isso depende de erro de medida e de relógio, que ainda não são premissas decididas. Quando forem, a tela mostra o erro como GDOP vezes erro de medida, com o erro escolhido visível.
+- **Não vai afirmar:** que o lugar terá GNSS na missão real.
+
+### 10.6 Etapas e critérios para avançar
+
+| Etapa | Entrega | Critério para avançar |
+|---|---|---|
+| 1 (feita, PR #250) | Aba Navegação no navegador | Time aprova as premissas |
+| 1b (em andamento) | Endpoint Go e paridade com `nav.js` | Testes Go e JS dão o mesmo resultado para a mesma entrada |
+| 2 | Almanaque GPS real, processamento offline | Licença verificada e validação contra cálculo de referência |
+| 3 | Erro de posição (GDOP × erro de medida) | Premissa de erro escolhida pelo time e rotulada |
+| 4 | Filtro de Kalman com IMU | Etapa 3 concluída e decisão de escopo |
+
+### 10.7 Decisões que o time precisa tomar
+
+1. Aprovar os três limites de GDOP e a máscara de 5°, ou escolher outros.
+2. Escolher a fonte do almanaque real (NAVCEN) e autorizar o download.
+3. Decidir se o erro de medida entra na dashboard antes do almanaque real, ou depois.
+4. Confirmar se a etapa 4 (Kalman) entra no escopo da missão.
