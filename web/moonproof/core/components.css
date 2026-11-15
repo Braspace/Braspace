@@ -201,3 +201,18 @@ html:not(.mp-ready) body{visibility:hidden;animation:mp-reveal 0s 2s forwards}
   .mp-nav .mp-pill{font-size:0;gap:0;padding:0 12px;min-width:44px;justify-content:center}
   .mp-nav .mp-pill svg{width:17px;height:17px}
 }
+/* Phones: the context pill started 4 px under the top bar (top bar sits at 22 px after the fidelity pass). */
+@media (max-width:700px){ .mp-context{top:84px} }
+/* QA 15/11 round 2: PRE/EST/VAL seals inside white pills were light grey on near-white (1.23:1). On light
+   surfaces the seal takes the pill's own dark text colour; same shape and line style (Heloísa's seal grammar). */
+.mp-pill.is-white .mp-seal:not([data-seal="SIM"]),.mp-vis .mp-seal:not([data-seal="SIM"]),.mp-scn .mp-seal:not([data-seal="SIM"]){color:var(--pill-text);border-color:var(--pill-text)}
+/* Phones: the context pill clipped its own action button (recover "Comparar" r=403 at 320, debrief "Alterar").
+   The summary text shrinks first and ellipsizes; the action keeps its full label. */
+@media (max-width:700px){
+  .mp-context{gap:6px;padding-right:5px}
+  .mp-context .mp-ctx-text{flex:1 1 0;min-width:0}
+  .mp-context>:is(a,button).mp-pill,.mp-context .mp-pill{flex:none;padding:0 11px;font-size:12.5px}
+}
+@media (max-width:700px){
+  .mp-context>:not(a):not(button):not(.mp-seal):not(.mp-caveat):not(.deb-dot){min-width:0;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}

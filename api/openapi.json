@@ -830,7 +830,9 @@
                 "required": [
                   "lat",
                   "lon",
-                  "start_utc", "duration_hours", "step_minutes"
+                  "start_utc",
+                  "duration_hours",
+                  "step_minutes"
                 ],
                 "properties": {
                   "lat": {
@@ -1622,6 +1624,35 @@
             "additionalProperties": {
               "type": "integer"
             }
+          },
+          "store": {
+            "type": "object",
+            "description": "Estado do armazenamento. O catalogo e servido da memoria carregada no boot; status degraded significa que o ping ao Postgres falhou (timeout 500 ms) e NAO derruba o servico.",
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": [
+                  "embedded",
+                  "postgres"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "degraded"
+                ]
+              },
+              "last_ping_ms": {
+                "type": "number",
+                "description": "Latencia do ping ao Postgres; ausente com source embedded"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "status"
+            ]
           }
         },
         "additionalProperties": false,

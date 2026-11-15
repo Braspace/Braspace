@@ -1,5 +1,4 @@
-"""Tests for archive/web-legacy/assets/polar-elevation-87s.{json,webp} produced by science/render_polar_map.py
-(moved from web/assets/ when the legacy surfaces were archived, 454f719).
+"""Tests for web/assets/polar-elevation-87s.{json,webp} produced by science/render_polar_map.py.
 
 Independent check: the image pixel is mapped back to an LDEM_80S_80M pixel and
 then to (lat, lon) with the LOLA DSMAP_POLAR.CAT formula written out here,
@@ -8,6 +7,7 @@ not with the renderer's own code.
 import json, math, pathlib, struct, unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+# The polar elevation map belongs to the archived legacy web (moved by #321/#330); it stays tested where it lives now.
 ASSETS = ROOT / "archive" / "web-legacy" / "assets"
 META = json.loads((ASSETS / "polar-elevation-87s.json").read_text())
 R = 1737400.0

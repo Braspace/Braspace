@@ -54,7 +54,8 @@ try{
  // Explore: one analysis layer at a time (radio group).
  await open(desktop,"/moonproof/explore.html","#left [role=radio][data-layer]");
  await desktop.locator('#left [role=radio][data-layer="slope"]').click();
- assert(await desktop.locator('#left [role=radio][data-layer="slope"]').getAttribute("aria-checked")==="true","explore layer switch");
+ // The layer redraw is async (state → render); under SwiftShader WebGL it lands a few frames later. Wait for it.
+ assert(await desktop.waitForFunction(()=>document.querySelector('#left [role=radio][data-layer="slope"]')?.getAttribute("aria-checked")==="true",null,{timeout:10000}).then(()=>true,()=>false),"explore layer switch");
 
  // Cockpit: the onboard computer runs on the Go API (site-evaluate, falling back to evaluate).
  const onboard=requireBackend?desktop.waitForResponse(r=>/\/api\/onboard\/(site-)?evaluate$/.test(new URL(r.url()).pathname),{timeout:40000}):null;
