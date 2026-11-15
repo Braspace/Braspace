@@ -6,6 +6,12 @@ O BRASPACE / MoonProof é um protótipo educacional e de engenharia para avaliar
 
 ---
 
+## Entrada canônica no Cockpit — candidato de release (15/11/2026)
+
+Por decisão explícita do responsável pelo produto, `/moonproof/` deve abrir o **Cockpit único** com a mesma Lua 3D de Joel, a nave Artemis educacional e os nove grupos independentes de painéis (incluídos neste candidato consolidado). A antiga seleção Explorar / Aula / Planejar permanece acessível em `/moonproof/tasks.html`, sem exclusão dos módulos, dados ou links existentes. O redirecionamento preserva parâmetros e fragmentos da missão e não cria um segundo renderizador Three.js.
+
+**Candidato não publicado neste PR**: exigir QA real, build TypeScript, testes e deploy do SHA exato com Go/Rust/PostgreSQL/pgvector, GPU e fallback antes de anunciar produção.
+
 ## Demo no Ar e API
 
 Verificado em produção em **2026-11-15** (main `dc2411b`, Worker `c792c009`, publicado com `deploy/cloudflare/deploy.sh`; imagem da API `ad83cfe7517c`):
@@ -27,6 +33,7 @@ Verificado em produção em **2026-11-15** (main `dc2411b`, Worker `c792c009`, p
   - regra da grade da série [`docs/harness/GRID_SEMANTICS_EVIDENCE.md`](docs/harness/GRID_SEMANTICS_EVIDENCE.md): início ou duração fora da grade horária recebe `GRID_NOT_ALIGNED` (no compare, por local) e nunca é arredondado. Medido em produção.
 
 > **Honestidade científica:** `/readyz` retorna `"science_status": "UNVERIFIED_INPUTS"` e `/v1/capabilities` retorna `"scientifically_validated": false`. As séries são `PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED`.
+> **Candidato Cockpit P0 (#411, não publicado):** Os nove grupos Preact podem ser ocultados independentemente sem duplicar a Lua Three.js de Joel nem o módulo Artemis ilustrativo. A ação assíncrona `Só a Lua` agora verifica se os painéis ainda estão ocultos antes de abrir a cena 3D; restaurá-los antes do carregamento cancela o pedido obsoleto. Fixture Node: 3/3 PASS; JS gerado conferido contra a saída local TypeScript 5.8.3. O gate real com TypeScript 5.6.3, Chromium, Go/Rust e pgvector permanece obrigatório. Entrada canônica em #440, densidade 75% em #426 e verificação do SHA Worker em #424.
 
 
 ## Verificação da versão do Worker (PR draft #424 — não publicado)
@@ -82,6 +89,7 @@ Sirva com `cd web && node dev-server.mjs` (defina `BRASPACE_WEB_PORT` se a 5173 
 
 - **Explorar a Lua ↔ Mostrar painéis** em todas as telas: o Moon HD do Joel (`web/moon-hd/backdrop.ts`) atrás dos painéis ou em tela cheia, com os locais do catálogo (`GET /api/sites`) como pins; a câmera orbita o local escolhido em perspectiva. Telas de mapa mantêm o relevo LOLA e só carregam o 3D quando pedido.
 - **Cockpit:** lander ilustrativo estilo Artemis (`web/moon-hd/artemis.ts`) sobre o polo sul na mesma cena — o mesmo modelo do Landing Lab gamificado. Não é telemetria.
+- **Nove controles de painéis P0 (candidato, ainda não publicado):** `web/moonproof/screens/cockpit-panels.tsx` permite recolher individualmente bateria, Sol/Terra, horas de Sol, regras, alertas, falhas, tripulação, linha do tempo e relatório, com **Só a Lua** / **Restaurar painéis**. Preserva os tokens da Heloísa e abre a Lua 3D pelo controle lazy já existente, sem segundo renderizador; o indicador de bateria atual usa um contêiner Preact `mp-node`. Antes de publicar, exigir Chromium GPU/sem GPU, seis resoluções e CI fullstack no EXO-X1.
 - **Densidade** (`web/moonproof/core/density.css`) e painéis recolhíveis dentro do design system da Heloísa; alvos de toque ≥ 44 px; Lighthouse A11y/SEO 100.
 - Detalhes, API pública `window.moonBackdrop` e roteiro de deploy do Worker: [`docs/MOONPROOF_FRONT_RUNTIME.md`](docs/MOONPROOF_FRONT_RUNTIME.md).
 

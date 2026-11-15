@@ -1,0 +1,35 @@
+/* Heloísa tokens; current main Preact DOM: battery is wrapped by mp-node and illumination by ck-acc-sun. Shared 3D renderer is unchanged. */
+#ck-panel-controls{position:fixed;z-index:25;top:var(--ck-context-end,138px);left:50%;transform:translateX(-50%);max-width:calc(100vw - 16px)}
+.ck-panel-toolbar{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.ck-panel-toolbar .mp-pill{min-height:44px;white-space:nowrap;padding:0 13px;background:var(--glass);font-weight:700}
+.ck-panel-toolbar .mp-pill:focus-visible{outline:2px solid var(--jade);outline-offset:3px}
+.ck-panel-focus[aria-pressed=true]{background:var(--jade);color:var(--jade-text)}
+.ck-panel-menu{position:static}
+.ck-panel-menu summary{cursor:pointer;list-style:none}.ck-panel-menu summary::-webkit-details-marker{display:none}
+.ck-panel-options{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);box-sizing:border-box;width:min(300px,calc(100vw - 24px));display:grid;gap:8px;padding:13px;border:1px solid var(--line-2);border-radius:21px;background:#101820;box-shadow:0 12px 34px #0009;max-height:max(96px,calc(100dvh - 230px));overflow:auto}
+.ck-panel-options .mp-pill{width:100%;justify-content:flex-start;white-space:normal;gap:8px;text-align:left}
+.ck-panel-options [aria-pressed=true]{border-color:var(--jade)}
+.ck-panel-options [aria-pressed=false]{opacity:.85}
+body[data-ck-hide-left] #left,body[data-ck-hide-right] #right,body[data-ck-hide-sheet] #sheet,body[data-ck-hide-timeline] #player,body[data-ck-hide-report] .mp-links,
+body[data-ck-hidden~="battery"] #left>.mp-ck-title,body[data-ck-hidden~="battery"] #left>mp-node,
+body[data-ck-hidden~="visibility"] #left>.mp-visrow,body[data-ck-hidden~="illumination"] #left>.ck-acc-sun,
+body[data-ck-hidden~="rules"] #right>.mp-rules,body[data-ck-hidden~="alerts"] #right>.mp-alert,
+body[data-ck-hidden~="faults"] #right>.mp-glass:not(.ck-crew),body[data-ck-hidden~="crew"] #right>.ck-crew{display:none!important}
+/* Group positions use actual context/toolbar geometry rather than hard-coded viewport heights. */
+@media(min-width:701px){
+  body:has(#ck-panel-controls) .mp-ck-left,body:has(#ck-panel-controls) .mp-ck-right{top:var(--ck-panels-top,194px);width:clamp(235px,25vw,330px);max-height:calc(100dvh - var(--ck-panels-top,194px) - 84px);gap:8px}
+  body:has(#ck-panel-controls) .mp-top .mp-nav{min-width:0;overflow-x:auto;scrollbar-width:none}
+  body:has(#ck-panel-controls) .mp-top .mp-nav .mp-pill{flex:none}
+  body:has(#ck-panel-controls) .mp-player{max-width:calc(100vw - 24px)}
+  body:has(#ck-panel-controls) .mp-tl{min-width:0;width:clamp(160px,26vw,378px)}
+  body:has(#ck-panel-controls) .mp-links{bottom:88px;z-index:11}
+}
+@media(max-width:700px){
+  #ck-panel-controls{top:var(--ck-context-end,150px)}
+  body:has(#ck-panel-controls) #sheet{height:min(var(--sheet-h,42vh),max(96px,calc(100dvh - var(--ck-panels-top,200px) - 138px)))}
+  body[data-ck-hide-timeline] #sheet{bottom:76px}
+  body:has(#ck-panel-controls) .mp-links{display:block;bottom:124px;left:auto;right:10px;z-index:14}
+  body:has(#ck-panel-controls) #sheet:not([hidden])~.mp-links{bottom:auto;top:var(--ck-panels-top,200px)}
+  body:has(#ck-panel-controls) .mp-links .mp-pill{min-height:44px;max-width:calc(100vw - 20px);white-space:normal}
+}
+@media(prefers-reduced-motion:reduce){.ck-panel-toolbar *{transition:none!important;animation:none!important}}

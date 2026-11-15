@@ -6,6 +6,12 @@ BRASPACE / MoonProof is an educational and engineering prototype for evaluating 
 
 ---
 
+## Cockpit-only canonical entry — release candidate (2026-11-15)
+
+The product owner has explicitly selected **one primary Cockpit** at `/moonproof/`, with Joel's shared 3D south-pole Moon, the existing Preact/Three.js Artemis demonstration and nine independently collapsible telemetry cards (included in this combined candidate). The former Explore / Teach / Plan task chooser is preserved at `/moonproof/tasks.html` and its deep links continue to work; no other scientific, landing or evidence modules have been deleted. The entry adapter preserves URL query parameters and fragments and does not instantiate a second 3D renderer.
+
+**Candidate only** until the exact Git SHA passes TypeScript/generated-code drift, Node, browser/GPU/no-GPU, real Go/Rust/Postgres/pgvector and Worker deployment smoke checks. The public website may still show the older entry until it is redeployed. This note is not a production verification.
+
 ## Live Demo & API
 
 Verified in production on **2026-11-15** (main `dc2411b`, Worker `c792c009`, published with `deploy/cloudflare/deploy.sh`; API image `ad83cfe7517c`):
@@ -27,6 +33,7 @@ Verified in production on **2026-11-15** (main `dc2411b`, Worker `c792c009`, pub
   - series grid rule [`docs/harness/GRID_SEMANTICS_EVIDENCE.md`](docs/harness/GRID_SEMANTICS_EVIDENCE.md): a start or duration off the hourly grid gets `GRID_NOT_ALIGNED` (compare: per site) and is never rounded. Measured in production.
 
 > **Scientific honesty:** `/readyz` reports `"science_status": "UNVERIFIED_INPUTS"` and `/v1/capabilities` reports `"scientifically_validated": false`. Series are `PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED`.
+> **Cockpit P0 candidate (#411, not deployed):** Nine independently hideable Preact panel groups retain the *same* Joel Three.js Moon and illustrative Artemis lander. The delayed `Moon only` request now checks that panels remain hidden before opening the lazy 3D backdrop; restoring them before load cancels the stale request. Node fixture: 3/3 PASS; generated JS verified against local TypeScript 5.8.3 output. Full pinned TS 5.6.3 / Chromium / Go-Rust / pgvector release checks remain mandatory. Canonical entry is separately coordinated in #440, density 75% in #426, Worker SHA gate in #424.
 
 
 ## Worker release-provenance gate (draft PR #424 — not deployed)
@@ -82,6 +89,7 @@ Serve with `cd web && node dev-server.mjs` (set `BRASPACE_WEB_PORT` if 5173 is t
 
 - **Explore the Moon ↔ Show panels** on every screen: Joel's Moon HD (`web/moon-hd/backdrop.ts`) behind the panels or full screen, with the catalogue sites from `GET /api/sites` as pins; the camera orbits the selected site in perspective. Map screens keep their LOLA relief and load the 3D only on demand.
 - **Cockpit:** an illustrative Artemis-style lander (`web/moon-hd/artemis.ts`) over the south pole on that same scene — the same model as the gamified Landing Lab. Not telemetry.
+- **P0 nine-panel controls (release candidate):** `web/moonproof/screens/cockpit-panels.tsx` adds independent Battery, Sun/Earth, Sun-hours, Rules, Alerts, Faults, Crew, Timeline and Report visibility switches plus **Moon only** / **Restore panels**, using Heloísa's tokens and the existing lazy 3D Moon button. The battery indicator is wrapped by the current Preact `mp-node`; never reuse the old direct `.mp-stat` selector. This is a pending PR, not a claim of deployment; validate Chromium GPU/no-GPU, six viewport widths and the EXO-X1 fullstack CI before release.
 - **Density** (`web/moonproof/core/density.css`) and collapsible panels within Heloísa's design system; ≥ 44 px touch targets; Lighthouse A11y/SEO 100.
 - **Transient catalogue/series errors:** `web/moonproof/core/data.ts` shares in-flight loads and discards rejected promises, allowing a later retry instead of permanently caching a failed fetch. Regression: `web/moonproof/tests/data-cache-retry.test.mjs` (related to #385); this does not replace live browser/asset checksum verification.
 - Details, public `window.moonBackdrop` API and the Worker deploy runbook: [`docs/MOONPROOF_FRONT_RUNTIME.md`](docs/MOONPROOF_FRONT_RUNTIME.md).
