@@ -28,6 +28,11 @@ Verified in production on **2026-11-15** (main `dc2411b`, Worker `c792c009`, pub
 
 > **Scientific honesty:** `/readyz` reports `"science_status": "UNVERIFIED_INPUTS"` and `/v1/capabilities` reports `"scientifically_validated": false`. Series are `PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED`.
 
+
+## Worker release-provenance gate (draft PR #424 — not deployed)
+
+The release smoke scripts require an **exact executable** `const BRASPACE_COMMIT = "<40-hex SHA>";` line in the deployed `/config.js`, rather than a substring that could be found inside a comment or an unrelated build. `grep -Fxq` is intentional: `deploy/cloudflare/deploy.sh` emits that exact whole line. The regression test `deploy/cloudflare/build-stamp.test.mjs` covers valid declaration, misleading comments, suffixes and wrong SHAs. Isolated Node 22 fixture: 3/3 PASS. This candidate has **not** passed the full CI/EXO-X1 release gate and has not been merged or deployed. It does not modify the Go/Rust science or pgvector database.
+
 ## Real Data vs. Simulation
 
 | NASA / External Source | Product in Repo | Status | Notes |
