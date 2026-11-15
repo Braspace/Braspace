@@ -30,3 +30,5 @@ Start full-stack backend (real data and API) and serve the matching web branch. 
 - Context parity: follow-up #287 for viewer/map URL translation and state persistence (t/start, d/hours, pt/pt-BR). Coordinate with that PR, do not duplicate changes. Test tab and site selection after reload.
 - Validate API result, 480-hour cap warning, no-data statuses, UI truthfulness and actual routes. Screenshots are evidence, not scientific validation.
 - Archive CI run URL, exact commit, browser/GPU, per-case result, screenshots and remaining failures; keep draft until required checks and GPU validation succeed.
+
+Main sync: preserve vector-embed route fix and transitive-import regression; add explicit Dashboard HTML/CSS/JS routes without serving its README, tests or server source. The matrix can now also address the dashboard on the full-stack dev server.

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
-import {createServer} from "../dev-server.mjs";
+import {createServer,dashboardFile,moonHdFile} from "../dev-server.mjs";
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const server=createServer();
@@ -70,3 +70,31 @@ test("v3 home is the task-first shell; design system and views are served; trave
  }
  for(const bad of ["/ds/../dev-server.mjs","/shell/x.webp","/assets/x.js","/ds/%2e%2e/package.json"]){const x=await fetch(base+bad);assert.equal(x.status,404,bad);}
 });
+
+test("every relative import reachable from the bridge and screen entry modules is served",async()=>{
+ // A module the dev-server does not serve breaks the whole page at import time (e.g. /vector-embed.js was 404).
+ const entries=["/lab/backend-bridge.js","/moonproof/screens/evidence.js","/shell/views/evidencias.js"];
+ const seen=new Set(),queue=[...entries],missing=[];
+ while(queue.length){
+  const route=queue.shift(); if(seen.has(route))continue; seen.add(route);
+  const r=await fetch(base+route); if(r.status!==200){missing.push(route+" -> "+r.status);continue;}
+  const src=await r.text();
+  for(const m of src.matchAll(/(?:^|[;\s])(?:import|export)\s[^"'`]*?from\s*["'](\.{1,2}\/[^"']+)["']|(?:^|[;\s])import\s*["'](\.{1,2}\/[^"']+)["']/gm)){
+   queue.push(new URL(m[1]||m[2],"http://x"+route).pathname);
+  }
+ }
+ assert.deepEqual(missing,[],"modules imported but not served");
+ assert.ok(seen.has("/vector-embed.js"),"walk reached vector-embed.js");
+});
+
+ test("dashboard and canonical Moon HD asset routes remain explicit allowlists",async()=>{
+ assert.deepEqual(dashboardFile("/dashboard/"),{name:"dashboard/index.html",type:"text/html; charset=utf-8"});
+ assert.equal(dashboardFile("/dashboard/serve.mjs"),null);
+ assert.equal(dashboardFile("/dashboard/tests/foo.js"),null);
+ assert.equal(dashboardFile("/dashboard/../app.js"),null);
+ assert.equal(moonHdFile("/moon-hd/pole-preview.webp").type,"image/webp");
+ assert.equal(moonHdFile("/moon-hd/classic-adapter.js").type,"text/javascript; charset=utf-8");
+ for(const route of ["/dashboard/index.html","/dashboard/dashboard.css","/dashboard/dashboard.js","/moon-hd/classic-adapter.js","/moon-hd/pole-preview.webp"]){
+  assert.equal((await fetch(base+route)).status,200,route);
+ }
+ });

@@ -13,6 +13,7 @@ const staticFiles=new Map([
   ["/index.html",{name:"index.html",type:"text/html; charset=utf-8"}],
   ["/styles.css",{name:"styles.css",type:"text/css; charset=utf-8"}],
   ["/api-base.js",{name:"api-base.js",type:"text/javascript; charset=utf-8"}],
+  ["/vector-embed.js",{name:"vector-embed.js",type:"text/javascript; charset=utf-8"}],
   ["/vendor/preact/preact.module.js",{name:"vendor/preact/preact.module.js",type:"text/javascript; charset=utf-8"}],
   ["/app.js",{name:"app.js",type:"text/javascript; charset=utf-8"}],
   ["/moon3d.js",{name:"moon3d.js",type:"text/javascript; charset=utf-8"}],
@@ -100,6 +101,12 @@ export function studioFile(pathname){
  const name=pathname.slice("/studio/".length);
  const type=studioTypes.get(name);
  return type?{name:"studio/"+name,type}:null;
+}
+// Dashboard is static; never serve its dev server, README or tests.
+export function dashboardFile(pathname){
+ if(pathname==="/dashboard/")pathname="/dashboard/index.html";
+ const files={"/dashboard/index.html":"text/html; charset=utf-8","/dashboard/dashboard.js":"text/javascript; charset=utf-8","/dashboard/dashboard.css":"text/css; charset=utf-8"};
+ return Object.hasOwn(files,pathname)?{name:pathname.slice(1),type:files[pathname]}:null;
 }
 const csp=[
   "default-src 'none'",
@@ -189,7 +196,7 @@ export function createServer(){
   if(pathname==="/onboard/"||pathname==="/onboard/index.html"||pathname==="/onboard/cockpit.html"){
    res.setHeader("Content-Security-Policy",csp.replace("style-src 'self'","style-src 'self' 'unsafe-inline'"));
   }
-  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname)||studioFile(pathname)||moonproofFile(pathname)||v3File(pathname)||moonHdFile(pathname);
+  const file=staticFiles.get(pathname)||labFile(pathname)||onboardFile(pathname)||studioFile(pathname)||moonproofFile(pathname)||v3File(pathname)||moonHdFile(pathname)||dashboardFile(pathname);
   if(!file){res.writeHead(404);res.end("Not found");return;}
   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end("Method not allowed");return;}
   try{
