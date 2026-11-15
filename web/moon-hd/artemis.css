@@ -14,3 +14,6 @@ html.artemis-on .moon-pin[aria-pressed="true"] i { opacity: .35; }
 html.moon-explore-on .artemis-tag.is-off { visibility: hidden; }
 @media (max-width: 720px) { html.moon-explore-on .artemis-note { font-size: 11px; padding: 6px 10px; border-radius: 14px; } }
 @media print { .artemis-note, .artemis-tag { display: none !important; } }
+/* QA round 6: the floating "Lander (ilustrativo)" tag overlapped nearby site labels (Peak Near Shackleton). The
+   top note already says "Ilustrativo — lander hipotético, não é telemetria", so the tag is not repeated. */
+.artemis-tag{display:none}
