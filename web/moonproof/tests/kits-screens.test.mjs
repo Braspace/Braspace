@@ -5,7 +5,7 @@ import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
 const files = [
-  "plan.html", "screens/plan.js", "screens/plan.css",
+  "plan.html", "screens/plan.tsx", "screens/plan.css",
   "present.html", "screens/present.js", "screens/present.css",
   "activity.html", "screens/activity.js", "screens/activity.css"
 ];
@@ -22,7 +22,7 @@ test("K1/K2/K3 files exist and have no invented domain or design numbers", () =>
 });
 
 test("K1 plan.js uses sealFor, t(\"nd\"), DEFAULT_RULES and location.href", () => {
-  const src = fs.readFileSync(path.join(root, "screens/plan.js"), "utf8");
+  const src = fs.readFileSync(path.join(root, "screens/plan.tsx"), "utf8");
   assert.match(src, /sealFor\(/);
   assert.match(src, /t\("nd"\)/);
   assert.match(src, /DEFAULT_RULES/);

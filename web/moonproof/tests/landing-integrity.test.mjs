@@ -6,7 +6,7 @@ import { dict, register } from "../core/i18n.js";
 import { TEXTS } from "../screens/landing-texts.js";
 
 const read = f => readFile(new URL("../" + f, import.meta.url), "utf8");
-const FILES = ["landing.html", "debrief.html", "screens/landing.js", "screens/debrief.tsx", "screens/landing-model.js", "screens/landing-texts.js", "screens/landing.css", "screens/debrief.css"];
+const FILES = ["landing.html", "debrief.html", "screens/landing.tsx", "screens/debrief.tsx", "screens/landing-model.js", "screens/landing-texts.ts", "screens/landing.css", "screens/debrief.css"];
 const DESIGN = ["142", "−4,8", "-4,8", "SR-02", "SR-01", "38 m", "3,2°", "a41c9e2", "Missão 05", "Mission 05", "tentativa 3", "58%", "34%", "41 s", "22 s", "600 m", "moonproof.app", "20 m/px"];
 
 test("rule 1/3: no number or id from the design sheet in F and G code", async () => {
@@ -22,12 +22,12 @@ test("rule 2: texts never claim validation", () => {
   for (const l of Object.keys(TEXTS)) for (const [k, v] of Object.entries(TEXTS[l])) assert.ok(!/validad|validated/i.test(v), `${l} ${k}`);
 });
 test("rule 8: physics is imported from web/lab/physics.js, not rewritten", async () => {
-  for (const f of ["screens/landing.js", "screens/landing-model.js"]) {
+  for (const f of ["screens/landing.tsx", "screens/landing-model.js"]) {
     const s = await read(f);
     assert.match(s, /from "\.\.\/\.\.\/lab\/physics\.js"/, f + " must import web/lab/physics.js");
     assert.ok(!/function (stepFixed|deriv|createSim|rk4)/i.test(s), f + " re-implements physics");
   }
-  assert.match(await read("screens/landing.js"), /from "\.\.\/\.\.\/lab\/scene\.js"/);
+  assert.match(await read("screens/landing.tsx"), /from "\.\.\/\.\.\/lab\/scene\.js"/);
 });
 test("educational simulation seal exists on F, in both languages, outside any layer", async () => {
   assert.equal(TEXTS["pt-BR"]["lab.sim"], "SIMULAÇÃO EDUCATIVA"); assert.equal(TEXTS.en["lab.sim"], "EDUCATIONAL SIMULATION");
@@ -46,12 +46,12 @@ test("no attempt: G says so, shows N/D and links to F", async () => {
   assert.match(s, /if \(!A\) return none\(\)/); assert.match(s, /deb\.none\.go/); assert.match(s, /sealEl\("N\/D"\)/);
   assert.equal(TEXTS["pt-BR"]["deb.none.title"], "Nenhuma tentativa para mostrar");
 });
-test("hazard of boulders < 20 m is N/D (no source)", async () => { const s = await read("screens/landing.js"); assert.match(s, /lab\.hazard[^;]*nd/); assert.match(s, /"N\/D"/); });
+test("hazard of boulders < 20 m is N/D (no source)", async () => { const s = await read("screens/landing.tsx"); assert.match(s, /lab\.hazard[^;]*nd/); assert.match(s, /"N\/D"/); });
 test("en and pt-BR carry the same keys, and the core accepts them", () => {
   assert.deepEqual(Object.keys(TEXTS.en).sort(), Object.keys(TEXTS["pt-BR"]).sort());
   assert.doesNotThrow(() => register(TEXTS)); assert.equal(dict.en["lab.title"], "Landing Lab");
 });
 test("keyboard: thrust ↑↓/WS, pause Space, restart R are bound", async () => {
-  const s = await read("screens/landing.js");
+  const s = await read("screens/landing.tsx");
   for (const k of ["ArrowUp", "ArrowDown", "KeyW", "KeyS", "Space", "KeyR"]) assert.ok(s.includes(k), k);
 });

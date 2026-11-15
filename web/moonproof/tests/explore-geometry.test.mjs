@@ -7,7 +7,7 @@ import { readFile } from "node:fs/promises";
 
 const read = f => readFile(f.startsWith("/") ? f : new URL("../" + f, import.meta.url), "utf8");
 const css = (await read(process.env.EXPLORE_CSS || "screens/explore.css")).replace(/\/\*[\s\S]*?\*\//g, "");
-const js = await read("screens/explore.js");
+const js = await read("screens/explore.tsx");
 
 // All `selector { decls }` pairs outside @media-less nesting problems: nested @media bodies are flattened (breakpoints are checked by name below).
 const rules = [];
@@ -61,7 +61,7 @@ test("'What you see from here': chart, sentence, actions, then the 1-2-3 chips; 
   assert.equal(prop("#card-horizon .ex-horizon", "border-radius"), "16px");
   // the "Why" section title is hidden visually, not removed
   assert.equal(prop("#card-horizon>section h4", "clip"), "rect(0 0 0 0)");
-  assert.match(js, /const DESK_HORIZON = \[310, 70\]/, "desktop chart is a 310 x 88 strip");
+  assert.match(js, /const DESK_HORIZON(: \[number, number\])? = \[310, 70\]/, "desktop chart is a 310 x 88 strip");
 });
 
 test("bottom bar: one row [scale 152, prev, next, site 173, zoom -, zoom +, coordinates 172], bottom 28 px, tap hint 14 px above", () => {
@@ -77,8 +77,8 @@ test("bottom bar: one row [scale 152, prev, next, site 173, zoom -, zoom +, coor
   assert.equal(num(prop(".mc-dock .mc-hint", "min-height")), 36);
   assert.doesNotMatch(css, /ex-readout/, "the second dock row is gone");
   // JS: scale first, then prev/next/select/zoom, coordinates last; the coordinate pill is also the typing field
-  const row = js.slice(js.indexOf("function dock(s)"), js.indexOf("function chips()"));
-  assert.ok(row.indexOf("ex-scalebar") < row.indexOf('"‹"') && row.indexOf('"‹"') < row.indexOf('"›"') && row.indexOf('"›"') < row.indexOf("), sel,") && row.indexOf("), sel,") < row.indexOf('"−"') && row.indexOf('"−"') < row.indexOf('"+"') && row.indexOf('"+"') < row.indexOf("form)"));
-  assert.match(row, /form = el\("form", "ex-coord"\)/);
+  const row = js.slice(js.indexOf("function dock("), js.indexOf("function chips()"));
+  assert.ok(row.indexOf("ex-scalebar") < row.indexOf('"‹"') && row.indexOf('"‹"') < row.indexOf('"›"') && row.indexOf('"›"') < row.indexOf("<select") && row.indexOf("<select") < row.indexOf('"−"') && row.indexOf('"−"') < row.indexOf('"+"') && row.indexOf('"+"') < row.indexOf("<form"));
+  assert.match(row, /<form class="ex-coord"/);
   assert.match(row, /enterkeyhint/);
 });
