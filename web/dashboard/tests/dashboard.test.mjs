@@ -10,7 +10,7 @@ import * as D from "../dashboard.js";
 const dir=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const html=await readFile(path.join(dir,"index.html"),"utf-8");
 const css=await readFile(path.join(dir,"dashboard.css"),"utf-8");
-const js=await readFile(path.join(dir,"dashboard.js"),"utf-8");
+const js=await readFile(path.join(dir,"dashboard.ts"),"utf-8");
 
 // fake API that returns the documented shapes; used through the real preview server
 const fake=http.createServer((req,res)=>{

@@ -7,15 +7,11 @@
 // replaceChildren; the canvas overlay, the pin and the horizon SVG stay imperative (drawn from live geometry).
 import { h, Fragment, render } from "../../vendor/preact/preact.module.js";
 import type { ComponentChild } from "../../vendor/preact/preact.module.js";
-// @ts-ignore TS7016: JS module without types
 import { mountShell } from "../core/shell.js";
-// @ts-ignore TS7016
 import { mountTerrain } from "../core/terrain.js";
 import { loadSites, windowMetrics, sealFor, apiOnline, loadRegion, sourced, api } from "../core/data.js";
 import type { Site, SitesDoc, SiteSeriesLike } from "../core/data.js";
-// @ts-ignore TS7016
 import { createLayerCard, sealEl } from "../core/layers.js";
-// @ts-ignore TS7016
 import { t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import type { Layer } from "../core/state.js";

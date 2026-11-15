@@ -10,7 +10,7 @@ test("the projection of an unframed map is not finite, which is why callers must
   const lastW = 0, lastH = 0, lastSx = 0, lastSy = 0, lastMpp = 0;
   const toPx = (x, y) => [lastW / 2 + (x - lastSx) / lastMpp, lastH / 2 - (y - lastSy) / lastMpp];
   assert.ok(toPx(-12000, 9000).every(v => !Number.isFinite(v)));
-  const terrain = read("../core/terrain.js");
+  const terrain = read("../core/terrain.ts");
   assert.match(terrain, /let lastMpp = 0, lastSx = 0, lastSy = 0, lastW = 0, lastH = 0;/);
   assert.match(terrain, /if \(!W \|\| !H\) return;/, "draw() leaves the scale at zero for a zero-size container");
   assert.match(terrain, /get ready\(\) \{ return lastMpp > 0; \}/);

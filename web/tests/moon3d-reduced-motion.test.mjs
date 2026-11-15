@@ -10,16 +10,16 @@ import {fileURLToPath} from "node:url";
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 
 test("moon3d.js has no autonomous animation loop",async()=>{
-  const src=await readFile(path.join(root,"moon3d.js"),"utf-8");
+  const src=await readFile(path.join(root,"moon3d.ts"),"utf-8");
   assert.doesNotMatch(src,/requestAnimationFrame|setAnimationLoop|setInterval/);
   assert.match(src,/function render\(\)\{renderer\.render\(scene,camera\)\}/);
 });
 
 test("keyboard rotation is available and every input path re-renders on demand",async()=>{
-  const src=await readFile(path.join(root,"moon3d.js"),"utf-8");
+  const src=await readFile(path.join(root,"moon3d.ts"),"utf-8");
   for(const key of ["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"])assert.ok(src.includes(key),key);
-  assert.match(src,/function keyDown\(e\)[\s\S]*?render\(\)/);
-  assert.match(src,/function pointerMove\(e\)[\s\S]*?render\(\)/);
+  assert.match(src,/function keyDown\(e(?:: \w+)?\)[\s\S]*?render\(\)/);
+  assert.match(src,/function pointerMove\(e(?:: \w+)?\)[\s\S]*?render\(\)/);
 });
 
 test("the site stylesheet disables transitions and smooth scrolling under prefers-reduced-motion",async()=>{

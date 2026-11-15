@@ -5,17 +5,12 @@
 // SVG guide lines and the per-frame HUD updates mutate nodes held in `ui`, and the three.js scene is built outside the DOM tree.
 // @ts-ignore TS2307: remote ES module (CDN), no local types
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.181.0/build/three.module.js";
-// @ts-ignore TS7016: JS module without types
 import { Viewer } from "../../lab/scene.js";
-// @ts-ignore TS7016
 import { TerrainGrid } from "../../lab/terrain.js";
 import { createSim, advance, telemetry, thrustDirection, DEFAULT_VEHICLE, MOON_R_REF } from "../../lab/physics.js";
-// @ts-ignore TS7016
 import { mountShell } from "../core/shell.js";
 import { loadSites, loadSeries, sealFor, apiOnline, DATA_BASE } from "../core/data.js";
-// @ts-ignore TS7016
 import { sealEl } from "../core/layers.js";
-// @ts-ignore TS7016
 import { register, t, fmtNum, lang, setLang } from "../core/i18n.js";
 import { getState, setState, hrefTo } from "../core/state.js";
 import { TEXTS } from "./landing-texts.js";

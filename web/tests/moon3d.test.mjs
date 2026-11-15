@@ -18,7 +18,7 @@ test("API paths use the optional base (BRASPACE_API_BASE), empty by default",()=
 });
 
 test("the file no longer carries a hard-coded API origin and every API path goes through apiURL",async()=>{
-  const src=await readFile(path.join(root,"moon3d.js"),"utf-8");
+  const src=await readFile(path.join(root,"moon3d.ts"),"utf-8");
   assert.doesNotMatch(src,/https?:\/\/[^"'\s]*braspace/i);
   for(const m of src.matchAll(/["'`](\/api\/[^"'`]*)["'`]/g)){
     const at=src.indexOf(m[0]);
@@ -63,7 +63,7 @@ test("status text keeps the honest wording and never claims validation, lighting
 });
 
 test("the GLB loads on demand from the same three version and CDN already allowed by the CSP",async()=>{
-  const src=await readFile(path.join(root,"moon3d.js"),"utf-8");
+  const src=await readFile(path.join(root,"moon3d.ts"),"utf-8");
   assert.match(src,/three@0\.181\.0\/\+esm/);
   assert.match(src,/three@0\.181\.0\/examples\/jsm\/loaders\/GLTFLoader\.js\/\+esm/);
   const hosts=new Set([...src.matchAll(/https:\/\/([a-z0-9.-]+)/g)].map(m=>m[1]));
@@ -86,7 +86,7 @@ test("focus brings the site marker to the camera side of the globe (BR88)",async
 });
 
 test("model button no longer says Loading once the GLB is ready (BR88)",async()=>{
-  const src=await readFile(path.join(root,"moon3d.js"),"utf-8");
+  const src=await readFile(path.join(root,"moon3d.ts"),"utf-8");
   const ready=src.slice(src.indexOf("modelState=\"ready\""),src.indexOf("}catch(err)"));
   assert.match(ready,/modelButton\.textContent\s*=\s*"NASA 3D model loaded"/);
 });
