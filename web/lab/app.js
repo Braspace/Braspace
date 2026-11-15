@@ -188,7 +188,7 @@ function setLegend() {
   const bar = (cls, a, b, unit, note) => `<div class="ramp ${cls}"></div><div class="ramp-labels"><span>${a}</span><span>${b}</span></div><small>${unit}</small>${note ? `<small class="muted">${note}</small>` : ""}`;
   const vir = "vir", inf = "inf";
   let html;
-  if (state.level === "globe") html = `<strong>NASA SVS CGI Moon Kit colour map</strong><small>Visual reference only (not terrain science). Markers: catalogue site centres.</small>`;
+  if (state.level === "globe") html = `<strong>Joel Moon HD · LOLA terrain / NASA SVS colour</strong><small>Visual reference only (not terrain science). Markers: catalogue site centres.</small>`;
   else if (state.layer === "elevation") html = `<strong>Elevation</strong>` + (state.level === "region" && g
     ? bar(vir, `${fmt(g.min / 1000, 1)} km`, `${fmt(g.max / 1000, 1)} km`, "Height above the 1,737.4 km reference sphere (LOLA datum)", "Source: LRO/LOLA LDEM_80S_80M, 400 m block mean")
     : bar(vir, "low", "high", "Local relief of the 16 × 16 km tile (m, site tangent plane)", "Source: LOLA 80 m, bilinear at 40 m"));
@@ -460,7 +460,7 @@ async function renderEvidence() {
       ${rh ? `<li>Terrain: ${esc(rh.source)} · SHA-256 <code>${esc(rh.source_sha256.slice(0, 16))}…</code> · ${esc(rh.frame)} · native 80 m (400 m regional block mean; 40 m bilinear locally)</li>
       <li>Illumination &amp; Earth maps: ${esc(rh.layers.pgda_sun.product)} / ${esc(rh.layers.pgda_earth.product)} (${rh.layers.pgda_sun.resolution_m} m) — NASA GSFC PGDA, Mazarico et al. (2011) <em>Icarus</em> 211:1066–1081</li>` : `<li>${esc(tr("notComputed"))}</li>`}
       <li>Ephemerides: ${esc(meta.provenance.ephemeris)} · frame ${esc(meta.provenance.spice_frame)} · ${esc(meta.provenance.aberration_correction)}</li>
-      <li>Globe colour map: NASA SVS CGI Moon Kit (Ernie Wright), visual only</li></ul>
+      <li>Globe: Joel Moon HD (NASA LRO/LOLA terrain and NASA SVS colour), visual only</li></ul>
     <h3>Derived by our algorithms</h3><ul class="small">
       <li>Terrain horizon per site: great-circle ray casting every 1° out to 100 km, lunar curvature, observer 2 m (science/lola_horizon.py, PR #75 + pixel fix #86)</li>
       <li>Sun/Earth visibility = elevation − horizon(azimuth) ≥ 0 for the disc centre, hourly from ${esc(state.index.series_window.start_utc.slice(0, 10))} for ${Math.round(state.index.series_window.hours / 24)} days</li>
@@ -679,7 +679,7 @@ async function boot() {
   }
   try {
     viewer = new Viewer($("#stage"), { onFrame, reducedMotion: state.reduced });
-    viewer.onTextureError = () => status("NASA SVS globe texture failed to load; showing a plain grey sphere.");
+    viewer.onTextureError = () => status("Moon HD unavailable; showing the original LOLA south-pole preview. Analysis panels remain available.");
   } catch (e) {
     $("#fallback").hidden = false; $("#fallback").textContent = `3D view unavailable: ${e.message} The analysis panels (Compare, Recover, Evidence) still work.`;
   }

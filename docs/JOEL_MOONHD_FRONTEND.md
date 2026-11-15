@@ -45,3 +45,14 @@ python science/render_moon_preview.py web/data/moonhd/south_pole_80m.bin web/moo
 7. Run `npm --prefix web run lint`, `npm --prefix web test`, full browser e2e with software fallback and GPU separate, then release pipeline at exact SHA. Capture actual screenshots and check API / site data continuity. Require science owner and UX review.
 
 Release gate: no full frontend acceptance, merge, production deployment, scientific validation, or NASA submission claimed by this checkpoint alone.
+
+
+## Cycle 2 — 2026-11-15
+
+- Classic imports `moon-hd/classic-adapter.js`: one WebGL 2 context, shared Joel scene/cap, 80 m desktop / 320 m mobile, camera-only orbit, keyboard, selected site focus, UTC ephemeris sample and canonical poster on startup/failure/context loss. No synthetic globe or separate background GPU canvas. GLB legacy utility retained for its independent tests, no longer wired into Classic.
+- Polar Lab global-scale view imports the same scene/cap, scaled to its kilometre coordinate frame. Analysis grids and local terrain/landing physics are unchanged. Async resources are scoped to the active scene; poster remains on failure. Validate hardware GPU and marker registration before release.
+- Studio's CSS sphere and fake dashed orbit are replaced by the authentic preview. Explore natural texture references the same Moon HD 4K source; registered relief, PGDA and LOLA maps remain unchanged.
+- Cockpit navigation gets a stable deep link and regression coverage (14 tabs, previously CI expected 13); comparison checkboxes use a 44px touch target, adaptive grid and compact control. Multipage pre-ready root shows preview even while body is hidden.
+- Browser audit of the deployed site, desktop 1348×925: Classic synthetic sphere fallback; Studio artificial CSS sphere; Cockpit comparison layout oversized. Energy evaluation responded explicitly SYNTHETIC, NO_CANDIDATE_MEETS_ALL_ASSUMED_LIMITS / NO_OPTION_PASSES_ASSUMED_LIMITS with 3 breaches; 720 h request capped to 480 h with WINDOW_TOO_LONG warning. These observations are from the deployed version, not validation of the draft.
+
+See [QA matrix](JOEL_MOONHD_QA_MATRIX.md). Do not mark complete until browser evidence and actual hardware-GPU validation pass. No changes to backend scientific decision rules.

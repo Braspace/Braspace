@@ -27,7 +27,7 @@ button, select, input { font: inherit; color: inherit; }
 .toggle { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; }
 
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 420px; height: calc(100vh - 56px - 34px); min-height: 520px; }
-#stage { position: relative; overflow: hidden; background: #000; outline: none; }
+#stage { position: relative; overflow: hidden; background: #000 url('../moon-hd/pole-preview.webp') center/cover no-repeat; outline: none; }
 #stage:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
 #stage canvas:first-child { display: block; width: 100%; height: 100%; touch-action: none; }
 .panel { border-left: 1px solid var(--line); background: var(--panel); overflow-y: auto; padding: 18px 20px 40px; }
@@ -146,3 +146,5 @@ body.reduced * { transition: none !important; animation: none !important; }
 .seal.unverified { border-color: #b8860b; color: #ffd166; }
 .seal.validated { border-color: #1f7a5a; color: #7dffd0; }
 .seal.offline { border-color: #5b6b7d; }
+
+#fallback:not([hidden]){background:rgba(0,0,0,.48);color:#fff}

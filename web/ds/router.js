@@ -6,7 +6,7 @@
 /** Board (onboard cockpit) sections: route slug -> cockpit tab id. "entrada" was renamed "parametros". */
 export const BORDO_SECTIONS = {
   "": "visao", "visao-geral": "visao", parametros: "entrada", geometria: "geometria", horizonte: "horizonte",
-  janelas: "janelas", energia: "energia", vida: "vida", replanejar: "replan", visual: "visual",
+  janelas: "janelas", navegacao: "navegacao", energia: "energia", vida: "vida", replanejar: "replan", visual: "visual",
   sensibilidade: "sens", registro: "historico", lancamentos: "lanc", status: "status",
 };
 export const BORDO_SLUG = Object.fromEntries(Object.entries(BORDO_SECTIONS).filter(([k]) => k).map(([k, v]) => [v, k]));

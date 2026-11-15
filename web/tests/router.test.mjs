@@ -39,3 +39,9 @@ test("board routes map to cockpit tabs (Entrada renamed Parâmetros) and keep th
   assert.equal(bordoURL("onboard/cockpit.html", ["bordo", "energia"], { site: "x" }), "onboard/cockpit.html#/bordo/energia?site=x");
   assert.equal(bordoURL("onboard/cockpit.html", ["bordo", "bogus"], {}), "onboard/cockpit.html#/bordo");
 });
+
+test("navigation is a deep-linkable cockpit section",()=>{
+ assert.equal(BORDO_SECTIONS.navegacao,"navegacao");
+ assert.equal(bordoURL("onboard/cockpit.html",["bordo","navegacao"],{site:"connecting-ridge"}),"onboard/cockpit.html#/bordo/navegacao?site=connecting-ridge");
+ assert.equal(legacyRedirect("#navegacao"),"#/bordo/navegacao");
+});

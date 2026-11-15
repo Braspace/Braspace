@@ -2,7 +2,7 @@
 // The training fixture below is explicitly synthetic; Go owns evaluation.
 // GitHub Pages is static: its generated config.js rewrites fetch(), but
 // three.js TextureLoader / GLTFLoader do not use that fetch wrapper.
-// Provide the public API origin before bootGlobe() imports moon3d.js.
+// Provide the public API origin before bootGlobe() imports the shared Moon HD scene.
 // Only our official Pages hostname gets this fallback; local/proxy and
 // self-hosted deployments retain their own origin or explicit configuration.
 if (globalThis.location?.hostname === "braspace.github.io" && !globalThis.BRASPACE_API_BASE) {
@@ -241,17 +241,21 @@ async function checkAPI(){
  }catch{setStatus("Go API not connected; launch backend and serve the web app from the same origin.");state.apiReady=false;}
 }
 async function bootGlobe(){
+ const fallback=()=>{
+  state.globe=null;byId("stage-fallback").hidden=false;byId("reset-globe").disabled=true;
+  byId("globe-status").textContent="Moon HD · static LOLA preview";
+  byId("stage-fallback").querySelector("span").textContent="3D unavailable — same south-pole terrain, illustrative lighting.";
+ };
  try{
-  const mod=await import("./moon3d.js");
-  state.globe=await mod.createMoon(byId("moon-stage"),byId("globe-status"));
-  byId("stage-fallback").hidden=true;
+  const mod=await import("./moon-hd/classic-adapter.js");
+  state.globe=await mod.createMoon(byId("moon-stage"),byId("globe-status"),{date:byId("start").value+":00Z",onUnavailable:fallback});
+  byId("stage-fallback").hidden=true;byId("reset-globe").disabled=false;
   if(state.sites.length)state.globe.setSites(state.sites);
   onSiteChange();
-  byId("reset-globe").addEventListener("click",()=>state.globe.reset());
- }catch(err){
-  byId("globe-status").textContent="2D illustration fallback · 3D not loaded";
-  byId("stage-fallback").querySelector("span").textContent="3D unavailable — lunar image is illustrative.";
- }
+  byId("reset-globe").addEventListener("click",()=>state.globe?.reset());
+  byId("start").addEventListener("change",()=>state.globe?.setTime(byId("start").value+":00Z"));
+  window.addEventListener("pagehide",e=>{if(!e.persisted)state.globe?.dispose()});
+ }catch{fallback()}
 }
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.view,true)));
 byId("run-top").addEventListener("click",()=>byId("mission-form").requestSubmit());

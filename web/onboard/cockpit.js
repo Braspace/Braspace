@@ -1562,7 +1562,7 @@
           S.compareSel = cb.checked ? cur.concat(id).slice(0, cap) : cur;
           renderTab();
         });
-        return h("label", { style: "margin-right:12px;white-space:nowrap" }, cb, " " + id);
+        return h("label", {}, cb, " " + id);
       }),
       h("p", { class: "note", id: "compare-note", text: "Enviando " + sel.length + " de " + catalog.length + " lugares: " + sel.join(", ") + ". Máximo " + cap + " por consulta; os demais ficam de fora." }));
     let body = h("p", { class: "dim", text: "Ainda não consultado. Compara lugares do catálogo, com dados de série quando existirem." });

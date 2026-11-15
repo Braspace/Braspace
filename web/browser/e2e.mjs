@@ -57,7 +57,8 @@ try{
  const onboardResponse=await desktop.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});
  assert(onboardResponse?.status()===200,"onboard cockpit HTTP");
  const tabs=desktop.locator("nav.tabs button[data-tab]");
- assert(await tabs.count()===13,"onboard cockpit missing required tabs");
+ assert(await tabs.count()===14,"onboard cockpit missing required tabs");
+ assert(await tabs.filter({hasText:/Navegação/i}).count()===1,"navigation tab missing");
  await desktop.waitForFunction(()=>{
   const text=document.querySelector("#badges")?.textContent||"";
   return text.includes("UNVERIFIED_INPUTS")&&text.includes("No flight recommendation");

@@ -65,3 +65,8 @@ footer{border-color:#30413e}
    and the page header ended up over the "Reveal answer" button. Let the column shrink to the viewport. */
 .workspace>*{min-width:0}
 .sidebar nav{max-width:100%}
+
+/* Canonical Moon HD preview, not a generated CSS moon. */
+.studio{background:transparent}
+.orb div{width:min(100%,320px);aspect-ratio:16/9;border-radius:14px;background:#000 url('../moon-hd/pole-preview.webp') center/cover no-repeat;box-shadow:none;position:relative}
+.orb div:after{display:none}

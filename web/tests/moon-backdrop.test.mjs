@@ -15,8 +15,8 @@ const {mountMoonBackdrop,pickAssets,probeWebGL,backdropTime,shouldAnimate,normal
 
 // Pages whose background is decorative get the Moon; pages whose LOLA relief is the functional map never do.
 const WITH={"index.html":"./moon-hd/backdrop.js","onboard/cockpit.html":"../moon-hd/backdrop.js","moonproof/index.html":"../moon-hd/backdrop.js",
- "moonproof/rules.html":"../moon-hd/backdrop.js","moonproof/evidence.html":"../moon-hd/backdrop.js","moonproof/debrief.html":"../moon-hd/backdrop.js","classic.html":"./moon-hd/backdrop.js"};
-const WITHOUT=["moonproof/mission.html","moonproof/explore.html","moonproof/compare.html","moonproof/recover.html","moonproof/cockpit.html","moonproof/landing.html",
+ "moonproof/rules.html":"../moon-hd/backdrop.js","moonproof/evidence.html":"../moon-hd/backdrop.js","moonproof/debrief.html":"../moon-hd/backdrop.js"};
+const WITHOUT=["classic.html","moonproof/mission.html","moonproof/explore.html","moonproof/compare.html","moonproof/recover.html","moonproof/cockpit.html","moonproof/landing.html",
  "moonproof/plan.html","moonproof/present.html","moonproof/activity.html","studio/index.html","onboard/index.html","moon-hd.html","lab.html"];
 
 test("backdrop.js exports the documented API and does nothing without a document",async()=>{

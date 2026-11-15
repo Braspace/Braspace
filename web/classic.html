@@ -8,7 +8,6 @@
   <title>BRASPACE MoonProof | Lunar Mission Resilience Lab</title>
   <link rel="stylesheet" href="./styles.css">
   <script type="module" src="./app.js"></script>
-  <script type="module" src="./moon-hd/backdrop.js" data-moon-backdrop="globe"></script>
 <link rel="stylesheet" href="./moon-hd/preview.css">
 </head>
 <body>
@@ -54,12 +53,12 @@
         <section class="panel-view" data-panel="explore" id="panel-explore" tabindex="-1" aria-label="Explore">
         <section class="globe-panel" aria-labelledby="globe-heading">
           <div class="panel-head"><div><p class="eyebrow">EXPLORE / LUNAR GLOBE</p><h2 id="globe-heading">The Moon, in context</h2></div><span class="mini-label">3D VISUALIZATION · NOT TERRAIN SCIENCE</span></div>
-          <div id="moon-stage" tabindex="0" role="img" aria-label="Interactive three-dimensional Moon. Drag to rotate; scroll to zoom; arrow keys rotate. Planetary imagery is for visual reference only.">
-            <div class="stage-fallback" id="stage-fallback"><div class="fallback-sphere"></div><span>Loading interactive 3D view…</span></div>
-            <div class="stage-overlay stage-top"><span>● SOUTH POLE FOCUS</span><span id="globe-status">NASA SVS texture pending</span></div>
-            <div class="stage-overlay stage-bottom"><span>DRAG TO ROTATE · SCROLL TO ZOOM · ARROWS TO ORBIT</span><button id="reset-globe" class="ghost" type="button">Reset view</button></div>
+          <div id="moon-stage" tabindex="0" role="region" aria-label="Moon HD south pole visual reference. Drag to orbit; scroll to zoom; arrow keys orbit.">
+            <div class="stage-fallback" id="stage-fallback"><div class="fallback-sphere"></div><span>Loading Joel’s Moon HD · LOLA terrain…</span></div>
+            <div class="stage-overlay stage-top"><span>● SOUTH POLE FOCUS</span><span id="globe-status">Moon HD loading</span></div>
+            <div class="stage-overlay stage-bottom"><span>DRAG TO ROTATE · SCROLL TO ZOOM · ARROWS TO ORBIT</span><button id="reset-globe" class="ghost" type="button" disabled>Reset view</button></div>
           </div>
-          <p class="source-note">Visual source: <a href="https://svs.gsfc.nasa.gov/4720/" target="_blank" rel="noopener noreferrer">NASA Scientific Visualization Studio CGI Moon Kit</a> (Ernie Wright / NASA SVS). Its imagery is aesthetic; scientific local horizons require NASA LOLA DEM and validated ephemerides.</p>
+          <p class="source-note">Visual source: Joel’s shared Moon HD / LRO LOLA terrain. <a href="./moon-hd.html?view=pole">Open the interactive south-pole viewer</a>. Preview lighting is illustrative; scientific local horizons and mission decisions require validated data.</p>
         </section>
         </section>
         <section class="results-panel panel-view" data-panel="compare" id="panel-compare" tabindex="-1" aria-labelledby="compare-title" hidden>
