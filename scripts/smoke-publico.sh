@@ -49,11 +49,12 @@ ok "front $FRONT/ -> $code"
 # check the resources of the real pages — the entry and the cockpit, the panel that matters.
 resources=""
 for page in moonproof/ moonproof/cockpit.html; do
-  code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 "$FRONT/$page" || true)
+  # -L: Cloudflare assets answer 307 cockpit.html → /moonproof/cockpit (pretty URLs); the page must end in 200.
+  code=$(curl -sSL -o /dev/null -w "%{http_code}" --max-time 30 "$FRONT/$page" || true)
   [ "$code" = "200" ] || fail "pagina $FRONT/$page retornou HTTP $code (esperado 200)"
   ok "pagina $page -> $code"
   base="${page%/*}"; [ "$base" = "$page" ] && base=""
-  found=$(curl -fsS --max-time 30 "$FRONT/$page" \
+  found=$(curl -fsSL --max-time 30 "$FRONT/$page" \
     | grep -oE '<(script|img|iframe|source|link)[^>]+(src|href)="[^"]*"' \
     | grep -oE '(src|href)="[^"]*"' | sed -E 's/^(src|href)="//;s/"$//' | sort -u || true)
   [ -n "$found" ] || fail "pagina $page sem recursos (script/link) — HTML inesperado"
