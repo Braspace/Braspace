@@ -5,12 +5,15 @@
 <title>moonproof · Cockpit</title>
 <meta name="description" content="Cockpit: run a lunar surface scenario hour by hour, inject faults and watch power, sun and Earth visibility decide crew autonomy.">
 <link rel="stylesheet" href="core/tokens.css"><link rel="stylesheet" href="core/components.css"><link rel="stylesheet" href="screens/cockpit.css">
+<link rel="stylesheet" href="screens/cockpit-panels.css">
 <script type="module" src="screens/cockpit.js"></script>
+<script type="module" src="screens/cockpit-panels.js"></script>
 <link rel="stylesheet" href="../moon-hd/preview.css">
 <script type="module" src="../moon-hd/backdrop.js" data-moon-backdrop="globe" data-moon-lazy></script>
 </head>
 <body>
 <div id="terrain"></div>
+<div id="ck-panel-controls" aria-label="Cockpit panel controls"></div>
 <div class="mp-sheet" id="sheet"><button type="button" class="mp-handle" id="handle"></button>
 <aside class="mp-ck-left" id="left"></aside>
 <aside class="mp-ck-right" id="right"></aside></div>
