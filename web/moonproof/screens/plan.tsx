@@ -15,7 +15,7 @@ const byId = (id: string): HTMLElement => document.getElementById(id) as HTMLEle
 const within = <T extends Element>(root: ParentNode, sel: string): T => root.querySelector(sel) as T;
 import { parseRules, shareUrl, shortVersion, ruleEffects, compareScenarios, compareBody, compareOutcome, computePlan, violates, hourlyRows, seriesStepH, observerHeightM,
   csvDocument, jsonDocument, passportHtml } from "./plan-model.js";
-import { pickVersion, parseConfigCommit } from "./evidence-model.js";
+import { pickVersion } from "./evidence-model.js";
 import { H1_PROFILE, runScenario } from "./cockpit-model.js";
 
 register({
@@ -181,12 +181,9 @@ const rulesDraft = parseRules(location.search);
 if (rulesDraft.night !== getState().night || rulesDraft.blackout !== getState().blackout || rulesDraft.battery !== getState().battery) {
   setState({ night: rulesDraft.night, blackout: rulesDraft.blackout, battery: rulesDraft.battery });
 }
-// Plan version = deployment commit (config.js) or /api/health; absent → "—" + N/D. Same source as the Evidence screen.
-const [health, cfg] = await Promise.all([
-  api("/api/health", { timeoutMs: 3000 }),
-  fetch(new URL("../../config.js", import.meta.url), { cache: "no-store" }).then((r) => (r.ok ? r.text() : "")).catch(() => "")
-]);
-const version = pickVersion({ configCommit: parseConfigCommit(cfg), health: health.ok ? (health.data as { api_version?: unknown; version?: unknown }) : null });
+// Plan version = API build commit (/healthz) or /api/health; absent → "—" + N/D. Same source as the Evidence screen.
+const [health, healthz] = await Promise.all([api("/api/health", { timeoutMs: 3000 }), api("/healthz", { timeoutMs: 3000 })]);
+const version = pickVersion({ buildCommit: healthz.ok ? (healthz.data as { build_commit?: unknown }).build_commit : null, health: health.ok ? (health.data as { api_version?: unknown; version?: unknown }) : null });
 
 function downloadFile(filename: string, content: string, mime: string): void {
   const blob = new Blob([content], { type: mime });

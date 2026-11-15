@@ -12,7 +12,7 @@ import { getState, setState, onState } from "../core/state.js";
 import { TEXTS } from "./evidence-texts.js";
 import { TEXTS as CK } from "./cockpit-texts.js";
 import { REGISTRY } from "./evidence-registry.js";
-import { sourceRows, trustRows, buildPassport, pickVersion, parseConfigCommit, SECTIONS, TRUST_BLOCKS } from "./evidence-model.js";
+import { sourceRows, trustRows, buildPassport, pickVersion, SECTIONS, TRUST_BLOCKS } from "./evidence-model.js";
 import { backendVectorSearch } from "../../lab/backend-bridge.js";
 register(TEXTS);
 register({ en: { "cockpit.assumed": CK.en["cockpit.assumed"] }, "pt-BR": { "cockpit.assumed": CK["pt-BR"]["cockpit.assumed"] } });
@@ -26,16 +26,9 @@ const doc = await loadSites();
 if (!doc.sites.some(s => s.id === getState().site))
     setState({ site: doc.sites[0].id });
 // Static facts loaded once.
-const [ready, health, caps, layers, apiSites, vector] = await Promise.all([api("/readyz", { timeoutMs: 3000 }), api("/api/health", { timeoutMs: 3000 }), api("/v1/capabilities", { timeoutMs: 3000 }), api("/api/layers", { timeoutMs: 3000 }), api("/api/sites", { timeoutMs: 3000 }), api("/api/vector/status", { timeoutMs: 3000 })]);
+const [ready, health, caps, layers, apiSites, vector, healthz] = await Promise.all([api("/readyz", { timeoutMs: 3000 }), api("/api/health", { timeoutMs: 3000 }), api("/v1/capabilities", { timeoutMs: 3000 }), api("/api/layers", { timeoutMs: 3000 }), api("/api/sites", { timeoutMs: 3000 }), api("/api/vector/status", { timeoutMs: 3000 }), api("/healthz", { timeoutMs: 3000 })]);
 const online = ready.ok;
-let configCommit = null;
-try {
-    const r = await fetch(new URL("../../config.js", import.meta.url), { cache: "no-store" });
-    if (r.ok)
-        configCommit = parseConfigCommit(await r.text());
-}
-catch { /* no config.js here */ }
-const version = pickVersion({ configCommit, health: health.ok ? health.data : null });
+const version = pickVersion({ buildCommit: healthz.ok ? healthz.data.build_commit : null, health: health.ok ? health.data : null });
 const region = await fetch(DATA_BASE + "region/south_pole_400m.json").then(r => r.ok ? r.json() : null).catch(() => null);
 await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id) => setState({ site: id }) });
 let section = "passport", trustOpen = false;
