@@ -82,3 +82,19 @@ Risco anotado: o three.js vem do CDN jsDelivr (CSP `script-src`). Se o CDN falha
 - **Verificado:** `BRASPACE_EXPECT_COMMIT=ad83cfe7517c… BRASPACE_COCKPIT_PACE_MS=150 node scripts/cockpit-backend-contract.mjs` com 49/49 pela borda do Worker e 49/49 direto na API. `smoke-publico.sh` também passou.
 - **Rollback:** `IMAGEM=ad83cfe7517c` (mesmo código, sem SHA) ou `IMAGEM=62bf446e386d`.
 - **Regra para os próximos deploys:** sempre construir com `BRASPACE_GIT_SHA=$(git rev-parse HEAD)` e validar com `BRASPACE_EXPECT_COMMIT`. Rodar o contrato com `BRASPACE_COCKPIT_PACE_MS=150`, porque o Traefik limita 20 req/s com burst 40 por IP.
+
+## Deploy do Worker `f26e95fa` — main `6433866` (#365), 15/11/2026 ~13:10 BRT
+
+Feito pela sessão do #296 com autorização do Gustavo. A configuração ao vivo (`3f1b9c03`) foi conferida antes: `compatibility_date` 2026-11-01, binding `ASSETS`, handler `fetch`, igual ao `deploy/cloudflare/wrangler.toml.example`.
+
+- **Origem:** worktree limpa em `origin/main`. Antes do upload, `web/config.js` recebeu `BRASPACE_COMMIT` com o SHA completo, só na árvore de deploy, sem commit.
+- **Testes do Worker:** `node --test deploy/cloudflare/*.test.mjs`, 55/0.
+- **Rollback:** `npx wrangler rollback 3f1b9c03-0f0c-4988-b9b6-d381dd632cb2` (versão anterior, main `acbd5d6`).
+
+Verificado ao vivo:
+- `/config.js` traz o commit;
+- `/vendor/three/three.module.min.js` responde 200;
+- `/moon-hd/scene.js` importa o three vendorizado;
+- `/api/health` responde `store.status: ok`.
+
+Matriz em produção (16 páginas × 6 tamanhos): **96/96 sem WebGL** e **96/96 com GPU**. Não há mais dependência do CDN jsDelivr; o risco anotado no deploy da API está resolvido.
