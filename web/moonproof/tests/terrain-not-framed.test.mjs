@@ -17,7 +17,7 @@ test("the projection of an unframed map is not finite, which is why callers must
 });
 
 test("Mission draws no Sun/Earth rays and Explore no layer or pin until the map is framed", () => {
-  const mission = read("../screens/mission.js"), explore = read("../screens/explore.js");
+  const mission = read("../screens/mission.tsx"), explore = read("../screens/explore.tsx");
   assert.match(mission, /if \(!cur \|\| !terrain\.ready\) \{ for \(const id of \["ray-sun", "ray-earth"\]\) \$\(id\)\.hidden = true; return; \}/);
   assert.ok(mission.indexOf("!terrain.ready") < mission.indexOf("terrain.toPx(s.stereo_x_m"), "the check comes before the projection is used");
   assert.match(explore, /if \(!terrain\.ready\) \{ pin\.hidden = true; return; \}/);
