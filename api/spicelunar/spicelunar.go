@@ -10,6 +10,10 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/Braspace/Braspace/api/internal/pyfmt"
 	"github.com/Braspace/Braspace/api/lolahorizon"
@@ -164,4 +168,38 @@ func SunEarthLook(k *naif.Kernels, et, latDeg, lonDeg, observerRadiusKm float64,
 		out[i] = [2]float64{az, el}
 	}
 	return out[0][0], out[0][1], out[1][0], out[1][1], nil
+}
+
+var isoRE = regexp.MustCompile(`^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2})(?::(\d{2})(?::(\d{2})(?:[.,](\d+))?)?)?)?(?:([+-])(\d{2})(?::?(\d{2})(?::?(\d{2}))?)?)?$`)
+
+// ParseISO is datetime.fromisoformat(value.replace("Z", "+00:00")) followed by astimezone(UTC).
+// A value without an offset is read as wall-clock time in naive (Python's astimezone() assumes the
+// system local zone) and hasTZ is false. Errors carry Python's ValueError messages.
+func ParseISO(value string, naive *time.Location) (t time.Time, hasTZ bool, err error) {
+	s := strings.ReplaceAll(value, "Z", "+00:00")
+	g := isoRE.FindStringSubmatch(s)
+	if g == nil {
+		return time.Time{}, false, errors.New("Invalid isoformat string: '" + s + "'")
+	}
+	atoi := func(x string) int { n, _ := strconv.Atoi(x); return n }
+	y, mo, d := atoi(g[1]), atoi(g[2]), atoi(g[3])
+	h, mi, sec := atoi(g[4]), atoi(g[5]), atoi(g[6])
+	nsec := 0
+	if g[7] != "" {
+		nsec = atoi((g[7] + "000000")[:6]) * 1000
+	}
+	if mo < 1 || mo > 12 {
+		return time.Time{}, false, errors.New("month must be in 1..12")
+	}
+	if d < 1 || h > 23 || mi > 59 || sec > 59 || time.Date(y, time.Month(mo), d, 0, 0, 0, 0, time.UTC).Day() != d {
+		return time.Time{}, false, errors.New("day is out of range for month")
+	}
+	if g[8] == "" {
+		return time.Date(y, time.Month(mo), d, h, mi, sec, nsec, naive).UTC(), false, nil
+	}
+	off := atoi(g[9])*3600 + atoi(g[10])*60 + atoi(g[11])
+	if g[8] == "-" {
+		off = -off
+	}
+	return time.Date(y, time.Month(mo), d, h, mi, sec, nsec, time.UTC).Add(-time.Duration(off) * time.Second), true, nil
 }

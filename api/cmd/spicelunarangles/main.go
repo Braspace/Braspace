@@ -15,8 +15,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -34,38 +32,16 @@ func (e *pyErr) Error() string { return e.typ + ": " + e.msg }
 
 func valueErr(msg string) error { return &pyErr{"ValueError", msg} }
 
-var isoRE = regexp.MustCompile(`^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2})(?::(\d{2})(?::(\d{2})(?:[.,](\d+))?)?)?)?(?:([+-])(\d{2})(?::?(\d{2})(?::?(\d{2}))?)?)?$`)
-
 // fromUTC is from_utc(): ISO 8601 with a mandatory UTC offset ("Z" accepted), returned in UTC.
 func fromUTC(value string) (time.Time, error) {
-	s := strings.ReplaceAll(value, "Z", "+00:00")
-	g := isoRE.FindStringSubmatch(s)
-	if g == nil {
-		return time.Time{}, valueErr("Invalid isoformat string: '" + s + "'")
+	t, hasTZ, err := spicelunar.ParseISO(value, time.UTC)
+	if err != nil {
+		return time.Time{}, valueErr(err.Error())
 	}
-	atoi := func(x string) int { n, _ := strconv.Atoi(x); return n }
-	y, mo, d := atoi(g[1]), atoi(g[2]), atoi(g[3])
-	h, mi, sec := atoi(g[4]), atoi(g[5]), atoi(g[6])
-	nsec := 0
-	if g[7] != "" {
-		frac := (g[7] + "000000")[:6]
-		nsec = atoi(frac) * 1000
-	}
-	if mo < 1 || mo > 12 {
-		return time.Time{}, valueErr("month must be in 1..12")
-	}
-	t := time.Date(y, time.Month(mo), d, h, mi, sec, nsec, time.UTC)
-	if d < 1 || t.Day() != d || h > 23 || mi > 59 || sec > 59 {
-		return time.Time{}, valueErr("day is out of range for month")
-	}
-	if g[8] == "" {
+	if !hasTZ {
 		return time.Time{}, valueErr("UTC time zone is required")
 	}
-	off := atoi(g[9])*3600 + atoi(g[10])*60 + atoi(g[11])
-	if g[8] == "-" {
-		off = -off
-	}
-	return t.Add(-time.Duration(off) * time.Second).UTC(), nil
+	return t, nil
 }
 
 func num(o pyfmt.Obj, key string) (any, error) {
