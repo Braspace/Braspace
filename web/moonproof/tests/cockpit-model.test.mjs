@@ -94,7 +94,7 @@ test("rules never carry VAL unless the origin says VALIDATED", () => {
   assert.equal(evaluateRules({ lightStatus: "PRELIMINARY_X", light: { longestBlackoutH: 24, antennaOverride:true } }).find(r => r.id === "blackout").seal, "SIM");
 });
 test("cockpit screen: literals are limited, seals by origin, texts in both languages", async () => {
-  const js = await readFile(new URL("../screens/cockpit.js", import.meta.url), "utf8");
+  const js = await readFile(new URL("../screens/cockpit.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(js, /["']VAL["']/); assert.doesNotMatch(js, /\bvalidated\b/i);
   assert.match(js, /"\/api\/sites\/|\/api\/sites\/\$\{/); assert.match(js, /next_transitions|hours_from_start/);
   assert.match(js, /\.\.\/onboard\//, "link to the onboard panel");

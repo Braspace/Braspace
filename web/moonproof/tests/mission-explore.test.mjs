@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 import { runs, dayOf, fmtVal, coordText, parseCoord, skyNext, batteryMargin, mapDir, pxToStereo, stereoToPx, pgdaAt, elRange } from "../screens/mission-calc.js";
 
 const read = f => readFile(new URL("../" + f, import.meta.url), "utf8");
-const FILES = ["mission.html", "explore.html", "screens/mission.js", "screens/explore.js", "screens/mission-calc.js", "screens/mission-i18n.js", "screens/mission.css", "screens/explore.css"];
+const FILES = ["mission.html", "explore.html", "screens/mission.tsx", "screens/explore.tsx", "screens/mission-calc.js", "screens/mission-i18n.ts", "screens/mission.css", "screens/explore.css"];
 const fmt = (v, d) => v.toFixed(d);
 
 test("rule 1: no illustrative number of the A/B design sheets in the code", async () => {
@@ -13,7 +13,7 @@ test("rule 1: no illustrative number of the A/B design sheets in the code", asyn
   for (const f of FILES) { const s = await read(f); for (const n of bad) assert.ok(!s.includes(n), `${f} contains "${n}"`); }
 });
 test("rule 1: battery H1 has no default numbers (inputs are declared by the user)", async () => {
-  const s = await read("screens/mission.js");
+  const s = await read("screens/mission.tsx");
   assert.doesNotMatch(s, /_(wh|w)\s*:\s*\d/, "default battery numbers in mission.js");
   assert.equal(batteryMargin(null, 40), null); assert.equal(batteryMargin(0, 40), null); assert.equal(batteryMargin(60, null), null);
   assert.equal(batteryMargin(50, 20), 30);
@@ -35,23 +35,23 @@ test("rule 2: 'Now at site' seal follows /sky science_status; null transition â†
   assert.equal(skyNext(mk("SYNTHETIC"), "sun").hours, 7);
 });
 test("rule 2: screens never hard-code VAL or 'validated'; energy card is SIM, slope is EST", async () => {
-  for (const f of ["screens/mission.js", "screens/explore.js", "screens/mission-calc.js", "screens/mission-i18n.js", "mission.html", "explore.html"]) {
+  for (const f of ["screens/mission.tsx", "screens/explore.tsx", "screens/mission-calc.js", "screens/mission-i18n.ts", "mission.html", "explore.html"]) {
     const s = await read(f); assert.doesNotMatch(s, /["'>]VAL["'<]|\bvalidated\b|"VALIDATED"/i, f);
   }
-  const m = await read("screens/mission.js");
+  const m = await read("screens/mission.tsx");
   assert.match(m, /id: "card-energy", title: t\("mc\.energy"\), status: "SIMULATION"/);
   assert.match(m, /slopeDeg, \{ unit: "Â°", status: "ESTIMATE"/);
-  const e = await read("screens/explore.js");
+  const e = await read("screens/explore.tsx");
   assert.match(e, /id: "slope",[^}]*status: "ESTIMATE"/);
 });
 test("rule 3: real sites only, from core loadSites()", async () => {
-  for (const f of ["screens/mission.js", "screens/explore.js"]) { const s = await read(f); assert.match(s, /loadSites\(\)/); assert.doesNotMatch(s, /SR-\d/); }
+  for (const f of ["screens/mission.tsx", "screens/explore.tsx"]) { const s = await read(f); assert.match(s, /loadSites\(\)/); assert.doesNotMatch(s, /SR-\d/); }
 });
 test("rule 6: no invented domain; links stay on the page with the query", async () => {
   for (const f of FILES) assert.ok(!(await read(f)).includes("moonproof.app"), f);
 });
 test("rule 7: resolution comes from the data (80 m native, 400 m grid), never 20 m/px", async () => {
-  const e = await read("screens/explore.js");
+  const e = await read("screens/explore.tsx");
   assert.match(e, /grid\.h\.native_resolution_m/); assert.ok(!e.includes("20 m"));
 });
 test("visibility runs: losses, longest, first loss and return", () => {

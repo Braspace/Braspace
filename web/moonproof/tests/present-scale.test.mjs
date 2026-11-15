@@ -8,7 +8,7 @@ const read = f => readFile(new URL(f, dir), "utf8");
 const css = (await read("screens/present.css")).replace(/\/\*[\s\S]*?\*\//g, ""); // comments out
 const base = css.slice(0, css.indexOf("@media")); // desktop rules only
 const html = await read("present.html");
-const js = await read("screens/present.js");
+const js = await read("screens/present.tsx");
 
 /** Declarations of the first base rule whose selector list contains `sel` exactly. */
 function decl(sel) {
@@ -33,8 +33,8 @@ test("timer value 44px, privacy note has an icon and 14/20 text", () => {
   has(".mp-timer-label", /font-size:\s*18px/);
   has(".mp-privacy-card", /font-size:\s*14px/);
   has(".mp-privacy-card", /line-height:\s*20px/);
-  assert.match(js, /ICON_INFO/);
-  assert.match(js, /present-privacy"\)\.innerHTML = `\$\{ICON_INFO\}/);
+  assert.match(js, /IconInfo/);
+  assert.match(js, /<IconInfo \/><span>\{t\("present\.privacy"\)\}<\/span><\/>, \$\("present-privacy"\)/);
 });
 
 test("scenario cards: A/B/C circle 52px, rows with 30px icon, label 20/600, value 40/800", () => {
@@ -48,8 +48,8 @@ test("scenario cards: A/B/C circle 52px, rows with 30px icon, label 20/600, valu
   has(".mp-sc-val", /font-weight:\s*800/);
   has(".mp-sc-card", /padding:\s*21px 21px/);
   assert.equal((js.match(/<svg width="30" height="30"/g) || []).length, 2, "night and Earth icons are 30px");
-  assert.match(js, /mp-sc-row">\$\{ICON_NIGHT\}/);
-  assert.match(js, /mp-sc-row">\$\{ICON_EARTH\}/);
+  assert.match(js, /mp-sc-row"><IconNight \/>/);
+  assert.match(js, /mp-sc-row"><IconEarth \/>/);
 });
 
 test("buttons: Reveal 72px/20px, Next 56px/17px, column 250px", () => {
@@ -76,7 +76,7 @@ test("solid black circles keep the item-2 look: #050607 fill, light border, drop
 });
 
 test("scenario cards stay glass (the design draws them translucent, not black)", () => {
-  assert.match(js, /className = "mp-glass mp-sc-card/);
+  assert.match(js, /class=\{"mp-glass mp-sc-card"/);
 });
 
 test("top bar: 32px logo, white pill 34px with icon, 28x6 progress segments, 44px exit with icon", () => {
@@ -89,7 +89,7 @@ test("top bar: 32px logo, white pill 34px with icon, 28x6 progress segments, 44p
   has(".mp-progress-seg", /border-radius:\s*3px/);
   has(".mp-progress-seg", /rgba\(255,255,255,\.25\)/);
   has(".mp-btn-exit", /height:\s*44px/);
-  assert.match(js, /ICON_X/);
+  assert.match(js, /IconX/);
 });
 
 test("integrity: no design number or invented text in the screen files", () => {

@@ -7,7 +7,7 @@ import { PLAN_DEFAULTS, RULE_KEYS, parseRules, shareUrl, shortVersion } from "..
 
 const root = path.resolve(import.meta.dirname, "..");
 const read = f => fs.readFileSync(path.join(root, f), "utf8");
-const css = read("screens/plan.css"), js = read("screens/plan.js"), html = read("plan.html");
+const css = read("screens/plan.css"), js = read("screens/plan.tsx"), html = read("plan.html");
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const rule = sel => { const m = css.match(new RegExp(esc(sel) + "\\s*\\{([^}]*)\\}")); assert.ok(m, `rule ${sel}`); return m[1].replace(/\s+/g, " "); };
 

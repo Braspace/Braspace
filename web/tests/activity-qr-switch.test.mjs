@@ -104,10 +104,10 @@ test("qr: finder patterns, timing, size, determinism, svg", () => {
 });
 
 test("activity.js: switches are role=switch with aria-checked, QR comes from the real share URL", () => {
-  const js = read("screens/activity.js"), css = read("screens/activity.css"), html = read("activity.html");
+  const js = read("screens/activity.tsx"), css = read("screens/activity.css"), html = read("activity.html");
   assert.match(js, /role="switch"/);
-  assert.match(js, /aria-checked="\$\{cfg\[k\]\}"/);
-  assert.doesNotMatch(js, /aria-pressed="\$\{cfg\[/, "switches no longer use aria-pressed");
+  assert.match(js, /aria-checked=\{cfg\[k\]\}/);
+  assert.doesNotMatch(js, /aria-pressed=\{cfg\[/, "switches no longer use aria-pressed");
   assert.match(js, /qrSvg\(url,/);
   assert.match(js, /const url = shareUrl\(\)/);
   assert.doesNotMatch(js + css + html, /moonproof\.app|LUA-7K2/);
@@ -117,7 +117,7 @@ test("activity.js: switches are role=switch with aria-checked, QR comes from the
 });
 
 test("activity: permissions are a solid black card; preview frame, markers and layer tabs follow the design", () => {
-  const js = read("screens/activity.js"), css = read("screens/activity.css"), html = read("activity.html");
+  const js = read("screens/activity.tsx"), css = read("screens/activity.css"), html = read("activity.html");
   assert.match(html, /id="act-controls" class="mp-card /);
   assert.doesNotMatch(html, /id="act-controls"[^>]*mp-glass/);
   assert.match(css, /\.mp-preview-frame\s*\{[^}]*height:\s*300px/);
@@ -129,7 +129,7 @@ test("activity: permissions are a solid black card; preview frame, markers and l
 });
 
 test("activity.js i18n: en and pt-BR have the same keys, incl. the access note", () => {
-  const js = read("screens/activity.js"), [en, pt] = js.split('"pt-BR": {');
+  const js = read("screens/activity.tsx"), [en, pt] = js.split('"pt-BR": {');
   const keys = s => [...s.matchAll(/"(act\.[A-Za-z0-9]+)":/g)].map(m => m[1]).sort();
   assert.deepEqual(keys(en), keys(pt));
   assert.ok(keys(pt).includes("act.access") && keys(pt).includes("act.qrLabel"));
@@ -146,5 +146,5 @@ const activityGeometryChecks = (js, css) => [
   [/\.mp-btn-jade\s*\{[^}]*height:\s*47px/.test(css) && /\.mp-btn-outline\s*\{[^}]*height:\s*47px/.test(css), "share buttons 47 px"],
 ];
 test("activity: panel geometry follows the V3Atividade board", () => {
-  for (const [ok, what] of activityGeometryChecks(read("screens/activity.js"), read("screens/activity.css"))) assert.ok(ok, what);
+  for (const [ok, what] of activityGeometryChecks(read("screens/activity.tsx"), read("screens/activity.css"))) assert.ok(ok, what);
 });

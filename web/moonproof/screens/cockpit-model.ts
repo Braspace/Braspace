@@ -9,7 +9,7 @@ import type { ApiResult, Seal } from "../core/data.js";
 /** Declared electrical profile of the lander (hypothetical; every output derived from it is SIM). */
 export interface Power { battery_capacity_wh: number; initial_charge_wh: number; solar_generation_w: number; load_w: number; reserve_wh?: number; }
 /** One hourly visibility sample. */
-export interface Sample { sun_visible: boolean; earth_visible: boolean; }
+export type Sample = { sun_visible: boolean; earth_visible: boolean };
 export interface Fault { id: string; key: string; n?: number; solarFactor?: number; capacityFactor?: number; delayH?: number; noEarth?: boolean; }
 export interface ExtraLimits { days: number; sunrises: number; }
 export type ApiCall = <T = unknown>(path: string, init?: { method?: string; body?: unknown }) => Promise<ApiResult<T>>;

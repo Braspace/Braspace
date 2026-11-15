@@ -148,7 +148,7 @@ test("AUD-09: uncertainty is the grid resolution of the real step and window; un
   assert.equal(unc(none.rows, "night").value, null); assert.equal(unc(none.rows, "sun").value, null);
   assert.deepEqual(none.rows.find(r => r.id === "night").vals, [null, null, null]); assert.equal(none.rows.find(r => r.id === "night").status, null);
   assert.equal(gridUncertainty("h", null), null); assert.equal(gridUncertainty("pct", 1, 0), null);
-  const src = read("screens/plan.js");
+  const src = read("screens/plan.tsx");
   assert.doesNotMatch(src, /unc:\s*"±/); assert.doesNotMatch(src, /±1|±0\.3/);
 });
 
@@ -196,7 +196,7 @@ test("AUD-07: the passport is an escaped, self-contained printable page with rul
   assert.doesNotMatch(html, /\bVAL\b/); assert.doesNotMatch(html, /https?:\/\/(?!x\/)/); assert.doesNotMatch(html, /<script|<link|<img/i);
 });
 test("AUD-07: the button prints through a local window (no PDF service, no evidence &print=1) and says print / save as PDF", () => {
-  const js = read("screens/plan.js");
+  const js = read("screens/plan.tsx");
   assert.doesNotMatch(js, /print=1/); assert.match(js, /window\.open\(""/); assert.match(js, /\.print\(\)/); assert.match(js, /passportHtml\(/);
   assert.match(js, /"plan\.print": "Print \/ save as PDF"/); assert.match(js, /"plan\.print": "Imprimir \/ salvar como PDF"/);
   assert.doesNotMatch(js, /PDF Passport|Passaporte PDF/);
@@ -212,7 +212,7 @@ test("AUD-16: scenarios are the ones Compare derives (hash, else first site / se
   assert.notDeepEqual(d.map(s => s.site), ids.slice(0, 3), "no longer the first three sites");
   const h = compareScenarios({ hash: `#sc=${ids[3]}~2026-01-01T00:00:00Z~48,nope~x~1,${ids[2]}`, sites, start: "2027-01-01T00:00:00Z", hours: 24, windowStart: W });
   assert.deepEqual(h, [{ site: ids[3], start: "2026-01-01T00:00:00Z", hours: 48 }, { site: ids[2], start: "2027-01-01T00:00:00Z", hours: 24 }]);
-  const js = read("screens/plan.js");
+  const js = read("screens/plan.tsx");
   assert.doesNotMatch(js, /doc\.sites\.slice\(0,\s*3\)/); assert.match(js, /compareScenarios\(/);
   assert.doesNotMatch(js, /stays saved|fica salvo/);
   assert.match(js, /Nothing is saved: the link below reopens the calculation/); assert.match(js, /Nada é salvo: o link abaixo reabre o cálculo/);

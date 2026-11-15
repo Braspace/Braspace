@@ -70,3 +70,19 @@ test("v3 home is the task-first shell; design system and views are served; trave
  }
  for(const bad of ["/ds/../dev-server.mjs","/shell/x.webp","/assets/x.js","/ds/%2e%2e/package.json"]){const x=await fetch(base+bad);assert.equal(x.status,404,bad);}
 });
+
+test("every relative import reachable from the bridge and screen entry modules is served",async()=>{
+ // A module the dev-server does not serve breaks the whole page at import time (e.g. /vector-embed.js was 404).
+ const entries=["/lab/backend-bridge.js","/moonproof/screens/evidence.js","/shell/views/evidencias.js"];
+ const seen=new Set(),queue=[...entries],missing=[];
+ while(queue.length){
+  const route=queue.shift(); if(seen.has(route))continue; seen.add(route);
+  const r=await fetch(base+route); if(r.status!==200){missing.push(route+" -> "+r.status);continue;}
+  const src=await r.text();
+  for(const m of src.matchAll(/(?:^|[;\s])(?:import|export)\s[^"'`]*?from\s*["'](\.{1,2}\/[^"']+)["']|(?:^|[;\s])import\s*["'](\.{1,2}\/[^"']+)["']/gm)){
+   queue.push(new URL(m[1]||m[2],"http://x"+route).pathname);
+  }
+ }
+ assert.deepEqual(missing,[],"modules imported but not served");
+ assert.ok(seen.has("/vector-embed.js"),"walk reached vector-embed.js");
+});
