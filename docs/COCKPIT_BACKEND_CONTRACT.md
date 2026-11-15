@@ -49,6 +49,11 @@ BRASPACE_COCKPIT_API=http://127.0.0.1:8080 node scripts/cockpit-backend-contract
 BRASPACE_COCKPIT_API=https://braspace-moonproof.almeida-me.workers.dev node scripts/cockpit-backend-contract.mjs
 ```
 
+Production sits behind Traefik `ratelimit` (average 20 req/s, burst 40, per client IP) and a full run is ~60 requests:
+use `BRASPACE_COCKPIT_PACE_MS=150` there. A 429 makes the run exit 2 (`RATE_LIMITED`, inconclusive), never 1.
+After a backend deploy, add `BRASPACE_EXPECT_COMMIT=<sha>`: `/healthz` must report that exact commit (an image built
+without `BRASPACE_GIT_SHA` reports `unknown`).
+
 `scripts/ci-local.sh` runs it after `compose up` (step "cockpit ↔ Go/Rust/Postgres contract"). Lane owners: `docs/harness/OWNERS.md`.
 
 ## Evidence (15/11/2026)
