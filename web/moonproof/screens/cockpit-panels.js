@@ -45,6 +45,7 @@ export function requestSharedMoon(isStillWanted = () => true) {
 export function mountCockpitPanels(host) {
     let hidden = new Set();
     let previous = new Set();
+    let moonRequestRevision = 0; // invalidate callbacks across Moon-only -> restore -> Moon-only
     let context = null;
     const root = document.body;
     const language = () => document.documentElement.lang.toLowerCase().startsWith("pt") ? "pt-BR" : "en";
@@ -78,12 +79,12 @@ export function mountCockpitPanels(host) {
         const l = language(), pt = l === "pt-BR", clear = hidden.size === PANEL_IDS.length;
         const change = (id) => { hidden = togglePanel(hidden, id); paint(); };
         render(h("div", { class: "ck-panel-toolbar", role: "group", "aria-label": pt ? "Visibilidade dos painéis do cockpit" : "Cockpit panel visibility" },
-            h("button", { type: "button", class: "mp-pill ck-panel-focus", "aria-pressed": clear, onClick: () => { if (clear)
+            h("button", { type: "button", class: "mp-pill ck-panel-focus", "aria-pressed": clear, onClick: () => { const request = ++moonRequestRevision; if (clear)
                     hidden = new Set(previous);
                 else {
                     previous = new Set(hidden);
                     hidden = new Set(PANEL_IDS);
-                    requestSharedMoon(() => hidden.size === PANEL_IDS.length);
+                    requestSharedMoon(() => request === moonRequestRevision && hidden.size === PANEL_IDS.length);
                 } paint(); } }, clear ? (pt ? "Restaurar painéis" : "Restore panels") : (pt ? "Só a Lua" : "Moon only")),
             h("details", { class: "ck-panel-menu", onKeyDown: e => { if (e.key === "Escape") {
                     e.currentTarget.open = false;
