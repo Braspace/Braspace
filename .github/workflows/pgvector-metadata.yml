@@ -29,8 +29,9 @@ permissions:
 
 jobs:
   metadata-vector:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # CI_RUNS_ON selects EXO-X1 while hosted minutes are blocked; unset for hosted runners.
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
+    timeout-minutes: 25
     services:
       postgres-vector:
         image: pgvector/pgvector:pg16
@@ -38,16 +39,27 @@ jobs:
           POSTGRES_USER: braspace
           POSTGRES_PASSWORD: ci-temporary-only
           POSTGRES_DB: braspace
-        ports: ["5432:5432"]
+        # Avoid conflicts with shared PostgreSQL instances on the EXO-X1 host.
+        ports: ["5432"]
         options: >-
           --health-cmd "pg_isready -U braspace -d braspace"
           --health-interval 5s --health-timeout 5s --health-retries 20
     env:
-      TEST_VECTOR_DATABASE_URL: postgres://braspace:ci-temporary-only@localhost:5432/braspace?sslmode=disable
-      TEST_DATABASE_URL: postgres://braspace:ci-temporary-only@localhost:5432/braspace?sslmode=disable
       BRASPACE_VECTOR_ENABLED: "0"
     steps:
       - uses: actions/checkout@v4
+      # GitHub does not expose job.services in jobs.<job_id>.env, only within step
+      # expressions. Resolve the ephemeral port after the service is running.
+      - name: Configure disposable PostgreSQL service URL
+        env:
+          DB_PORT: ${{ job.services['postgres-vector'].ports[5432] }}
+        run: |
+          set -euo pipefail
+          : "${DB_PORT:?postgres service port missing}"
+          {
+            echo "TEST_VECTOR_DATABASE_URL=postgres://braspace:ci-temporary-only@127.0.0.1:${DB_PORT}/braspace?sslmode=disable"
+            echo "TEST_DATABASE_URL=postgres://braspace:ci-temporary-only@127.0.0.1:${DB_PORT}/braspace?sslmode=disable"
+          } >> "$GITHUB_ENV"
       - uses: actions/setup-go@v5
         with:
           go-version-file: api/go.mod
@@ -68,14 +80,14 @@ jobs:
       - name: Real vector HTTP and frontend proxy integration
         run: |
           set -euo pipefail
-          (cd api && go build -o /tmp/braspace-vector-e2e-api .)
-          BRASPACE_VECTOR_E2E_API_BIN=/tmp/braspace-vector-e2e-api node scripts/vector-fullstack-e2e.mjs
+          (cd api && go build -o "$RUNNER_TEMP/braspace-vector-e2e-api" .)
+          BRASPACE_VECTOR_E2E_API_BIN="$RUNNER_TEMP/braspace-vector-e2e-api" node scripts/vector-fullstack-e2e.mjs
       - name: Evidence UI states in Chromium (isolated HTTP fixtures)
         run: |
           set -euo pipefail
           npm install --no-save --no-package-lock playwright@1.58.2
-          npx playwright install --with-deps chromium
-          BRASPACE_WEB_PORT=5173 node web/dev-server.mjs >/tmp/braspace-vector-web.log 2>&1 &
+          if command -v apt-get >/dev/null 2>&1; then npx playwright install --with-deps chromium; else npx playwright install chromium; fi
+          BRASPACE_WEB_PORT=5173 node web/dev-server.mjs >"$RUNNER_TEMP/braspace-vector-web.log" 2>&1 &
           web_pid=$!
           trap 'kill "$web_pid" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 30); do
