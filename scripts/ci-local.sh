@@ -84,7 +84,7 @@ smoke_publico() { # front via dev-server (proxies /api, /healthz, /v1) + Compose
   local wport; wport=$(freeport)
   # Node may be absent on the CI host: run the dev-server in the same Node image the Dockerfile tests with.
   local wc="$PROJECT-smoke-web"; docker rm -f "$wc" >/dev/null 2>&1
-  docker run -d --name "$wc" --network host -v "$PWD:/src:ro" -w /src -e BRASPACE_API_PORT=$PORT -e BRASPACE_WEB_PORT=$wport \
+  docker run -d --name "$wc" --network host --security-opt label=disable -v "$PWD:/src:ro" -w /src -e BRASPACE_API_PORT=$PORT -e BRASPACE_WEB_PORT=$wport \
     node:22.23.5-alpine node web/dev-server.mjs >/dev/null || return 1
   for i in $(seq 1 30); do curl -fsS "http://127.0.0.1:$wport/" >/dev/null 2>&1 && break; sleep 1; done
   ./scripts/smoke-publico.sh "http://127.0.0.1:$wport" "$BASE"; local rc=$?
@@ -107,7 +107,12 @@ browser_qa() {
   kill $ap 2>/dev/null; return $rc
 }
 
-step "cloudflare worker same-origin API proxy contract (node --test)" node --test deploy/cloudflare/moonproof-worker.test.mjs || finish
+worker_contract() {
+  # The harness host has no node: run the Worker contract suite in the same pinned image as the smoke.
+  if command -v node >/dev/null 2>&1; then node --test deploy/cloudflare/*.test.mjs
+  else docker run --rm --security-opt label=disable -v "$PWD:/src:ro" -w /src node:22.23.5-alpine sh -c 'node --test deploy/cloudflare/*.test.mjs'; fi
+}
+step "cloudflare worker same-origin API proxy contract (node --test)" worker_contract || finish
 step "docker build --target test (go vet+race, rust, web, science)" build_tests || finish
 step "build release image (needs test)" build_rel || finish
 step "build go test image" build_go_img || finish

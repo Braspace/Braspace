@@ -15,7 +15,7 @@ own origin.
 
 ## Fix
 
-`moonproof-worker.mjs` (entry, default export only) + `moonproof-proxy.mjs` (helpers) proxy **exactly** the routes in `api/openapi.json` to the pinned Go API and
+`moonproof-worker.mjs` (default export only) delegates to `moonproof-proxy.mjs`, which proxies **exactly** the routes in `api/openapi.json` to the pinned Go API and
 falls through to `ASSETS` for everything else. Browser → Worker → Go → Postgres/Rust → Worker →
 Browser, all same-origin; no CORS change on the API.
 
@@ -30,7 +30,7 @@ Guarantees (covered by `moonproof-worker.test.mjs`):
 - Network failure → 502 `API_UNAVAILABLE`; timeout (24 s) → 504 `API_TIMEOUT`. Never a fake success.
 - Unknown API path → 404 `ROUTE_NOT_FOUND`; wrong method → 405 with `Allow`; no CORS headers emitted.
 
-Run: `node --test deploy/cloudflare/moonproof-worker.test.mjs` (also a step in `scripts/ci-local.sh`).
+Run: `node --test deploy/cloudflare/*.test.mjs` (also a step in `scripts/ci-local.sh`).
 
 ## Deploy
 
@@ -51,3 +51,7 @@ curl -s https://braspace-moonproof.almeida-me.workers.dev/api/health   # expect 
 ```
 
 Rollback: redeploy the previous Worker version (`npx wrangler rollback`); the API is untouched.
+
+## Stacked contract corrections
+
+The updated parent 3326aad fixes GLB and legacy 404 normalization; all 11 parent checks are preserved/adapted. Six of eight differential probes still fail on that parent; the reconciled candidate passes 51/51 in Node with in-memory upstream and the pinned main OpenAPI spec. Reports receive a non-weakenable sandbox policy; single Range, conditional requests and 304 are retained. JSON byte forwarding preserves duplicate keys for Go, vector/navigation have 16 KiB limits, cross-site and unsupported queries are rejected. Retain parent structured legacy errors. Run all suites; test the actual Cloudflare runtime and existing config in staging before deployment. Do not copy the example over a live config. Save existing Worker version for rollback and confirm the correct Go SHA. No production or fullstack validation is implied.

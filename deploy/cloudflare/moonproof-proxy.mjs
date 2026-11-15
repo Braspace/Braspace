@@ -1,147 +1,158 @@
-// MoonProof Cloudflare Worker entrypoint: static ASSETS + same-origin proxy to the Go API.
-//
-// Why: on *.workers.dev the frontend resolves the API base to "" (web/api-base.ts) and calls
-// /api/* on its own origin. Without this proxy those calls 404, and the Go API correctly refuses
-// the cross-origin preflight (CORS_FORBIDDEN). Same-origin keeps CSP/CORS strict on both sides.
-//
-// Contract: the allowlist mirrors api/openapi.json exactly (see moonproof-worker.test.mjs, which
-// fails if they drift). The upstream is pinned; callers cannot choose it. Cookies, Authorization,
-// Origin and client IP headers are never forwarded. No wildcard CORS is emitted.
+// Candidate extension to #309 (NOT deployed). Every route is explicitly declared.
+// Integrate before ASSETS; retain the existing Worker configuration and routes.
+// Browser uses same-origin /api, /healthz, /readyz, /v1. Upstream is not user-supplied.
 export const DEFAULT_UPSTREAM = "https://braspace-api.srv1898743.hstgr.cloud";
-const BODY_LIMIT = 128 << 10; // matches the Go API request bound
-const QUERY_LIMIT = 2048;
-const TIMEOUT_MS = 24000;
-const SEG = "[A-Za-z0-9][A-Za-z0-9._-]{0,127}"; // {id} path parameter
-
-// [method, path template, response kind]. Kinds list the success media types api/openapi.json declares.
-export const ROUTES = [
-  ["GET", "/api/health", "json"],
-  ["GET", "/api/sites", "json"],
-  ["GET", "/api/sites/{id}", "json"],
-  ["GET", "/api/sites/{id}/sky", "json"],
-  ["GET", "/api/sites/{id}/media", "json"],
-  ["GET", "/api/layers", "json"],
-  ["GET", "/api/layers/{id}", "json"],
-  ["GET", "/api/layers/{id}/asset", "asset"],
-  ["GET", "/api/openapi.json", "json"],
-  ["GET", "/api/vector/status", "json"],
-  ["GET", "/healthz", "json"],
-  ["GET", "/readyz", "json"],
-  ["GET", "/v1/capabilities", "json"],
-  ["POST", "/api/compare", "json"],
-  ["POST", "/api/scenarios/delay", "json"],
-  ["POST", "/api/onboard/evaluate", "json"],
-  ["POST", "/api/onboard/site-evaluate", "json"],
-  ["POST", "/api/onboard/navigation", "json"],
-  ["POST", "/api/onboard/report", "report"],
-  ["POST", "/api/onboard/site-report", "report"],
-  ["POST", "/api/vector/search", "json"],
-  ["POST", "/v1/visibility", "json"],
-];
-
-const compiled = ROUTES.map(([method, template, kind]) => ({
-  method, template, kind,
-  re: new RegExp("^" + template.replace(/[.]/g, "\\.").replace("{id}", SEG) + "$"),
-}));
-
-const API_PREFIX = /^\/(?:api\/|v1\/|healthz$|readyz$)/;
-
-const error = (status, code, extra = {}) =>
-  Response.json({ code, error: code }, { status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...extra } });
-
-/** Returns the matching route for a pathname, or null when the path is not an API path at all. */
-export function matchRoute(pathname) {
-  if (!API_PREFIX.test(pathname)) return null;
-  const hits = compiled.filter((r) => r.re.test(pathname));
-  return { pathname, hits };
-}
-
-async function readBoundedJSON(request) {
-  if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") || "")) return { err: error(415, "INVALID_MEDIA_TYPE") };
-  const declared = Number(request.headers.get("content-length") || 0);
-  if (declared > BODY_LIMIT) return { err: error(413, "REQUEST_TOO_LARGE") };
+const UPSTREAM = DEFAULT_UPSTREAM;
+const NORMAL_MAX = 128 * 1024;
+const SMALL_MAX = 16 * 1024;
+const SEGMENT = "[a-z0-9][a-z0-9-]{0,63}";
+const REPORT_CSP = "sandbox; default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+const BASIC_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+const exact = (path, method, kind = "json", max = NORMAL_MAX) => ({template:path, method, pattern:new RegExp('^'+path.replaceAll('.', '\\.')+'$'), kind, max});
+const parameter = (path, kind = "json", query = false) => ({template:path,method:"GET",pattern:new RegExp('^'+path.replace('{id}',SEGMENT)+'$'),kind,query});
+export const routes = Object.freeze([
+  exact("/api/health", "GET"), exact("/api/sites", "GET"), parameter("/api/sites/{id}"),
+  parameter("/api/sites/{id}/sky", "json", true), parameter("/api/sites/{id}/media"),
+  exact("/api/compare", "POST"), exact("/api/scenarios/delay", "POST"),
+  exact("/api/onboard/site-evaluate", "POST"), exact("/api/onboard/site-report", "POST", "report"),
+  exact("/api/onboard/evaluate", "POST"), exact("/api/onboard/report", "POST", "report"),
+  exact("/api/onboard/navigation", "POST", "json", SMALL_MAX),
+  exact("/api/layers", "GET"), parameter("/api/layers/{id}"), parameter("/api/layers/{id}/asset", "asset"),
+  exact("/api/openapi.json", "GET"), exact("/healthz", "GET"), exact("/readyz", "GET"),
+  exact("/v1/capabilities", "GET"), exact("/v1/visibility", "POST"),
+  exact("/api/vector/status", "GET"), exact("/api/vector/search", "POST", "json", SMALL_MAX),
+]);
+// Preserve the public exports introduced by #312 (#309 used handleMoonAPI).
+export const ROUTES = Object.freeze(routes.map(({method,template,kind})=>Object.freeze([method,template,kind])));
+export const KIND_TYPES=Object.freeze({json:Object.freeze(["application/json"]),asset:Object.freeze(["image/jpeg","model/gltf-binary"]),report:Object.freeze(["text/html"])});
+export const reserved = path => /^\/(?:api(?:\/|$)|v1(?:\/|$)|healthz(?:\/|$)|readyz(?:\/|$))/.test(path);
+export function matchRoute(pathname) { return reserved(pathname) ? {pathname,hits:routes.filter(r=>r.pattern.test(pathname))} : null; }
+const security = csp => ({"Cache-Control":"no-store","Content-Security-Policy":csp,"X-Content-Type-Options":"nosniff","X-Frame-Options":"DENY","Referrer-Policy":"no-referrer","Cross-Origin-Resource-Policy":"same-origin"});
+function fail(status, code, error = code, extra = {}) { return Response.json({code,error},{status,headers:{...security(BASIC_CSP),...extra}}); }
+class EdgeError extends Error { constructor(status, code) { super(code); this.status = status; this.code = code; } }
+async function boundedBody(request, limit) {
+  const contentLength = request.headers.get("content-length");
+  if (contentLength !== null && /^\d+$/.test(contentLength) && Number(contentLength) > limit) throw new EdgeError(413,"REQUEST_TOO_LARGE");
   const reader = request.body?.getReader();
-  if (!reader) return { err: error(400, "INVALID_JSON") };
+  if (!reader) return new Uint8Array(); // Go remains source of JSON validation.
   const chunks = []; let length = 0;
   try {
     for (;;) {
-      const { done, value } = await reader.read();
+      const {done,value} = await reader.read();
       if (done) break;
       length += value.byteLength;
-      if (length > BODY_LIMIT) { await reader.cancel(); return { err: error(413, "REQUEST_TOO_LARGE") }; }
+      if (length > limit) { void reader.cancel().catch(()=>{}); throw new EdgeError(413,"REQUEST_TOO_LARGE"); }
       chunks.push(value);
     }
-  } catch { return { err: error(400, "INVALID_BODY") }; }
+  } catch (e) { if (e instanceof EdgeError) throw e; throw new EdgeError(400,"INVALID_BODY"); }
+  finally { reader.releaseLock(); }
   const bytes = new Uint8Array(length); let offset = 0;
-  for (const c of chunks) { bytes.set(c, offset); offset += c.byteLength; }
-  let data;
-  try { data = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); } catch { return { err: error(400, "INVALID_JSON") }; }
-  // Go owns the full request contract; the edge only guarantees a bounded JSON object.
-  if (!data || typeof data !== "object" || Array.isArray(data)) return { err: error(400, "INVALID_JSON") };
-  return { body: JSON.stringify(data) };
+  for (const chunk of chunks) { bytes.set(chunk,offset); offset += chunk.byteLength; }
+  // Never JSON.parse/stringify: duplicate keys and malformed JSON must reach Go unchanged.
+  return bytes;
 }
-
-/** Media types each kind may return on success (mirrors the OpenAPI response content; see the drift test). */
-export const KIND_TYPES = {
-  json: ["application/json"],
-  asset: ["application/json", "image/jpeg", "image/png", "image/webp", "model/gltf-binary"],
-  report: ["application/json", "text/html"],
-};
-const mediaType = (ct) => ct.split(";")[0].trim().toLowerCase();
-
-/**
- * Proxies one API request. Returns null when the path is not an API path, so the existing
- * Worker router / ASSETS keep ownership of every other route.
- */
-export async function handleAPI(request) {
+function permittedResponse(upstream, kind, method, rangeRequested) {
+  const {status} = upstream;
+  const mime = (upstream.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  if (status === 304) return kind === "asset";
+  if (status < 200 || status >= 600 || (status >= 300 && status < 400)) return false;
+  // Go legacy errors and http.ServeContent (416) can produce text/plain.
+  if (status >= 400) return mime === "application/json" || mime === "text/plain";
+  if (status === 204) return false;
+  if (kind === "report") return status === 200 && mime === "text/html";
+  if (kind === "asset") return (status === 200 || (status === 206 && rangeRequested)) && ["image/jpeg","model/gltf-binary"].includes(mime);
+  return status === 200 && mime === "application/json";
+}
+function safeQuery(url, route) {
+  if (!url.search) return true;
+  if (!route.query || url.search.length > 512) return false;
+  const seen = new Set();
+  for (const [name] of url.searchParams) {
+    if (!['start','hours','step'].includes(name) || seen.has(name)) return false;
+    seen.add(name);
+  }
+  return true;
+}
+function safeAssetHeaders(request, headers) {
+  const range = request.headers.get("range");
+  // No multipart ranges; support a single byte range (including suffix) only.
+  if (range !== null) {
+    if (!/^bytes=(?:\d+-\d*|-\d+)$/.test(range) || range.length > 80) throw new EdgeError(416,"INVALID_RANGE");
+    headers.set("Range",range);
+  }
+  for (const name of ["If-None-Match","If-Modified-Since","If-Range"]) {
+    const value = request.headers.get(name);
+    if (value && value.length <= 512) headers.set(name,value);
+  }
+}
+// Preserve #312's structured legacy errors without buffering an unbounded upstream body.
+async function legacyError(upstream) {
+  const reader=upstream.body?.getReader();let text="";
+  if(reader){
+    const bytes=new Uint8Array(200);let n=0;
+    try {while(n<bytes.length){const {done,value}=await reader.read();if(done)break;const chunk=value.subarray(0,bytes.length-n);bytes.set(chunk,n);n+=chunk.length;}}
+    catch {} finally {void reader.cancel().catch(()=>{});reader.releaseLock();}
+    text=new TextDecoder().decode(bytes.subarray(0,n)).trim();
+  }
+  return Response.json({code:upstream.status===404?"UPSTREAM_ROUTE_NOT_FOUND":"UPSTREAM_ERROR",error:text||"upstream error",upstream_status:upstream.status},{status:upstream.status,headers:security(BASIC_CSP)});
+}
+export async function handleMoonAPI(request, fetcher = fetch) {
   const url = new URL(request.url);
-  const m = matchRoute(url.pathname);
-  if (!m) return null;
-  const route = m.hits.find((r) => r.method === request.method || (request.method === "HEAD" && r.method === "GET"));
-  if (!route) {
-    if (!m.hits.length) return error(404, "ROUTE_NOT_FOUND");
-    const allow = [...new Set(m.hits.map((r) => r.method))].join(", ");
-    // A same-origin client never needs CORS preflight; answer OPTIONS without granting cross-origin access.
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: { Allow: allow, "Cache-Control": "no-store" } });
-    return error(405, "METHOD_NOT_ALLOWED", { Allow: allow });
-  }
-  if (url.search.length > QUERY_LIMIT) return error(414, "QUERY_TOO_LONG");
-  if (route.method === "POST" && url.search) return error(400, "QUERY_NOT_SUPPORTED");
-
-  const headers = new Headers({ Accept: KIND_TYPES[route.kind].join(", ") });
+  if (!reserved(url.pathname)) return null;
+  const route = routes.find(r=>r.pattern.test(url.pathname));
+  if (!route) return fail(404,"API_ROUTE_NOT_FOUND"); // never return SPA HTML for API path
+  const origin=request.headers.get("Origin");
+  if ((origin && origin !== url.origin) || request.headers.get("Sec-Fetch-Site") === "cross-site") return fail(403,"CORS_FORBIDDEN","same-origin API only");
+  const method=request.method.toUpperCase();
+  const permitted = route.method === "GET" ? ["GET","HEAD"] : ["POST"];
+  if (method === "OPTIONS") return new Response(null,{status:204,headers:{...security(BASIC_CSP),Allow:permitted.join(", ")}});
+  if (!permitted.includes(method)) return fail(405,"METHOD_NOT_ALLOWED","method not allowed",{Allow:permitted.join(", ")});
+  if (!safeQuery(url,route)) return fail(400,"INVALID_QUERY","query not supported for this operation");
+  const accept=route.kind === "report" ? "text/html, application/json" : route.kind === "asset" ? "image/jpeg, model/gltf-binary, application/json" : "application/json";
+  const headers=new Headers({Accept:accept});
   let body;
-  if (route.method === "POST") {
-    const r = await readBoundedJSON(request);
-    if (r.err) return r.err;
-    body = r.body; headers.set("Content-Type", "application/json");
-  }
-  let upstream;
   try {
-    // Upstream is pinned on purpose; neither env nor the request can redirect it. workerd only accepts
-    // redirect "follow" | "manual" ("error" throws TypeError at runtime), so redirects are refused below.
-    upstream = await fetch(DEFAULT_UPSTREAM + url.pathname + (route.method === "GET" ? url.search : ""), {
-      method: request.method === "HEAD" ? "HEAD" : route.method, headers, body, redirect: "manual", signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-  } catch (e) {
-    return e?.name === "TimeoutError" ? error(504, "API_TIMEOUT") : error(502, "API_UNAVAILABLE");
-  }
-  if (upstream.status >= 300 && upstream.status < 400) return error(502, "UPSTREAM_REDIRECT");
-  const type = upstream.headers.get("content-type") || "";
-  if (!KIND_TYPES[route.kind].includes(mediaType(type))) {
-    // Go's mux and a few handlers answer errors as text/plain (e.g. "404 page not found" when the
-    // deployed API lacks a route). Keep the real status; never turn it into a success or a vague 502.
-    if (upstream.status >= 400) {
-      const text = (await upstream.text()).slice(0, 200).trim();
-      return Response.json({ code: upstream.status === 404 ? "UPSTREAM_ROUTE_NOT_FOUND" : "UPSTREAM_ERROR", error: text || "upstream error", upstream_status: upstream.status },
-        { status: upstream.status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
-    }
-    return error(502, "INVALID_UPSTREAM_RESPONSE");
-  }
-  const out = new Headers({ "Content-Type": type, "X-Content-Type-Options": "nosniff", "Cache-Control": upstream.headers.get("cache-control") || "no-store" });
-  // The Go API's CSP (default-src 'none') must travel with HTML reports served from this origin.
-  for (const h of ["etag", "last-modified", "retry-after", "vary", "content-security-policy", "content-disposition"]) { const v = upstream.headers.get(h); if (v) out.set(h, v); }
-  return new Response(request.method === "HEAD" ? null : upstream.body, { status: upstream.status, headers: out });
-}
+    if (method === "POST") {
+      const contentType=request.headers.get("Content-Type") || "";
+      if (!/^application\/json(?:\s*;|$)/i.test(contentType)) return fail(415,"INVALID_MEDIA_TYPE","application/json required");
+      if (contentType.length > 256) return fail(415,"INVALID_MEDIA_TYPE");
+      headers.set("Content-Type",contentType);
+      body=await boundedBody(request,route.max);
+    } else if (route.kind === "asset") safeAssetHeaders(request,headers);
+  } catch (e) { return fail(e.status || 400,e.code || "INVALID_BODY"); }
 
-// Back-compat with PR #309's export name.
-export const handleMoonAPI = handleAPI;
+  // Fixed origin, exact validated path, query constrained to /sky. No identity, credentials, origin, or Host copied.
+  const target = UPSTREAM + url.pathname + url.search;
+  const timeout=AbortSignal.timeout(route.kind === "asset" ? 120000 : 25000);
+  const signal=AbortSignal.any([request.signal,timeout]);
+  try {
+    // Workers runtime rejects redirect:"error" (TypeError, seen live 15/11); "manual" + permittedResponse refusing 3xx keeps redirects blocked.
+    const upstream=await fetcher(target,{method,headers,body,signal,redirect:"manual",cache:"no-store"});
+    if (!permittedResponse(upstream,route.kind,method,headers.has("Range"))) { void upstream.body?.cancel().catch(()=>{}); return fail(502,"INVALID_UPSTREAM_RESPONSE"); }
+    if(upstream.status>=400&&(upstream.headers.get("content-type")||"").split(";")[0].trim().toLowerCase()==="text/plain")return legacyError(upstream);
+    const output=new Headers(security(route.kind === "report" && upstream.ok ? REPORT_CSP : BASIC_CSP));
+    if(route.kind === "report" && upstream.ok) {
+      const policy=upstream.headers.get("Content-Security-Policy");
+      if(policy)output.append("Content-Security-Policy",policy); // both policies enforced; upstream cannot weaken ours
+      const disposition=upstream.headers.get("Content-Disposition");if(disposition)output.set("Content-Disposition",disposition);
+    }
+    const retry=upstream.headers.get("Retry-After");if(retry&&retry.length<=128)output.set("Retry-After",retry);
+    const mime=upstream.headers.get("Content-Type");
+    if (mime) output.set("Content-Type",mime);
+    if (route.kind === "asset" && (upstream.status===200 || upstream.status===206 || upstream.status===304)) {
+      // ETag/byte ranges remain usable. Conservatively no-store; upstream verifies bytes and SHA.
+      for (const name of ["ETag","Content-Range","Accept-Ranges","Last-Modified"]) {
+        const value=upstream.headers.get(name); if(value) output.set(name,value);
+      }
+    }
+    const hasBody=method!=="HEAD" && upstream.status!==304;
+    return new Response(hasBody?upstream.body:null,{status:upstream.status,headers:output});
+  } catch (e) {
+    return timeout.aborted||e?.name==="TimeoutError"?fail(504,"API_TIMEOUT"):request.signal.aborted?fail(499,"REQUEST_CANCELED"):fail(502,"API_UNAVAILABLE");
+  }
+}
+export const handleAPI=handleMoonAPI;
+
+// Illustrative binding adapter only. Use handleMoonAPI BEFORE existing routes.
+// Cloudflare assets must run Worker first for /api/*, /v1/*, /healthz, /readyz.
+export default {async fetch(request,env) { return await handleMoonAPI(request) ?? env.ASSETS.fetch(request); }};
