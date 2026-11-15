@@ -80,6 +80,11 @@ catch {
  */
 export function startRouter({ routes, outlet, appName = "moonproof", onAfter }) {
     let current = null;
+    let active = null;
+    const disposeActive = () => { const a = active; active = null; try {
+        a?.handle?.dispose?.();
+    }
+    catch { /* view already gone */ } };
     const go = (path, query = {}) => { location.hash = buildHash(path, query); };
     async function handle() {
         const legacy = legacyRedirect(location.hash);
@@ -97,29 +102,47 @@ export function startRouter({ routes, outlet, appName = "moonproof", onAfter }) 
             setSite: (id) => { const q = { ...query, site: id }; history.replaceState(null, "", buildHash(path, q)); return q; },
         };
         if (route.external) {
+            disposeActive();
             route.external(ctx);
             return;
         }
         current = path;
+        const finish = () => {
+            document.title = (typeof route.title === "function" ? route.title(ctx) : route.title) + " · " + appName;
+            if (path !== "/")
+                saveLastRoute(location.hash);
+            onAfter?.(ctx, route);
+        };
+        // Same route, view can apply the change in place: keep it mounted (no remount, no focus jump).
+        if (active && active.route === route && active.handle?.update?.(ctx) === true) {
+            finish();
+            return;
+        }
+        disposeActive();
         outlet.replaceChildren();
         outlet.setAttribute("aria-busy", "true");
+        let handle = null;
         try {
-            await route.render?.(outlet, ctx);
+            handle = (await route.render?.(outlet, ctx)) || null;
         }
         finally {
             outlet.removeAttribute("aria-busy");
         }
-        if (current !== path)
-            return; // a newer navigation happened while rendering
+        if (current !== path) {
+            try {
+                handle?.dispose?.();
+            }
+            catch { /* ignore */ }
+            return;
+        } // a newer navigation happened while rendering
+        active = { route, handle };
         document.title = (typeof route.title === "function" ? route.title(ctx) : route.title) + " · " + appName;
         const h1 = outlet.querySelector("[data-route-title]") || outlet.querySelector("h1");
         if (h1) {
             h1.setAttribute("tabindex", "-1");
             h1.focus({ preventScroll: false });
         }
-        if (path !== "/")
-            saveLastRoute(location.hash);
-        onAfter?.(ctx, route);
+        finish();
     }
     addEventListener("hashchange", handle);
     if (!location.hash)

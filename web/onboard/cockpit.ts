@@ -27,6 +27,14 @@ type AppState = {
   const $ = (id: string) => document.getElementById(id) as Dyn;
   const NS = "http://www.w3.org/2000/svg";
   const API_PATH = "/api/onboard/evaluate";
+  // ---------- mount context (standalone page or embedded in the shell) ----------
+  let ROOT: ParentNode = document;     // where the board's frame lives
+  let EMBED = false;                   // true when mounted inside web/index.html (#/bordo)
+  let MOUNTED = false;
+  const disposers: Array<() => void> = [];
+  const HOME = () => EMBED ? "" : "../index.html";
+  const ASSET = (p: string) => (EMBED ? "./" : "../") + p;
+  function on(t: EventTarget | null | undefined, ev: string, fn: Dyn) { if (!t) return; t.addEventListener(ev, fn); disposers.push(() => t.removeEventListener(ev, fn)); }
   const REPLAN_DELAYS = [0, 24, 48, 72];
   const DATE_OFFSETS_DAYS = [0, 1, 2, 3, 4, 5, 6, 7];
 
@@ -1879,7 +1887,7 @@ type AppState = {
     const box = $("badges");
     if (!box) return;
     S.badge.seriesStatus = S.series && S.series.science_status ? S.series.science_status : null;
-    const old = document.querySelector("header.top > .status > #lamp-api");
+    const old = ROOT.querySelector("header.top > .status > #lamp-api");
     if (old) old.remove();
     const lamp = h("span", { class: "chip " + (({ ok: "ok", warn: "warn", bad: "bad" } as Record<string, string>)[S.lamp.kind] || "info"), id: "lamp-api", text: S.lamp.text });
     const DS = (window as Dyn).MoonproofDS;
@@ -1895,6 +1903,7 @@ type AppState = {
   }
   async function loadHealth() {
     const [r, rz, cap] = await Promise.all([OnboardApi.health(), OnboardApi.readyz(), OnboardApi.capabilities()]);
+    if (!MOUNTED) return;
     S.badge.apiUp = !!(r.ok || rz.ok || cap.ok || r.status === 503);
     S.badge.readyz = rz.ok ? rz.data : (rz.status === 503 ? { status: "not ready", science_status: rz.data && rz.data.science_status } : null);
     S.badge.capabilities = cap.ok ? cap.data : null;
@@ -1906,6 +1915,7 @@ type AppState = {
   }
   async function loadSites() {
     const r = await OnboardApi.sites();
+    if (!MOUNTED) return;
     if (r.ok) S.sitesApi = (r.data.sites || []).map((s: Dyn) => ({ id: s.id, name: s.name, series: !!s.series }));
     rebuildTop();
     if (S.tab === "entrada") renderTab();
@@ -1950,7 +1960,7 @@ type AppState = {
     }
     box.replaceChildren(...nodes.filter(Boolean));
     layerize(box);
-    document.querySelectorAll<HTMLElement>("nav.tabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.tab === S.tab ? "true" : "false"));
+    ROOT.querySelectorAll<HTMLElement>("nav.tabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.tab === S.tab ? "true" : "false"));
   }
 
   // ---------- v3: three layers per card (Resposta / Por quê / Prova) ----------
@@ -2029,8 +2039,8 @@ type AppState = {
   function renderTopnav() {
     const nav = $("topnav"); if (!nav || !RT) return;
     const site = routeQuery().site;
-    const link = (path: Dyn, label: Dyn, cls?: Dyn) => h("a", { class: "navp" + (cls ? " " + cls : ""), href: "../index.html" + RT.buildHash(path, { site }) }, label);
-    nav.replaceChildren(h("a", { class: "navp home", href: "../index.html#/", "aria-label": "moonproof · voltar para a escolha de tarefa" }, "◐ moonproof"), link("/explorar", "Explorar"), link("/comparar", "Comparar"),
+    const link = (path: Dyn, label: Dyn, cls?: Dyn) => h("a", { class: "navp" + (cls ? " " + cls : ""), href: HOME() + RT.buildHash(path, { site }) }, label);
+    nav.replaceChildren(h("a", { class: "navp home", href: HOME() + "#/", "aria-label": "moonproof · voltar para a escolha de tarefa" }, "◐ moonproof"), link("/explorar", "Explorar"), link("/comparar", "Comparar"),
       h("a", { class: "navp", href: tabHash("visao"), "aria-current": "page" }, "Painel de bordo"),
       link("/evidencias", "Evidências"), link("/terreno", "Terreno 3D", "lab"));
   }
@@ -2039,41 +2049,59 @@ type AppState = {
   async function fillSites() {
     rebuildTop();
     try {
-      const r = await fetch("../data/sites.json", { cache: "no-cache" });
+      const r = await fetch(ASSET("data/sites.json"), { cache: "no-cache" });
       if (!r.ok) throw new Error(String(r.status));
       S.realSites = (await r.json()).sites || [];
+      if (!MOUNTED) return;
     } catch { S.realSites = []; /* real sites unavailable: only synthetic sites are listed */ }
     rebuildTop();
   }
-  function init() {
-    document.querySelectorAll<HTMLElement>("nav.tabs button").forEach(b => b.addEventListener("click", () => {
+  function syncFromHash() { const t = tabFromHash(); if (t && t !== S.tab) selectTab(t, true); }
+  /** Stops every timer and listener this mount created. Safe to call twice. */
+  function unmount() {
+    MOUNTED = false;
+    for (const d of disposers.splice(0)) { try { d(); } catch { /* already gone */ } }
+  }
+  /**
+   * Mounts the board on an existing frame (the markup of cockpit.html under `root`).
+   * Standalone page: root = document, owns hashchange/popstate. Embedded (shell #/bordo): the shell
+   * router owns the hash and calls update() on every /bordo/... change; tab buttons only set the hash.
+   */
+  function mount(opts: { root?: ParentNode; embedded?: boolean } = {}) {
+    unmount();
+    ROOT = opts.root || document; EMBED = !!opts.embedded; MOUNTED = true;
+    ROOT.querySelectorAll<HTMLElement>("nav.tabs button").forEach(b => on(b, "click", () => {
+      if (EMBED) { location.hash = tabHash(b.dataset.tab); return; }
       history.pushState(null, "", tabHash(b.dataset.tab));
       selectTab(b.dataset.tab, true);
     }));
-    window.addEventListener("hashchange", () => { const t = tabFromHash(); if (t) selectTab(t, true); });
-    window.addEventListener("popstate", () => { const t = tabFromHash(); if (t) selectTab(t, true); });
+    if (!EMBED) { on(window, "hashchange", syncFromHash); on(window, "popstate", syncFromHash); }
     const initial = tabFromHash();
     if (initial) S.tab = initial;
     const q = routeQuery();
+    S.realSite = undefined;
     if (q.site && M.SITES[q.site]) S.site = q.site;
     else if (q.site) S.realSite = q.site; // a real site came from the shell: say so instead of computing it here
-    tickClock(); setInterval(tickClock, 1000);
+    tickClock();
+    const clock = setInterval(tickClock, 1000);
+    disposers.push(() => clearInterval(clock));
+    disposers.push(() => { if (S.playing) { clearInterval(S.playing); S.playing = null; } });
     renderBadges();
-    renderTopnav();
-    loadHealth();
-    loadSites();
-    const fab = document.getElementById("fab");
-    if (fab) fab.addEventListener("click", calculate);
+    if (!EMBED) renderTopnav(); // embedded: the shell's own navigation is the only primary navigation
+    void loadHealth();
+    void loadSites();
+    const fab = ROOT.querySelector<HTMLElement>("#fab");
+    on(fab, "click", calculate);
     // Phones: the button sits in the header flow (cockpit.css), not floating over the text.
-    const fabMq = globalThis.matchMedia && matchMedia("(max-width: 860px)"), topBar = document.querySelector("header.top"), fabHome = fab && fab.parentNode;
-    const placeFab = () => { if (fab && topBar) (fabMq.matches ? topBar : fabHome)!.append(fab); };
-    if (fabMq && fab) { placeFab(); fabMq.addEventListener("change", placeFab); }
-    const top = document.getElementById("top-site");
+    const fabMq = globalThis.matchMedia && matchMedia("(max-width: 860px)"), topBar = ROOT.querySelector("header.top"), fabHome = fab && fab.parentNode;
+    const placeFab = () => { if (fab && topBar && fabHome) (fabMq.matches ? topBar : fabHome).append(fab); };
+    if (fabMq && fab) { placeFab(); on(fabMq, "change", placeFab); }
+    const top = ROOT.querySelector<HTMLSelectElement>("#top-site");
     if (top) {
-      fillSites();
-      top.addEventListener("change", (e: Dyn) => {
+      void fillSites();
+      on(top, "change", (e: Dyn) => {
         const v = e.target.value;
-        if (v.startsWith("real:")) { location.href = "../index.html" + (RT ? RT.buildHash("/explorar", { site: v.slice(5) }) : "#/explorar"); return; }
+        if (v.startsWith("real:")) { location.href = HOME() + (RT ? RT.buildHash("/explorar", { site: v.slice(5) }) : "#/explorar"); return; }
         if (e.target.selectedOptions[0].disabled) return;
         S.site = v; S.api = null; renderAlarm(); renderTab();
       });
@@ -2083,9 +2111,14 @@ type AppState = {
     if (S.realSite) {
       const v = $("views");
       v.prepend(h("div", { class: "caution span2", role: "status" }, "O local real \"" + S.realSite + "\" não é modelado pelo painel de bordo (modelo sintético). ",
-        h("a", { href: "../index.html" + (RT ? RT.buildHash("/explorar", { site: S.realSite }) : "#/explorar") }, "Abrir em Explorar com dados LOLA + SPICE")));
+        h("a", { href: HOME() + (RT ? RT.buildHash("/explorar", { site: S.realSite }) : "#/explorar") }, "Abrir em Explorar com dados LOLA + SPICE")));
     }
+    return { update: syncFromHash, unmount };
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
+  (window as Dyn).OnboardCockpit = { mount, unmount, TAB_NAMES };
+  // The shell sets OnboardCockpitDeferred before loading this script and mounts it itself.
+  if (!(window as Dyn).OnboardCockpitDeferred) {
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => mount());
+    else mount();
+  }
 })();

@@ -52,9 +52,15 @@ export interface RouteCtx {
   go(path: string, query?: Record<string, string | null | undefined>): void;
   setSite(id: string): Record<string, string>;
 }
+/**
+ * Optional lifecycle a view returns from render(). update(ctx) -> true means the view applied the new
+ * route in place (same route, e.g. #/bordo/energia -> #/bordo/janelas) and must not be remounted.
+ * dispose() runs before the outlet is replaced: timers, listeners and GPU/DOM resources are released.
+ */
+export interface RouteHandle { update?(ctx: RouteCtx): boolean | void; dispose?(): void; }
 export interface RouteDef {
   path: string; title?: string | ((ctx: RouteCtx) => string); prefix?: boolean; notFound?: boolean;
-  render?(outlet: HTMLElement, ctx: RouteCtx): Promise<void> | void; external?(ctx: RouteCtx): void;
+  render?(outlet: HTMLElement, ctx: RouteCtx): Promise<void | RouteHandle> | void | RouteHandle; external?(ctx: RouteCtx): void;
 }
 
 /** Resolve a path against a route table [{path:"/comparar/tecnico", ...}] — longest prefix wins, "/" exact. */
@@ -92,6 +98,8 @@ export function startRouter({ routes, outlet, appName = "moonproof", onAfter }: 
   routes: RouteDef[]; outlet: HTMLElement; appName?: string; onAfter?: (ctx: RouteCtx, route: RouteDef) => void;
 }) {
   let current: string | null = null;
+  let active: { route: RouteDef; handle: RouteHandle | null } | null = null;
+  const disposeActive = () => { const a = active; active = null; try { a?.handle?.dispose?.(); } catch { /* view already gone */ } };
   const go = (path: string, query: Record<string, string | null | undefined> = {}) => { location.hash = buildHash(path, query); };
   async function handle() {
     const legacy = legacyRedirect(location.hash);
@@ -104,17 +112,26 @@ export function startRouter({ routes, outlet, appName = "moonproof", onAfter }: 
       go: (p, q) => go(p, { site: query.site, ...q }),
       setSite: (id: string) => { const q = { ...query, site: id }; history.replaceState(null, "", buildHash(path, q)); return q; },
     };
-    if (route.external) { route.external(ctx); return; }
+    if (route.external) { disposeActive(); route.external(ctx); return; }
     current = path;
+    const finish = () => {
+      document.title = (typeof route.title === "function" ? route.title(ctx) : route.title) + " · " + appName;
+      if (path !== "/") saveLastRoute(location.hash);
+      onAfter?.(ctx, route);
+    };
+    // Same route, view can apply the change in place: keep it mounted (no remount, no focus jump).
+    if (active && active.route === route && active.handle?.update?.(ctx) === true) { finish(); return; }
+    disposeActive();
     outlet.replaceChildren();
     outlet.setAttribute("aria-busy", "true");
-    try { await route.render?.(outlet, ctx); } finally { outlet.removeAttribute("aria-busy"); }
-    if (current !== path) return; // a newer navigation happened while rendering
+    let handle: RouteHandle | null = null;
+    try { handle = (await route.render?.(outlet, ctx)) || null; } finally { outlet.removeAttribute("aria-busy"); }
+    if (current !== path) { try { handle?.dispose?.(); } catch { /* ignore */ } return; } // a newer navigation happened while rendering
+    active = { route, handle };
     document.title = (typeof route.title === "function" ? route.title(ctx) : route.title) + " · " + appName;
     const h1 = outlet.querySelector("[data-route-title]") || outlet.querySelector("h1");
     if (h1) { h1.setAttribute("tabindex", "-1"); (h1 as HTMLElement).focus({ preventScroll: false }); }
-    if (path !== "/") saveLastRoute(location.hash);
-    onAfter?.(ctx, route);
+    finish();
   }
   addEventListener("hashchange", handle);
   if (!location.hash) history.replaceState(null, "", "#/");
