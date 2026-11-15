@@ -197,6 +197,9 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
     select(id) { sel = id; focus = id; const s = sites.find(x => x.id === id); if (s) { view.cx = s.stereo_x_m; view.cy = s.stereo_y_m; } draw(); },
     zoom(f) { view.span = Math.min(ext, Math.max(4000, view.span / f)); draw(); }, redraw: draw,
     get free() { return free; }, get mpp() { return lastMpp; },
+    /** false until the map has been drawn at a non-zero size (a hidden or 0 x 0 viewport never frames it):
+     *  toPx/fromPx have no scale yet and would divide by zero. Callers that place things on the map check this. */
+    get ready() { return lastMpp > 0; },
     /** The projection actually drawn: stereo metres <-> CSS px of the container. */
     toPx(x, y) { return [lastW / 2 + (x - lastSx) / lastMpp, lastH / 2 - (y - lastSy) / lastMpp]; },
     fromPx(px, py) { return [lastSx + (px - lastW / 2) * lastMpp, lastSy - (py - lastH / 2) * lastMpp]; } };
