@@ -30,10 +30,47 @@ Error envelope: every 4xx is JSON with a stable `error.code` (`SITE_NOT_FOUND`, 
 
 ## Invariants checked
 
-1. Catalogue: 16 sites, ids `^[a-z0-9][a-z0-9-]{0,63}$`; the 7 with stored series carry an hourly window, a
-   `series_sha256` and `PRELIMINARY`/`SYNTHETIC`. The other 9 are N/D and are **never** synthesized.
-2. A site with a stored series is computed **server side** (`route: "site"`); a site without one goes through
-   `evaluate` (`route: "eval"`). Both return a charge trace of `hours + 1` finite points inside `[0, capacity]`.
+1. Catalogue: 16 sites, ids `^[a-z0-9][a-z0-9-]{0,63}# Cockpit ↔ backend contract (MoonProof E · Cockpit)
+
+The cockpit (`web/moonproof/cockpit.html`, source `web/moonproof/screens/cockpit*.ts`) is the product's main panel.
+This document lists **every backend call it makes**, which fields it reads, and how that is tested against the
+real stack. Nothing here is scientific validation: series are `PRELIMINARY` or `SYNTHETIC`, and every computed
+answer comes back as `UNVERIFIED_INPUTS`.
+
+```
+Browser (Preact TSX cockpit) ──same origin──▶ Cloudflare Worker (deploy/cloudflare, /api /v1 /healthz /readyz)
+        ──▶ Go API (api/) ──▶ Rust engine (engine/, deterministic visibility)
+                         ├──▶ PostgreSQL (catalog + stored hourly series, api/store_pg.go)
+                         └──▶ pgvector (optional metadata retrieval, lexical-384; never decides physics)
+```
+
+## Calls made by the cockpit
+
+| When | Request | Fields read by the cockpit | Off / error |
+|---|---|---|---|
+| boot (`core/data.ts apiOnline`) | `GET /readyz` | `status` | "offline · precomputed" badge, no simulated numbers |
+| badges | `GET /v1/capabilities` | `scientifically_validated` (always `false`) | badge says N/D |
+| next Sun/Earth transitions | `GET /api/sites/{id}/sky?start=<UTC>&hours=240` | `next_transitions.sun` | sites without series answer `404 NO_SERIES_DATA` and the screen shows N/D |
+| energy run (`runScenario`) | `POST /api/onboard/site-evaluate` (`siteEvaluateBody`) | `onboard.options[0].timeline[].charge_wh`, `onboard.science_status`, `onboard.inputs_sha256`, `options[0].metrics.minimum_charge_wh`, `total_unserved_energy_wh`, `end_mode`, `simulation_status` | if the site has no stored series → fallback below |
+| fallback for sites without series | `POST /api/onboard/evaluate` (`evaluateBody`, hourly booleans from the browser's stored series) | `options[0].timeline`, `science_status`, `inputs_sha256` | no answer → `{ok:false}`, never an invented charge |
+| crew (O₂ / food) | `POST /api/onboard/site-evaluate` (`crewRequest`) | `candidates[0].consumables.items[]`, `combined_decision` | values stay `null`, never 0 |
+| sensitivity ±20 % | 4 × `site-evaluate` (`sensitivityVariants`) | `readEnergy` | per-variant N/D |
+| "Relatório" | `POST /api/onboard/site-report` (same body as the last run) | `text/html` (no scripts) | button re-enabled, error shown |
+
+Error envelope: every 4xx is JSON with a stable `error.code` (`SITE_NOT_FOUND`, `NO_SERIES_DATA`,
+`INVALID_DURATION`, `INVALID_SCENARIO`, `INVALID_VECTOR`, …). The cockpit never parses HTML as an API answer.
+
+## Invariants checked
+
+; **all 16 now have stored series**:
+   14 source-derived `PRELIMINARY` real-region series and 2 explicitly labelled `SYNTHETIC` demonstrations.
+   Every stored series carries an hourly window (`step_seconds=3600`) and `series_sha256`.
+   This is verified by production `GET /api/health` and nine newly added `GET /api/sites/{id}` metadata responses
+   on 2026-11-15, **not** by independently rehashing the binaries or scientific validation.
+2. Sites with stored series compute **server side** (`route: "site"`). The `evaluate` (`route: "eval"`)
+   fallback is retained for explicit missing-series/error fixtures and should not be used to invent observational
+   values for any of the 16 catalog sites. Both routes must return a charge trace of `hours + 1` finite
+   points inside `[0, capacity]` when successful.
 3. Determinism: the same body gives the same `inputs_sha256` and timeline; changing `load_w` changes the fingerprint.
 4. Physics sanity: less battery cannot raise the minimum charge.
 5. Negatives: unknown site 404, duration over the limit 422, negative battery 422, non-boolean sample 4xx — all JSON, never 5xx.
