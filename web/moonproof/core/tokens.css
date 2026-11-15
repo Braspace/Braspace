@@ -16,12 +16,12 @@
   --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --fs-title:55px; --fw-title:800; --ls-title:-.025em;
   --fs-answer:22px; --fs-card-title:16px; --fs-body:14.5px; --fs-label:12.5px; --fs-num:27px; --fs-coord:12px;
-  --r-card:26px; --r-inner:18px; --r-pill:999px; --touch:44px; --margin:28px; --gap:12px;
+  --r-card:22px; --r-inner:18px; --r-pill:999px; --touch:44px; --margin:28px; --gap:12px;
   --s1:8px; --s2:13px; --s3:21px; --s4:34px; --ease:cubic-bezier(.2,.7,.2,1); --t-fast:160ms; --t:220ms;
 }
 @media (max-width:700px){:root{--fs-title:34px;--margin:14px}}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:var(--fs-body);font-weight:500;-webkit-font-smoothing:antialiased}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:var(--fs-body);font-weight:400;-webkit-font-smoothing:antialiased}
 body{min-height:100vh;overflow-x:hidden;font-feature-settings:"tnum" 0}
 b,strong{font-weight:800}
 :focus-visible{outline:2px solid var(--jade);outline-offset:3px}
