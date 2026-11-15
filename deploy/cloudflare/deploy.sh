@@ -11,7 +11,6 @@ root=$(git rev-parse --show-toplevel); cd "$root"
 sha=$(git rev-parse HEAD); short=${sha:0:7}; note=${1:-}
 cd deploy/cloudflare
 node --test ./*.test.mjs
-[ -f wrangler.toml ] || cp wrangler.toml.example wrangler.toml
 prev=$(npx -y wrangler@4 deployments list --name braspace-moonproof 2>/dev/null | awk '/Version\(s\):/{v=$3} END{print v}')
 # Backup outside web/ (web/ is the assets directory: anything there would be uploaded).
 cfg="$root/web/config.js"; bak=$(mktemp); cp "$cfg" "$bak"
@@ -22,7 +21,7 @@ npx -y wrangler@4 deploy --message "main $short${note:+ ($note)}"
 origin=${MOONPROOF_ORIGIN:-https://braspace-moonproof.almeida-me.workers.dev}
 ok=0
 for i in $(seq 1 30); do
-  if curl -fsS --max-time 10 "$origin/api/health" >/dev/null 2>&1 && curl -fsS --max-time 10 "$origin/config.js" 2>/dev/null | grep -q "$sha"; then ok=1; break; fi
+  if curl -fsS --max-time 10 "$origin/api/health" >/dev/null 2>&1 && curl -fsS --max-time 10 "$origin/config.js" 2>/dev/null | grep -Fxq "const BRASPACE_COMMIT = \"$sha\";"; then ok=1; break; fi
   sleep 4
 done
 [ "$ok" = 1 ] || { echo "deploy.sh: smoke FAILED: $origin/api/health or config.js ($short) not served after 2 min; rollback: npx wrangler rollback ${prev:-<previous version id>}" >&2; exit 2; }

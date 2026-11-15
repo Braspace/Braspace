@@ -79,13 +79,26 @@ function langBtn() {
     return b;
 }
 function round(svg, label, fn) { const b = el("button", "lab-round"); b.innerHTML = svg; b.type = "button"; b.setAttribute("aria-label", label); b.onclick = fn; return b; }
+// Preserve the same-origin source screen when leaving the educational simulator.
+// A direct link has no referrer, so Compare remains the explicit fallback.
+function returnHref() {
+    const fallback = hrefTo("compare.html");
+    try {
+        const u = new URL(document.referrer);
+        const page = u.pathname.split("/").pop() || "";
+        if (u.origin === location.origin && ["compare.html", "explore.html", "recover.html", "mission.html", "plan.html", "activity.html", "present.html"].includes(page))
+            return page + u.search + u.hash;
+    }
+    catch { /* no usable referrer */ }
+    return fallback;
+}
 function build() {
     document.documentElement.lang = lang();
     $("simseal").textContent = t("lab.sim");
     const back = el("a", "back");
     back.innerHTML = ico(ICO.back, 14);
     back.append(t("lab.back"));
-    back.href = hrefTo("compare.html");
+    back.href = returnHref();
     const s = site();
     const meta = el("span", "meta", `${s.n} · ${s.name}`);
     meta.title = s.name;

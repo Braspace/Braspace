@@ -8,12 +8,16 @@ BRASPACE / MoonProof is an educational and engineering prototype for evaluating 
 
 ## Live Demo & API
 
-Verified in production on **2026-11-15** (frontend `9dab20c`, Worker `ec490d15`; backend `2b62474`):
+Verified in production on **2026-11-15** (main `dc2411b`, Worker `c792c009`, published with `deploy/cloudflare/deploy.sh`; API image `ad83cfe7517c`):
 
 - **MoonProof, the product:** https://braspace-moonproof.almeida-me.workers.dev/moonproof/. A Cloudflare Worker serves `web/` and proxies every OpenAPI route same-origin to the Go API. Polar Lab, Onboard, Studio, Classic and the old shell are archived in `archive/web-legacy/`.
 - **Public API:** https://braspace-api.srv1898743.hstgr.cloud: [`/api/health`](https://braspace-api.srv1898743.hstgr.cloud/api/health), [`/readyz`](https://braspace-api.srv1898743.hstgr.cloud/readyz), [`/v1/capabilities`](https://braspace-api.srv1898743.hstgr.cloud/v1/capabilities), [`/api/sites`](https://braspace-api.srv1898743.hstgr.cloud/api/sites), [`/api/vector/status`](https://braspace-api.srv1898743.hstgr.cloud/api/vector/status).
+- **Additional live API check (2026-11-15):** `GET /api/health` returned `sites=16`, `sites_with_series=16`, `PRELIMINARY=14`, `SYNTHETIC=2`, `engine=ready`, `data_source=postgres`. All nine newly added real site detail endpoints responded HTTP 200 with 64-hex-character `series_sha256`, hourly `step_seconds=3600` and `science_status=PRELIMINARY`. This is endpoint/metadata verification, **not** binary checksum recomputation, full browser QA or scientific validation. The public `/moonproof/` still served the old persona chooser at this check; cockpit-first routing is in draft PR #403.
 - **Last production QA (#351, #374):** 13 screens × 320/390/768/1024/1440/1920 = 78 runs. All HTTP 200, 0 overflow, 0 clipped controls, 0 console errors, 0 HTTP errors, 246 API calls all 200. Backend probes 7/7: pgvector `index_ready`, search serves only audited sources, 720 h onboard window, strict JSON.
 
+- **Production QA, main `dc2411b` (EXO-X1, Chrome):** route matrix `web/browser/route-matrix.mjs` (16 pages × 320–1920 px) 96/96 with a real GPU and 95/96 without WebGL (1 local network change); axe-core WCAG 2/2.1 A+AA **0 violations** on the 13 screens × 2 viewports (#398); Lighthouse with warm edge: Index 97, Cockpit 89, Mission 85–88 (LCP 3.4 s).
+- **Performance:** three.js 0.181.0 vendored in `web/vendor/three` (no CDN, one THREE instance, #365); NASA-derived binary grids gzip-encoded by the Worker, −48% on the wire (#406, #417); the 2D hillshade is not painted while the Moon HD relief is loading (#420).
+- **CI:** GitHub-hosted runners are blocked by Actions billing; `ci.yml` and the browser workflow run on self-hosted runners `exo-x1` selected by the repository variable `CI_RUNS_ON` (#383, #388). Delete the variable to return to `ubuntu-latest`.
 - **Docs & operations:**
   - release [`v2026.11.15-prod-2b62474`](https://github.com/Braspace/Braspace/releases/tag/v2026.11.15-prod-2b62474);
   - API reference [`docs/API.md`](docs/API.md), 22 operations, generated from `api/openapi.json` and checked in CI;
@@ -23,14 +27,18 @@ Verified in production on **2026-11-15** (frontend `9dab20c`, Worker `ec490d15`;
   - series grid rule [`docs/harness/GRID_SEMANTICS_EVIDENCE.md`](docs/harness/GRID_SEMANTICS_EVIDENCE.md): a start or duration off the hourly grid gets `GRID_NOT_ALIGNED` (compare: per site) and is never rounded. Measured in production.
 
 > **Scientific honesty:** `/readyz` reports `"science_status": "UNVERIFIED_INPUTS"` and `/v1/capabilities` reports `"scientifically_validated": false`. Series are `PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED`.
-
 > **Cockpit P0 candidate (#411, not deployed):** Nine independently hideable Preact panel groups retain the *same* Joel Three.js Moon and illustrative Artemis lander. The delayed `Moon only` request now checks that panels remain hidden before opening the lazy 3D backdrop; restoring them before load cancels the stale request. Node fixture: 3/3 PASS; generated JS verified against local TypeScript 5.8.3 output. Full pinned TS 5.6.3 / Chromium / Go-Rust / pgvector release checks remain mandatory. Canonical entry is separately coordinated in #440, density 75% in #426, Worker SHA gate in #424.
+
+
+## Worker release-provenance gate (draft PR #424 — not deployed)
+
+The release smoke scripts require an **exact executable** `const BRASPACE_COMMIT = "<40-hex SHA>";` line in the deployed `/config.js`, rather than a substring that could be found inside a comment or an unrelated build. `grep -Fxq` is intentional: `deploy/cloudflare/deploy.sh` emits that exact whole line. The regression test `deploy/cloudflare/build-stamp.test.mjs` covers valid declaration, misleading comments, suffixes and wrong SHAs. Isolated Node 22 fixture: 3/3 PASS. This candidate has **not** passed the full CI/EXO-X1 release gate and has not been merged or deployed. It does not modify the Go/Rust science or pgvector database.
 
 ## Real Data vs. Simulation
 
 | NASA / External Source | Product in Repo | Status | Notes |
 |---|---|---|---|
-| **NASA LOLA (`LDEM_80S_80M`) + NAIF SPICE** | `api/sitedata/series/{connecting-ridge,malapert-massif,mons-mouton-im2,nobile-rim-1,peak-near-shackleton}.json` & `web/data/sites/*`, `web/data/terrain/*` | **PRELIMINARY** (not flight-validated) | Offline pipeline (`science/`) computes terrain horizon and Sun/Earth angles. |
+| **NASA LOLA (`LDEM_80S_80M`) + NAIF SPICE** | `api/sitedata/series/*.json` (14 source-derived real sites), `web/data/sites/*`, `web/data/terrain/*` | **PRELIMINARY** (not flight-validated) | Offline pipeline (`science/`) computes terrain horizon and Sun/Earth angles; source inputs SHA-pinned, independently unvalidated. Two additional demonstration sites are `SYNTHETIC`. |
 | **Synthetic demo series** | `api/sitedata/series/synthetic-demo-{a,b}.json` | **SYNTHETIC** | Labelled synthetic time series for end-to-end testing and UI demos. |
 | **Onboard battery / crew consumables** | `api/onboard/`, `api/consumables.go` & the MoonProof cockpit (`web/moonproof/screens/cockpit*`) | **SIMULATION** | Educational mission computer model; not flight-certified. O2/food rates are placeholders pending a check against NASA BVAD. |
 | **NASA PGDA & JPL Horizons** | `web/data/validation/validation_{pgda,horizons}.json` | **BENCHMARK** | Reference comparison datasets for offline science checks. |
@@ -77,6 +85,7 @@ Serve with `cd web && node dev-server.mjs` (set `BRASPACE_WEB_PORT` if 5173 is t
 - **Cockpit:** an illustrative Artemis-style lander (`web/moon-hd/artemis.ts`) over the south pole on that same scene — the same model as the gamified Landing Lab. Not telemetry.
 - **P0 nine-panel controls (release candidate):** `web/moonproof/screens/cockpit-panels.tsx` adds independent Battery, Sun/Earth, Sun-hours, Rules, Alerts, Faults, Crew, Timeline and Report visibility switches plus **Moon only** / **Restore panels**, using Heloísa's tokens and the existing lazy 3D Moon button. The battery indicator is wrapped by the current Preact `mp-node`; never reuse the old direct `.mp-stat` selector. This is a pending PR, not a claim of deployment; validate Chromium GPU/no-GPU, six viewport widths and the EXO-X1 fullstack CI before release.
 - **Density** (`web/moonproof/core/density.css`) and collapsible panels within Heloísa's design system; ≥ 44 px touch targets; Lighthouse A11y/SEO 100.
+- **Transient catalogue/series errors:** `web/moonproof/core/data.ts` shares in-flight loads and discards rejected promises, allowing a later retry instead of permanently caching a failed fetch. Regression: `web/moonproof/tests/data-cache-retry.test.mjs` (related to #385); this does not replace live browser/asset checksum verification.
 - Details, public `window.moonBackdrop` API and the Worker deploy runbook: [`docs/MOONPROOF_FRONT_RUNTIME.md`](docs/MOONPROOF_FRONT_RUNTIME.md).
 
 ---
@@ -149,8 +158,8 @@ From [`docs/TEAM_ROLES_AND_HANDOFFS_2026.md`](docs/TEAM_ROLES_AND_HANDOFFS_2026.
 ## Honest Limitations
 
 - **Not flight-certified:** `/readyz` reports `UNVERIFIED_INPUTS` and `/v1/capabilities` reports `scientifically_validated: false`.
-- **Partial series coverage:** 16 catalog sites, of which 7 have stored series (5 `PRELIMINARY`, 2 `SYNTHETIC`). The other 9 show N/D.
-- **Solar-disc fraction:** corrected on 2026-11-15 (#369). The Go port had inherited an inverted formula, so the derived values were regenerated from SHA-verified NASA inputs (Peak near Shackleton is still the only site more than 5 pp above NASA PGDA, now 8.54 pp). Sun and Earth are otherwise treated as points against the LOLA horizon.
+- **Series coverage:** all 14 real catalog sites have a stored LOLA + SPICE series (`PRELIMINARY`), plus 2 `SYNTHETIC` demo sites. Three high-illumination ridges near Shackleton (Peak near Shackleton, de Gerlache Rim 1, de Gerlache-Kocher Massif) exceed NASA PGDA by more than 5 pp and carry a preliminary model-limit caveat. The PGDA residual alone does not prove a strict physical upper bound.
+- **Solar-disc fraction:** corrected on 2026-11-15 (#369). The Go port had inherited an inverted formula, so the derived values were regenerated from SHA-verified NASA inputs (the 14-site catalogue currently has three regions above PGDA by >5 percentage points: Peak near Shackleton +8.53 pp, de Gerlache Rim 1 +7.95 pp, and de Gerlache–Kocher Massif +7.64 pp; this is a benchmark discrepancy, not scientific validation). Sun and Earth are otherwise treated as points against the LOLA horizon.
 - **pgvector:** metadata retrieval only. 10 legacy rows without an ingest manifest are quarantined (`legacy_unverified`) and are not served.
 - **Deploys:** backend deploys use `deploy/harness/swap-api.sh` (#389), a start-first swap that routes only to the healthy new replica: 1 failed request in about 570, down from 43 failures in 5.4 s with a plain `compose up`.
 

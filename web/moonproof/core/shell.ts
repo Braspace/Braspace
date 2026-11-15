@@ -1,7 +1,7 @@
 // MoonProof shell: top navigation, context bar, "Open in", kits Class/Plan, language, mobile bottom nav.
 import { enhancePanels } from "./collapse.js";
 import { t, setLang, pickLang, apply, lang } from "./i18n.js";
-import { getState, setState, hrefTo, LAYERS, type Layer } from "./state.js";
+import { getState, setState, hrefTo } from "./state.js";
 import { sealEl } from "./layers.js";
 import { loadSites, sunCaveat, type SitesDoc, type Seal } from "./data.js";
 import { icon as svgIcon, ICON_NAMES } from "./icons.js";
@@ -46,7 +46,7 @@ function pill(text: string, { href, current, cls = "", onClick, pressed, ico, la
  * Re-renders on language switch; calls onLang() so the screen redraws its own texts.
  * Returns { setContext(ctx) }.
  */
-export interface ShellContext { site?: string | null; date?: string | null; days?: number | string | null; seal?: Seal | string; online?: boolean; action?: { label: string; href: string; cls?: string }; [key: string]: unknown; }
+export interface ShellContext { site?: string | null; date?: string | null; days?: number | string | null; seal?: Seal | string; online?: boolean | null; action?: { label: string; href: string; cls?: string }; [key: string]: unknown; }
 export interface ShellOptions { screen: string; context?: ShellContext | null; onLang?: (lang: string) => void; kit?: "class" | "plan" | null; }
 export function mountShell({ screen, context = null, onLang, kit = null }: ShellOptions = { screen: "" }): { setContext(c: ShellContext | null): void; render(): void } {
   setLang(pickLang(getState().lang));
@@ -67,7 +67,7 @@ export function mountShell({ screen, context = null, onLang, kit = null }: Shell
     if (globalThis.MutationObserver) { const mo = new MutationObserver(() => { if (document.querySelectorAll("h1").length > 1) { h.remove(); mo.disconnect(); } });
       mo.observe(document.body, { childList: true, subtree: true }); }
   }
-  let cur = context;
+  let cur = context, ctxText: HTMLElement | null = null;
   // Site catalogue, only to flag a site whose sunlight figures are an upper bound (data.js sunCaveat).
   let catalogue: SitesDoc | null = null;
   loadSites().then(doc => { catalogue = doc; renderCtx(); }).catch(() => {});
@@ -77,33 +77,32 @@ export function mountShell({ screen, context = null, onLang, kit = null }: Shell
     const brand = document.createElement("a"); brand.className = "mp-brand"; brand.href = hrefTo("index.html");
     brand.innerHTML = '<svg class="mp-logo" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13.5" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M16 2.5a13.5 13.5 0 0 1 0 27a9 13.5 0 0 0 0-27z" fill="#2EC4A0"/></svg>'; brand.append(t("brand"));
     const nav = document.createElement("nav"); nav.className = "mp-nav"; nav.setAttribute("aria-label", t("nav.main"));
-    for (const s of SCREENS) nav.append(pill(t(s.key), { href: hrefTo(s.page), current: s.id === active, cls: s.sim ? "is-sim" : "", ico: s.id }));
+    const order = st.task === "plan" ? ["compare", "recover", "cockpit", "evidence", "explore", "landing", "debrief"] : st.task === "class" ? ["explore", "landing", "debrief", "compare", "recover", "cockpit", "evidence"] : ["explore", "compare", "landing", "debrief", "recover", "cockpit", "evidence"];
+    const byTask = [...SCREENS].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    for (const s of byTask) nav.append(pill(t(s.key), { href: hrefTo(s.page), current: s.id === active, cls: s.sim ? "is-sim" : "", ico: s.id }));
     const right = document.createElement("div"); right.className = "mp-nav-right";
-    right.append(
-      pill(t("nav.class"), { cls: "mp-kit" + (kit === "class" ? " is-kit-on" : ""), pressed: st.task === "class", onClick: () => { setState({ task: st.task === "class" ? null : "class" }); render(); } }),
-      pill(t("nav.plan"), { cls: "mp-kit" + (kit === "plan" ? " is-kit-on" : ""), pressed: st.task === "plan", onClick: () => { setState({ task: st.task === "plan" ? null : "plan" }); render(); } }),
-      helpPill(),
-      pill(t("nav.lang.short"), { cls: "is-round mp-lang", label: `${t("nav.lang.short")} · ${t("nav.lang")}`, onClick: () => { const l = lang() === "en" ? "pt-BR" : "en"; setState({ lang: l }); setLang(l); render(); apply(); onLang && onLang(l); } }),
-    );
+    right.append(helpPill(), pill(t("nav.lang.short"), { cls: "is-round mp-lang", label: `${t("nav.lang.short")} · ${t("nav.lang")}`, onClick: () => { const l = lang() === "en" ? "pt-BR" : "en"; setState({ lang: l }); setLang(l); render(); apply(); onLang && onLang(l); } }));
     top.replaceChildren(brand, nav, right);
+    document.title = "MoonProof · " + t((SCREENS.find(s => s.id === active) || SCREENS[0]).key);
     bottom.setAttribute("aria-label", t("nav.main"));
-    bottom.replaceChildren(...SCREENS.filter(s => !s.sim).map(s => pill(t(s.short || s.key), { href: hrefTo(s.page), current: s.id === active, ico: s.id })));
+    bottom.replaceChildren(...byTask.filter(s => !s.sim).map(s => pill(t(s.short || s.key), { href: hrefTo(s.page), current: s.id === active, ico: s.id })));
     renderCtx();
   }
   function renderCtx() {
     ctx.hidden = !cur; if (!cur) return;
     const st = getState();
-    const b = document.createElement("b"); b.textContent = cur.site ?? t("nd");
-    const txt = document.createElement("span"); txt.className = "mp-ctx-text";
-    txt.append(b, " • ", cur.date ?? t("nd"), " • ", cur.days != null ? t("ctx.days", { n: cur.days }) : t("nd"));
+    // The text keeps its element while it reads the same: screens repaint the bar several times while their data arrive,
+    // and a new element would be a new (later) Largest Contentful Paint for the same words.
+    const parts0 = [cur.site ?? t("nd"), cur.date ?? t("nd"), cur.days != null ? t("ctx.days", { n: cur.days }) : t("nd")], key = parts0.join("\u0001");
+    let txt = ctxText;
+    if (!txt || txt.dataset.k !== key) {
+      const b = document.createElement("b"); b.textContent = parts0[0];
+      txt = ctxText = document.createElement("span"); txt.className = "mp-ctx-text"; txt.dataset.k = key;
+      txt.append(b, " • ", parts0[1], " • ", parts0[2]);
+    }
     const parts = [txt];
     const seal = sealEl(cur.seal || "N/D");
-    const net = document.createElement("span"); net.className = "mp-label"; net.textContent = cur.online ? t("ctx.online") : t("ctx.offline");
-    const lab = document.createElement("label"); lab.className = "mp-label"; lab.textContent = t("ctx.openIn") + " ";
-    const sel = document.createElement("select");
-    for (const l of LAYERS) { const o = new Option(t("layer." + l), l, false, l === st.layer); sel.append(o); }
-    sel.onchange = () => { setState({ layer: sel.value as Layer }); };
-    lab.append(sel);
+    const net = document.createElement("span"); net.className = "mp-label"; net.textContent = cur.online == null ? "…" : cur.online ? t("ctx.online") : t("ctx.offline"); // null: /readyz has not answered yet
     const caveat = sunCaveat(catalogue?.sites.find(s => s.id === st.site));
     if (caveat) {
       const chip = document.createElement("span"); chip.className = "mp-caveat"; chip.tabIndex = 0;
@@ -114,7 +113,7 @@ export function mountShell({ screen, context = null, onLang, kit = null }: Shell
       chip.setAttribute("aria-label", chip.textContent + ". " + chip.title);
       parts.push(chip);
     }
-    ctx.replaceChildren(...parts, seal, net, lab);
+    ctx.replaceChildren(...parts, seal, net);
     if (cur.action) ctx.append(pill(cur.action.label, { href: cur.action.href, cls: cur.action.cls || "is-primary" }));
   }
   render(); apply();

@@ -14,6 +14,7 @@ import { pickVersion } from "./evidence-model.js";
 import { H1_PROFILE, runScenario } from "./cockpit-model.js";
 register({
     en: {
+        "plan.tableRegion": "Metrics table (scrolls sideways)",
         "plan.h1": "Planning Kit",
         "plan.title": "Mission rules",
         "plan.editable": "editable",
@@ -84,6 +85,7 @@ register({
         "plan.noSource": "no source"
     },
     "pt-BR": {
+        "plan.tableRegion": "Tabela de métricas (rola para o lado)",
         "plan.h1": "Kit Planejamento",
         "plan.title": "Regras da missão",
         "plan.editable": "editáveis",
@@ -305,7 +307,7 @@ async function draw() {
     const tableEl = byId("plan-table");
     tableEl.innerHTML = `
     <div class="mp-plan-head"><h2>${t("plan.tableTitle")}</h2><span class="mp-note">${t("plan.legend")}</span></div>
-    <div class="mp-table-wrap">
+    <div class="mp-table-wrap" tabindex="0" role="region" aria-label="${t("plan.tableRegion")}">
       <table class="mp-metrics-table">
         <thead>
           <tr>

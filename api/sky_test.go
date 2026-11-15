@@ -203,8 +203,12 @@ func TestDBSkySameAnswers(t *testing.T) {
 			}
 		}
 	}
-	if a, b := do(serve(embedded), "GET", "/api/sites/haworth/sky", ""), do(serve(fromDB), "GET", "/api/sites/haworth/sky", ""); a.Code != 404 || a.Body.String() != b.Body.String() {
-		t.Error("no-series answers differ")
+	// haworth gained a real LOLA+SPICE series (15/11/2026): same bytes from both stores.
+	if a, b := do(serve(embedded), "GET", "/api/sites/haworth/sky", ""), do(serve(fromDB), "GET", "/api/sites/haworth/sky", ""); a.Code != 200 || a.Body.String() != b.Body.String() {
+		t.Errorf("haworth sky: %d vs %d, bodies differ", a.Code, b.Code)
+	}
+	if a, b := do(serve(embedded), "GET", "/api/sites/no-such-site/sky", ""), do(serve(fromDB), "GET", "/api/sites/no-such-site/sky", ""); a.Code != 404 || a.Body.String() != b.Body.String() {
+		t.Error("unknown-site answers differ")
 	}
 }
 

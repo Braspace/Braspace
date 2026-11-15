@@ -23,6 +23,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,13 +41,24 @@ type site struct {
 	Lat, Lon                    float64
 }
 
-// sites are the five candidate sites, all inside NASA's refined Artemis III region list.
+// sites are the real catalog sites: the original five Artemis III candidates first, then the remaining
+// catalog feature centres (NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2).
 var sites = []site{
 	{"mons-mouton-im2", "Mons Mouton (IM-2 Athena target)", "LROC image 1401, IM-2 intended landing site (approx.)", "https://www.lroc.asu.edu/images/1401", -84.78, 29.13},
 	{"malapert-massif", "Malapert Massif", "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2, row R23", "", -85.9948, -0.23578},
 	{"nobile-rim-1", "Nobile Rim 1", "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2, row R06", "", -85.4381, 37.36667},
 	{"connecting-ridge", "Connecting Ridge (Shackleton–de Gerlache)", "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2 (catalog feature centre)", "", -89.4632, -137.49},
 	{"peak-near-shackleton", "Peak Near Shackleton", "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2, row R07", "", -88.811, 123.6901},
+	// Remaining real catalog sites (api/sitedata/catalog.json, NASA Lunar Surface Data Book coordinates); same pipeline, same PRELIMINARY status.
+	{"haworth", "Haworth", "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2, row Haworth", "", -86.7639, -22.777},
+	{"nobile-rim-2", "Nobile Rim 2", "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2, row DM2", "", -83.954, 58.82206},
+	{"connecting-ridge-extension", "Connecting Ridge Extension", "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2, row SL3", "", -89.0324, -101.999},
+	{"de-gerlache-rim-1", "de Gerlache Rim 1", "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2, row R11", "", -88.6834, -67.9321},
+	{"de-gerlache-rim-2", "de Gerlache Rim 2", "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2, row SL2", "", -88.23, -64.6284},
+	{"de-gerlache-kocher-massif", "de Gerlache-Kocher Massif", "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2, row R42", "", -85.8296, -116.322},
+	{"leibnitz-beta-plateau", "Leibnitz Beta Plateau", "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2, row R20", "", -85.4266, 31.74276},
+	{"faustini-rim-a", "Faustini Rim A", "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2, row LM7", "", -87.8897, 90.0},
+	{"amundsen-rim", "Amundsen Rim", "NASA Lunar Surface Data Book ACD-50044 Rev. A, App. A2, row DM1", "", -84.2287, 69.44396},
 }
 
 // sample is one hourly (or stepped) row of the series with the margins metrics() adds.
@@ -253,7 +265,7 @@ func pipeline(stdout io.Writer, img, label, kdir, outDir, startUTC string, hours
 	}
 	summarySites := []any{}
 	summary := pyfmt.Obj{
-		{K: "generated_utc", V: time.Now().UTC().Format("2006-01-02T15:04:05Z")},
+		{K: "generated_utc", V: generatedUTC(os.Getenv, time.Now)},
 		{K: "window", V: pyfmt.Obj{{K: "start_utc", V: start.Format("2006-01-02T15:04:05Z")}, {K: "hours", V: hours}, {K: "step_minutes", V: step}}},
 		{K: "science_status", V: "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED"},
 		{K: "sites", V: nil},
@@ -353,4 +365,20 @@ func contains(l []string, s string) bool {
 		}
 	}
 	return false
+}
+
+// generatedUTC stamps summary.json. SOURCE_DATE_EPOCH (reproducible-builds.org)
+// pins it, so regenerating with the same inputs gives the same bytes (#157);
+// without it the stamp is the wall clock, as before. A malformed value is an
+// error the operator must see, so it panics instead of silently using now.
+func generatedUTC(getenv func(string) string, now func() time.Time) string {
+	t := now()
+	if v := strings.TrimSpace(getenv("SOURCE_DATE_EPOCH")); v != "" {
+		sec, err := strconv.ParseInt(v, 10, 64)
+		if err != nil || sec < 0 {
+			panic(fmt.Sprintf("SOURCE_DATE_EPOCH=%q is not a non-negative integer of seconds", v))
+		}
+		t = time.Unix(sec, 0)
+	}
+	return t.UTC().Format("2006-01-02T15:04:05Z")
 }

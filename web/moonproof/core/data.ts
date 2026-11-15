@@ -66,11 +66,16 @@ export function sourced<T = unknown>(value: T | null | undefined, { unit = "", s
 }
 
 let sitesP: Promise<SitesDoc> | null = null;
-/** The five real sites of web/data/sites.json, numbered 1..n in file order. */
+/** The real sites of web/data/sites.json (currently 14), numbered 1..n in file order. */
 export function loadSites(): Promise<SitesDoc> {
-  return sitesP ||= fetch(DATA_BASE + "sites.json").then(r => { if (!r.ok) throw new Error("sites.json " + r.status); return r.json(); })
-    .then(doc => ({ status: doc.science_status, note: doc.note, window: doc.series_window, generated: doc.generated_utc, features: doc.features || [],
-      sites: (doc.sites as Site[]).map((s, i) => ({ ...s, n: i + 1 })) }));
+  if (!sitesP) {
+    const pending = fetch(DATA_BASE + "sites.json").then(r => { if (!r.ok) throw new Error("sites.json " + r.status); return r.json(); })
+      .then(doc => ({ status: doc.science_status, note: doc.note, window: doc.series_window, generated: doc.generated_utc, features: doc.features || [],
+        sites: (doc.sites as Site[]).map((s, i) => ({ ...s, n: i + 1 })) }))
+      .catch(error => { if (sitesP === pending) sitesP = null; throw error; });
+    sitesP = pending;
+  }
+  return sitesP;
 }
 
 /** Long-term metric of a site as a sourced value (from sites.json metrics). */
@@ -101,10 +106,10 @@ export function sunCaveat(site: Partial<Pick<Site, "id" | "metrics" | "pgda_sun_
 }
 
 const seriesCache = new Map<string, Promise<SiteSeriesLike>>();
-export function loadSeries(site: Pick<Site, "id" | "series">): Promise<SiteSeriesLike> {
+export function loadSeries(site: Pick<Site, "id" | "series">, opts: { priority?: "low" | "high" | "auto" } = {}): Promise<SiteSeriesLike> {
   // SiteSeriesLike is the screens' loose view of SiteSeries (a NOT_COMPUTED window carries no metrics), hence the cast.
   if (!seriesCache.has(site.id)) {
-    const pending = (SiteSeries.load(DATA_BASE + site.series) as unknown as Promise<SiteSeriesLike>).catch(error => {
+    const pending = (SiteSeries.load(DATA_BASE + site.series, opts) as unknown as Promise<SiteSeriesLike>).catch(error => {
       if (seriesCache.get(site.id) === pending) seriesCache.delete(site.id);
       throw error;
     });
@@ -132,12 +137,18 @@ export async function windowMetrics(doc: Pick<SitesDoc, "status">, site: Pick<Si
  * Offline, rejected (e.g. window off the series grid) or without numbers: falls back to the stored series, whose source
  * line says so ("web/data/..."), so a figure is never invented. maxSunElDeg has no API field and stays from the series.
  */
-export async function apiWindowMetrics(doc: Pick<SitesDoc, "status">, site: Pick<Site, "id" | "series">, startIso: string | null | undefined, hours: number) {
-  const base = await windowMetrics(doc, site, startIso, hours);
+export async function apiWindowMetrics(doc: Pick<SitesDoc, "status"> & { window?: unknown }, site: Pick<Site, "id" | "series">, startIso: string | null | undefined, hours: number) {
   type Blk = { longest_continuous_dark_hours?: number; longest_continuous_comm_gap_hours?: number; sun_visible_fraction?: number; earth_visible_fraction?: number };
   type Res = { results?: { data_status?: string; science_status?: string; evaluation?: { metrics?: Blk }; site?: { series_sha256?: string } }[] };
-  const t0iso = new Date(base.t0).toISOString().replace(".000Z", "Z");
-  const r = await api<Res>("/api/compare", { method: "POST", body: { site_ids: [site.id], start_utc: t0iso, duration_hours: hours } });
+  const iso = (t: number) => new Date(t).toISOString().replace(".000Z", "Z");
+  const ask = (t: number) => api<Res>("/api/compare", { method: "POST", body: { site_ids: [site.id], start_utc: iso(t), duration_hours: hours } });
+  // The API call does not wait for the series download: it starts with the window start the page already knows (the
+  // ?start= of the URL, else the catalogue's series_window.start_utc) and is used only if the series agrees with it.
+  const guess = startIso ? Date.parse(startIso) : Date.parse(String((doc.window as { start_utc?: string } | undefined)?.start_utc ?? ""));
+  const early = Number.isFinite(guess) ? ask(guess) : null;
+  const base = await windowMetrics(doc, site, startIso, hours);
+  const t0iso = iso(base.t0);
+  const r = await (early && guess === base.t0 ? early : ask(base.t0));
   const x = r.ok ? r.data?.results?.[0] : undefined, m = x?.evaluation?.metrics;
   if (!x || x.data_status !== "AVAILABLE" || !m) return { ...base, origin: "static" as const };
   const info = { status: x.science_status, source: "POST /api/compare", detail: { sha256: x.site?.series_sha256 ?? null, start: t0iso, hours, step: "1 h" } };
@@ -145,6 +156,26 @@ export async function apiWindowMetrics(doc: Pick<SitesDoc, "status">, site: Pick
   return { ...base, origin: "api" as const,
     sunPct: sourced(pct(m.sun_visible_fraction), { ...info, unit: "%" }), earthPct: sourced(pct(m.earth_visible_fraction), { ...info, unit: "%" }),
     longestDarkH: sourced(m.longest_continuous_dark_hours, { ...info, unit: "h" }), longestBlackoutH: sourced(m.longest_continuous_comm_gap_hours, { ...info, unit: "h" }) };
+}
+
+/**
+ * Resolves once the browser has put `el` on screen (Element Timing: the entry carries the presentation time), or after
+ * two frames when the API is missing; a timeout covers hidden tabs. Screens await it after drawing their text and
+ * loading state, before starting the heavy downloads (terrain heights, hourly series), so those never delay the paint.
+ */
+export function afterPaint(el?: Element | null): Promise<void> {
+  return new Promise(res => {
+    let done = false; const finish = () => { if (!done) { done = true; clearTimeout(tm); obs?.disconnect(); res(); } };
+    const hidden = typeof document !== "undefined" && document.visibilityState === "hidden";
+    const tm = setTimeout(finish, hidden || typeof requestAnimationFrame !== "function" ? 0 : 1500);
+    let obs: PerformanceObserver | null = null;
+    const id = "mp-first-paint";
+    if (el && typeof PerformanceObserver === "function" && PerformanceObserver.supportedEntryTypes?.includes("element")) {
+      el.setAttribute("elementtiming", id);
+      obs = new PerformanceObserver(list => { if (list.getEntries().some(e => (e as PerformanceEntry & { identifier?: string }).identifier === id)) finish(); });
+      obs.observe({ type: "element", buffered: true });
+    } else if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(finish, 0)));
+  });
 }
 
 /** Per-day sunlit fraction (0..1) over the window, for the "Why" bar. */
@@ -158,8 +189,36 @@ export function dailySun(series: Pick<SiteSeriesLike, "start" | "count" | "sunMa
   return out;
 }
 
+/** Header of the LOLA 400 m region grid (web/data/region/south_pole_400m.json, ~1 KB): geometry, sha256, layer files. */
+export interface RegionHeader {
+  nx: number; ny: number; spacing_m: number; origin_x_m: number; origin_y_m: number; scale_m: number; offset_m: number; nodata: number; sha256?: string; source: string;
+  layers: Record<string, { file: string; product: string }>; [key: string]: unknown;
+}
+let headerP: Promise<RegionHeader> | null = null;
+/** The region header alone, so a screen can frame the map and name its sources before the 1.4 MB heights arrive. */
+export function loadRegionHeader(): Promise<RegionHeader> {
+  return headerP ||= fetch(DATA_BASE + "region/south_pole_400m.json").then(r => { if (!r.ok) throw new Error(`terrain tile unavailable: ${DATA_BASE}region/south_pole_400m`); return r.json(); })
+    .catch(e => { headerP = null; throw e; });
+}
 let gridP: Promise<unknown> | null = null;
-export function loadRegion(): Promise<unknown> { return gridP ||= TerrainGrid.load(DATA_BASE + "region/south_pole_400m"); }
+/**
+ * The LOLA 400 m grid (web/lab/terrain.js TerrainGrid): same checks as TerrainGrid.load (byte length, sha256), but the
+ * header is shared with loadRegionHeader() and the 1.4 MB body is fetched at low priority, so it never competes with
+ * the text and the small data files a screen paints first.
+ */
+export function loadRegion(): Promise<unknown> {
+  return gridP ||= Promise.all([loadRegionHeader(), fetch(DATA_BASE + "region/south_pole_400m.bin", { priority: "low" } as RequestInit)])
+    .then(async ([header, bRes]) => {
+      if (!bRes.ok) throw new Error(`terrain tile unavailable: ${DATA_BASE}region/south_pole_400m`);
+      const buf = await bRes.arrayBuffer();
+      if (buf.byteLength !== header.nx * header.ny * 2) throw new Error("terrain tile has unexpected byte length");
+      if (header.sha256 && globalThis.crypto?.subtle) {
+        const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", buf))].map(b => b.toString(16).padStart(2, "0")).join("");
+        if (hex !== header.sha256) throw new Error("terrain tile checksum mismatch");
+      }
+      return new TerrainGrid(header, new Int16Array(buf));
+    }).catch(e => { gridP = null; throw e; });
+}
 
 /**
  * Call the API. Resolves {ok:true, data, status} or {ok:false, offline:true, error}. Never throws.

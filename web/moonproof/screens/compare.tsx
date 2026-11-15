@@ -10,15 +10,15 @@ import type { ComponentChild } from "../../vendor/preact/preact.module.js";
 import { mountSheet } from "./sheet.js";
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, apiOnline } from "../core/data.js";
-import type { Site, SitesDoc } from "../core/data.js";
+import { loadSites, apiOnline, loadSeries, afterPaint, sealFor } from "../core/data.js";
+import type { Site, SitesDoc, SiteSeriesLike } from "../core/data.js";
 import { createLayerCard, sealEl, barEl } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import type { Layer } from "../core/state.js";
 import { judge, slack, verdictOf, dailyFractions, parseHash, buildHash } from "./scenario-calc.js";
 import type { Judged, LimitRules } from "./scenario-calc.js";
-import { loadAll, staticMetrics, flagsOf, apiCompareMetrics, HOUR_MS } from "./scenario-data.js";
+import { staticMetrics, flagsOf, apiCompareMetrics, HOUR_MS } from "./scenario-data.js";
 import type { ScenarioMetrics } from "./scenario-data.js";
 
 register({
@@ -29,7 +29,7 @@ register({
     "cmp.why.night": "{L}: longest night {v} h, above the assumed limit of {lim} h.",
     "cmp.why.blackout": "{L}: {v} h without Earth, above the assumed limit of {lim} h.",
     "cmp.why.nd": "{L}: no data for this window.", "cmp.why.ok": "{L} meets every rule.",
-    "cmp.delay": "What if {L} is delayed?", "cmp.land": "Land", "cmp.pass": "Meets every rule", "cmp.fail.night": "Fail: long night",
+    "cmp.delay": "What if {L} is delayed?", "cmp.land": "Land", "cmp.viewFailures": "See why it fails", "cmp.pass": "Meets every rule", "cmp.fail.night": "Fail: long night",
     "cmp.fail.blackout": "Fail: no Earth", "cmp.nd": "No data",
     "cmp.chart": "Sun and Earth per day · {L}", "cmp.sun": "Sun", "cmp.earth": "Earth",
     "cmp.diff": "Differences", "cmp.full": "Full table", "cmp.power": "Power", "cmp.contact": "Contact",
@@ -51,7 +51,7 @@ register({
     "cmp.why.night": "{L}: noite mais longa de {v} h, acima do limite assumido de {lim} h.",
     "cmp.why.blackout": "{L}: {v} h sem Terra, acima do limite assumido de {lim} h.",
     "cmp.why.nd": "{L}: sem dado nesta janela.", "cmp.why.ok": "{L} atende a todas as regras.",
-    "cmp.delay": "E se {L} atrasar?", "cmp.land": "Pousar", "cmp.pass": "Atende a tudo", "cmp.fail.night": "Falha: noite longa",
+    "cmp.delay": "E se {L} atrasar?", "cmp.land": "Pousar", "cmp.viewFailures": "Ver o que falha", "cmp.pass": "Atende a tudo", "cmp.fail.night": "Falha: noite longa",
     "cmp.fail.blackout": "Falha: sem Terra", "cmp.nd": "Sem dado",
     "cmp.chart": "Sol e Terra por dia · {L}", "cmp.sun": "Sol", "cmp.earth": "Terra",
     "cmp.diff": "Diferenças", "cmp.full": "Tabela completa", "cmp.power": "Energia", "cmp.contact": "Contato",
@@ -89,11 +89,9 @@ function Node({ node }: { node: Node | null }) {
 const LETTERS = ["A", "B", "C"];
 const DAY = 24, MAXSC = 3;
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
-const shell = mountShell({ screen: "compare", context: null, onLang: () => draw() });
+const shell = mountShell({ screen: "compare", context: null, onLang: () => { paintContext(); draw(); } });
 mountSheet($("sheet"));
 const doc = (await loadSites()) as unknown as Doc;
-const all = await loadAll(doc);
-const online = await apiOnline();
 const siteOf = (id: string): CmpSite | undefined => doc.sites.find(s => s.id === id);
 const hoursDefault = (): number => getState().hours || 14 * DAY;
 const t0Default = (): string => getState().start || doc.window.start_utc;
@@ -104,16 +102,33 @@ function scenarios(): Scenario[] {
   if (hs.length) return hs.map(s => ({ site: s.site, start: s.start || t0Default(), hours: s.hours || hoursDefault() }));
   const ids = doc.sites.map(s => s.id), hrs = hoursDefault(), a = t0Default();
   const later = new Date(Date.parse(a) + 2 * hrs * HOUR_MS).toISOString();
-  const second = ids[1] || ids[0];
-  return [{ site: ids[0], start: a, hours: hrs }, { site: second, start: a, hours: hrs }, { site: second, start: later, hours: hrs }].slice(0, Math.min(MAXSC, 3));
+  const selectedSite = getState().site;
+  const first = selectedSite && ids.includes(selectedSite) ? selectedSite : ids[0];
+  const second = ids.find(id => id !== first) || first;
+  return [{ site: first, start: a, hours: hrs }, { site: second, start: a, hours: hrs }, { site: second, start: later, hours: hrs }].slice(0, Math.min(MAXSC, 3));
 }
 let sel = 0;
+// First paint (mobile LCP): the context bar comes from the URL hash and the catalogue (seal, window), and the panels show
+// the loading shimmer (scenario.css). Only after that paint do the hourly series (280 KB each) and the API figures start:
+// Compare needs the series of the sites in the visible scenarios (up to 3) and of nobody else; a site chosen later in the
+// editor is fetched then. Screen state is declared before the first await: the data callbacks may fire while it starts.
+let online: boolean | null = null, drawRev = 0;
+const onlineP = apiOnline().then(v => { online = v; paintContext(); return v; });
+/** The hourly series of a site, fetched on demand (one download per site, shared with every other caller). */
+function seriesOf(id: string): Promise<SiteSeriesLike> { return loadSeries(siteOf(id) as CmpSite); }
+function paintContext() {
+  const list = scenarios(), cur = Math.min(sel, list.length - 1);
+  const dates = new Set(list.map(s => s.start)).size, sites = new Set(list.map(s => s.site)).size;
+  shell.setContext({ site: t("cmp.ctx", { n: list.length, s: sites }), date: t("cmp.dates", { n: dates }), days: fmtNum(list[cur].hours / DAY),
+    seal: ctxSeal ?? sealFor(doc.status), online, action: { label: t("cmp.delay", { L: LETTERS[cur] }), href: recoverHref(list) } });
+}
+let ctxSeal: string | null = null;
 const save = (list: Scenario[]) => { history.replaceState(null, "", location.search + "#" + buildHash({ sc: list })); draw(); };
 
 async function metricsFor(sc: Scenario): Promise<Metrics> {
   const startMs = Date.parse(sc.start);
   if (online) { const r = await apiCompareMetrics(sc.site, new Date(startMs).toISOString(), sc.hours); if (r.metrics) return r.metrics; }
-  return staticMetrics(all.get(sc.site) as NonNullable<ReturnType<typeof all.get>>, startMs, sc.hours, doc.status, sc.site);
+  return staticMetrics(await seriesOf(sc.site), startMs, sc.hours, doc.status, sc.site);
 }
 const fmtDate = (ms: number): string => new Intl.DateTimeFormat(lang(), { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(ms);
 const hv = (x: number | null | undefined): string => (x == null ? t("nd") : fmtNum(x, 0) + " h");
@@ -122,17 +137,19 @@ const pv = (x: number | null | undefined): string => (x == null ? t("nd") : fmtN
 const ndSeal = () => <Node node={sealEl("N/D")} />;
 
 async function draw() {
+  const rev = ++drawRev;
   const list = scenarios(); if (sel >= list.length) sel = 0;
   const st = getState(), rules: LimitRules = { night: st.night, blackout: st.blackout };
-  const ms = await Promise.all(list.map(metricsFor));
+  const seriesP = seriesOf(list[sel].site); seriesP.catch(() => {}); // the chart's series downloads while /readyz answers
+  await onlineP;
+  const [ms, series] = await Promise.all([Promise.all(list.map(metricsFor)), seriesP]);
+  if (rev !== drawRev) return; // a newer draw started meanwhile: it paints
   const judged = ms.map(m => judge(m, rules));
   const verdict = verdictOf(judged, ms.map(m => m?.bothPct ?? null));
   const L = (i: number) => LETTERS[i];
   const cur = ms[sel];
-  const sealCtx = cur ? cur.seal : "N/D";
-  const dates = new Set(list.map(s => s.start)).size, sites = new Set(list.map(s => s.site)).size;
-  shell.setContext({ site: t("cmp.ctx", { n: list.length, s: sites }), date: t("cmp.dates", { n: dates }), days: fmtNum(list[sel].hours / DAY),
-    seal: sealCtx, online, action: { label: t("cmp.delay", { L: L(sel) }), href: recoverHref(list) } });
+  ctxSeal = cur ? cur.seal : "N/D";
+  paintContext();
 
   // verdict (layer card): answer = sentence, why = reasons, proof = rules + sources
   const reasons = one(
@@ -150,14 +167,14 @@ async function draw() {
     <div class="mp-actions">
       <a class="mp-pill is-primary" href={recoverHref(list)}>{t("cmp.delay", { L: L(sel) })}</a>
       {/* AUD-01: the chosen scenario, not the global one */}
-      <a class="mp-pill is-sim" href={hrefTo("landing.html", { ...getState(), site: list[sel].site, start: list[sel].start, hours: list[sel].hours })}>{t("cmp.land")}</a>
+      {judged[sel].status === "pass" ? <a class="mp-pill is-sim" href={hrefTo("landing.html", { ...getState(), site: list[sel].site, start: list[sel].start, hours: list[sel].hours })}>{t("cmp.land")}</a> : <button class="mp-pill" type="button" onClick={() => setState({ layer: "why" })}>{t("cmp.viewFailures")}</button>}
     </div>);
   card.el.insertBefore(actions, card.el.querySelector(".mp-chips"));
 
   // scenario list
   const ul: HTMLElement = one(
     <div class="mp-scn-list" role="radiogroup" aria-label={t("cmp.q")}>{list.map((sc, i) => (
-      <button class="mp-scn" type="button" role="radio" aria-checked={i === sel} tabIndex={i === sel ? 0 : -1}
+      <button class={"mp-scn" + (judged[i].status === "pass" ? " is-eligible" : "")} type="button" role="radio" aria-checked={i === sel} tabIndex={i === sel ? 0 : -1}
         onClick={() => { sel = i; draw(); }}
         onKeyDown={(e: KeyboardEvent) => { const d = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0; if (d) { e.preventDefault(); sel = (i + d + list.length) % list.length; draw().then(() => (ul.querySelector('[aria-checked="true"]') as HTMLElement | null)?.focus()); } }}>
         <span class="mp-scn-letter">{L(i)}</span>
@@ -167,7 +184,7 @@ async function draw() {
     ))}</div>);
 
   // chart for selected scenario
-  const fl = flagsOf(all.get(list[sel].site) as NonNullable<ReturnType<typeof all.get>>, Date.parse(list[sel].start), list[sel].hours);
+  const fl = flagsOf(series, Date.parse(list[sel].start), list[sel].hours);
   const sunD = dailyFractions(fl.sun.map(v => v)), earthD = dailyFractions(fl.earth.map(v => v));
   const eb = barEl(earthD, "var(--earth)"); eb.classList.add("is-mirror");
   const chart = one(
@@ -289,10 +306,15 @@ function markRoute() {
   document.querySelectorAll<HTMLElement>(".mp-marker").forEach(m => { const idx = list.findIndex(s => s.site === m.dataset.site); m.hidden = idx < 0; if (idx >= 0) { const letters = list.map((s, i) => s.site === m.dataset.site ? LETTERS[i] : null).filter(Boolean).join("/"); (m.firstChild as ChildNode).textContent = letters; } });
 }
 let terrain: { select(id: string): void } | null = null;
-terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: scenarios()[0].site,
+paintContext();
+await afterPaint(document.querySelector(".mp-ctx-text"));
+// After the paint, in parallel: the visible scenarios' series and API figures (draw) and the map (its relief draws when the heights arrive).
+const first = draw().catch(() => { $("left").replaceChildren(one(<p class="mp-label">{t("nd")}</p>)); });
+terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: scenarios()[0].site, progressive: true,
   route: [...new Set(scenarios().map(s => s.site))], onSelect: (id: string) => { const i = scenarios().findIndex(s => s.site === id); if (i >= 0) { sel = i; draw(); } } });
 new MutationObserver(() => markRoute()).observe($("terrain"), { childList: true, subtree: true });
 markRoute();
+await first;
+terrain.select(scenarios()[sel].site); markRoute();
 onState(() => draw());
 addEventListener("hashchange", () => draw());
-draw();

@@ -8,7 +8,8 @@ permissions:
   contents: read
 jobs:
   anonymous-public-evidence:
-    runs-on: ubuntu-latest
+    # Same configurable runner as CI while hosted Actions minutes are blocked.
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4

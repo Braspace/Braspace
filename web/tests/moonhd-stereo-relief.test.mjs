@@ -33,3 +33,21 @@ test("core/terrain keeps the LOLA 400 m hillshade as fallback and honours ?relie
   assert.match(terrain, /container\.dataset\.relief = "lola-2d"/);
 });
 
+
+test("core/terrain waits for the Moon HD relief before spending CPU on the 2D hillshade, with a bounded fallback", () => {
+  const t = readFileSync(new URL("../moonproof/core/terrain.ts", import.meta.url), "utf8");
+  assert.match(t, /const HD_WAIT_MS = 2500;/);
+  assert.match(t, /let hdPending = !RELIEF_2D && typeof globalThis\.WebGL2RenderingContext === "function";/);
+  assert.match(t, /else if \(hdPending\) g\.clearRect\(0, 0, w, h\);/);
+  assert.match(t, /\.then\(r => \{ if \(r\) \{ hd = r; hdPending = false;[^}]*\} else stopWaiting\(\); \}\)/);
+  assert.match(t, /\.catch\(stopWaiting\)/);
+  assert.match(t, /if \(relief\) g\.putImageData\(relief, 0, 0\);/);
+});
+
+test("colour map is decoded off the main thread (createImageBitmap, flipY kept) with a TextureLoader fallback", () => {
+  const r = readFileSync(new URL("../moon-hd/stereo-relief.ts", import.meta.url), "utf8");
+  assert.match(r, /createImageBitmap\(await res\.blob\(\), \{ imageOrientation: "flipY" \}\)/);
+  assert.match(r, /tex\.flipY = false;/);
+  assert.match(r, /if \(typeof createImageBitmap !== "function"\) return S\.textureLoader\(renderer, base\)\(name, true\);/);
+  assert.match(r, /bitmap\.close\?\.\(\)/);
+});

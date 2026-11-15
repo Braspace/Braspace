@@ -34,7 +34,11 @@ export function buttonPlace(side: Side, r: { left: number; right: number; top: n
 export function enhancePanels(): void {
   if (typeof document === "undefined" || !globalThis.matchMedia) return;
   const folds: Fold[] = [];
-  const place = () => {
+  // Mutations and resizes arrive in bursts while screens render: lay the buttons out once per frame,
+  // not once per mutation (each pass reads getComputedStyle/getBoundingClientRect and forced layout: ~90 ms on load).
+  let queued = 0;
+  const place = () => { if (!queued) queued = requestAnimationFrame(() => { queued = 0; placeNow(); }); };
+  const placeNow = () => {
     const desk = matchMedia(DESKTOP).matches, W = innerWidth, H = innerHeight;
     for (const f of folds) {
       f.btn.hidden = !desk || !f.panel.isConnected || getComputedStyle(f.panel).display === "none";

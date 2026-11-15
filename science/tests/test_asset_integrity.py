@@ -35,11 +35,12 @@ class PolarAssetIntegrity(unittest.TestCase):
             self.assertEqual(meta["source_sha256"], region["source_sha256"])
             self.assertEqual(meta["native_resolution_m"], 80)
 
-    def test_five_site_binary_series_match_pinned_hashes(self):
+    def test_site_binary_series_match_pinned_hashes(self):
         index = load(DATA / "sites.json")
         self.assertEqual(index["science_status"], "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED")
         self.assertEqual(index["series_window"]["hours"], 35064)
-        self.assertEqual(len(index["sites"]), 5)
+        # 14 real catalog sites with LOLA + SPICE series since 2026-11-15 (5 Artemis III candidates + 9 catalog sites).
+        self.assertEqual(len(index["sites"]), 14)
         for site in index["sites"]:
             meta = load(DATA / f"sites/{site['id']}.json")
             self.assertEqual(meta["science_status"], "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED")
@@ -62,12 +63,14 @@ class PolarAssetIntegrity(unittest.TestCase):
                 reference = by_id[site["id"]][k]
                 self.assertTrue(math.isfinite(reference))
                 self.assertAlmostEqual(value, reference, places=2, msg=f"{site['id']}/{k}")
-        self.assertEqual(len(pgda["results"]), 5)
+        self.assertEqual(len(pgda["results"]), 14)
         gaps = [x for x in pgda["results"] if abs(x["diff_sun_pp"]) > 5]
         # This is a known, explicitly UNRESOLVED scientific discrepancy,
         # not an allowable validation tolerance or proof of a bad DEM.
         self.assertTrue(gaps, "reviewed discrepancy evidence unexpectedly removed")
-        self.assertIn("peak-near-shackleton", [x["site"] for x in gaps])
+        # Science review 2026-11-15: exactly these three high-illumination ridges near Shackleton exceed the band
+        # (100 km ray reach under-counts the distant horizon); a new site outside the band needs a new review.
+        self.assertEqual(sorted(x["site"] for x in gaps), ["de-gerlache-kocher-massif", "de-gerlache-rim-1", "peak-near-shackleton"])
         self.assertEqual(idx["science_status"], "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED")
 
     def test_horizons_comparison_is_a_record_not_authoritative_certification(self):

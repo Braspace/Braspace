@@ -3,7 +3,7 @@
 // BR91: the relief is shaded per DEVICE pixel (bilinear heights, devicePixelRatio) instead of
 // stretching an 850×850 bitmap, and the view keeps the chosen site in the FREE area of the
 // screen (viewport minus the fixed panels laid over the map).
-import { loadRegion } from "./data.js";
+import { loadRegion, loadRegionHeader } from "./data.js";
 import { t } from "./i18n.js";
 import type { StereoRelief } from "../../moon-hd/stereo-relief.js";
 // Read at load: core/state rewrites the query string once the screen starts.
@@ -121,17 +121,27 @@ function loadFeatures(): Promise<Feature[]> {
  *  sites: [{ id, n, name, stereo_x_m, stereo_y_m }]; route: [siteId, ...] dotted line.
  * Returns Promise<{ select(id), zoom(f), redraw(), grid, el }>.
  */
-export interface TerrainOptions { sites?: TerrainSite[]; selected?: string | null; route?: string[]; onSelect?: (id: string) => void; labels?: boolean; }
+export interface TerrainOptions { sites?: TerrainSite[]; selected?: string | null; route?: string[]; onSelect?: (id: string) => void; labels?: boolean;
+  /** true: resolve as soon as the map can be framed (region header) and draw the relief when the heights arrive, so the
+   *  screen can paint its text first; `ready` stays false until then. Default false: resolve once the map is drawn. */
+  progressive?: boolean;
+  /** Called after every draw (markers are in the DOM), e.g. to place things measured from them. */
+  onDraw?: () => void; }
 export interface TerrainApi {
-  el: HTMLElement; grid: Grid; view: { cx: number; cy: number; span: number };
+  /** The LOLA heights; null until the 1.4 MB grid has arrived (the map is framed from the region header before that). */
+  el: HTMLElement; readonly grid: Grid | null; view: { cx: number; cy: number; span: number };
   select(id: string): void; zoom(f: number): void; redraw(): void;
   readonly free: Free | null; readonly mpp: number; readonly ready: boolean;
   toPx(x: number, y: number): [number, number]; fromPx(px: number, py: number): [number, number];
 }
-export async function mountTerrain(container: HTMLElement, { sites = [], selected = null, route = [], onSelect, labels = true }: TerrainOptions = {}): Promise<TerrainApi> {
+export async function mountTerrain(container: HTMLElement, { sites = [], selected = null, route = [], onSelect, labels = true, progressive = false, onDraw }: TerrainOptions = {}): Promise<TerrainApi> {
   container.classList.add("mp-terrain");
-  Object.assign(container.style, { position: "fixed", inset: "0", overflow: "hidden", background: "var(--bg)" });
-  const grid = (await loadRegion()) as Grid;
+  // No background yet: until a relief is drawn the page's decorative poster (moon-hd/preview.css) shows through,
+  // instead of a black box. The heights (1.4 MB) load in parallel; only the ~1 KB header is awaited here.
+  Object.assign(container.style, { position: "fixed", inset: "0", overflow: "hidden" });
+  const head = await loadRegionHeader();
+  const geo = { nx: head.nx, dx: head.spacing_m, x0: head.origin_x_m, y0: head.origin_y_m };
+  let grid: Grid | null = null;
   const cv = document.createElement("canvas"); cv.setAttribute("role", "img"); cv.setAttribute("aria-label", t("terrain.label"));
   Object.assign(cv.style, { position: "absolute", inset: "0", width: "100%", height: "100%" });
   const labelsEl = document.createElement("div"); labelsEl.className = "mp-terrain-labels"; labelsEl.setAttribute("aria-hidden", "true");
@@ -139,24 +149,40 @@ export async function mountTerrain(container: HTMLElement, { sites = [], selecte
   container.append(cv, labelsEl, layer);
   // Joel Moon HD relief (same LOLA grids as the 3D viewer, 80 m near the pole) under the 2D canvas, in the
   // same stereographic projection, so markers, rays and routes stay where they are. Hardware WebGL only;
-  // ?relief=2d, no WebGL or a lost context keep the original LOLA 400 m hillshade.
-  let hd: StereoRelief | null = null;
-  container.dataset.relief = "lola-2d";
-  if (!RELIEF_2D)
-    import("../../moon-hd/stereo-relief.js")
-      .then(m => m.mountStereoRelief(container, cv, () => { hd = null; container.dataset.relief = "lola-2d"; reliefKey = ""; draw(); }))
-      .then(r => { if (r) { hd = r; container.dataset.relief = "moonhd"; draw(); } })
-      .catch(() => {});
+  // ?relief=2d, no WebGL or a lost context keep the original LOLA 400 m hillshade. Phones get the 320 m grid
+  // only (the existing wideOnly level of detail): the 80 m grid is 8.4 MB.
+  // All state the async loaders below touch is declared first: a cached grid resolves in a microtask and
+  // would otherwise hit these bindings in their temporal dead zone (ReferenceError on explore/compare).
   // view: centre (metres) and span (metres across the free area's short side).
   const xs = sites.map(s => (s.stereo_x_m as number)), ys = sites.map(s => (s.stereo_y_m as number));
   const view = { cx: xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0, cy: ys.length ? (Math.min(...ys) + Math.max(...ys)) / 2 : 0,
-    span: xs.length ? Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * 1.6 + 30000 : grid.nx * grid.dx };
-  // Crater and mons names on the map (IAU/USGS, web/moonproof/data/features.json, label only).
-  const features = labels ? await loadFeatures() : [];
-  container.dataset.features = String(features.length);
+    span: xs.length ? Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * 1.6 + 30000 : geo.nx * geo.dx };
+  let features: Feature[] = [];
   let lastMpp = 0, lastSx = 0, lastSy = 0, lastW = 0, lastH = 0;
   let sel = selected, focus = selected, free: Free | null = null, relief: ImageData | null = null, reliefKey = "";
-  const ext = grid.nx * grid.dx;
+  const ext = geo.nx * geo.dx;
+  let hd: StereoRelief | null = null;
+  container.dataset.relief = "lola-2d";
+  // While the Moon HD relief is on its way (WebGL2 present), do not spend the main thread on the per-pixel 2D
+  // hillshade only to throw it away a moment later (~0.5 s of CPU on a mid phone, and a visible swap). The 2D
+  // relief is drawn if HD is refused (no hardware WebGL), fails, is lost, or takes longer than HD_WAIT_MS.
+  const HD_WAIT_MS = 2500;
+  let hdPending = !RELIEF_2D && typeof globalThis.WebGL2RenderingContext === "function";
+  const stopWaiting = () => { if (hdPending) { hdPending = false; reliefKey = ""; draw(); } };
+  if (hdPending) setTimeout(stopWaiting, HD_WAIT_MS);
+  if (!RELIEF_2D)
+    import("../../moon-hd/stereo-relief.js")
+      .then(m => m.mountStereoRelief(container, cv, () => { hd = null; container.dataset.relief = "lola-2d"; reliefKey = ""; draw(); },
+        { wideOnly: typeof matchMedia === "function" && matchMedia("(max-width:700px)").matches }))
+      .then(r => { if (r) { hd = r; hdPending = false; container.dataset.relief = "moonhd"; draw(); } else stopWaiting(); })
+      .catch(stopWaiting);
+  // The 2D hillshade needs the heights: draw as soon as they arrive (a failed load keeps the poster, no map).
+  const gridP = loadRegion().then(g => { grid = g as Grid; reliefKey = ""; draw(); });
+  if (!progressive) await gridP; else gridP.catch(() => { container.dataset.relief = "none"; });
+  // Crater and mons names on the map (IAU/USGS, web/moonproof/data/features.json, label only), added when they arrive.
+  container.dataset.features = "0";
+  const featuresP = labels ? loadFeatures().then(f => { features = f; container.dataset.features = String(f.length); draw(); }) : null;
+  if (!progressive) await featuresP;
   function frame(W: number, H: number) {
     const fr: Free = free = freeArea(W, H, overlayRects(container));
     const fw = fr.r - fr.l, fh = fr.b - fr.t;
@@ -168,7 +194,7 @@ export async function mountTerrain(container: HTMLElement, { sites = [], selecte
     // off the free-area centre: then zoom in step by step until it is back inside the free area.
     const place = (m: number) => { const hw = W * m / 2, hh = H * m / 2;
       let x = view.cx - (fcx - W / 2) * m, y = view.cy + (fcy - H / 2) * m;
-      x = Math.min(grid.x0 + ext - hw, Math.max(grid.x0 + hw, x)); y = Math.min(grid.y0 + ext - hh, Math.max(grid.y0 + hh, y));
+      x = Math.min(geo.x0 + ext - hw, Math.max(geo.x0 + hw, x)); y = Math.min(geo.y0 + ext - hh, Math.max(geo.y0 + hh, y));
       const px = W / 2 + (view.cx - x) / m, py = H / 2 - (view.cy - y) / m;
       return { x, y, ok: px >= fr.l && px <= fr.r && py >= fr.t && py <= fr.b }; };
     let pl = place(mpp);
@@ -179,6 +205,9 @@ export async function mountTerrain(container: HTMLElement, { sites = [], selecte
   function draw() {
     const W = container.clientWidth, H = container.clientHeight, dpr = Math.min(3, devicePixelRatio || 1);
     if (!W || !H) return;
+    // Nothing georeferenced is drawn before a relief exists: markers over the decorative poster would read as a map.
+    if (!grid && !hd) return;
+    container.style.background = "var(--bg)";
     const { mpp, sx, sy } = frame(W, H); lastMpp = mpp; lastSx = sx; lastSy = sy; lastW = W; lastH = H;
     container.dataset.free = [free!.l, free!.t, free!.r, free!.b].map(Math.round).join(",");
     const w = Math.round(W * dpr), h = Math.round(H * dpr);
@@ -186,10 +215,11 @@ export async function mountTerrain(container: HTMLElement, { sites = [], selecte
     const g = cv.getContext("2d")!;
     g.setTransform(1, 0, 0, 1, 0, 0);
     if (hd) { hd.draw(sx, sy, W, H, mpp); g.clearRect(0, 0, w, h); }
+    else if (hdPending) g.clearRect(0, 0, w, h); // HD relief on its way: markers and labels now, relief when it lands
     else {
       const key = [w, h, sx.toFixed(1), sy.toFixed(1), mpp.toFixed(4)].join();
-      if (key !== reliefKey) { relief = renderRelief(grid, w, h, sx - W * mpp / 2, sy + H * mpp / 2, mpp / dpr); reliefKey = key; }
-      g.putImageData(relief!, 0, 0);
+      if (key !== reliefKey && grid) { relief = renderRelief(grid, w, h, sx - W * mpp / 2, sy + H * mpp / 2, mpp / dpr); reliefKey = key; }
+      if (relief) g.putImageData(relief, 0, 0); else g.clearRect(0, 0, w, h);
     }
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     const vg = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .78);
@@ -206,13 +236,21 @@ export async function mountTerrain(container: HTMLElement, { sites = [], selecte
       const lab = document.createElement("span"); lab.className = "mp-marker-label"; lab.textContent = s.name ?? null; b.append(lab);
       return b;
     }));
+    onDraw?.();
     // A marker under a panel is hidden (not focusable): the site stays reachable by the ‹ › selector.
     requestAnimationFrame(() => {
       for (const b of layer.children as unknown as Iterable<HTMLElement>) {
         const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
         const hit = cx >= 0 && cy >= 0 && cx < W && cy < H ? document.elementFromPoint(cx, cy) : null;
-        b.dataset.covered = String(!(hit && (hit === b || b.contains(hit))) && b.getAttribute("aria-pressed") !== "true");
+        // A marker cut by the map edge (14 sites near the pole: Haworth, de Gerlache Rim 1 at 768/1024) is treated
+        // like one under a panel: hidden, still reachable by the ‹ › selector. The selected site always stays.
+        const cut = r.left < 0 || r.top < 0 || r.right > W || r.bottom > H;
+        b.dataset.covered = String((cut || !(hit && (hit === b || b.contains(hit)))) && b.getAttribute("aria-pressed") !== "true");
       }
+      // Site names under the markers: with many sites near the pole they collide. The selected site keeps its name;
+      // the others keep theirs in order (catalogue number) unless it would overlap one already shown or another
+      // marker — those show the name on hover/focus only (.is-quiet). The marker itself is never hidden here.
+      quietSiteLabels(layer);
       // Names: plain text, larger features first; hidden under panels, visible markers and each other.
       const marks = [...layer.querySelectorAll(".mp-marker:not([data-covered=true]), .mp-marker:not([data-covered=true]) .mp-marker-label")].map(e => e.getBoundingClientRect());
       const cands = features.filter(f => !sites.some(s => s.name && s.name.startsWith(f.name))).sort((a, b) => b.d - a.d)
@@ -224,7 +262,7 @@ export async function mountTerrain(container: HTMLElement, { sites = [], selecte
       container.dataset.labels = String(placed.length);
     });
   }
-  const api: TerrainApi = { el: container, grid, view,
+  const api: TerrainApi = { el: container, get grid() { return grid; }, view,
     select(id: string) { sel = id; focus = id; const s = sites.find(x => x.id === id); if (s) { view.cx = (s.stereo_x_m as number); view.cy = (s.stereo_y_m as number); } draw(); },
     zoom(f: number) { view.span = Math.min(ext, Math.max(4000, view.span / f)); draw(); }, redraw: draw,
     get free() { return free; }, get mpp() { return lastMpp; },
@@ -245,4 +283,28 @@ export async function mountTerrain(container: HTMLElement, { sites = [], selecte
   if (document.fonts?.ready) document.fonts.ready.then(reframe);
   draw();
   return api;
+}
+
+
+/** Rectangle overlap with a small gap (CSS px). */
+const overlaps = (a: DOMRect, b: DOMRect, pad = 2) => a.left < b.right + pad && b.left < a.right + pad && a.top < b.bottom + pad && b.top < a.bottom + pad;
+/**
+ * Greedy declutter of the site-name labels of a marker layer (see the call in draw()). Exported for tests:
+ * returns the ids of the sites whose label was made quiet.
+ */
+export function quietSiteLabels(layer: Element): string[] {
+  const marks = [...layer.querySelectorAll<HTMLElement>(".mp-marker:not([data-covered=true])")];
+  for (const m of marks) m.classList.remove("is-quiet");
+  const order = [...marks].sort((a, b) => Number(b.getAttribute("aria-pressed") === "true") - Number(a.getAttribute("aria-pressed") === "true"));
+  const markerRects = marks.map(m => m.getBoundingClientRect());
+  const shown: DOMRect[] = [], quiet: string[] = [];
+  for (const m of order) {
+    const lab = m.querySelector<HTMLElement>(".mp-marker-label"); if (!lab) continue;
+    const r = lab.getBoundingClientRect(); if (!r.width) continue;
+    const hitsLabel = shown.some(o => overlaps(r, o));
+    const hitsMarker = markerRects.some((mr, i) => marks[i] !== m && overlaps(r, mr));
+    if (m.getAttribute("aria-pressed") !== "true" && (hitsLabel || hitsMarker)) { m.classList.add("is-quiet"); quiet.push(m.dataset.site || ""); }
+    else shown.push(r);
+  }
+  return quiet;
 }

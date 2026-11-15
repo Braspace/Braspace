@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -113,9 +110,6 @@ func TestScienceValidationCannotIgnoreMissingSites(t *testing.T) {
 }
 
 func TestScienceEngineRejectsForgedOutput(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("POSIX shell fixture")
-	}
 	req := visibilityRequest{
 		SiteID: "synthetic", EpochUTC: "2026-11-14T00:00:00Z",
 		Sun:            direction{AzimuthDeg: 0, ElevationDeg: 2},
@@ -149,11 +143,7 @@ func TestScienceEngineRejectsForgedOutput(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			path := filepath.Join(t.TempDir(), "engine.sh")
-			script := "#!/bin/sh\nprintf '%s\\n' '" + string(b) + "'\n"
-			if err := os.WriteFile(path, []byte(script), 0o700); err != nil {
-				t.Fatal(err)
-			}
+			path := stdoutEngine(t, string(b)+"\n")
 			_, err = newEngineClient(path).call(context.Background(), req)
 			if !errors.Is(err, errEngineContract) {
 				t.Fatalf("accepted forged engine response %s: %v", name, err)

@@ -70,18 +70,29 @@ func TestReportRejectsInvalidInputs(t *testing.T) {
 	req := base()
 	raw, _ := json.Marshal(req)
 	for _, tc := range []struct {
-		body, ct string
-		status   int
+		body, ct, code string
+		status         int
 	}{
-		{"{}", "application/json", 422},
-		{string(raw), "text/plain", 415},
-		{string(raw) + "{}", "application/json", 400},
-		{`{"mission_id":"X","candidates":[],"extra":1}`, "application/json", 400},
-		{strings.Repeat("x", MaxRequestBytes+1), "application/json", 413},
+		{"{}", "application/json", "INVALID_SCENARIO", 422},
+		{string(raw), "text/plain", "UNSUPPORTED_MEDIA_TYPE", 415},
+		{string(raw) + "{}", "application/json", "INVALID_JSON", 400},
+		{`{"mission_id":"X","candidates":[],"extra":1}`, "application/json", "INVALID_JSON", 400},
+		{strings.Repeat("x", MaxRequestBytes+1), "application/json", "REQUEST_TOO_LARGE", 413},
 	} {
 		w := reportPost(tc.body, tc.ct)
 		if w.Code != tc.status {
 			t.Errorf("unexpected status %d (want %d): %s", w.Code, tc.status, w.Body.String())
+		}
+		// #151: errors are JSON {code, error} like every other handler, never text/plain.
+		if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+			t.Errorf("%d: error Content-Type %q, want application/json", tc.status, ct)
+		}
+		var e struct{ Code, Error string }
+		if err := json.Unmarshal(w.Body.Bytes(), &e); err != nil || e.Code != tc.code || e.Error == "" {
+			t.Errorf("%d: error body %q, want code %s with a message", tc.status, w.Body.String(), tc.code)
+		}
+		if tc.status == 422 && e.Error == "invalid mission scenario" {
+			t.Errorf("422 must say what is wrong, got the generic %q", e.Error)
 		}
 	}
 }

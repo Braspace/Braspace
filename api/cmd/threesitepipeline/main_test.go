@@ -2,11 +2,14 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/Braspace/Braspace/api/sitevis"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 const label = `PRODUCT = LDEM_80S_80M.IMG
@@ -116,7 +119,7 @@ func TestMetricsPreservePartialSolarDisc(t *testing.T) {
 }
 
 // With real inputs (NAIF_KERNEL_DIR and LOLA_DIR holding ldem_80s_80m.img/.lbl) the committed
-// science/results/summary.json must be reproduced, apart from its generated_utc timestamp.
+// science/results/summary.json must be reproduced byte for byte (SOURCE_DATE_EPOCH pins the stamp).
 func TestReproducesCommittedSummary(t *testing.T) {
 	kdir, ldir := os.Getenv("NAIF_KERNEL_DIR"), os.Getenv("LOLA_DIR")
 	if kdir == "" || ldir == "" {
@@ -126,30 +129,54 @@ func TestReproducesCommittedSummary(t *testing.T) {
 	if _, err := os.Stat(img); err != nil {
 		t.Skip("DEM missing in LOLA_DIR; skipping")
 	}
+	want, err := os.ReadFile("../../../science/results/summary.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Pin the stamp to the committed one (#157): the whole file, stamp included, must match.
+	var stamp struct {
+		GeneratedUTC string `json:"generated_utc"`
+	}
+	if err := json.Unmarshal(want, &stamp); err != nil {
+		t.Fatal(err)
+	}
+	pinned, err := time.Parse("2006-01-02T15:04:05Z", stamp.GeneratedUTC)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("SOURCE_DATE_EPOCH", strconv.FormatInt(pinned.Unix(), 10))
 	out := t.TempDir()
 	rc, stdout, stderr := runCLI("--img", img, "--label", lbl, "--kernels-dir", kdir, "--out-dir", out,
 		"--start-utc", "2025-01-01T00:00:00Z", "--hours", "35064")
 	if rc != 0 {
 		t.Fatalf("rc=%d %s", rc, stderr)
 	}
-	if n := strings.Count(stdout, "\n"); n != 5 {
+	if n := strings.Count(stdout, "\n"); n != len(sites) {
 		t.Errorf("expected one line per site, got %d", n)
 	}
-	strip := func(b []byte) string {
-		var keep []string
-		for _, l := range strings.Split(string(b), "\n") {
-			if !strings.Contains(l, "generated_utc") {
-				keep = append(keep, l)
-			}
-		}
-		return strings.Join(keep, "\n")
-	}
 	got, _ := os.ReadFile(filepath.Join(out, "summary.json"))
-	want, err := os.ReadFile("../../../science/results/summary.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strip(got) != strip(want) {
+	if !bytes.Equal(got, want) {
 		t.Error("summary.json differs from the committed science/results/summary.json")
+	}
+}
+
+func TestGeneratedUTCHonoursSourceDateEpoch(t *testing.T) {
+	wall := func() time.Time { return time.Date(2030, 1, 2, 3, 4, 5, 0, time.UTC) }
+	env := func(v string) func(string) string { return func(string) string { return v } }
+	if got := generatedUTC(env(""), wall); got != "2030-01-02T03:04:05Z" {
+		t.Fatalf("unset: %s", got)
+	}
+	if got := generatedUTC(env("1763227596"), wall); got != "2025-11-15T17:26:36Z" {
+		t.Fatalf("pinned: %s", got)
+	}
+	for _, bad := range []string{"-1", "soon", "1.5"} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Errorf("SOURCE_DATE_EPOCH=%q accepted", bad)
+				}
+			}()
+			generatedUTC(env(bad), wall)
+		}()
 	}
 }

@@ -157,6 +157,16 @@ browser_qa() {
   ( cd "$BTMP" && cp -r "$OLDPWD/data" "$OLDPWD/examples" . 2>/dev/null; NODE_PATH="$BTMP/web/node_modules" BRASPACE_REQUIRE_BACKEND=1 BRASPACE_BROWSER_ARTIFACTS="$BTMP/shots" \
     BRASPACE_REQUIRE_BACKEND=1 BRASPACE_BROWSER_ARTIFACTS="$BTMP/shots" node web/browser/e2e.mjs ); local rc=$?
   if [ "$rc" = 0 ]; then cockpit_focus_qa || rc=$?; fi
+  # Every MoonProof screen at 1440 and 390 with no JS exception and no 5xx (web/browser/pages-js-errors.mjs, #416:
+  # it caught the core/terrain.js TDZ of #413 that unit tests missed). Same Go+Rust API, own dev-server port.
+  if [ $rc = 0 ]; then
+    local pp; pp=$(freeport)
+    (cd "$BTMP" && exec env BRASPACE_API_PORT=$qp BRASPACE_WEB_PORT=$pp node web/dev-server.mjs) >"$BTMP/pages-web.log" 2>&1 & local pw=$!
+    for i in $(seq 1 30); do curl -fsS --max-time 2 "http://127.0.0.1:$pp/moonproof/" >/dev/null 2>&1 && break; sleep 1; done
+    sed "s#from \"playwright\"#from \"playwright-core\"#" web/browser/pages-js-errors.mjs > "$BTMP/web/browser/pages-js-errors-ci.mjs"
+    ( cd "$BTMP" && NODE_PATH="$BTMP/web/node_modules" CHROME_PATH="$(command -v google-chrome)" node web/browser/pages-js-errors-ci.mjs "http://127.0.0.1:$pp" ) || rc=1
+    kill $pw 2>/dev/null
+  fi
   kill $ap 2>/dev/null; return $rc
 }
 

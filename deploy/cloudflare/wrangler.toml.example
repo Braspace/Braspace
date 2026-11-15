@@ -10,4 +10,5 @@ compatibility_date = "2026-11-01"
 directory = "../../web"
 binding = "ASSETS"
 # Run the Worker first for /api/*, /v1/*, /healthz and /readyz; everything else is served from ASSETS.
-run_worker_first = ["/api", "/api/*", "/v1", "/v1/*", "/healthz", "/healthz/*", "/readyz", "/readyz/*"]
+# /data/* also goes through the Worker so binary grids are gzip-encoded (moonproof-assets.mjs).
+run_worker_first = ["/api", "/api/*", "/v1", "/v1/*", "/healthz", "/healthz/*", "/readyz", "/readyz/*", "/data/*"]

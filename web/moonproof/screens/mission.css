@@ -176,3 +176,10 @@
 /* iPhone (Safari, 14/11): the dock sat at the top over the Earth marker and its label. On phones it rides just above the sheet. */
 @media (max-width:700px){.mc-dock{top:auto;bottom:calc(46vh + 84px);left:50%;right:auto;transform:translateX(-50%)}}
 @media (max-width:700px){.mc-panels .mc-dock{position:static;transform:none;margin:0 auto 10px;bottom:auto;top:auto;left:auto;right:auto;justify-content:center}}
+/* Loading (mobile LCP): the context bar is painted at once and the panels fill as their files arrive; until then each
+   panel shows the same quiet shimmer as the Cockpit (screens/cockpit.css) instead of an empty box. */
+.mc-left:empty,.mc-right:not(:has(>:not(.mp-sheet-grip))){min-height:220px;bottom:auto;border-radius:var(--r-card);background:linear-gradient(100deg,rgba(255,255,255,.03) 30%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.03) 70%) 0 0/200% 100%;animation:mc-shimmer 1.4s linear infinite}
+@keyframes mc-shimmer{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.mc-left:empty,.mc-right:not(:has(>:not(.mp-sheet-grip))){animation:none}}
+/* Phone sheet: the right column sits under the left one; it waits for the left column, so filling the left never pushes it (CLS). */
+@media (max-width:700px){.mc-left:empty+.mc-right{display:none}}

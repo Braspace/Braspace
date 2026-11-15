@@ -1,6 +1,9 @@
 // Command testengine is a stand-in for the Rust CLI used by Go tests. It
 // implements the same stdin/stdout contract and horizon interpolation, and can
 // be told to fail via BRASPACE_FAKE_ENGINE=fail|garbage|slow.
+// Tests copy this binary and drop a sidecar next to the copy instead of writing POSIX shell
+// scripts, so the suite runs on Windows too (#155): <exe>.stdout is printed verbatim and the
+// process exits 0; <exe>.mode sets the failure mode.
 package main
 
 import (
@@ -8,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -39,7 +43,17 @@ func horizonAt(s []angle, az float64) float64 {
 }
 
 func main() {
-	switch os.Getenv("BRASPACE_FAKE_ENGINE") {
+	mode := os.Getenv("BRASPACE_FAKE_ENGINE")
+	if exe, err := os.Executable(); err == nil {
+		if out, err := os.ReadFile(exe + ".stdout"); err == nil {
+			_, _ = os.Stdout.Write(out)
+			return
+		}
+		if m, err := os.ReadFile(exe + ".mode"); err == nil {
+			mode = strings.TrimSpace(string(m))
+		}
+	}
+	switch mode {
 	case "fail":
 		fmt.Fprintln(os.Stderr, "engine rejected request")
 		os.Exit(2)

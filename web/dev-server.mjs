@@ -24,27 +24,31 @@ const staticFiles=new Map([
 // Only fixed prefixes, a strict character set and known extensions are served.
 const labTypes={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",
  ".json":"application/json; charset=utf-8",".bin":"application/octet-stream",".jpg":"image/jpeg"};
+// File names are POSIX ("moonproof/x.html") on every OS: path.join() below accepts "/" on Windows,
+// and tests compare these names as strings (path.normalize would give "\\" on Windows).
 export function labFile(pathname){
  if(!/^\/(lab|data)\/[A-Za-z0-9_\-\/]+\.(js|css|json|bin|jpg)$/.test(pathname)||pathname.includes(".."))return null;
  const ext=pathname.slice(pathname.lastIndexOf("."));
  if(pathname.startsWith("/lab/")&&![".js",".css"].includes(ext))return null;
- const name=path.normalize(pathname.slice(1));
- if(!name.startsWith("lab"+path.sep)&&!name.startsWith("data"+path.sep))return null;
+ const name=path.posix.normalize(pathname.slice(1));
+ if(!name.startsWith("lab/")&&!name.startsWith("data/"))return null;
  return {name,type:labTypes[ext]};
 }
 // MoonProof v3 front (web/moonproof/): pages, core and screen modules/styles only.
 export function moonproofFile(pathname){
  if(pathname==="/moonproof/")return {name:"moonproof/index.html",type:labTypes[".html"]};
+ // Clean URLs like the Cloudflare Worker (assets html_handling): /moonproof/cockpit serves cockpit.html. Same allowlist.
+ if(/^\/moonproof\/[A-Za-z0-9_\-]+$/.test(pathname))return moonproofFile(pathname+".html");
  // Self-hosted OFL fonts (CSP font-src 'self'): woff2 only, flat folder.
- if(/^\/moonproof\/fonts\/(?:manrope-latin-(?:400|500|600|700|800)-normal|ibm-plex-mono-latin-(?:400|600)-normal)\.woff2$/.test(pathname))return {name:path.normalize(pathname.slice(1)),type:"font/woff2"};
+ if(/^\/moonproof\/fonts\/(?:manrope-latin-(?:400|500|600|700|800)-normal|ibm-plex-mono-latin-(?:400|600)-normal)\.woff2$/.test(pathname))return {name:path.posix.normalize(pathname.slice(1)),type:"font/woff2"};
  // IAU/USGS feature names: one fixed file, no folder is served.
- if(pathname==="/moonproof/data/features.json")return {name:path.normalize(pathname.slice(1)),type:labTypes[".json"]};
+ if(pathname==="/moonproof/data/features.json")return {name:path.posix.normalize(pathname.slice(1)),type:labTypes[".json"]};
  if(!/^\/moonproof\/(?:(?:core|screens)\/)?[A-Za-z0-9_\-]+\.(html|js|css)$/.test(pathname))return null;
  const ext=pathname.slice(pathname.lastIndexOf("."));
  const sub=pathname.slice("/moonproof/".length);
  if(ext===".html"&&sub.includes("/"))return null;
  if(ext!==".html"&&!sub.includes("/"))return null;
- return {name:path.normalize(pathname.slice(1)),type:labTypes[ext]};
+ return {name:path.posix.normalize(pathname.slice(1)),type:labTypes[ext]};
 }
 // Moon HD viewer (web/moon-hd.html): one page, its modules and stylesheet. Its data is under /data/moonhd/ (labFile).
 export function moonHdFile(pathname){
@@ -53,7 +57,7 @@ export function moonHdFile(pathname){
  // GPU captures of the pole scene (renders/manifest.json): three fixed files, nothing else in that folder.
  if(/^\/moon-hd\/renders\/pole-gpu-(?:desktop|tablet|portrait)\.webp$/.test(pathname))return {name:pathname.slice(1),type:"image/webp"};
  if(!/^\/moon-hd\/[a-z0-9\-]+\.(js|css)$/.test(pathname))return null;
- return {name:path.normalize(pathname.slice(1)),type:labTypes[pathname.slice(pathname.lastIndexOf("."))]};
+ return {name:path.posix.normalize(pathname.slice(1)),type:labTypes[pathname.slice(pathname.lastIndexOf("."))]};
 }
 const csp=[
   "default-src 'none'",

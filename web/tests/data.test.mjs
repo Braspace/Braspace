@@ -26,10 +26,10 @@ async function loadTile(base) {
   return new TerrainGrid(h, new Int16Array(buf));
 }
 
-test("site index: five sites with provenance and LOLA-confirmed crater labels", () => {
-  assert.equal(index.sites.length, 5);
+test("site index: 14 real sites with provenance and LOLA-confirmed crater labels", () => {
+  assert.equal(index.sites.length, 14);
   assert.equal(index.science_status, "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED");
-  for (const s of index.sites) { assert.ok(s.source.length > 10, s.id); assert.ok(s.lat < -84 && s.lat > -90, s.id); }
+  for (const s of index.sites) { assert.ok(s.source.length > 10, s.id); assert.ok(s.lat < -83.5 && s.lat > -90, s.id); } // Nobile Rim 2 is at -83.95; LDEM_80S_80M covers poleward of -80
   for (const f of index.features) { assert.equal(f.dem_check, "DEPRESSION_CONFIRMED", f.id); assert.equal(f.landing_site, false); }
   assert.ok(index.features.some(f => f.id === "shackleton"));
 });

@@ -7,15 +7,15 @@ import { sunCaveat, PGDA_SUN_TOLERANCE_PP } from "../core/data.js";
 const read = p => readFileSync(new URL(p, import.meta.url), "utf8");
 const sites = JSON.parse(read("../../data/sites.json")).sites;
 
-test("the two 100 km reach cases are flagged, including Malapert below the PGDA tolerance", () => {
+test("reach cases and every site over the PGDA tolerance are flagged, including Malapert below it", () => {
   assert.equal(PGDA_SUN_TOLERANCE_PP, 5);
   const flagged = sites.filter(s => sunCaveat(s)).map(s => s.id);
-  assert.deepEqual(flagged, ["malapert-massif", "peak-near-shackleton"]);
+  assert.deepEqual(flagged, ["malapert-massif", "peak-near-shackleton", "de-gerlache-rim-1", "de-gerlache-kocher-massif"]);
   const malapert = sunCaveat(sites.find(s => s.id === "malapert-massif"));
   assert.deepEqual(malapert.reach, { sun100: 38.44, sun200: 33.84, dark100: 670, dark200: 3389 });
   const c = sunCaveat(sites.find(s => s.id === "peak-near-shackleton"));
   assert.equal(c.kind, "SUN_UPPER_BOUND");
-  // 80.43 - 71.9 = 8.53 after the solar-disc fix (9.0 with the inverted fraction); still the only site over 5 pp.
+  // 80.43 - 71.9 = 8.53 after the solar-disc fix (9.0 with the inverted fraction).
   assert.ok(Math.abs(c.diff - (c.ours - c.pgda)) < 1e-12 && c.diff > 8.4 && c.diff < 8.7, "difference " + c.diff);
   assert.ok(Object.isFrozen(c));
   assert.deepEqual(c.reach, { sun100: 80.38, sun200: 75.52, dark100: 345, dark200: 381 });
@@ -29,7 +29,7 @@ const gateFile = new URL("../../../api/cmd/validatehorizons/reference_tolerances
 test("the independent PGDA tolerance still matches the science gate", { skip: !existsSync(gateFile) && "science/ not in this build context" }, () => {
   const gate = readFileSync(gateFile, "utf8");
   assert.match(gate, /pgdaSunTolerancePP = 5\.0/);
-  assert.match(gate, /pgdaSunOutside = \[\]string\{"peak-near-shackleton"\}/);
+  assert.match(gate, /pgdaSunOutside = \[\]string\{"de-gerlache-kocher-massif", "de-gerlache-rim-1", "peak-near-shackleton"\}/);
 });
 
 test("no flag without both numbers, at the tolerance, or when PGDA shows more sunlight than we do", () => {

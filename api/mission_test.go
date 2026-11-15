@@ -46,23 +46,49 @@ func fakeEngineBinary(t *testing.T, mode string) string {
 	if mode == "ok" {
 		return testEngineBin
 	}
-	if runtime.GOOS == "windows" {
-		t.Skip("failure-mode engines are POSIX shell scripts")
-	}
-	path := filepath.Join(t.TempDir(), "engine")
-	script := fmt.Sprintf("#!/bin/sh\nBRASPACE_FAKE_ENGINE=%s exec %q\n", mode, testEngineBin)
-	if err := os.WriteFile(path, []byte(script), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	return path
+	return fakeEngineSidecar(t, ".mode", mode)
 }
 
+// fakeEngineSidecar copies the Go test engine and writes a sidecar next to the copy (see
+// internal/testengine): portable, no POSIX shell, so these tests run on Windows too (#155).
+func fakeEngineSidecar(t *testing.T, suffix, content string) string {
+	t.Helper()
+	dst := filepath.Join(t.TempDir(), "engine"+filepath.Ext(testEngineBin))
+	bin, err := os.ReadFile(testEngineBin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(dst, bin, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(dst+suffix, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return dst
+}
+
+// stdoutEngine is an engine that prints exactly `out` and exits 0.
+func stdoutEngine(t *testing.T, out string) string { return fakeEngineSidecar(t, ".stdout", out) }
+
 func testAPI(t *testing.T, engineMode string) (http.Handler, *missionAPI) {
+	t.Helper()
+	// The handler tests run against the explicit no-data fixture (nodata_fixture_test.go) so the
+	// DATA_NOT_AVAILABLE / N/D paths stay covered now that every real catalog site has a series.
+	return testAPIWithStore(t, storeWithNoDataSite(t), engineMode)
+}
+
+// productionTestAPI serves the real embedded catalog (every real site has a series).
+func productionTestAPI(t *testing.T, engineMode string) (http.Handler, *missionAPI) {
 	t.Helper()
 	store, err := loadDefaultStore()
 	if err != nil {
 		t.Fatal(err)
 	}
+	return testAPIWithStore(t, store, engineMode)
+}
+
+func testAPIWithStore(t *testing.T, store *siteStore, engineMode string) (http.Handler, *missionAPI) {
+	t.Helper()
 	bin := "/nonexistent/engine"
 	if engineMode != "" {
 		bin = fakeEngineBinary(t, engineMode)
@@ -435,7 +461,8 @@ func TestRealEngineAgreesWithContract(t *testing.T) {
 	real := &missionAPI{store: store, engine: newEngineClient(abs)}
 	mux := http.NewServeMux()
 	real.register(mux)
-	fake, _ := testAPI(t, "ok")
+	// Same catalog on both sides: testAPI swaps in the no-data fixture store.
+	fake, _ := productionTestAPI(t, "ok")
 	a, b := do(mux, "POST", "/api/compare", compareBody), do(fake, "POST", "/api/compare", compareBody)
 	if a.Code != 200 {
 		t.Fatalf("real engine: %d %s", a.Code, a.Body.String())

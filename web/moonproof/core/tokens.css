@@ -9,6 +9,8 @@
 @font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url("../fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2")}
 @font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:600;font-display:swap;src:url("../fonts/ibm-plex-mono-latin-600-normal.woff2") format("woff2")}
 :root{
+  /* Native menus, date pickers and form controls belong to this dark UI even on a light OS theme. */
+  color-scheme:dark;
   --bg:#07090C; --card:#050607; --glass:rgba(16,18,20,.72); --glass-blur:22px; --glass-filter:blur(22px) saturate(1.4);
   --pill:#F2F4F5; --pill-text:#07090C; --jade:#2EC4A0; --jade-text:#04110D;
   --text:#FFFFFF; --text-2:#B7C0C9; --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.16);
@@ -27,6 +29,11 @@ body{min-height:100vh;overflow-x:hidden;font-feature-settings:"tnum" 0}
 b,strong{font-weight:800}
 :focus-visible{outline:2px solid var(--jade);outline-offset:3px}
 button{font:inherit;color:inherit}
+/* A native option popup is not painted over the page. Give it an opaque surface instead of inheriting
+   a transparent pill or its jade foreground; screen-specific styles still own the closed control. */
+select option,select optgroup{background-color:var(--card);color:var(--text)}
+:where(select,textarea,input[type=text],input[type=number],input[type=date],input[type=datetime-local],input[type=time],input[type=email],input[type=search],input[type=url],input[type=tel],input[type=password]){background-color:var(--card);color:var(--text)}
+input::placeholder,textarea::placeholder{color:var(--text-2);opacity:1}
 .mp-num{font-size:var(--fs-num);font-weight:800;font-variant-numeric:tabular-nums}
 .mp-coord{font-family:var(--mono);font-size:var(--fs-coord)}
 .mp-label{font-size:var(--fs-label);font-weight:600;color:var(--text-2)}

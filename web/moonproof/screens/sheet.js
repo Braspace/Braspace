@@ -8,8 +8,13 @@ export function mountSheet(sheet) {
     h.setAttribute("role", "separator");
     h.setAttribute("aria-orientation", "horizontal");
     h.setAttribute("aria-label", "↕");
+    // Focusable separator = window splitter: it must expose its value (sheet height, % of the viewport).
+    h.setAttribute("aria-valuemin", "0");
+    h.setAttribute("aria-valuemax", "100");
     sheet.prepend(h);
-    const set = (px) => { const v = Math.max(96, Math.min(innerHeight * 0.7, px)); sheet.style.setProperty("--sheet-h", v + "px"); };
+    const val = () => { const pct = Math.round(sheet.getBoundingClientRect().height / Math.max(1, innerHeight) * 100); h.setAttribute("aria-valuenow", String(pct)); h.setAttribute("aria-valuetext", pct + "%"); };
+    const set = (px) => { const v = Math.max(96, Math.min(innerHeight * 0.7, px)); sheet.style.setProperty("--sheet-h", v + "px"); requestAnimationFrame(val); };
+    val();
     let y0 = null, h0 = 0;
     h.addEventListener("pointerdown", e => { y0 = e.clientY; h0 = sheet.getBoundingClientRect().height; h.setPointerCapture(e.pointerId); sheet.style.transition = "none"; });
     h.addEventListener("pointermove", e => { if (y0 != null)
