@@ -1,0 +1,9 @@
+[Unit]
+Description=MoonProof production watch (cockpit contract via edge and direct, exact commit, pgvector state)
+After=network-online.target tailscaled.service
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/share/braspace-ops/prod-watch.sh
+Environment=BRASPACE_REPO=%h/repos/Braspace
+TimeoutStartSec=900

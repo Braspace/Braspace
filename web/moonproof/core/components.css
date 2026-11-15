@@ -177,6 +177,9 @@ html:not(.mp-ready) body{visibility:hidden;animation:mp-reveal 0s 2s forwards}
   background: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); color: var(--text);
   font: 700 17px/1 var(--font, system-ui); display: grid; place-items: center; cursor: pointer; }
 .mp-fold[data-side="bottom"] { width: 44px; height: 28px; }
+/* `display: grid` above beats the UA `[hidden] { display: none }` (class > attribute), so a fold the
+   controller marks hidden stayed visible and clickable, covering other controls (seen on the cockpit). */
+.mp-fold[hidden] { display: none; }
 .mp-fold:hover { border-color: var(--jade); }
 .mp-fold:focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
 @media (min-width: 901px) {
@@ -216,3 +219,6 @@ html:not(.mp-ready) body{visibility:hidden;animation:mp-reveal 0s 2s forwards}
 @media (max-width:700px){
   .mp-context>:not(a):not(button):not(.mp-seal):not(.mp-caveat):not(.deb-dot){min-width:0;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
+/* 2D map: a site name that would collide with another (14 sites near the pole) shows on hover/focus only. */
+.mp-marker.is-quiet .mp-marker-label{display:none}
+.mp-marker.is-quiet:hover .mp-marker-label,.mp-marker.is-quiet:focus-visible .mp-marker-label{display:block;z-index:3}
