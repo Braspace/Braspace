@@ -14,12 +14,12 @@ const read=name=>readFile(path.join(web,name),"utf8");
 const {mountMoonBackdrop,pickAssets,probeWebGL,backdropTime,shouldAnimate,normalizeOptions,cameraPosition,MAX_PIXEL_RATIO,FRAME_MS,isSoftwareRenderer,slowStreak,SLOW_FRAME_MS,SLOW_FRAMES_TO_STOP,VIEW_DEFAULTS,clampDistance,clampLat,MIN_DISTANCE,MAX_DISTANCE,isBackgroundTarget}=backdrop;
 
 // Pages whose background is decorative get the Moon; pages whose LOLA relief is the functional map never do.
-const WITH={"moonproof/index.html":"../moon-hd/backdrop.js",
+const WITH={"moonproof/tasks.html":"../moon-hd/backdrop.js",
  "moonproof/rules.html":"../moon-hd/backdrop.js","moonproof/evidence.html":"../moon-hd/backdrop.js","moonproof/debrief.html":"../moon-hd/backdrop.js"};
 // MoonProof map screens keep their functional LOLA relief and get the Moon only on demand ("Explorar a Lua").
 const LAZY=["moonproof/mission.html","moonproof/explore.html","moonproof/compare.html","moonproof/recover.html","moonproof/cockpit.html","moonproof/landing.html",
  "moonproof/plan.html","moonproof/present.html","moonproof/activity.html"];
-const WITHOUT=["moon-hd.html"];
+const WITHOUT=["moon-hd.html","moonproof/index.html"];
 
 test("backdrop.js exports the documented API and does nothing without a document",async()=>{
  assert.equal(typeof mountMoonBackdrop,"function");
@@ -239,7 +239,7 @@ test("links to the full viewer and credits without endorsement",async()=>{
   for(const credit of ["CGI Moon Kit","LRO/LOLA","NAIF SPICE","IAU/USGS","Blue Marble"])assert.ok(t("nav.moon3d.credit").includes(credit),lang+" "+credit);
   assert.doesNotMatch(t("nav.moon3d.credit"),/endorsed by NASA(?! )|certified|validated by NASA/i);
  }
- assert.match(await read("moonproof/index.html"),/data-i18n="nav\.moon3d\.credit"/);
+ assert.match(await read("moonproof/tasks.html"),/data-i18n="nav\.moon3d\.credit"/);
  // The viewer keeps its own seal; the backdrop adds none.
  assert.match(await read("moon-hd/app.js"),/NOT VALIDATED/);
  assert.doesNotMatch(await read("moon-hd/backdrop.js"),/NOT VALIDATED|NÃO VALIDADO/);
