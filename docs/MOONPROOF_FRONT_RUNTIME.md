@@ -51,6 +51,7 @@ export CLOUDFLARE_ACCOUNT_ID=b6d9214ed8ad16fa0ebf37ac7785b141          # conta "
 (cd ../../web && npm run -s build:ts && git diff --quiet && node --test tests/*.test.mjs moonproof/tests/*.test.mjs) \
   && node --test ./*.test.mjs && npx -y wrangler@4 deploy --message "main $(git rev-parse --short HEAD)"
 node ../../scripts/smoke-prod-worker.mjs        # 35/35: todas as rotas OpenAPI + páginas
+CHROME_PATH=/usr/bin/google-chrome node ../../web/browser/pages-js-errors.mjs https://braspace-moonproof.almeida-me.workers.dev   # 13 telas × 1440/390 sem exceção JS
 ```
 - Entry `moonproof-worker.mjs` só com `export default` (workerd recusa named exports) e `redirect: "manual"` no proxy (workerd não aceita `"error"`).
 - Rollback: `npx wrangler deployments list --name braspace-moonproof` → `npx wrangler rollback <version>`.

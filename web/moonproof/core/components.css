@@ -219,3 +219,6 @@ html:not(.mp-ready) body{visibility:hidden;animation:mp-reveal 0s 2s forwards}
 @media (max-width:700px){
   .mp-context>:not(a):not(button):not(.mp-seal):not(.mp-caveat):not(.deb-dot){min-width:0;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
+/* 2D map: a site name that would collide with another (14 sites near the pole) shows on hover/focus only. */
+.mp-marker.is-quiet .mp-marker-label{display:none}
+.mp-marker.is-quiet:hover .mp-marker-label,.mp-marker.is-quiet:focus-visible .mp-marker-label{display:block;z-index:3}

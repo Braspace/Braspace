@@ -9,8 +9,8 @@ import { h, Fragment, render } from "../../vendor/preact/preact.module.js";
 import type { ComponentChild } from "../../vendor/preact/preact.module.js";
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, windowMetrics, apiWindowMetrics, dailySun, sealFor, apiOnline, api, loadRegion, sourced } from "../core/data.js";
-import type { Site, SitesDoc, SiteSeriesLike, Sourced } from "../core/data.js";
+import { loadSites, windowMetrics, apiWindowMetrics, dailySun, sealFor, apiOnline, api, loadRegion, loadRegionHeader, sourced, afterPaint } from "../core/data.js";
+import type { Site, SitesDoc, SiteSeriesLike, Sourced, RegionHeader } from "../core/data.js";
 import { createLayerCard, statCircle, barEl, sealEl } from "../core/layers.js";
 import { t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
@@ -59,21 +59,63 @@ const unitTxt = (x: Sourced<number>, d = 0): string => x.value == null ? nd() : 
 const hrs = (v: number | null | undefined): string => fmtVal(v, fmtNum, nd(), 0, " h");
 const deg = (v: number | null | undefined): string => fmtVal(v, fmtNum, nd(), 1, "°");
 
-const shell = mountShell({ screen: "explore", context: null, onLang: () => draw() });
+const shell = mountShell({ screen: "explore", context: null, onLang: () => { paintContext(); draw(); } });
 const doc = (await loadSites()) as unknown as Doc;
 if (!doc.sites.some(s => s.id === getState().site)) setState({ site: doc.sites[0].id });
 const hours = (): number => getState().hours || 14 * DAY;
-const online = await apiOnline();
-const grid = (await loadRegion()) as Grid & Record<string, any>; // TerrainGrid: untyped JS module
-let pgda: { sun: Uint8Array | null; earth: Uint8Array | null } | null = null;
-const pgdaP = Promise.all(["pgda_sun", "pgda_earth"].map(k => fetch(new URL("../../data/region/" + grid.h.layers[k].file, import.meta.url))
-  .then(r => r.ok ? r.arrayBuffer() : null).then(b => b && new Uint8Array(b)))).then(([sun, earth]) => (pgda = { sun, earth })).catch(() => null);
-const terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id: string) => setState({ site: id }) });
 const site = (): MissionSite => doc.sites.find(s => s.id === getState().site) as MissionSite;
+
+// First paint (mobile LCP): the context bar is painted from what the page already has — site from the URL/state, window
+// start from ?start= or the catalogue's series_window, window length, catalogue seal — and the panels show the loading
+// shimmer (mission.css). draw() repaints the bar with the series' own t0 and fills the panels when the data arrive;
+// "…" stands for the API status until /readyz answers. Only after that paint do the heavy files start downloading.
+// Screen state, declared before the first await: data callbacks may fire while the module is still starting.
+let online: boolean | null = null, ctxT0: number | null = null, mounted = false, drawRev = 0, otherId: string | null = null;
 let tab = "overview", energyOut: EnergyOut | null = null, cur: Computed | null = null;
+const computed = new Map<string, Promise<Computed>>(); // one calculation per site and window (see compute)
+const skyCache = new Map<string, ReturnType<typeof api<SkyPayload | null>>>();
+const fmtDate = (d: Date) => new Intl.DateTimeFormat(lang(), { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(d) + " UTC";
+function paintContext() {
+  const s = site(), guess = Date.parse(getState().start || String((doc.window as { start_utc?: string } | null)?.start_utc ?? ""));
+  const t0 = ctxT0 ?? (Number.isFinite(guess) ? guess : null);
+  shell.setContext({ site: `${s.n} · ${s.name}`, date: t0 == null ? "…" : fmtDate(new Date(t0)), days: fmtNum(hours() / DAY), seal: sealFor(doc.status), online,
+    action: { label: t("ctx.compare"), href: hrefTo("compare.html") } });
+}
+paintContext();
+// Mobile sheet: drag the handle to resize. Wired (and the dock placed in it) before the first paint, so nothing shifts later.
+const handle = $("handle"), panels = $("panels");
+// Phone: the site/zoom dock lives inside the sheet, right under the handle, so it never covers the map
+// (iPhone Safari 14/11: over the site label, and before that over the Earth marker). Desktop keeps it fixed at the bottom.
+const phone = matchMedia("(max-width:700px)");
+const placeDock = () => { const d = $("dock"); if (phone.matches) { if (d.parentElement !== panels) handle.after(d); } else if (d.parentElement !== document.body) document.body.append(d); };
+phone.addEventListener?.("change", placeDock); placeDock();
+handle.onpointerdown = e => { handle.setPointerCapture(e.pointerId); const y0 = e.clientY, h0 = panels.offsetHeight;
+  handle.onpointermove = ev => { panels.style.height = Math.max(120, Math.min(innerHeight - 140, h0 + (y0 - ev.clientY))) + "px"; };
+  handle.onpointerup = () => { handle.onpointermove = null; frame(); }; };
+handle.onkeydown = e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") { e.preventDefault(); panels.style.height = Math.max(120, Math.min(innerHeight - 140, panels.offsetHeight + (e.key === "ArrowUp" ? 60 : -60))) + "px"; frame(); } };
+
+dock(site());
+const onlineP = apiOnline().then(v => { online = v; paintContext(); return v; });
+await afterPaint(document.querySelector(".mp-ctx-text"));
+
+// Everything below runs in parallel: the series and API figures of the chosen site (and of the site it is compared
+// with), the region header (~1 KB: map framing, sources, PGDA file names), the 1.4 MB heights (slope; low priority)
+// and the two PGDA layers. Each one fills its part of the panels when it arrives.
+let grid: (Grid & Record<string, any>) | null = null; // TerrainGrid: untyped JS module; null until the heights arrive
+const gridP = loadRegion().then(g => { grid = g as Grid & Record<string, any>; }); gridP.catch(() => {});
+let pgda: { sun: Uint8Array | null; earth: Uint8Array | null } | null = null;
+const pgdaP = loadRegionHeader().then(hd => Promise.all(["pgda_sun", "pgda_earth"].map(k => fetch(new URL("../../data/region/" + hd.layers[k].file, import.meta.url), { priority: "low" } as RequestInit)
+  .then(r => r.ok ? r.arrayBuffer() : null).then(b => b && new Uint8Array(b))))).then(([sun, earth]) => (pgda = { sun, earth })).catch(() => null);
+compute(site()); compute(other(site()));
+const terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id: string) => setState({ site: id }), progressive: true, onDraw: () => { if (mounted) rays(); } });
+const head: RegionHeader = await loadRegionHeader();
+const cellGrid = { x0: head.origin_x_m, y0: head.origin_y_m, dx: head.spacing_m, nx: head.nx, ny: head.ny };
+await onlineP;
+mounted = true;
 
 // Keep the chosen site in the free part of the map (between the side panels), not under them.
 function frame() {
+  if (!mounted) return; // the map is mounted after the first paint
   const s = site(); terrain.select(s.id);
   // core/terrain.js already centres the site in the free area between the panels (an extra offset here moved it twice).
   terrain.redraw(); rays();
@@ -117,19 +159,28 @@ function satellites(r: Runs | null, labels: string[]) {
     { value: r && r.firstReturn != null ? t("mc.day", { n: dayOf(r.firstReturn) }) : nd(), label: d }];
 }
 
-async function compute(s: MissionSite): Promise<Computed> {
+// One calculation per site and window, shared by every draw (draws overlap while files arrive).
+function compute(s: MissionSite): Promise<Computed> {
+  const k = [s.id, getState().start, hours()].join("|");
+  if (!computed.has(k)) computed.set(k, computeNow(s).catch(e => { computed.delete(k); throw e; }));
+  return computed.get(k) as Promise<Computed>;
+}
+async function computeNow(s: MissionSite): Promise<Computed> {
   const m = (await apiWindowMetrics(doc, s, getState().start, hours())) as unknown as Metrics;
   const i0 = Math.ceil((m.t0 - m.series.start) / H);
   return { m, sunR: runs(m.series.sunMargin, i0, hours()), earthR: runs(m.series.earthMargin, i0, hours()), geo: m.series.at(m.t0) };
 }
 
 async function draw() {
-  const st = getState(), s = site();
-  cur = await compute(s);
+  if (!mounted) return; // the start of the module calls draw() once everything below the first paint is in place
+  const rev = ++drawRev, st = getState(), s = site();
+  ctxT0 = null; paintContext(); // site or window may have changed: the catalogue values until the series answers
+  const otherP = compute(other(s)); otherP.catch(() => {});
+  const c = await compute(s);
+  if (rev !== drawRev) return; // a newer draw owns the panels
+  cur = c;
   const { m, sunR, earthR } = cur;
-  const fmtDate = (d: Date) => new Intl.DateTimeFormat(lang(), { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(d) + " UTC";
-  shell.setContext({ site: `${s.n} · ${s.name}`, date: fmtDate(new Date(m.t0)), days: fmtNum(hours() / DAY), seal: sealFor(doc.status), online,
-    action: { label: t("ctx.compare"), href: hrefTo("compare.html") } });
+  ctxT0 = m.t0; paintContext();
 
   // ---- left column
   const tabs = (
@@ -150,23 +201,26 @@ async function draw() {
     const ec = statCircle({ value: unitTxt(m.earthPct), label: t("mc.earth"), seal: m.earthPct.seal, satellites: satellites(earthR, [t("mc.losses"), t("mc.longest"), t("mc.loss"), t("mc.back")]) });
     ec.classList.add("mc-earth");
     const height = sourced(s.site_height_m, { unit: "m", status: doc.status, source: "web/data/sites.json · site_height_m" });
-    const n = grid.normal(s.stereo_x_m, s.stereo_y_m);
-    const slope = sourced(n.slopeDeg, { unit: "°", status: "ESTIMATE", source: "LOLA 400 m grid · central difference" });
+    // Slope needs the 1.4 MB heights: "…" (no seal) while they load, never a number before.
+    const slope = grid ? sourced(grid.normal(s.stereo_x_m, s.stereo_y_m).slopeDeg, { unit: "°", status: "ESTIMATE", source: "LOLA 400 m grid · central difference" }) : null;
     body = (
       <>
         <div class="mp-pill is-white mc-battery">{t("mc.battery")}</div>
         <div class="mc-circles"><Node node={sunCircle} /><Node node={ec} /></div>
-        {([["mc.altitude", height], ["mc.slope", slope]] as [string, Sourced<number>][]).map(([k, v]) => (
-          <div class="mp-pill is-white mc-metric"><span>{t(k)}</span><b class="mp-num">{unitTxt(v, v.unit === "°" ? 1 : 0)}</b><Node node={sealEl(v.seal)} /></div>
+        {([["mc.altitude", height], ["mc.slope", slope]] as [string, Sourced<number> | null][]).map(([k, v]) => (
+          <div class="mp-pill is-white mc-metric"><span>{t(k)}</span><b class="mp-num">{v ? unitTxt(v, v.unit === "°" ? 1 : 0) : "…"}</b>{v ? <Node node={sealEl(v.seal)} /> : null}</div>
         ))}
         <Node node={energyCard(st, s, m)} /><Node node={contactCard(st, s, m)} /><Node node={terrainCard(st, s, height, slope)} />
       </>
     );
   }
   $("left").replaceChildren(...build(<>{tabs}{body}</>));
+  frame(); dock(s); // the left column and the dock are usable before the right column's API answers
 
-  // ---- right column
-  const right = $("right"); right.replaceChildren(await numbersCard(s, m), await nowCard(s, m));
+  // ---- right column (the compared site and the API's next transition are fetched together, not one after the other)
+  const [numbers, now] = await Promise.all([numbersCard(s, m, otherP), nowCard(s, m)]);
+  if (rev !== drawRev) return;
+  const right = $("right"); right.replaceChildren(numbers, now);
   // Earth compass: azimuth of the Earth at the window start, from the stored series (cur.geo); missing shows the dash glyph.
   const az = cur.geo?.earthAz as number, ci = compassIndex(az);
   right.append(...build(
@@ -222,21 +276,27 @@ function dailyEarth(m: Metrics): (number | null)[] {
   return out;
 }
 
-function terrainCard(st: ReturnType<typeof getState>, s: MissionSite, height: Sourced<number>, slope: Sourced<number>): HTMLElement {
-  const ps = pgda ? pgdaAt(grid as never, pgda.sun, s.stereo_x_m, s.stereo_y_m) : null, pe = pgda ? pgdaAt(grid as never, pgda.earth, s.stereo_x_m, s.stereo_y_m) : null;
-  const why = one(<p class="mp-label">{t("mc.terrain.why", { s: fmtVal(ps, fmtNum, nd(), 0, "%"), e: fmtVal(pe, fmtNum, nd(), 0, "%") })}</p>);
+function terrainCard(st: ReturnType<typeof getState>, s: MissionSite, height: Sourced<number>, slope: Sourced<number> | null): HTMLElement {
+  const ps = pgda ? pgdaAt(cellGrid as never, pgda.sun, s.stereo_x_m, s.stereo_y_m) : null, pe = pgda ? pgdaAt(cellGrid as never, pgda.earth, s.stereo_x_m, s.stereo_y_m) : null;
+  const pct = (v: number | null) => pgda ? fmtVal(v, fmtNum, nd(), 0, "%") : "…"; // "…" while the PGDA layers load
+  const slopeTxt = slope ? unitTxt(slope, 1) : "…";
+  const why = one(<p class="mp-label">{t("mc.terrain.why", { s: pct(ps), e: pct(pe) })}</p>);
   // Two origins: height is PRE (LOLA), slope is EST (derived). The card shows the weaker one.
-  return createLayerCard({ id: "card-terrain", title: t("mc.terrain"), status: slope.value == null ? height.status : slope.status,
-    answer: t("mc.terrain.ans", { n: unitTxt(height), k: unitTxt(slope, 1) }), why, layer: st.layer, onLayer: (layer: string) => setState({ layer: layer as typeof st.layer }),
-    proof: [[t("mc.altitude"), `${unitTxt(height)} · ${height.source} · ${height.seal}`], [t("mc.slope"), `${unitTxt(slope, 1)} · ${t("mc.defSlope")} · ${slope.seal}`],
-      [t("proof.source"), `${grid.h.source} · sha256 ${grid.h.sha256}`], ["PGDA", `${grid.h.layers.pgda_sun.product} · ${grid.h.layers.pgda_earth.product}`]] }).el;
+  return createLayerCard({ id: "card-terrain", title: t("mc.terrain"), status: slope == null || slope.value == null ? height.status : slope.status,
+    answer: t("mc.terrain.ans", { n: unitTxt(height), k: slopeTxt }), why, layer: st.layer, onLayer: (layer: string) => setState({ layer: layer as typeof st.layer }),
+    proof: [[t("mc.altitude"), `${unitTxt(height)} · ${height.source} · ${height.seal}`], [t("mc.slope"), slope ? `${slopeTxt} · ${t("mc.defSlope")} · ${slope.seal}` : "…"],
+      [t("proof.source"), `${head.source} · sha256 ${head.sha256}`], ["PGDA", `${head.layers.pgda_sun.product} · ${head.layers.pgda_earth.product}`]] }).el;
 }
 
-let otherId: string | null = null;
-async function numbersCard(s: MissionSite, m: Metrics): Promise<HTMLElement> {
+/** The site the numbers card compares with (the user's choice, else the first other site). */
+function other(s: MissionSite): MissionSite {
   const others = doc.sites.filter(x => x.id !== s.id);
   if (!others.some(x => x.id === otherId)) otherId = others[0].id;
-  const o = others.find(x => x.id === otherId) as MissionSite, om = (await compute(o)).m;
+  return others.find(x => x.id === otherId) as MissionSite;
+}
+async function numbersCard(s: MissionSite, m: Metrics, otherP: Promise<Computed>): Promise<HTMLElement> {
+  const others = doc.sites.filter(x => x.id !== s.id);
+  const o = other(s), om = (await otherP).m;
   // Window length: the whole screen recomputes for it (state.hours). The current value is always an option.
   const winSel = (
     <select class="mc-win" aria-label={t("mc.window")} onChange={(e: Event) => setState({ hours: Number((e.currentTarget as HTMLSelectElement).value) })}>
@@ -282,7 +342,9 @@ async function numbersCard(s: MissionSite, m: Metrics): Promise<HTMLElement> {
 
 async function nowCard(s: MissionSite, m: Metrics): Promise<HTMLElement> {
   const start = new Date(m.t0).toISOString().replace(".000Z", "Z");
-  let r = skyNext(await api<SkyPayload | null>(`/api/sites/${encodeURIComponent(s.id)}/sky?start=${start}&hours=${Math.min(hours(), 720)}&step=3600`, { timeoutMs: 6000 }), "sun");
+  const url = `/api/sites/${encodeURIComponent(s.id)}/sky?start=${start}&hours=${Math.min(hours(), 720)}&step=3600`;
+  if (!skyCache.has(url)) skyCache.set(url, api<SkyPayload | null>(url, { timeoutMs: 6000 }));
+  let r = skyNext(await skyCache.get(url)!, "sun");
   let src = t("mc.now.src");
   if (r.hours == null && r.seal === "N/D" && !r.reason?.match(/no (change|transition)/i)) {
     // API off or site without API series: fall back to the stored hourly series (PRE), and say so.
@@ -319,26 +381,15 @@ function dock(s: MissionSite) {
           onKeyDown={(e: KeyboardEvent) => { if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); setState({ site: doc.sites[(i + (e.key === "ArrowLeft" ? n - 1 : 1)) % n].id }); } }}>
           {doc.sites.map(x => <option value={x.id} selected={x.id === s.id}>{`${t("ctx.site")} ${x.n} · ${x.name}`}</option>)}
         </select>
-        {btn("−", t("mc.zout"), () => { terrain.zoom(0.7); frame(); })}
-        {btn("+", t("mc.zin"), () => { terrain.zoom(1.4); frame(); })}
+        {btn("−", t("mc.zout"), () => { if (mounted) { terrain.zoom(0.7); frame(); } })}
+        {btn("+", t("mc.zin"), () => { if (mounted) { terrain.zoom(1.4); frame(); } })}
       </div>
     </>));
 }
-
-// Mobile sheet: drag the handle to resize.
-const handle = $("handle"), panels = $("panels");
-// Phone: the site/zoom dock lives inside the sheet, right under the handle, so it never covers the map
-// (iPhone Safari 14/11: over the site label, and before that over the Earth marker). Desktop keeps it fixed at the bottom.
-const phone = matchMedia("(max-width:700px)");
-const placeDock = () => { const d = $("dock"); if (phone.matches) { if (d.parentElement !== panels) handle.after(d); } else if (d.parentElement !== document.body) document.body.append(d); };
-phone.addEventListener?.("change", placeDock); placeDock();
-handle.onpointerdown = e => { handle.setPointerCapture(e.pointerId); const y0 = e.clientY, h0 = panels.offsetHeight;
-  handle.onpointermove = ev => { panels.style.height = Math.max(120, Math.min(innerHeight - 140, h0 + (y0 - ev.clientY))) + "px"; };
-  handle.onpointerup = () => { handle.onpointermove = null; frame(); }; };
-handle.onkeydown = e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") { e.preventDefault(); panels.style.height = Math.max(120, Math.min(innerHeight - 140, panels.offsetHeight + (e.key === "ArrowUp" ? 60 : -60))) + "px"; frame(); } };
 
 addEventListener("resize", () => frame());
 let last = getState().site;
 onState(s => { if (s.site !== last) { last = s.site; } draw(); });
 pgdaP.then(() => draw());
+gridP.then(() => draw(), () => {});
 draw();

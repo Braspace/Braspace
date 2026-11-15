@@ -229,7 +229,11 @@ func TestGetResponsesMatchSchema(t *testing.T) {
 // byte for byte with the stored *.response.json (go test -run TestExamples -update).
 func TestExamples(t *testing.T) {
 	_, raw := loadSpec(t)
-	h, _ := testAPI(t, "ok")
+	// Examples are replayed against the real catalog (examples/mission/replay.sh
+	// does the same against a running API); only site-without-data needs the
+	// fixture store, because every real catalog site now has a series.
+	h, _ := productionTestAPI(t, "ok")
+	noData, _ := testAPI(t, "ok")
 	cases := []struct {
 		name, path string
 		status     int
@@ -254,7 +258,11 @@ func TestExamples(t *testing.T) {
 		for _, e := range validateSchema(raw, requestSchema(raw, tc.path), reqVal, tc.name+".request") {
 			t.Error(e)
 		}
-		rec := do(h, "POST", tc.path, string(reqBody))
+		srv := h
+		if tc.name == "site-without-data" {
+			srv = noData
+		}
+		rec := do(srv, "POST", tc.path, string(reqBody))
 		if rec.Code != tc.status {
 			t.Fatalf("%s: got %d want %d: %s", tc.name, rec.Code, tc.status, rec.Body.String())
 		}

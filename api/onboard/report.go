@@ -200,6 +200,14 @@ func RenderReport(resp Response, appendix *ReportAppendix) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// reportError answers like every other handler: JSON {code, error} with a code from the OpenAPI
+// Error enum. Only the 200 response is HTML.
+func reportError(w http.ResponseWriter, status int, code, msg string) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]string{"code": code, "error": msg})
+}
+
 // ReportHandler computes a fresh report from the exact same onboard request as
 // /api/onboard/evaluate. It returns standalone print-friendly HTML.
 func ReportHandler() http.Handler {
@@ -209,38 +217,39 @@ func ReportHandler() http.Handler {
 		w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 		media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil || media != "application/json" {
-			http.Error(w, "application/json required", http.StatusUnsupportedMediaType)
+			reportError(w, http.StatusUnsupportedMediaType, "UNSUPPORTED_MEDIA_TYPE", "application/json required")
 			return
 		}
 		raw, err := io.ReadAll(io.LimitReader(r.Body, MaxRequestBytes+1))
 		if err != nil || len(raw) > MaxRequestBytes {
-			http.Error(w, "maximum request size exceeded", http.StatusRequestEntityTooLarge)
+			reportError(w, http.StatusRequestEntityTooLarge, "REQUEST_TOO_LARGE", "maximum request size exceeded")
 			return
 		}
 		if err := jsoncontract.Check(raw); err != nil {
-			http.Error(w, "invalid JSON document", http.StatusBadRequest)
+			reportError(w, http.StatusBadRequest, "INVALID_JSON", "invalid JSON document")
 			return
 		}
 		dec := json.NewDecoder(bytes.NewReader(raw))
 		dec.DisallowUnknownFields()
 		var req Request
 		if err := dec.Decode(&req); err != nil {
-			http.Error(w, "invalid JSON contract", http.StatusBadRequest)
+			reportError(w, http.StatusBadRequest, "INVALID_JSON", "invalid JSON contract")
 			return
 		}
 		var trailing any
 		if err := dec.Decode(&trailing); err != io.EOF {
-			http.Error(w, "trailing JSON not allowed", http.StatusBadRequest)
+			reportError(w, http.StatusBadRequest, "INVALID_JSON", "trailing JSON not allowed")
 			return
 		}
 		out, err := Evaluate(req)
 		if err != nil {
-			http.Error(w, "invalid mission scenario", http.StatusUnprocessableEntity)
+			// Same code and detail as /api/onboard/evaluate, so the caller learns what is wrong.
+			reportError(w, http.StatusUnprocessableEntity, "INVALID_SCENARIO", err.Error())
 			return
 		}
 		page, err := RenderReport(out, nil)
 		if err != nil {
-			http.Error(w, "report generation failed", http.StatusInternalServerError)
+			reportError(w, http.StatusInternalServerError, "INTERNAL", "report generation failed")
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

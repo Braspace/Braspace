@@ -31,8 +31,9 @@ export class SiteSeries {
             this.earthMargin[i] = series.earthEl[i] - horizonAt(this.horizon, series.earthAz[i]);
         }
     }
-    static async load(base) {
-        const [mRes, bRes] = await Promise.all([fetch(base + ".json"), fetch(base + ".bin")]);
+    static async load(base, { priority } = {}) {
+        const init = (priority ? { priority } : undefined); // Fetch Priority: background series must not compete with the visible ones
+        const [mRes, bRes] = await Promise.all([fetch(base + ".json", init), fetch(base + ".bin", init)]);
         if (!mRes.ok || !bRes.ok)
             throw new Error(`site series unavailable: ${base}`);
         const meta = await mRes.json();

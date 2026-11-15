@@ -16,9 +16,9 @@ Horas em BRT (America/Sao_Paulo). Horas UTC entre parênteses quando informadas 
 
 ## API em produção (harness, `/docker/braspace`)
 
-- Imagem: `5f06ee30aa2c-sha` (main `5f06ee3`, #404), publicada às 14:47 BRT (17:47Z) com `swap-api.sh`, sem downtime.
-- Backup antes do deploy: `backup/pre-5f06ee30aa2c-sha-*.dump`, gerado pelo próprio script.
-- Rollback: `./swap-api.sh 2b6247498db4-sha`. Depois disso, `41dedbb4705b-sha`.
+- Imagem: `c8ed6fe63c3b-sha` (main `c8ed6fe`, #414: erros do `/api/onboard/report` em JSON com códigos do enum), publicada às 15:31 BRT (18:31Z) com `swap-api.sh`, sem downtime.
+- Backup antes do deploy: `backup/pre-c8ed6fe63c3b-sha-20261115-183050.dump`.
+- Rollback: `./swap-api.sh 482aa03c656c-sha`. Depois disso, `5f06ee30aa2c-sha`.
 
 ## Verificado ao vivo pela borda
 
@@ -136,3 +136,36 @@ Estado do pgvector depois do deploy: `index_ready`, 4 auditados com manifesto `8
   - `smoke-publico.sh` passou;
   - 415 responde `UNSUPPORTED_MEDIA_TYPE` direto e pela borda;
   - vector em `index_ready` (4 auditados).
+
+## Vigilância contínua e backup fora da VPS (EXO-X1, desde 15/11/2026 17:57Z)
+
+- **`braspace-prod-watch.timer`** (systemd do usuário no EXO-X1, a cada 10 min) roda `deploy/ops/prod-watch.sh`. Cada execução confere:
+  - `/healthz` igual pela borda e direto;
+  - o contrato do cockpit com `BRASPACE_EXPECT_COMMIT` igual ao commit no ar, pela borda e direto;
+  - `vector/status` em `index_ready`.
+
+  O log fica em `~/.local/state/braspace/prod-watch.log`. Quando o estado muda (ok → falha ou falha → ok), sai uma notificação no desktop. Um 429 conta como `INCONCLUSIVE`, não como falha.
+- **`braspace-backup.timer`** (diário, 06:00 UTC) roda `deploy/ops/pull-backup.sh`. Ele faz um `pg_dump -Fc` novo pela Tailscale, confere com `pg_restore -l` e guarda as 7 cópias mais recentes em `~/backups/braspace/`, com `.sha256`. Antes disso, os dumps ficavam só em `/docker/braspace/backup`, na mesma VPS do banco.
+- Instalação idempotente: `deploy/ops/install.sh`. Para ver: `systemctl --user list-timers 'braspace-*'` e `journalctl --user -u braspace-prod-watch`.
+
+## Deploy da API `482aa03c656c-sha` — 15/11/2026 18:25Z, EXO-X1
+
+- **Conteúdo (#415):** séries LOLA+SPICE PRELIMINARY dos 9 locais de catálogo que apareciam como N/D. Agora `sites_with_series` é 16 (14 PRELIMINARY e 2 SYNTHETIC). Não houve migration: só mudou o conteúdo do catálogo e das séries, aplicado pelo `ingest`.
+- **Ensaio:** rodei a imagem num dump novo da produção (`deploy/ops/pull-backup.sh`), com o mesmo `mem_limit` de 256m:
+  - `ingest` e `vector-ingest` saíram com exit 0;
+  - `/api/health` mostrou 16/16;
+  - `sky` respondeu 200 nos locais novos;
+  - o uso de RAM ficou em 57 MiB.
+- **Troca:** `swap-api.sh` com um watcher na borda, **177/177 respostas 200** durante a troca.
+- **Verificado depois do deploy:**
+  - contrato com `BRASPACE_EXPECT_COMMIT=482aa03…`: 49/49 pela borda e 49/49 direto, agora exigindo cálculo no servidor nos 16 locais;
+  - `smoke-publico.sh` passou.
+
+## Deploy da API `c8ed6fe63c3b-sha` — 15/11/2026 18:31Z, EXO-X1
+
+- **Conteúdo (#414, sessão 3):** `/api/onboard/report` respondia todos os erros em `text/plain`, com `http.Error`, e o 422 genérico. Agora responde JSON `{code, error}` com os códigos do enum: `UNSUPPORTED_MEDIA_TYPE`, `REQUEST_TOO_LARGE`, `INVALID_JSON`, `INVALID_SCENARIO` com detalhe, e `INTERNAL`. Não houve migration.
+- **Troca:** `swap-api.sh` com um watcher na borda, **170/170 respostas 200** durante a troca.
+- **Verificado depois do deploy:**
+  - contrato com `BRASPACE_EXPECT_COMMIT=c8ed6fe…`: 49/49 pela borda e 49/49 direto;
+  - `smoke-publico.sh` passou;
+  - pela borda, `report` responde 415 `UNSUPPORTED_MEDIA_TYPE` e 400 `INVALID_JSON`, os dois em JSON.
