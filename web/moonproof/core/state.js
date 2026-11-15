@@ -1,3 +1,4 @@
+import "./ready.js"; // every screen imports this module, so it carries the first-paint signal
 // Scenario state lives in the query string, so a URL reproduces the screen.
 // Keys: site, start (ISO UTC), hours, layer (answer|why|proof), task (explore|class|plan),
 // lang, night, blackout, battery (assumed limits, editable by the user).

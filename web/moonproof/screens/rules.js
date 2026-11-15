@@ -1,6 +1,7 @@
 // V3 Camadas · rules page: the core (what always shows), the three layers of a card, and the two kits.
 // Every number comes from core/data.js or the URL state; nothing from the design sheet is copied here.
 import { mountShell } from "../core/shell.js";
+import { holdReady, markReady } from "../core/ready.js";
 import { loadSites, windowMetrics, dailySun, SEALS } from "../core/data.js";
 import { createLayerCard, barEl, sealEl } from "../core/layers.js";
 import { register, t, fmtNum, apply } from "../core/i18n.js";
@@ -125,6 +126,7 @@ register({
   }
 });
 
+holdReady();
 const shell = mountShell({ screen: "evidence", onLang: draw });
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -237,3 +239,4 @@ function draw() {
   apply();
 }
 draw();
+markReady();

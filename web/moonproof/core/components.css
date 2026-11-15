@@ -152,3 +152,8 @@ button,input,select,textarea{font:inherit;color:inherit}
   :is(.mp-sheet,.mc-panels,.ex-sheet) [data-mp-sheet]>.mp-sheet-grip{display:none!important}
 }
 .mp-pill.is-disabled{opacity:.45;pointer-events:none;cursor:not-allowed}
+/* CLS audit (14/11): panels are filled by JS after the first frame. Hide the page (visibility is
+   ignored by layout-shift) until core/ready.js marks it ready; the 2 s animation reveals it anyway
+   if a script fails. The reduced-motion rule above zeroes duration, not delay. */
+html:not(.mp-ready) body{visibility:hidden;animation:mp-reveal 0s 2s forwards}
+@keyframes mp-reveal{to{visibility:visible}}
