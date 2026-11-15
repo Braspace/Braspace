@@ -19,6 +19,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import os
 import math
 import pathlib
 import re
@@ -38,6 +39,15 @@ FEATURES = [
     {"id": "haworth", "name": "Haworth crater", "lat": -87.45, "lon": -5.0, "radius_km": 25.0},
 ]
 
+
+
+def generated_utc():
+    """Timestamp for generated assets. SOURCE_DATE_EPOCH (reproducible builds, Unix seconds) makes
+    regeneration byte-identical (#157); otherwise now. Invalid values are ignored."""
+    raw = os.environ.get("SOURCE_DATE_EPOCH", "").strip()
+    if raw.isdigit():
+        return dt.datetime.fromtimestamp(int(raw), dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 def sha256(path: pathlib.Path) -> str:
     h = hashlib.sha256()
@@ -271,7 +281,7 @@ def main():
                          "landing_site": False})
 
     (a.out / "sites.json").write_text(json.dumps({
-        "generated_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_utc": generated_utc(),
         "science_status": "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED",
         "note": "Site coordinates are catalogue feature centres, not certified touchdown points.",
         "series_window": summary["window"], "sites": sites_index, "features": features,

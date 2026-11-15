@@ -264,7 +264,7 @@ func pipeline(stdout io.Writer, img, label, kdir, outDir, startUTC string, hours
 	}
 	summarySites := []any{}
 	summary := pyfmt.Obj{
-		{K: "generated_utc", V: time.Now().UTC().Format("2006-01-02T15:04:05Z")},
+		{K: "generated_utc", V: generatedUTC(os.Getenv("SOURCE_DATE_EPOCH"), time.Now())},
 		{K: "window", V: pyfmt.Obj{{K: "start_utc", V: start.Format("2006-01-02T15:04:05Z")}, {K: "hours", V: hours}, {K: "step_minutes", V: step}}},
 		{K: "science_status", V: "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED"},
 		{K: "sites", V: nil},
@@ -364,4 +364,17 @@ func contains(l []string, s string) bool {
 		}
 	}
 	return false
+}
+
+// generatedUTC is the summary timestamp. With SOURCE_DATE_EPOCH (the reproducible-builds convention,
+// Unix seconds) it is that instant, so regenerating the committed results is byte-identical (#157);
+// otherwise it is now. An invalid value is ignored rather than silently producing a fake date.
+func generatedUTC(epoch string, now time.Time) string {
+	if epoch = strings.TrimSpace(epoch); epoch != "" {
+		var sec int64
+		if _, err := fmt.Sscan(epoch, &sec); err == nil && sec >= 0 && fmt.Sprint(sec) == epoch {
+			return time.Unix(sec, 0).UTC().Format("2006-01-02T15:04:05Z")
+		}
+	}
+	return now.UTC().Format("2006-01-02T15:04:05Z")
 }

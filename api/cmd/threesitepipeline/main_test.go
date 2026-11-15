@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 const label = `PRODUCT = LDEM_80S_80M.IMG
@@ -151,5 +152,22 @@ func TestReproducesCommittedSummary(t *testing.T) {
 	}
 	if strip(got) != strip(want) {
 		t.Error("summary.json differs from the committed science/results/summary.json")
+	}
+}
+
+// #157: SOURCE_DATE_EPOCH makes the summary timestamp reproducible; bad values fall back to now.
+func TestGeneratedUTCHonoursSourceDateEpoch(t *testing.T) {
+	now := time.Date(2030, 1, 2, 3, 4, 5, 0, time.UTC)
+	for _, tc := range []struct{ epoch, want string }{
+		{"1763164800", "2025-11-15T00:00:00Z"},
+		{" 0 ", "1970-01-01T00:00:00Z"},
+		{"", "2030-01-02T03:04:05Z"},
+		{"-5", "2030-01-02T03:04:05Z"},
+		{"12abc", "2030-01-02T03:04:05Z"},
+		{"1.5", "2030-01-02T03:04:05Z"},
+	} {
+		if got := generatedUTC(tc.epoch, now); got != tc.want {
+			t.Errorf("generatedUTC(%q) = %s, want %s", tc.epoch, got, tc.want)
+		}
 	}
 }
