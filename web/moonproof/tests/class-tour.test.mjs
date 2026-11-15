@@ -55,3 +55,35 @@ test("classroom share URL targets presentation, not teacher editor; copy errors 
  assert.ok(html.includes('id="btn-none"'));
  assert.ok(html.includes('id="present-feedback"'));
 });
+
+test("Cockpit onboarding uses the shared tour and can reopen independently",async()=>{
+ const html=await read("../cockpit.html"), js=await read("../screens/tour.js");
+ assert.equal(TOUR_STEPS.cockpit.length,7);
+ assert.notEqual(tourStorageKey("cockpit"),tourStorageKey("explore"));
+ assert.notEqual(tourStorageKey("cockpit"),tourStorageKey("class"));
+ assert.match(html,/src="screens\/tour\.js" data-moon-tour="cockpit"/);
+ assert.match(html,/href="screens\/tour\.css"/);
+ assert.match(js,/if \(!hasSeen && mode !== "present"\) open\(true\)/,"Cockpit auto-onboards on first visit");
+ assert.match(js,/help\.addEventListener\("click", \(\) => open\(false\)\)/,"help can always reopen");
+ for(const step of TOUR_STEPS.cockpit){
+   assert.ok(step.targets.length>0);
+   for(const lang of ["pt","en"]){
+     assert.equal(step[lang].length,2);
+     assert.ok(step[lang][0].length>3);
+     assert.ok(step[lang][1].length>20&&step[lang][1].length<220);
+   }
+ }
+});
+test("Cockpit tour references actual page controls, not removed/stale selectors",async()=>{
+ const html=await read("../cockpit.html");
+ const shell=await read("../core/shell.js"), cockpit=await read("../screens/cockpit.js"), panels=await read("../screens/cockpit-panels.js");
+ assert.match(html,/id="terrain"/);
+ assert.match(shell,/className = "mp-context"/);
+ assert.match(html,/id="ck-panel-controls"/);
+ assert.match(panels,/ck-panel-menu/);
+ assert.match(cockpit,/mp-visrow/);
+ assert.match(cockpit,/mp-rules/);
+ assert.match(html,/id="player"/);
+ const js=await read("../../moon-hd/backdrop.js");
+ assert.match(js,/moon-open/);
+});
