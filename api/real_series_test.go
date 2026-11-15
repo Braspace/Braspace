@@ -6,12 +6,15 @@ import (
 	"testing/fstest"
 )
 
-var fiveRealSites = []string{"mons-mouton-im2", "malapert-massif", "nobile-rim-1", "connecting-ridge", "peak-near-shackleton"}
+// realSeriesSites are every real catalog site with a stored LOLA + SPICE series (all 14 since 2026-11-15).
+var realSeriesSites = []string{"mons-mouton-im2", "malapert-massif", "nobile-rim-1", "connecting-ridge", "peak-near-shackleton",
+	"haworth", "nobile-rim-2", "connecting-ridge-extension", "de-gerlache-rim-1", "de-gerlache-rim-2", "de-gerlache-kocher-massif",
+	"leibnitz-beta-plateau", "faustini-rim-a", "amundsen-rim"}
 
-// BR72: the five LOLA+SPICE precomputed series are served as PRELIMINARY, never VALIDATED.
-func TestFiveRealSitesSkyPreliminary(t *testing.T) {
-	h, _ := testAPI(t, "ok")
-	for _, id := range fiveRealSites {
+// BR72: every real LOLA+SPICE precomputed series (14 sites) is served as PRELIMINARY, never VALIDATED.
+func TestRealSitesSkyPreliminary(t *testing.T) {
+	h, _ := productionTestAPI(t, "ok")
+	for _, id := range realSeriesSites {
 		rec := do(h, "GET", "/api/sites/"+id+"/sky?hours=24", "")
 		if rec.Code != 200 {
 			t.Fatalf("%s: %d %s", id, rec.Code, rec.Body.String())
@@ -66,7 +69,7 @@ func TestEverySeriesIsPinnedAndNeverValidated(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, id := range fiveRealSites {
+	for _, id := range realSeriesSites {
 		s, _ := st.site(id)
 		ser, ok := st.seriesFor(id)
 		if !ok || !sha256Pattern.MatchString(s.SeriesSHA256) || ser.ScienceStatus == "VALIDATED" {
@@ -84,7 +87,7 @@ func TestRealSeriesShaMismatchFailsClosed(t *testing.T) {
 	cat, _ := embeddedSiteData.ReadFile("sitedata/catalog.json")
 	tampered := []byte(strings.Replace(string(good), `"azimuth_deg":`, `"azimuth_deg": `, 1))
 	fsys := fstest.MapFS{"catalog.json": {Data: cat}}
-	for _, id := range append([]string{"synthetic-demo-a", "synthetic-demo-b"}, fiveRealSites...) {
+	for _, id := range append([]string{"synthetic-demo-a", "synthetic-demo-b"}, realSeriesSites...) {
 		b, err := embeddedSiteData.ReadFile("sitedata/series/" + id + ".json")
 		if err != nil {
 			t.Fatal(err)

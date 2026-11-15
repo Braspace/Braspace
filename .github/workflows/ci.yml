@@ -6,6 +6,19 @@ on:
     branches: ["main", "team/**"]
     tags: ["v*"]
   pull_request:
+    # Docs-only PRs do not take the single self-hosted runner (one full run is ~6 min). Later patterns win:
+    # everything, minus docs/** and the root Markdown files (README*, CHANGELOG…), plus the docs that tests read
+    # (grep of web/api/science/tests for .md) and docs/API.md (docs/API.md is generated from
+    # api/openapi.json and verified by `gen-api-md.mjs --check`). Pushes to main always run the full CI.
+    paths:
+      - "**"
+      - "!docs/**"
+      - "!*.md"
+      - "docs/API.md"
+      - "docs/MOON_HD.md"
+      - "docs/ASSET_LICENSE_MATRIX.md"
+      - "docs/SCIENTIFIC_ACCEPTANCE.md"
+      - "docs/SOLAR_ANGLE_VS_POWER.md"
   workflow_dispatch:
 
 permissions:
@@ -17,7 +30,9 @@ concurrency:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    # Repository variable CI_RUNS_ON switches runners without editing workflows, e.g. '["self-hosted","exo-x1"]'
+    # while GitHub-hosted minutes are blocked by billing; unset it to go back to ubuntu-latest.
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +42,9 @@ jobs:
       # Layer cache for every Dockerfile stage (Go/Rust/Node/Python builds and tests).
       - uses: actions/cache@v4
         with:
-          path: /tmp/.buildx-cache
+          # runner.temp is on disk on the self-hosted exo-x1 runner (its /tmp is a RAM tmpfs shared with other builds);
+          # it is cleaned per job and restored by actions/cache, the same as on hosted runners.
+          path: ${{ runner.temp }}/.buildx-cache
           key: buildx-${{ runner.os }}-${{ github.sha }}
           restore-keys: buildx-${{ runner.os }}-
       - uses: actions/setup-node@v4
@@ -35,7 +52,7 @@ jobs:
           node-version: "22"
       - name: Run scripts/ci-local.sh (all tests, Compose + Postgres, endpoints, Chromium)
         env:
-          BRASPACE_CI_CACHE: /tmp/.buildx-cache
+          BRASPACE_CI_CACHE: ${{ runner.temp }}/.buildx-cache
         run: bash scripts/ci-local.sh --browser
 
   release:

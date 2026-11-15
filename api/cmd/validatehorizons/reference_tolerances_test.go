@@ -20,7 +20,13 @@ import (
 
 const resultsDir = "../../../science/results"
 
+// referenceSites have JPL Horizons cross-checks (the five original candidates).
 var referenceSites = []string{"connecting-ridge", "malapert-massif", "mons-mouton-im2", "nobile-rim-1", "peak-near-shackleton"}
+
+// pgdaSites are every real catalog site with a LOLA + SPICE series (14 since the 9 remaining catalog sites got series).
+var pgdaSites = []string{"amundsen-rim", "connecting-ridge", "connecting-ridge-extension", "de-gerlache-kocher-massif", "de-gerlache-rim-1",
+	"de-gerlache-rim-2", "faustini-rim-a", "haworth", "leibnitz-beta-plateau", "malapert-massif", "mons-mouton-im2", "nobile-rim-1",
+	"nobile-rim-2", "peak-near-shackleton"}
 
 const (
 	// The site series is stored at 0.01 deg; a direction error ten times smaller cannot change a stored sample.
@@ -30,7 +36,10 @@ const (
 )
 
 // Sites whose recorded difference is outside the band. Their Sun figures must be presented as unconfirmed.
-var pgdaSunOutside = []string{"peak-near-shackleton"}
+// Science review 2026-11-15: all three are high-illumination ridges/massifs near Shackleton where the 100 km ray
+// reach under-counts the distant horizon (the reach study already shows Peak dropping 4.2 pp at 150 km); the other
+// 11 sites agree with PGDA within +/-3.5 pp. The UI marks these as SUN_UPPER_BOUND (web/moonproof/core/data.ts).
+var pgdaSunOutside = []string{"de-gerlache-kocher-massif", "de-gerlache-rim-1", "peak-near-shackleton"}
 
 func load(t *testing.T, name string) pyfmt.Obj {
 	t.Helper()
@@ -112,8 +121,8 @@ func TestSunlightFractionAgainstPGDAIsInsideTheBandExceptTheListedSite(t *testin
 	doc := load(t, "validation_pgda.json")
 	rv, _ := doc.Get("results")
 	results := rv.([]any)
-	if got := sortedSites(results); !equal(got, referenceSites) {
-		t.Fatalf("sites %v != %v", got, referenceSites)
+	if got := sortedSites(results); !equal(got, pgdaSites) {
+		t.Fatalf("sites %v != %v", got, pgdaSites)
 	}
 	var outside []string
 	for _, r := range results {

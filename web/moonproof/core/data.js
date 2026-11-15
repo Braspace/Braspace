@@ -72,10 +72,10 @@ export function sunCaveat(site) {
     return Object.freeze({ kind: "SUN_UPPER_BOUND", ours, pgda, diff: ours - pgda, ...(reach ? { reach } : {}) });
 }
 const seriesCache = new Map();
-export function loadSeries(site) {
+export function loadSeries(site, opts = {}) {
     // SiteSeriesLike is the screens' loose view of SiteSeries (a NOT_COMPUTED window carries no metrics), hence the cast.
     if (!seriesCache.has(site.id)) {
-        const pending = SiteSeries.load(DATA_BASE + site.series).catch(error => {
+        const pending = SiteSeries.load(DATA_BASE + site.series, opts).catch(error => {
             if (seriesCache.get(site.id) === pending)
                 seriesCache.delete(site.id);
             throw error;
@@ -103,9 +103,15 @@ export async function windowMetrics(doc, site, startIso, hours) {
  * line says so ("web/data/..."), so a figure is never invented. maxSunElDeg has no API field and stays from the series.
  */
 export async function apiWindowMetrics(doc, site, startIso, hours) {
+    const iso = (t) => new Date(t).toISOString().replace(".000Z", "Z");
+    const ask = (t) => api("/api/compare", { method: "POST", body: { site_ids: [site.id], start_utc: iso(t), duration_hours: hours } });
+    // The API call does not wait for the series download: it starts with the window start the page already knows (the
+    // ?start= of the URL, else the catalogue's series_window.start_utc) and is used only if the series agrees with it.
+    const guess = startIso ? Date.parse(startIso) : Date.parse(String(doc.window?.start_utc ?? ""));
+    const early = Number.isFinite(guess) ? ask(guess) : null;
     const base = await windowMetrics(doc, site, startIso, hours);
-    const t0iso = new Date(base.t0).toISOString().replace(".000Z", "Z");
-    const r = await api("/api/compare", { method: "POST", body: { site_ids: [site.id], start_utc: t0iso, duration_hours: hours } });
+    const t0iso = iso(base.t0);
+    const r = await (early && guess === base.t0 ? early : ask(base.t0));
     const x = r.ok ? r.data?.results?.[0] : undefined, m = x?.evaluation?.metrics;
     if (!x || x.data_status !== "AVAILABLE" || !m)
         return { ...base, origin: "static" };
@@ -114,6 +120,34 @@ export async function apiWindowMetrics(doc, site, startIso, hours) {
     return { ...base, origin: "api",
         sunPct: sourced(pct(m.sun_visible_fraction), { ...info, unit: "%" }), earthPct: sourced(pct(m.earth_visible_fraction), { ...info, unit: "%" }),
         longestDarkH: sourced(m.longest_continuous_dark_hours, { ...info, unit: "h" }), longestBlackoutH: sourced(m.longest_continuous_comm_gap_hours, { ...info, unit: "h" }) };
+}
+/**
+ * Resolves once the browser has put `el` on screen (Element Timing: the entry carries the presentation time), or after
+ * two frames when the API is missing; a timeout covers hidden tabs. Screens await it after drawing their text and
+ * loading state, before starting the heavy downloads (terrain heights, hourly series), so those never delay the paint.
+ */
+export function afterPaint(el) {
+    return new Promise(res => {
+        let done = false;
+        const finish = () => { if (!done) {
+            done = true;
+            clearTimeout(tm);
+            obs?.disconnect();
+            res();
+        } };
+        const hidden = typeof document !== "undefined" && document.visibilityState === "hidden";
+        const tm = setTimeout(finish, hidden || typeof requestAnimationFrame !== "function" ? 0 : 1500);
+        let obs = null;
+        const id = "mp-first-paint";
+        if (el && typeof PerformanceObserver === "function" && PerformanceObserver.supportedEntryTypes?.includes("element")) {
+            el.setAttribute("elementtiming", id);
+            obs = new PerformanceObserver(list => { if (list.getEntries().some(e => e.identifier === id))
+                finish(); });
+            obs.observe({ type: "element", buffered: true });
+        }
+        else if (typeof requestAnimationFrame === "function")
+            requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(finish, 0)));
+    });
 }
 /** Per-day sunlit fraction (0..1) over the window, for the "Why" bar. */
 export function dailySun(series, t0, hours) {
@@ -133,8 +167,35 @@ export function dailySun(series, t0, hours) {
     }
     return out;
 }
+let headerP = null;
+/** The region header alone, so a screen can frame the map and name its sources before the 1.4 MB heights arrive. */
+export function loadRegionHeader() {
+    return headerP ||= fetch(DATA_BASE + "region/south_pole_400m.json").then(r => { if (!r.ok)
+        throw new Error(`terrain tile unavailable: ${DATA_BASE}region/south_pole_400m`); return r.json(); })
+        .catch(e => { headerP = null; throw e; });
+}
 let gridP = null;
-export function loadRegion() { return gridP ||= TerrainGrid.load(DATA_BASE + "region/south_pole_400m"); }
+/**
+ * The LOLA 400 m grid (web/lab/terrain.js TerrainGrid): same checks as TerrainGrid.load (byte length, sha256), but the
+ * header is shared with loadRegionHeader() and the 1.4 MB body is fetched at low priority, so it never competes with
+ * the text and the small data files a screen paints first.
+ */
+export function loadRegion() {
+    return gridP ||= Promise.all([loadRegionHeader(), fetch(DATA_BASE + "region/south_pole_400m.bin", { priority: "low" })])
+        .then(async ([header, bRes]) => {
+        if (!bRes.ok)
+            throw new Error(`terrain tile unavailable: ${DATA_BASE}region/south_pole_400m`);
+        const buf = await bRes.arrayBuffer();
+        if (buf.byteLength !== header.nx * header.ny * 2)
+            throw new Error("terrain tile has unexpected byte length");
+        if (header.sha256 && globalThis.crypto?.subtle) {
+            const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", buf))].map(b => b.toString(16).padStart(2, "0")).join("");
+            if (hex !== header.sha256)
+                throw new Error("terrain tile checksum mismatch");
+        }
+        return new TerrainGrid(header, new Int16Array(buf));
+    }).catch(e => { gridP = null; throw e; });
+}
 /**
  * Call the API. Resolves {ok:true, data, status} or {ok:false, offline:true, error}. Never throws.
  * status is the payload's own science state when present (science_status / status / state).

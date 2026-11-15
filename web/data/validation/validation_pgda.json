@@ -68,6 +68,87 @@
       "pipeline_earth_centre_pct": 58.88,
       "pgda_avg_earth_any_part_pct": 57.26,
       "diff_earth_pp": 1.62
+    },
+    {
+      "site": "haworth",
+      "pipeline_mean_solar_disc_pct": 12.31,
+      "pgda_avg_solar_disc_pct": 11.94,
+      "diff_sun_pp": 0.37,
+      "pipeline_earth_centre_pct": 38.72,
+      "pgda_avg_earth_any_part_pct": 44.01,
+      "diff_earth_pp": -5.29
+    },
+    {
+      "site": "nobile-rim-2",
+      "pipeline_mean_solar_disc_pct": 41.6,
+      "pgda_avg_solar_disc_pct": 41.07,
+      "diff_sun_pp": 0.53,
+      "pipeline_earth_centre_pct": 63.38,
+      "pgda_avg_earth_any_part_pct": 68.74,
+      "diff_earth_pp": -5.36
+    },
+    {
+      "site": "connecting-ridge-extension",
+      "pipeline_mean_solar_disc_pct": 33.58,
+      "pgda_avg_solar_disc_pct": 35.15,
+      "diff_sun_pp": -1.57,
+      "pipeline_earth_centre_pct": 0.0,
+      "pgda_avg_earth_any_part_pct": 0.0,
+      "diff_earth_pp": 0.0
+    },
+    {
+      "site": "de-gerlache-rim-1",
+      "pipeline_mean_solar_disc_pct": 70.75,
+      "pgda_avg_solar_disc_pct": 62.78,
+      "diff_sun_pp": 7.97,
+      "pipeline_earth_centre_pct": 56.07,
+      "pgda_avg_earth_any_part_pct": 61.23,
+      "diff_earth_pp": -5.16
+    },
+    {
+      "site": "de-gerlache-rim-2",
+      "pipeline_mean_solar_disc_pct": 37.1,
+      "pgda_avg_solar_disc_pct": 36.67,
+      "diff_sun_pp": 0.43,
+      "pipeline_earth_centre_pct": 49.54,
+      "pgda_avg_earth_any_part_pct": 54.79,
+      "diff_earth_pp": -5.25
+    },
+    {
+      "site": "de-gerlache-kocher-massif",
+      "pipeline_mean_solar_disc_pct": 83.04,
+      "pgda_avg_solar_disc_pct": 75.45,
+      "diff_sun_pp": 7.59,
+      "pipeline_earth_centre_pct": 57.14,
+      "pgda_avg_earth_any_part_pct": 56.99,
+      "diff_earth_pp": 0.15
+    },
+    {
+      "site": "leibnitz-beta-plateau",
+      "pipeline_mean_solar_disc_pct": 22.99,
+      "pgda_avg_solar_disc_pct": 20.39,
+      "diff_sun_pp": 2.6,
+      "pipeline_earth_centre_pct": 37.67,
+      "pgda_avg_earth_any_part_pct": 38.54,
+      "diff_earth_pp": -0.87
+    },
+    {
+      "site": "faustini-rim-a",
+      "pipeline_mean_solar_disc_pct": 31.03,
+      "pgda_avg_solar_disc_pct": 30.36,
+      "diff_sun_pp": 0.67,
+      "pipeline_earth_centre_pct": 50.97,
+      "pgda_avg_earth_any_part_pct": 50.79,
+      "diff_earth_pp": 0.18
+    },
+    {
+      "site": "amundsen-rim",
+      "pipeline_mean_solar_disc_pct": 36.93,
+      "pgda_avg_solar_disc_pct": 38.62,
+      "diff_sun_pp": -1.69,
+      "pipeline_earth_centre_pct": 49.54,
+      "pgda_avg_earth_any_part_pct": 54.84,
+      "diff_earth_pp": -5.3
     }
   ]
 }

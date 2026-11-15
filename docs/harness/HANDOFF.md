@@ -14,7 +14,7 @@ GitHub Actions está parado por cobrança da organização. Rodar `scripts/ci-lo
 1. Gerar backup do banco antes de trocar: `backup/pre-<IMAGEM>-<AAAAMMDD-HHMMSS>.dump`.
 2. Trocar a variável `IMAGEM` para a nova imagem e subir o serviço na harness.
 3. Conferir `/healthz` e `/readyz`, e a lista de GET em `API_MATRIX.csv`.
-4. Rollback: `IMAGEM=<imagem anterior>` e subir de novo. Imagem atual: `2b6247498db4-sha` (main `2b62474`, 16:39Z). Anteriores: `41dedbb4705b-sha`, `ad83cfe7517c-sha`, `62bf446e386d`. Construir sempre com `BRASPACE_GIT_SHA`, ensaiar a migração num dump atual e validar com `BRASPACE_EXPECT_COMMIT` (ver STATUS.md).
+4. Rollback: `IMAGEM=<imagem anterior>` e subir de novo. Imagem atual: `c8ed6fe63c3b-sha` (main `c8ed6fe`, 18:31Z). Anteriores: `482aa03c656c-sha`, `5f06ee30aa2c-sha`, `2b6247498db4-sha`, `41dedbb4705b-sha`, `ad83cfe7517c-sha`. Deploy e rollback com `/docker/braspace/swap-api.sh <tag>` (sem downtime, faz o dump sozinho). Construir sempre com `BRASPACE_GIT_SHA` e validar com `BRASPACE_EXPECT_COMMIT`.
 
 ## Deploy do Worker
 

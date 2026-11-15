@@ -114,8 +114,8 @@ export async function handleMoonAPI(request, fetcher = fetch) {
   try {
     if (method === "POST") {
       const contentType=request.headers.get("Content-Type") || "";
-      if (!/^application\/json(?:\s*;|$)/i.test(contentType)) return fail(415,"INVALID_MEDIA_TYPE","application/json required");
-      if (contentType.length > 256) return fail(415,"INVALID_MEDIA_TYPE");
+      if (!/^application\/json(?:\s*;|$)/i.test(contentType)) return fail(415,"UNSUPPORTED_MEDIA_TYPE","application/json required");
+      if (contentType.length > 256) return fail(415,"UNSUPPORTED_MEDIA_TYPE");
       headers.set("Content-Type",contentType);
       body=await boundedBody(request,route.max);
     } else if (route.kind === "asset") safeAssetHeaders(request,headers);

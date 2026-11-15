@@ -11,7 +11,6 @@ root=$(git rev-parse --show-toplevel); cd "$root"
 sha=$(git rev-parse HEAD); short=${sha:0:7}; note=${1:-}
 cd deploy/cloudflare
 node --test ./*.test.mjs
-[ -f wrangler.toml ] || cp wrangler.toml.example wrangler.toml
 prev=$(npx -y wrangler@4 deployments list --name braspace-moonproof 2>/dev/null | awk '/Version\(s\):/{v=$3} END{print v}')
 # Backup outside web/ (web/ is the assets directory: anything there would be uploaded).
 cfg="$root/web/config.js"; bak=$(mktemp); cp "$cfg" "$bak"
