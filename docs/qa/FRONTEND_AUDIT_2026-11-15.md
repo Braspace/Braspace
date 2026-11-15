@@ -2,7 +2,7 @@
 
 ## Decision and evidence boundary
 
-**NO-GO for full frontend certification.** This doc is an audit, not a fix or a scientific certification. Public site tested through desktop Chromium at 1363×936 CSS px; private repository statically audited at `ae139fdc15cbbad79f66917379b60a0d1c74ffd2` (main at start). Public deployment's build SHA was not verified. Three parallel reviewers inspected SPA/design/state, 3D, and CI evidence. Browser rendering, selected interactions, API results and isolated JS reproducers are distinguished from code-only risks. No direct PostgreSQL authentication, mobile device, GPU WebGL rendering, full CI rerun, or NASA certification was obtained.
+**NO-GO for full frontend certification.** This doc is an audit, not a fix or a scientific certification. Public site tested through desktop Chromium at 1363×936 CSS px; private repository statically audited at `ae139fdc15cbbad79f66917379b60a0d1c74ffd2` (main at start). Public deployment's build SHA was not verified. Three parallel reviewers inspected SPA/design/state, 3D, and CI evidence. Browser rendering, selected interactions, API results and isolated JS reproducers are distinguished from code-only risks. No direct PostgreSQL authentication, mobile device, GPU WebGL rendering, full CI rerun, or NASA certification was obtained. 64 desktop screenshots were captured during audit, including transitional and negative states (not 64 independent passed tests); retained in the QA session, not committed. An additional real 390×844 local Playwright attempt reached Chromium launch but failed with process_singleton_posix.cc socket() failed: Operation not permitted; no mobile page was rendered. The permission block was respected.
 
 ## Surface inventory (53 views, not 53 certified workflows)
 
