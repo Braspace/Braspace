@@ -32,17 +32,18 @@ func buildProvenanceSeedEntries(fsys fs.FS) ([]vectorSeedEntry, error) {
 			Text:      "NASA LRO LOLA LDEM_80S_80M Lunar Orbiter Laser Altimeter South Pole DEM elevation terrain horizon 80m",
 		},
 		{
-			SourceRef: "nasa-pgda-artemis-iii-illumination",
-			Title:     "NASA PGDA South Pole Illumination & Earth Visibility Reference",
-			SourceURL: "https://pgda.gsfc.nasa.gov/products/81",
-			SHA256:    "3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b",
-			Text:      "NASA PGDA Goddard Planetary Geodynamics Data Archive solar illumination earth visibility south pole",
+			// Values copied from data/ASSET_REGISTRY.json (asset_id pgda-69-avgvisib-85s-60m).
+			SourceRef: "pgda-69-avgvisib-85s-60m",
+			Title:     "NASA PGDA Lunar Polar Illumination: average solar illumination 85S-90S, 60 m/px (AVGVISIB_85S_060M_201608)",
+			SourceURL: "https://pgda.gsfc.nasa.gov/data/MoonIllumination/AVGVISIB_85S_060M_201608.TIF",
+			SHA256:    "ccf67d4f39e0a970c111196da7d6551ffcf50d075470b93067fb3904c0b05806",
+			Text:      "NASA PGDA Goddard Planetary Geodynamics Data Archive average solar illumination south pole 85S 60m",
 		},
 		{
 			SourceRef: "naif-spice-de440s-ephemeris",
 			Title:     "NAIF SPICE Planetary Ephemeris Kernel (de440s.bsp)",
 			SourceURL: "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
-			SHA256:    "c1a5e8c4c0b8c58b9d5f4e6a7c8b9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c",
+			SHA256:    "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2", // data/ASSET_REGISTRY.json, NAIF review_note
 			Text:      "NAIF JPL SPICE de440s bsp planetary ephemeris sun earth moon geometry azimuth elevation",
 		},
 	}
