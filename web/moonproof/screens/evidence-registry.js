@@ -323,6 +323,16 @@ export const REGISTRY = {
             "author_credit": "BRASPACE (science/build_moon_hd_assets.py).",
             "redistribution_status": "project_metadata",
             "scientific_role": "none"
+        },
+        {
+            "asset_id": "braspace-moonhd-pole-preview",
+            "category": "project_derived_visualization",
+            "source_page": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm",
+            "file_id": "pole-preview.webp",
+            "sha256": "9eacf3af78202bb35ee41d5c795621ecb1cf168a30260e5cda39f26eba4e99b7",
+            "author_credit": "NASA LRO/LOLA Science Team; Moon HD terrain integration Joel (@joeljato), BRASPACE; offline CPU preview BRASPACE.",
+            "redistribution_status": "project_derived_from_nasa_pds",
+            "scientific_role": "visualization_only"
         }
     ],
     "matrix": [
@@ -500,6 +510,11 @@ export const REGISTRY = {
             "class": "`manifest.json` (Moon HD)",
             "example": "braspace-moonhd-manifest",
             "status": "project_metadata"
+        },
+        {
+            "class": "`pole-preview.webp` (Moon HD)",
+            "example": "braspace-moonhd-pole-preview",
+            "status": "project_derived_from_nasa_pds"
         }
     ]
 };

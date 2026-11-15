@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { applyFault, FAULTS, H1_PROFILE, siteEvaluateBody, evaluateBody, chargeTrace, runScenario, nextChange, countSunrises, dailyFractions,
-  autonomyHours, fmtDuration, evaluateRules, rulesMet, clockLabel, hourIndex } from "../screens/cockpit-model.js";
+  autonomyHours, fmtDuration, evaluateRules, rulesMet, clockLabel, hourIndex, visibilityWindow } from "../screens/cockpit-model.js";
 
 const power = { ...H1_PROFILE, reserve_wh: 6000 };
 const samples = Array.from({ length: 6 }, (_, i) => ({ sun_visible: i % 2 === 0, earth_visible: true }));
@@ -30,13 +30,38 @@ test("charge trace comes only from the API timeline; no timeline → null, never
 });
 test("runScenario: site route, fallback to evaluate, and offline → no invented charge", async () => {
   const tl = { options: [{ timeline: [{ charge_wh: 1 }] }], science_status: "UNVERIFIED_INPUTS", inputs_sha256: "s" };
-  const args = { siteId: "x", startIso: "2025-01-01T00:00:00Z", hours: 1, power, maxBlackoutH: 1, samples, delayH: 0 };
+  const args = { siteId: "x", startIso: "2025-01-01T00:00:00Z", hours: 1, power, maxBlackoutH: 1, samples: samples.slice(0, 1), delayH: 0 };
   const calls = [];
   const okSite = async (p) => { calls.push(p); return { ok: true, data: { onboard: tl } }; };
   const r1 = await runScenario(okSite, args); assert.equal(r1.route, "site"); assert.deepEqual(calls, ["/api/onboard/site-evaluate"]);
-  const calls2 = []; const fb = async (p) => { calls2.push(p); return p.endsWith("site-evaluate") ? { ok: false, error: "HTTP 422" } : { ok: true, data: tl }; };
+  assert.equal(r1.report.path, "/api/onboard/site-report");
+  const calls2 = []; const fb = async (p) => { calls2.push(p); return p.endsWith("site-evaluate") ? { ok: false, code: "DATA_NOT_AVAILABLE", error: "HTTP 422" } : { ok: true, data: tl }; };
   const r2 = await runScenario(fb, args); assert.equal(r2.route, "eval"); assert.deepEqual(calls2, ["/api/onboard/site-evaluate", "/api/onboard/evaluate"]);
   const r3 = await runScenario(async () => ({ ok: false, offline: true, error: "x" }), args); assert.equal(r3.ok, false); assert.equal(r3.trace, undefined);
+  assert.equal(r2.report.path, "/api/onboard/report");
+});
+test("antenna override goes directly to caller-sample API and report, while delay fallback shifts the epoch", async () => {
+  const args = { siteId: "x", startIso: "2025-01-01T00:00:00Z", hours: 1, power, maxBlackoutH: 1, samples: [{ sun_visible: true, earth_visible: false }] };
+  const calls = [], reply = { options: [{ timeline: [{ charge_wh: 1 }] }], science_status: "UNVERIFIED_INPUTS" };
+  const call = async (path, req) => { calls.push({path, body: req.body}); return path.endsWith("site-evaluate") ? {ok:false, code:"OUTSIDE_COVERAGE"} : {ok:true,data:reply}; };
+  const a = await runScenario(call, {...args, samplesOverride:true});
+  assert.deepEqual(calls.map(v => v.path), ["/api/onboard/evaluate"]);
+  assert.equal(calls[0].body.candidates[0].samples[0].earth_visible, false);
+  assert.match(calls[0].body.candidates[0].source_claim, /Hypothetical antenna/);
+  assert.deepEqual(a.report, {path:"/api/onboard/report",body:calls[0].body});
+  calls.length=0;
+  const d = await runScenario(call, {...args, delayH:24});
+  assert.equal(d.report.body.candidates[0].start_utc, "2025-01-02T00:00:00.000Z");
+  assert.deepEqual(d.report.body, calls[1].body);
+});
+test("partial fallback, invalid input, or truncated successful timeline never produces a report", async () => {
+  const args = { siteId:"x",startIso:"2025-01-01T00:00:00Z",hours:2,power,maxBlackoutH:1,samples:samples.slice(0,1) };
+  for (const response of [{ok:false,code:"OUTSIDE_COVERAGE"},{ok:false,code:"INVALID_POWER"},{ok:true,data:{onboard:{options:[{timeline:[{charge_wh:1}]}]}}}]) {
+    let n=0; const r=await runScenario(async()=>{n++;return response;},args);
+    assert.equal(n,1); assert.equal(r.ok,false); assert.equal(r.report,undefined);
+  }
+  assert.deepEqual(visibilityWindow({count:2,sunMargin:[1,NaN],earthMargin:[1,1]},0,2),[]);
+  assert.deepEqual(visibilityWindow({count:2,sunMargin:[1,-1],earthMargin:[-1,1]},0,2),[{sun_visible:true,earth_visible:false},{sun_visible:false,earth_visible:true}]);
 });
 test("next change, sunrises and daily fractions come from the margins", () => {
   const m = [1, 1, -1, -1, -1, 1, 1];
@@ -46,6 +71,8 @@ test("next change, sunrises and daily fractions come from the margins", () => {
   assert.equal(countSunrises(m, 0, m.length), 1);
   assert.deepEqual(dailyFractions(Array(30).fill(1).concat(Array(18).fill(-1)), 0, 48), [1, 6 / 24]);
   assert.deepEqual(dailyFractions([1, 1], 100, 24), [null]);
+  assert.deepEqual(dailyFractions([1, NaN], 0, 24), [null]);
+  assert.equal(nextChange([NaN],0,1),null);
 });
 test("autonomy and formatting give — without inputs", () => {
   assert.equal(autonomyHours(10000, 6000, 500), 8); assert.equal(autonomyHours(null, 6000, 500), null); assert.equal(autonomyHours(1, 6000, 500), 0); assert.equal(autonomyHours(1, 1, 0), null);
@@ -64,15 +91,16 @@ test("rules: no input → nodata (never pass); cold is always nodata/N/D", () =>
 test("rules never carry VAL unless the origin says VALIDATED", () => {
   assert.ok(evaluateRules({ lightStatus: "PRELIMINARY_NOT_INDEPENDENTLY_VALIDATED", trace: [1], capacityWh: 1, light: { longestDarkH: 1, longestBlackoutH: 1, sunrises: 5 } }).every(r => r.seal !== "VAL"));
   assert.equal(evaluateRules({ lightStatus: "VALIDATED", trace: null, capacityWh: null, light: { longestDarkH: 1 } }).find(r => r.id === "night").seal, "VAL");
+  assert.equal(evaluateRules({ lightStatus: "PRELIMINARY_X", light: { longestBlackoutH: 24, antennaOverride:true } }).find(r => r.id === "blackout").seal, "SIM");
 });
 test("cockpit screen: literals are limited, seals by origin, texts in both languages", async () => {
   const js = await readFile(new URL("../screens/cockpit.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(js, /["']VAL["']/); assert.doesNotMatch(js, /\bvalidated\b/i);
   assert.match(js, /"\/api\/sites\/|\/api\/sites\/\$\{/); assert.match(js, /next_transitions|hours_from_start/);
-  assert.match(js, /\.\.\/onboard\//, "link to the onboard panel");
+  assert.doesNotMatch(js, /\.\.\/onboard\//, "legacy frontend is no longer linked from cockpit");
   assert.match(js, /api\(/);
   const html = await readFile(new URL("../cockpit.html", import.meta.url), "utf8");
-  assert.match(html, /\.\.\/onboard\//); assert.doesNotMatch(html, /\b\d{2,}\s?%/);
+  assert.doesNotMatch(html, /\.\.\/onboard\//); assert.match(html, /id="report"/); assert.doesNotMatch(html, /\b\d{2,}\s?%/);
 });
 
 test("the clock is a whole hour, so the hourly charge trace never reads a fraction (bug seen while playing at 6 h/s)", () => {

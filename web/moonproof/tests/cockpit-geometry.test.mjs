@@ -35,7 +35,7 @@ test("battery ring is a real 152 px disc and the satellites follow the board ord
   assert.deepEqual(order, ["next_night", "endurance", "margin", "floor"]);
 });
 
-test("phone keeps its own layout: the timeline wrapper vanishes below 701 px and the onboard link rides in the context bar", () => {
+test("phone keeps its own layout: the timeline wrapper vanishes below 701 px; no link to the archived onboard panel", () => {
   assert.match(css, /\.mp-tl\{display:contents\}/);
-  assert.match(js, /narrow\(\) \? \{ action:/);
+  assert.doesNotMatch(js, /\.\.\/onboard\//);
 });

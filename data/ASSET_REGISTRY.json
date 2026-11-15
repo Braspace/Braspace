@@ -578,6 +578,25 @@
       "redistribution_status": "project_metadata",
       "scientific_role": "none",
       "review_note": "Lists every source URL with its SHA-256 and size, and the SHA-256 and size of every published Moon HD file; science_status VISUAL_PRODUCT_NOT_INDEPENDENTLY_VALIDATED, nasa_certified false."
+    },
+    {
+      "asset_id": "braspace-moonhd-pole-preview",
+      "category": "project_derived_visualization",
+      "source_page": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm",
+      "file_url": "web/moon-hd/pole-preview.webp",
+      "file_id": "pole-preview.webp",
+      "format": "WebP",
+      "dimensions_px": {
+        "width": 1200,
+        "height": 800
+      },
+      "bytes": 57644,
+      "sha256": "9eacf3af78202bb35ee41d5c795621ecb1cf168a30260e5cda39f26eba4e99b7",
+      "author_credit": "NASA LRO/LOLA Science Team; Moon HD terrain integration Joel (@joeljato), BRASPACE; offline CPU preview BRASPACE.",
+      "allowed_use": "Decorative/loading preview only. Preserve attribution; not a registered terrain map or current solar illumination.",
+      "redistribution_status": "project_derived_from_nasa_pds",
+      "scientific_role": "visualization_only",
+      "review_note": "Orthographic CPU render of the exact Moon HD native 80 m LOLA grid (SHA-256 a1244e43cb392feb55aa63ee2289de5a7a098847f2511ce5fba2fcafceccf23c); static illustrative lighting, not the WebGL shader or SPICE output. Reproducible by science/render_moon_preview.py."
     }
   ]
 }

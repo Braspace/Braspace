@@ -36,7 +36,7 @@ export interface Sourced<T = unknown> {
 }
 export type ApiResult<T = unknown> =
   | { ok: true; data: T; status: string | null; offline?: undefined; error?: undefined }
-  | { ok: false; offline: boolean; error: string };
+  | { ok: false; offline: boolean; error: string; httpStatus?: number; code?: string | null };
 
 export const DATA_BASE: string = new URL("../../data/", import.meta.url).href;
 export const SEALS: Seal[] = ["VAL", "PRE", "EST", "SIM", "N/D", "FALHA"];
@@ -127,7 +127,7 @@ let gridP: Promise<unknown> | null = null;
 export function loadRegion(): Promise<unknown> { return gridP ||= TerrainGrid.load(DATA_BASE + "region/south_pole_400m"); }
 
 /**
- * Call the API. Resolves {ok:true, data, status} or {ok:false, offline:true, error}. Never throws.
+ * Call the API. Resolves {ok:true, data, status} or {ok:false, offline, httpStatus, code, error}. Never throws.
  * status is the payload's own science state when present (science_status / status / state).
  */
 export async function api<T = unknown>(path: string, { method = "GET", body, timeoutMs = 8000, as = "json" }: { method?: string; body?: unknown; timeoutMs?: number; as?: "json" | "text" } = {}): Promise<ApiResult<T>> {
@@ -135,8 +135,15 @@ export async function api<T = unknown>(path: string, { method = "GET", body, tim
   try {
     const r = await fetch(apiURL(path), { method, signal: ctl.signal,
       headers: body ? { "content-type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined });
-    if (!r.ok) return { ok: false, offline: r.status >= 500, error: "HTTP " + r.status };
-    if (as === "text") return { ok: true, data: await r.text() as T, status: null };
+    if (!r.ok) {
+      const payload = await r.json().catch(() => null) as { code?: unknown } | null;
+      const code = typeof payload?.code === "string" ? payload.code : null;
+      return { ok: false, offline: r.status >= 500, httpStatus: r.status, code, error: "HTTP " + r.status + (code ? " · " + code : "") };
+    }
+    if (as === "text") {
+      if (!/^text\/html(?:;|$)/i.test(r.headers.get("content-type") || "")) return { ok: false, offline: false, httpStatus: r.status, error: "INVALID_REPORT_TYPE" };
+      return { ok: true, data: await r.text() as T, status: null };
+    }
     const data = await r.json();
     return { ok: true, data, status: data?.science_status || data?.status || data?.state || null };
   } catch (e) { return { ok: false, offline: true, error: String((e as { message?: unknown } | null)?.message || e) }; }

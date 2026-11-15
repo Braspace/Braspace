@@ -90,7 +90,7 @@ function finiteRange(arr: ArrayLike<number>): [number, number] { let lo = Infini
 const RANGES: RangeMap = { altitude: [grid.min, grid.max], slope: [0, finiteRange(slope)[1]], sun: [0, 100], earth: [0, 100] };
 async function loadNatural(): Promise<Natural | false> {
   if (natural !== null) return natural;
-  try { const img = new Image(); img.src = new URL("../../data/moon/lroc_color_2k.jpg", import.meta.url).href; await img.decode();
+  try { const img = new Image(); img.src = new URL("../../data/moonhd/color_4k.jpg", import.meta.url).href; await img.decode();
     const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const g = c.getContext("2d") as CanvasRenderingContext2D; g.drawImage(img, 0, 0);
     natural = { w: img.width, h: img.height, d: g.getImageData(0, 0, img.width, img.height).data }; } catch { natural = false; }
   return natural;
@@ -198,7 +198,7 @@ function legend(): HTMLElement {
   const { L, min, max } = legendModel(layer, RANGES);
   const status = L.status || doc.status;
   const d = L.id === "slope" ? 1 : 0;
-  const src = L.id === "altitude" || L.id === "slope" ? `${grid.h.source} · ${grid.h.method}` : L.id === "natural" ? "NASA SVS 4720 · lroc_color_2k.jpg" : grid.h.layers["pgda_" + L.id].product + " · " + grid.h.layers["pgda_" + L.id].resolution_m + " m";
+  const src = L.id === "altitude" || L.id === "slope" ? `${grid.h.source} · ${grid.h.method}` : L.id === "natural" ? "Joel Moon HD · NASA SVS 4720 · color_4k.jpg" : grid.h.layers["pgda_" + L.id].product + " · " + grid.h.layers["pgda_" + L.id].resolution_m + " m";
   return one(
     <div class="mp-card ex-legend">
       <div class="ex-legend-head"><b>{t(L.key)}</b><span class="mp-label">{t(L.unit)}</span><Node node={sealEl(sealFor(status))} /></div>

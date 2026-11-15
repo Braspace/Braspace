@@ -11,9 +11,7 @@ BRASPACE / MoonProof is an educational and engineering prototype for evaluating 
 Verified on **2026-11-14** (`HTTP 200`):
 
 - **Web App (GitHub Pages):** https://braspace.github.io/
-  - Polar Lab: https://braspace.github.io/lab.html
-  - Onboard Mission Computer: https://braspace.github.io/onboard/cockpit.html
-  - Polar Elevation Map Demo: https://braspace.github.io/polar-map-demo.html
+  - **MoonProof (the product):** https://braspace-moonproof.almeida-me.workers.dev/moonproof/ — Polar Lab, Onboard, Studio, Classic and the old shell are archived in `archive/web-legacy/` (2026-11-15).
 - **Public API:** https://braspace-api.srv1898743.hstgr.cloud
   - Health: https://braspace-api.srv1898743.hstgr.cloud/api/health
   - Readiness: https://braspace-api.srv1898743.hstgr.cloud/readyz
@@ -110,7 +108,7 @@ See [`docs/TESTING.md`](docs/TESTING.md) for details.
 |---|---|
 | `api/` | Go HTTP API server (`braspace.mission.v1`), OpenAPI spec (`api/openapi.json`), site catalog & series (`api/sitedata/`). |
 | `engine/` | Rust deterministic visibility engine (`braspace-lunar-engine`). |
-| `web/` | Static frontend, Polar Lab (`lab.html`), Onboard Cockpit (`onboard/cockpit.html`), polar map demo (`polar-map-demo.html`), and precomputed data (`web/data/`). |
+| `web/` | MoonProof (`web/moonproof/`, Preact TSX), the Three.js Moon HD viewer (`moon-hd.html`), shared Lab modules and precomputed data (`web/data/`). Legacy surfaces: `archive/web-legacy/`. |
 | `science/` | Python offline pipeline for NASA LOLA DEMs, NAIF SPICE kernels, and PGDA/Horizons benchmarks. |
 | `docs/` | Architecture, API reference, data provenance, testing, deploy, and team documentation ([`docs/README.md`](docs/README.md)). |
 | `scripts/` | Audit, smoke-test (`smoke-publico.sh`), and verification scripts. |

@@ -16,7 +16,8 @@ body[data-ck-hidden~="battery"] #left>.mp-ck-title,body[data-ck-hidden~="battery
 body[data-ck-hidden~="visibility"] #left>.mp-visrow,body[data-ck-hidden~="illumination"] #left>.mp-layer,
 body[data-ck-hidden~="rules"] #right>.mp-rules,body[data-ck-hidden~="alerts"] #right>.mp-alert,
 body[data-ck-hidden~="faults"] #right>.mp-glass:not(.ck-crew),body[data-ck-hidden~="crew"] #right>.ck-crew{display:none!important}
-body:has(#ck-panel-controls) #onboard{display:none}
+/* Never show previous-site measurements while a different scenario is loading or unavailable. */
+body[data-ck-scenario] #left,body[data-ck-scenario] #right,body[data-ck-scenario] #sheet,body[data-ck-scenario] #player,body[data-ck-scenario] .mp-ck-lines,body[data-ck-scenario] .mp-bodyic,body[data-ck-scenario] .mp-ck-tag{visibility:hidden}
 /* Group positions use actual context/toolbar geometry rather than hard-coded viewport heights. */
 @media(min-width:701px){
   body:has(#ck-panel-controls) .mp-ck-left,body:has(#ck-panel-controls) .mp-ck-right{top:var(--ck-panels-top,194px);width:clamp(235px,25vw,330px);max-height:calc(100dvh - var(--ck-panels-top,194px) - 84px);gap:8px}

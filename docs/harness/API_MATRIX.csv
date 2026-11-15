@@ -1,0 +1,23 @@
+method,path,direct_status,edge_status,content_type,evidence
+GET,/api/health,200,200,application/json; charset=utf-8,curl Sun Nov 15 11:46:20 -03 2026 (direct); curl Sun Nov 15 11:46:21 -03 2026 (edge)
+GET,/api/sites,200,200,application/json; charset=utf-8,curl Sun Nov 15 11:46:21 -03 2026 (direct); curl Sun Nov 15 11:46:22 -03 2026 (edge)
+GET,/api/sites/connecting-ridge,200,200,application/json; charset=utf-8,curl Sun Nov 15 11:46:22 -03 2026 (direct); curl Sun Nov 15 11:46:22 -03 2026 (edge)
+GET,/api/layers,200,200,application/json; charset=utf-8,curl Sun Nov 15 11:46:22 -03 2026 (direct); curl Sun Nov 15 11:46:23 -03 2026 (edge)
+GET,/api/layers/lroc-color-2k,200,200,application/json; charset=utf-8,curl Sun Nov 15 11:46:23 -03 2026 (direct); curl Sun Nov 15 11:46:23 -03 2026 (edge)
+GET,/api/layers/lroc-color-2k/asset,200,200,image/jpeg,curl Sun Nov 15 11:46:23 -03 2026 (direct); curl Sun Nov 15 11:46:23 -03 2026 (edge)
+GET,/api/sites/connecting-ridge/media,200,200,application/json; charset=utf-8,curl Sun Nov 15 11:46:23 -03 2026 (direct); curl Sun Nov 15 11:46:24 -03 2026 (edge)
+GET,/api/openapi.json,200,200,application/json; charset=utf-8,curl Sun Nov 15 11:46:24 -03 2026 (direct); curl Sun Nov 15 11:46:24 -03 2026 (edge)
+GET,/healthz,200,200,application/json; charset=utf-8,curl Sun Nov 15 11:46:24 -03 2026 (direct); curl Sun Nov 15 11:46:24 -03 2026 (edge)
+GET,/readyz,200,200,application/json; charset=utf-8,curl Sun Nov 15 11:46:24 -03 2026 (direct); curl Sun Nov 15 11:46:24 -03 2026 (edge)
+GET,/v1/capabilities,200,200,application/json; charset=utf-8,curl Sun Nov 15 11:46:24 -03 2026 (direct); curl Sun Nov 15 11:46:25 -03 2026 (edge)
+GET,/api/sites/connecting-ridge/sky?hours=1&start=2026-11-15T00%3A00%3A00Z,200,200,application/json; charset=utf-8,curl Sun Nov 15 11:46:25 -03 2026 (direct); curl Sun Nov 15 11:46:25 -03 2026 (edge)
+GET,/api/vector/status,200,200,application/json; charset=utf-8,curl Sun Nov 15 11:46:25 -03 2026 (direct); curl Sun Nov 15 11:46:25 -03 2026 (edge)
+POST,/api/onboard/navigation,200,200,application/json; charset=utf-8,curl Sun Nov 15 11:46:25 -03 2026 (direct); curl Sun Nov 15 11:46:25 -03 2026 (edge)
+POST,/api/compare,not_probed,not_probed,not_probed,not_probed
+POST,/api/scenarios/delay,not_probed,not_probed,not_probed,not_probed
+POST,/api/onboard/site-evaluate,not_probed,not_probed,not_probed,not_probed
+POST,/api/onboard/site-report,not_probed,not_probed,not_probed,not_probed
+POST,/api/onboard/report,not_probed,not_probed,not_probed,not_probed
+POST,/api/onboard/evaluate,not_probed,not_probed,not_probed,not_probed
+POST,/v1/visibility,not_probed,not_probed,not_probed,not_probed
+POST,/api/vector/search,not_probed,not_probed,not_probed,not_probed

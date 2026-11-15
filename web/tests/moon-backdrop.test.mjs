@@ -14,10 +14,9 @@ const read=name=>readFile(path.join(web,name),"utf8");
 const {mountMoonBackdrop,pickAssets,probeWebGL,backdropTime,shouldAnimate,normalizeOptions,cameraPosition,MAX_PIXEL_RATIO,FRAME_MS,isSoftwareRenderer,slowStreak,SLOW_FRAME_MS,SLOW_FRAMES_TO_STOP}=backdrop;
 
 // Pages whose background is decorative get the Moon; pages whose LOLA relief is the functional map never do.
-const WITH={"index.html":"./moon-hd/backdrop.js","onboard/cockpit.html":"../moon-hd/backdrop.js",
- "moonproof/rules.html":"../moon-hd/backdrop.js","moonproof/evidence.html":"../moon-hd/backdrop.js","moonproof/debrief.html":"../moon-hd/backdrop.js","classic.html":"./moon-hd/backdrop.js"};
+const WITH={"moonproof/rules.html":"../moon-hd/backdrop.js","moonproof/evidence.html":"../moon-hd/backdrop.js","moonproof/debrief.html":"../moon-hd/backdrop.js"};
 const WITHOUT=["moonproof/index.html","moonproof/mission.html","moonproof/explore.html","moonproof/compare.html","moonproof/recover.html","moonproof/cockpit.html","moonproof/landing.html",
- "moonproof/plan.html","moonproof/present.html","moonproof/activity.html","studio/index.html","onboard/index.html","moon-hd.html","lab.html"];
+ "moonproof/plan.html","moonproof/present.html","moonproof/activity.html","moon-hd.html"];
 
 test("backdrop.js exports the documented API and does nothing without a document",async()=>{
  assert.equal(typeof mountMoonBackdrop,"function");
@@ -156,12 +155,6 @@ test("pages with a decorative background mount the backdrop; functional-map scre
 });
 
 test("links to the full viewer and credits without endorsement",async()=>{
- const escolha=await read("shell/views/escolha.tsx"),home=await read("index.html"),cockpit=await read("onboard/cockpit.html"),classic=await read("classic.html");
- assert.match(escolha,/href="\.\/moon-hd\.html\?view=pole&lang=pt"/);
- assert.match(cockpit,/href="\.\.\/moon-hd\.html\?view=pole&amp;lang=pt"/);
- for(const text of [home,cockpit]){assert.match(text,/NASA LRO\/LOLA/);assert.match(text,/NAIF SPICE/);assert.match(text,/CGI Moon Kit/);assert.match(text,/não é um produto da NASA/);}
- assert.match(home,/IAU\/USGS/);assert.match(home,/Blue Marble/);
- assert.match(classic,/not a NASA product/);
  // MoonProof screens: the help popover of the shared shell carries the link and the credit, in both languages.
  const shell=await read("moonproof/core/shell.ts"),{t,setLang}=await import("../moonproof/core/i18n.js");
  assert.match(shell,/\.\.\/moon-hd\.html/);assert.match(shell,/nav\.moon3d\.credit/);
@@ -171,7 +164,6 @@ test("links to the full viewer and credits without endorsement",async()=>{
   for(const credit of ["CGI Moon Kit","LRO/LOLA","NAIF SPICE","IAU/USGS","Blue Marble"])assert.ok(t("nav.moon3d.credit").includes(credit),lang+" "+credit);
   assert.doesNotMatch(t("nav.moon3d.credit"),/endorsed by NASA(?! )|certified|validated by NASA/i);
  }
- // The canonical entry redirects; the cockpit's shared shell owns the visible credit.
  assert.match(await read("moonproof/index.html"),/id="cockpit-entry" href="\.\/cockpit\.html"/);
  // The viewer keeps its own seal; the backdrop adds none.
  assert.match(await read("moon-hd/app.js"),/NOT VALIDATED/);

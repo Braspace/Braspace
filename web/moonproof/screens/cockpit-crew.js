@@ -10,13 +10,28 @@ export function validateInputs(power, crewIn) {
     const crew = crewIn;
     const errors = [];
     for (const k of POWER_FIELDS)
-        if (!(Number.isFinite(power[k]) && power[k] >= 0))
+        if (!(Number.isFinite(power[k]) && power[k] >= 0 && power[k] <= 1e8))
             errors.push(k);
+    if (!(power.battery_capacity_wh > 0))
+        errors.push("battery_capacity_wh");
     for (const k of CREW_FIELDS)
         if (!(Number.isFinite(crew[k]) && crew[k] >= 0))
             errors.push(k);
-    if (!(Number.isInteger(crew.size) && crew.size >= 1))
+    if (!(Number.isInteger(crew.size) && crew.size >= 1 && crew.size <= 12))
         errors.push("size");
+    for (const k of ["o2_stock_kg", "food_stock_kg"])
+        if (crew[k] > 1e5)
+            errors.push(k);
+    for (const k of ["o2_kg_per_person_day", "food_kg_per_person_day"])
+        if (!(crew[k] > 0 && crew[k] <= 100))
+            errors.push(k);
+    if (crew.reserve_hours > 720)
+        errors.push("reserve_hours");
+    const rs = crew.rate_source;
+    if (typeof rs !== "string" || !rs.trim() || rs.length > 300)
+        errors.push("rate_source");
+    if (typeof crew.aboard_during_delay !== "boolean")
+        errors.push("aboard_during_delay");
     if (power.initial_charge_wh > power.battery_capacity_wh)
         errors.push("initial_charge_wh");
     if (power.reserve_wh > power.battery_capacity_wh)
@@ -63,7 +78,9 @@ catch {
 export function saveScenario(storage, entry, max = 20) {
     const list = [entry, ...loadSaved(storage).filter((x) => x.id !== entry.id)].slice(0, max);
     try {
-        storage?.setItem(SAVED_KEY, JSON.stringify(list));
+        if (!storage)
+            return { ok: false, list };
+        storage.setItem(SAVED_KEY, JSON.stringify(list));
         return { ok: true, list };
     }
     catch {

@@ -23,3 +23,11 @@ test('every state has a CSS hiding target and the independent controller is load
   for(const id of ['left','right','sheet','timeline','report']) assert.ok(css.includes(`data-ck-hide-${id}`),id);
   assert.match(html,/id="ck-panel-controls"/); assert.match(html,/screens\/cockpit-panels\.js/); assert.match(html,/screens\/cockpit-panels\.css/);
 });
+test('pending scenario masks stale telemetry and report is invalidated before async work',()=>{
+  const source=readFileSync(new URL('../screens/cockpit.tsx',import.meta.url),'utf8');
+  const css=readFileSync(new URL('../screens/cockpit-panels.css',import.meta.url),'utf8');
+  assert.match(source,/scenarioKey\(\) !== S\.siteKey[\s\S]*S\.report = null[\s\S]*ckScenario = "loading"/);
+  assert.match(source,/if \(scenarioKey\(\) !== key\) \{ redraw = true; return; \}/);
+  assert.match(source,/delete document\.body\.dataset\.ckScenario/);
+  assert.match(css,/body\[data-ck-scenario\] #left[\s\S]*visibility:hidden/);
+});
