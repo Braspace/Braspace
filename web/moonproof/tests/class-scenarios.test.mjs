@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { buildHash } from "../screens/scenario-calc.js";
-import { classroomWindows } from "../screens/class-scenarios.js";
+import { classroomWindows, classroomWindowLabel } from "../screens/class-scenarios.js";
 
 const sites = [
   { id: "site-a", name: "A" },
@@ -46,4 +46,26 @@ test("Compare, Kit Aula and Apresentar are wired to the same scenario contract",
   assert.ok(present.includes("classroomWindows(doc.sites, location.hash, st)"));
   assert.ok(present.includes("apiWindowMetrics(doc, w.site, w.start, w.hours || 336)"));
   assert.ok(present.includes('hrefTo("activity.html") + location.hash'));
+});
+
+test("Projector UTC windows distinguish the same site at different times", () => {
+  const first = classroomWindowLabel({ start: "2026-11-15T12:00:00Z", hours: 24 });
+  const later = classroomWindowLabel({ start: "2026-11-16T09:00:00-03:00", hours: 48 });
+  assert.deepEqual(first, { startUtc: "2026-11-15 12:00", hours: 24 });
+  assert.deepEqual(later, { startUtc: "2026-11-16 12:00", hours: 48 });
+  assert.notEqual(first.startUtc, later.startUtc);
+});
+test("Unknown start remains explicitly unspecified, not a fabricated UTC date", () => {
+  assert.deepEqual(classroomWindowLabel({ start: null, hours: null }), { startUtc: null, hours: 336 });
+});
+test("Projector shows each scenario UTC window in PT and EN", () => {
+  const read = name => readFileSync(new URL("../screens/" + name, import.meta.url), "utf8");
+  const tsx = read("present.tsx"), js = read("present.js"), css = read("present.css");
+  assert.match(tsx, /classroomWindowLabel\(chosenWindows\[idx\]\)/);
+  assert.match(js, /classroomWindowLabel\(chosenWindows\[idx\]\)/);
+  assert.match(tsx, /class="mp-sc-window"/);
+  assert.match(js, /class: "mp-sc-window"/);
+  assert.match(tsx, /Janela UTC: \{start\}/);
+  assert.match(tsx, /UTC window: \{start\}/);
+  assert.match(css, /\.mp-sc-window/);
 });
