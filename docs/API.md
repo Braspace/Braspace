@@ -241,10 +241,10 @@ Request body (required): `application/json` `object`
 | Status | Content | Meaning |
 |---|---|---|
 | 200 | `application/json` `object` | OK: version, model_status, premises, summary, outages, samples |
-| 400 | — | Invalid JSON |
-| 413 | — | Too large |
-| 415 | — | Content-Type |
-| 422 | — | Invalid request |
+| 400 | `application/json` `Error` | Malformed JSON, duplicate or unknown key, trailing data (INVALID_JSON) |
+| 413 | `application/json` `Error` | Body above the navigation request limit (REQUEST_TOO_LARGE) |
+| 415 | `application/json` `Error` | Content-Type is not application/json (UNSUPPORTED_MEDIA_TYPE) |
+| 422 | `application/json` `Error` | Well-formed JSON with an invalid value, e.g. missing start_utc or unknown site (INVALID_INPUT) |
 
 ### POST /api/onboard/evaluate
 
