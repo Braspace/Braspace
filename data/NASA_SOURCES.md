@@ -164,5 +164,5 @@ these is ingested; `LDEM_80S_80M` remains the only selected terrain dataset.
 | LROC curated NAC south pole mosaic / polar illumination map | <https://lroc.im-ldi.com/images/downloads> | `NAC_POLE_P900S0000.zip`, `LROC_Polar_Illumination_Map.tif` | `lroc-curated-*` |
 | SLDEM2015 (not for the pole: +/-60 deg only) | <https://astrogeology.usgs.gov/search/map/moon_lro_lola_selene_kaguya_tc_dem_merge_60n60s_59m> | none | `usgs-sldem2015-60n60s-not-polar` |
 
-`data/manifest.json` is unchanged: its schema and `tests/test_data_contract.py`
+`data/manifest.json` is unchanged: its schema and `api/cmd/verifylola/data_contract_test.go`
 describe one dataset (`LDEM_80S_80M`).

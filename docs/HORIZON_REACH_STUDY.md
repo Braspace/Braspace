@@ -75,8 +75,10 @@ series, the results tables) come from the 100 km horizon. For those two sites:
 - Sunlight is overstated by about 4.6 pp and 4.9 pp.
 - Malapert's "longest darkness" is 670 h in the product and 3,389 h here. Anything derived from it (battery and night
   rules, scenario verdicts, the class kit) is optimistic for that site.
-- The "Sun: upper bound" chip (#254) flags Peak Near Shackleton only; its rule compares with PGDA and Malapert's
-  difference (+3.55 pp) is under the 5 pp tolerance.
+- The earlier PGDA-only chip (#254) flagged Peak Near Shackleton only. The MoonProof context and Moon HD site card now
+  also flag Malapert, using this study only while the catalogue still carries the original 100 km metrics. They label
+  sunlight as an upper bound and the longest darkness as a lower bound; the 200 km results are shown as preliminary,
+  not substituted into calculations or the API.
 
 **Not done here:** the series were not regenerated. That means raising the limit in `lola_horizon.py`, re-running
 `go run ./cmd/threesitepipeline`, `science/build_web_assets.py` and `go run ./cmd/exportapiseries` (api/), and updating every pinned SHA-256, table and
