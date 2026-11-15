@@ -23,7 +23,7 @@ register({
         "cmp.why.night": "{L}: longest night {v} h, above the assumed limit of {lim} h.",
         "cmp.why.blackout": "{L}: {v} h without Earth, above the assumed limit of {lim} h.",
         "cmp.why.nd": "{L}: no data for this window.", "cmp.why.ok": "{L} meets every rule.",
-        "cmp.delay": "What if {L} is delayed?", "cmp.land": "Land", "cmp.pass": "Meets every rule", "cmp.fail.night": "Fail: long night",
+        "cmp.delay": "What if {L} is delayed?", "cmp.land": "Land", "cmp.viewFailures": "See why it fails", "cmp.pass": "Meets every rule", "cmp.fail.night": "Fail: long night",
         "cmp.fail.blackout": "Fail: no Earth", "cmp.nd": "No data",
         "cmp.chart": "Sun and Earth per day · {L}", "cmp.sun": "Sun", "cmp.earth": "Earth",
         "cmp.diff": "Differences", "cmp.full": "Full table", "cmp.power": "Power", "cmp.contact": "Contact",
@@ -45,7 +45,7 @@ register({
         "cmp.why.night": "{L}: noite mais longa de {v} h, acima do limite assumido de {lim} h.",
         "cmp.why.blackout": "{L}: {v} h sem Terra, acima do limite assumido de {lim} h.",
         "cmp.why.nd": "{L}: sem dado nesta janela.", "cmp.why.ok": "{L} atende a todas as regras.",
-        "cmp.delay": "E se {L} atrasar?", "cmp.land": "Pousar", "cmp.pass": "Atende a tudo", "cmp.fail.night": "Falha: noite longa",
+        "cmp.delay": "E se {L} atrasar?", "cmp.land": "Pousar", "cmp.viewFailures": "Ver o que falha", "cmp.pass": "Atende a tudo", "cmp.fail.night": "Falha: noite longa",
         "cmp.fail.blackout": "Falha: sem Terra", "cmp.nd": "Sem dado",
         "cmp.chart": "Sol e Terra por dia · {L}", "cmp.sun": "Sol", "cmp.earth": "Terra",
         "cmp.diff": "Diferenças", "cmp.full": "Tabela completa", "cmp.power": "Energia", "cmp.contact": "Contato",
@@ -92,8 +92,10 @@ function scenarios() {
         return hs.map(s => ({ site: s.site, start: s.start || t0Default(), hours: s.hours || hoursDefault() }));
     const ids = doc.sites.map(s => s.id), hrs = hoursDefault(), a = t0Default();
     const later = new Date(Date.parse(a) + 2 * hrs * HOUR_MS).toISOString();
-    const second = ids[1] || ids[0];
-    return [{ site: ids[0], start: a, hours: hrs }, { site: second, start: a, hours: hrs }, { site: second, start: later, hours: hrs }].slice(0, Math.min(MAXSC, 3));
+    const selectedSite = getState().site;
+    const first = selectedSite && ids.includes(selectedSite) ? selectedSite : ids[0];
+    const second = ids.find(id => id !== first) || first;
+    return [{ site: first, start: a, hours: hrs }, { site: second, start: a, hours: hrs }, { site: second, start: later, hours: hrs }].slice(0, Math.min(MAXSC, 3));
 }
 let sel = 0;
 // First paint (mobile LCP): the context bar comes from the URL hash and the catalogue (seal, window), and the panels show
@@ -160,10 +162,10 @@ async function draw() {
     const card = createLayerCard({ id: "verdict", title: t("cmp.q"), status: statusOf(ms), answer, why: reasons, proof, layer: st.layer, onLayer: (layer) => setState({ layer }) });
     const actions = one(h("div", { class: "mp-actions" },
         h("a", { class: "mp-pill is-primary", href: recoverHref(list) }, t("cmp.delay", { L: L(sel) })),
-        h("a", { class: "mp-pill is-sim", href: hrefTo("landing.html", { ...getState(), site: list[sel].site, start: list[sel].start, hours: list[sel].hours }) }, t("cmp.land"))));
+        judged[sel].status === "pass" ? h("a", { class: "mp-pill is-sim", href: hrefTo("landing.html", { ...getState(), site: list[sel].site, start: list[sel].start, hours: list[sel].hours }) }, t("cmp.land")) : h("button", { class: "mp-pill", type: "button", onClick: () => setState({ layer: "why" }) }, t("cmp.viewFailures"))));
     card.el.insertBefore(actions, card.el.querySelector(".mp-chips"));
     // scenario list
-    const ul = one(h("div", { class: "mp-scn-list", role: "radiogroup", "aria-label": t("cmp.q") }, list.map((sc, i) => (h("button", { class: "mp-scn", type: "button", role: "radio", "aria-checked": i === sel, tabIndex: i === sel ? 0 : -1, onClick: () => { sel = i; draw(); }, onKeyDown: (e) => { const d = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0; if (d) {
+    const ul = one(h("div", { class: "mp-scn-list", role: "radiogroup", "aria-label": t("cmp.q") }, list.map((sc, i) => (h("button", { class: "mp-scn" + (judged[i].status === "pass" ? " is-eligible" : ""), type: "button", role: "radio", "aria-checked": i === sel, tabIndex: i === sel ? 0 : -1, onClick: () => { sel = i; draw(); }, onKeyDown: (e) => { const d = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0; if (d) {
             e.preventDefault();
             sel = (i + d + list.length) % list.length;
             draw().then(() => ul.querySelector('[aria-checked="true"]')?.focus());

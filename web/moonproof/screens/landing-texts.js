@@ -2,7 +2,7 @@
 // (landing_lab.*, debrief.*) and docs/design/designer/{F,G}. Placeholders {x} are filled from data, never typed here.
 export const TEXTS = {
     "pt-BR": {
-        "lab.back": "Sair para Compare", "lab.title": "Landing Lab", "lab.sim": "SIMULAÇÃO EDUCATIVA",
+        "lab.back": "Voltar", "lab.title": "Landing Lab", "lab.sim": "SIMULAÇÃO EDUCATIVA",
         "lab.mode": "Modo", "lab.mode.guided": "Guided", "lab.mode.free": "Free",
         "lab.cam": "Câmera", "lab.cam.chase": "Perseguição", "lab.cam.descent": "Descida", "lab.cam.profile": "Perfil",
         "lab.pause": "Pausar", "lab.resume": "Retomar", "lab.restart": "Reiniciar", "lab.help": "Ajuda",
@@ -64,7 +64,7 @@ export const TEXTS = {
         "deb.proof.limits": "Limites: DEFAULT_VEHICLE.limits do veículo hipotético; reserva de combustível e zona-alvo são assumed limit",
     },
     en: {
-        "lab.back": "Back to Compare", "lab.title": "Landing Lab", "lab.sim": "EDUCATIONAL SIMULATION",
+        "lab.back": "Back", "lab.title": "Landing Lab", "lab.sim": "EDUCATIONAL SIMULATION",
         "lab.mode": "Mode", "lab.mode.guided": "Guided", "lab.mode.free": "Free",
         "lab.cam": "Camera", "lab.cam.chase": "Chase", "lab.cam.descent": "Descent", "lab.cam.profile": "Profile",
         "lab.pause": "Pause", "lab.resume": "Resume", "lab.restart": "Restart", "lab.help": "Help",

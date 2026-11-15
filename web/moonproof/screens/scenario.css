@@ -171,3 +171,7 @@
 @keyframes mp-scn-shimmer{to{background-position:-200% 0}}
 @media (prefers-reduced-motion:reduce){.mp-scn-left:empty,.mp-scn-right:not(:has(>:not(.mp-sheet-grip))){animation:none}}
 }
+
+/* Audit 15/11: active selection is not a safety verdict; jade means rules passed. */
+.mp-scn[aria-checked="true"]:not(.is-eligible){background:var(--pill);color:var(--pill-text);border-color:var(--text-2);outline:2px solid var(--text-2);outline-offset:-2px}
+.mp-scn.is-eligible[aria-checked="true"]{background:var(--jade);color:var(--jade-text);border-color:transparent}

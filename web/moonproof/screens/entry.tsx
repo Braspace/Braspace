@@ -5,6 +5,7 @@ import { t, apply, setLang, pickLang, lang } from "../core/i18n.js";
 import { getState, setState, hrefTo, TASKS } from "../core/state.js";
 import type { Task } from "../core/state.js";
 
+const TASK_PAGES: Record<Task, string> = { explore: "explore.html", class: "activity.html", plan: "plan.html" };
 const ICONS: Record<Task, string> = {
   explore: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>',
   class: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 17v-3M12 17v-6M15 17v-8"/></svg>',
@@ -17,22 +18,22 @@ function paint(vnode: preact.ComponentChild, host: HTMLElement) { mount(null, ho
 
 function render() {
   const st = getState();
-  const chosen = st.task || "explore";
+  const chosen = st.task;
   const cards = document.getElementById("cards") as HTMLElement;
   const onFocus = (e: FocusEvent) => cards.querySelectorAll(".mp-task").forEach(c => c.setAttribute("aria-current", String(c === e.currentTarget)));
   paint(<>{(Object.keys(TASKS) as Task[]).map(task => (
-    <a class="mp-task" role="listitem" data-task={task} aria-current={task === chosen} href={hrefTo("mission.html", { ...st, task, layer: TASKS[task] })} onFocus={onFocus}>
+    <a class="mp-task" role="listitem" data-task={task} aria-current={task === chosen} href={hrefTo(TASK_PAGES[task], { ...st, task, layer: TASKS[task] })} onFocus={onFocus}>
       <span class="mp-task-icon" dangerouslySetInnerHTML={{ __html: ICONS[task] }} />
       <h2>{t(`entry.${task}.title`)}</h2>
       <p class="who">{t(`entry.${task}.who`)}</p>
       <ul><li>{t(`entry.${task}.b1`)}</li><li>{t(`entry.${task}.b2`)}</li><li>{t(`entry.${task}.b3`)}</li></ul>
-      <p class="opens">{t("entry.opensIn", { layer: t("layer." + TASKS[task]) })}</p>
+      <p class="opens">{t("entry.destination." + task)}</p>
     </a>
   ))}</>, cards);
   const hint = document.getElementById("hint") as HTMLElement;
-  const [pre, mid, post] = t("entry.hint", { a: "\u0000", b: "\u0001" }).split(/[\u0000\u0001]/);
-  paint(<>{"ⓘ "}{pre}<b>{t("nav.class")}</b>{mid}<b>{t("nav.plan")}</b>{post}</>, hint);
-  (document.getElementById("skip") as HTMLAnchorElement).href = hrefTo("mission.html");
+  paint(<>{t("entry.hint")}</>, hint);
+  (document.getElementById("skip") as HTMLAnchorElement).href = hrefTo("explore.html");
+  document.title = "MoonProof · " + t("entry.title");
   apply();
 }
 
