@@ -39,3 +39,8 @@ test("every screen gets it through mountShell; buttons are labelled and controll
   assert.match(src, /setAttribute\("aria-expanded"/);
   assert.match(src, /"pt-BR": \{ "fold\.left\.hide": "Recolher painel esquerdo"/);
 });
+
+test("fold buttons are laid out once per frame, not once per DOM mutation", () => {
+  const src = read("core/collapse.ts");
+  assert.match(src, /const place = \(\) => \{ if \(!queued\) queued = requestAnimationFrame\(\(\) => \{ queued = 0; placeNow\(\); \}\); \};/);
+});
