@@ -8,6 +8,8 @@ import { sealEl } from "../core/layers.js";
 import { register, t } from "../core/i18n.js";
 import { getState, setState, hrefTo, DEFAULT_RULES } from "../core/state.js";
 import { qrSvg } from "./qr.js";
+import { buildHash } from "./scenario-calc.js";
+import { classroomWindows } from "./class-scenarios.js";
 register({
     en: {
         "act.kit": "Class Kit",
@@ -104,9 +106,10 @@ register({
 holdReady();
 mountShell({ screen: "compare", context: null, onLang: draw });
 const doc = await loadSites();
-const scenarios = doc.sites.slice(0, 3);
+const chosenWindows = classroomWindows(doc.sites, location.hash, getState());
+const scenarios = chosenWindows.map(s => s.site);
 const grid = (await loadRegion());
-await mountTerrain(document.getElementById("terrain"), { sites: doc.sites.map((s) => { const i = scenarios.indexOf(s); return i >= 0 ? { ...s, n: String.fromCharCode(65 + i) } : s; }), selected: getState().site, labels: false });
+await mountTerrain(document.getElementById("terrain"), { sites: doc.sites.map((s) => { const letters = chosenWindows.flatMap((w, i) => w.site.id === s.id ? [String.fromCharCode(65 + i)] : []).join("/"); return letters ? { ...s, n: letters } : s; }), selected: getState().site, labels: false });
 const cfg = {
     step: 1,
     device: "laptop",
@@ -133,6 +136,7 @@ function shareUrl() {
     u.searchParams.set("allowProof", cfg.allowProof ? "1" : "0");
     u.searchParams.set("allowRules", cfg.allowRules ? "1" : "0");
     u.searchParams.set("allowLab", cfg.allowLab ? "1" : "0");
+    u.hash = buildHash({ sc: chosenWindows.map(w => ({ site: w.site.id, start: w.start, hours: w.hours })) });
     return u.toString();
 }
 /** Hillshade of the real LOLA grid fitted to the scenarios, drawn once per size; markers use the same transform. */
