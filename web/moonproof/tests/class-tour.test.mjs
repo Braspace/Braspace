@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { TOUR_STEPS, tourStorageKey, bestTarget } from "../screens/tour.js";
+import { TOUR_STEPS, tourStorageKey, bestTarget, SITE_WELCOME_KEY, hasCompletedSiteWelcome, shouldAutoOpenTour } from "../screens/tour.js";
 const read = p => readFile(new URL(p,import.meta.url),"utf8");
 test("each mode has five short user-facing steps and a separate completion key",()=>{
  for(const mode of ["explore","class"]) {
@@ -63,7 +63,7 @@ test("Cockpit onboarding uses the shared tour and can reopen independently",asyn
  assert.notEqual(tourStorageKey("cockpit"),tourStorageKey("class"));
  assert.match(html,/src="screens\/tour\.js" data-moon-tour="cockpit"/);
  assert.match(html,/href="screens\/tour\.css"/);
- assert.match(js,/if \(!hasSeen && mode !== "present"\) open\(true\)/,"Cockpit auto-onboards on first visit");
+ assert.match(js,/shouldAutoOpenTour\(mode, alreadyWelcomed\)/,"Cockpit auto-onboards on first visit");
  assert.match(js,/help\.addEventListener\("click", \(\) => open\(false\)\)/,"help can always reopen");
  for(const step of TOUR_STEPS.cockpit){
    assert.ok(step.targets.length>0);
@@ -86,4 +86,39 @@ test("Cockpit tour references actual page controls, not removed/stale selectors"
  assert.match(html,/id="player"/);
  const js=await read("../../moon-hd/backdrop.js");
  assert.match(js,/moon-open/);
+});
+
+test("site root redirects to the Cockpit where first-visit onboarding is mounted",async()=>{
+ const root=await read("../../index.html"),entry=await read("../index.html");
+ const cockpit=await read("../cockpit.html"),script=await read("../screens/tour.js");
+ assert.match(root,/url=moonproof\//);
+ assert.match(entry,/screens\/cockpit-entry\.js/);
+ assert.match(cockpit,/data-moon-tour="cockpit"/);
+ assert.match(script,/setTimeout\(\(\) => \{/);
+ assert.doesNotMatch(script,/attempts\+\+ > 65/,"slow API must not suppress first-site welcome");
+ assert.doesNotMatch(script,/!document\.documentElement\.classList\.contains\("mp-ready"\)/,"welcome does not need science data");
+});
+test("one site-wide welcome on first entry, but guide can always be manually reopened",()=>{
+ const storage=new Map();
+ const mock={getItem:key=>storage.get(key)??null};
+ assert.equal(SITE_WELCOME_KEY,"moonproof.tour.welcome.v1");
+ assert.equal(hasCompletedSiteWelcome(mock),false);
+ assert.equal(shouldAutoOpenTour("cockpit",hasCompletedSiteWelcome(mock)),true);
+ assert.equal(shouldAutoOpenTour("explore",hasCompletedSiteWelcome(mock)),true);
+ assert.equal(shouldAutoOpenTour("present",false),false,"projector never interrupts a lesson");
+ storage.set(SITE_WELCOME_KEY,"done");
+ for(const mode of ["cockpit","explore","class"])
+   assert.equal(shouldAutoOpenTour(mode,hasCompletedSiteWelcome(mock)),false);
+ storage.clear();
+ storage.set(tourStorageKey("explore"),"done");
+ assert.equal(hasCompletedSiteWelcome(mock),true,"old per-screen completions still count");
+ storage.clear();
+ storage.set(tourStorageKey("cockpit"),"done");
+ assert.equal(hasCompletedSiteWelcome(mock),true);
+});
+test("dismiss or finish stores both site-wide and per-mode completion",async()=>{
+ const js=await read("../screens/tour.js");
+ assert.match(js,/localStorage\.setItem\(SITE_WELCOME_KEY, "done"\)/);
+ assert.match(js,/localStorage\.setItem\(key, "done"\)/);
+ assert.match(js,/help\.addEventListener\("click", \(\) => open\(false\)\)/);
 });
