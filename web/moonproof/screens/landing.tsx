@@ -10,12 +10,9 @@ import { Viewer } from "../../lab/scene.js";
 // @ts-ignore TS7016
 import { TerrainGrid } from "../../lab/terrain.js";
 import { createSim, advance, telemetry, thrustDirection, DEFAULT_VEHICLE, MOON_R_REF } from "../../lab/physics.js";
-// @ts-ignore TS7016
 import { mountShell } from "../core/shell.js";
 import { loadSites, loadSeries, sealFor, apiOnline, DATA_BASE } from "../core/data.js";
-// @ts-ignore TS7016
 import { sealEl } from "../core/layers.js";
-// @ts-ignore TS7016
 import { register, t, fmtNum, lang, setLang } from "../core/i18n.js";
 import { getState, setState, hrefTo } from "../core/state.js";
 import type { Site } from "../core/data.js";

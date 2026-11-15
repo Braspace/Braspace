@@ -163,7 +163,7 @@ test("links to the full viewer and credits without endorsement",async()=>{
  assert.match(home,/IAU\/USGS/);assert.match(home,/Blue Marble/);
  assert.match(classic,/not a NASA product/);
  // MoonProof screens: the help popover of the shared shell carries the link and the credit, in both languages.
- const shell=await read("moonproof/core/shell.js"),{t,setLang}=await import("../moonproof/core/i18n.js");
+ const shell=await read("moonproof/core/shell.ts"),{t,setLang}=await import("../moonproof/core/i18n.js");
  assert.match(shell,/\.\.\/moon-hd\.html/);assert.match(shell,/nav\.moon3d\.credit/);
  for(const [lang,phrase] of [["en","not a NASA product"],["pt-BR","não é um produto da NASA"]]){
   setLang(lang);

@@ -6,14 +6,10 @@
 // The side panels are Preact templates rendered once into detached nodes (build/one) and swapped in with
 // replaceChildren, exactly like the hand-built DOM they replace; the map rays stay imperative SVG.
 import { h, Fragment, render } from "../../vendor/preact/preact.module.js";
-// @ts-ignore TS7016: JS module without types
 import { mountShell } from "../core/shell.js";
-// @ts-ignore TS7016
 import { mountTerrain } from "../core/terrain.js";
 import { loadSites, windowMetrics, dailySun, sealFor, apiOnline, api, loadRegion, sourced } from "../core/data.js";
-// @ts-ignore TS7016
 import { createLayerCard, statCircle, barEl, sealEl } from "../core/layers.js";
-// @ts-ignore TS7016
 import { t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { runs, dayOf, fmtVal, mapDir, skyNext, batteryMargin, pgdaAt, compassIndex } from "./mission-calc.js";

@@ -26,9 +26,9 @@ test("missing value is N/D, never 0 and never VAL", () => {
   assert.equal(sourced(0, { status: "VALIDATED" }).seal, "VAL");
 });
 test("the layer card takes its seal from sealFor(status) only", async () => {
-  const src = await readFile(new URL("../core/layers.js", import.meta.url), "utf8");
+  const src = await readFile(new URL("../core/layers.ts", import.meta.url), "utf8");
   assert.match(src, /sealEl\(sealFor\(status\)\)/);
-  assert.doesNotMatch(src, /["']VAL["']/, "layers.js must not hard-code VAL");
+  assert.doesNotMatch(src, /["']VAL["']/, "layers.ts must not hard-code VAL");
 });
 test("no screen or page hard-codes the VAL seal or the word validated", async () => {
   const { readdir } = await import("node:fs/promises");

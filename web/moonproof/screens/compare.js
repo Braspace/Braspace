@@ -7,14 +7,10 @@
 import { h, Fragment, render } from "../../vendor/preact/preact.module.js";
 // @ts-ignore TS7016: JS module without types
 import { mountSheet } from "./sheet.js";
-// @ts-ignore TS7016
 import { mountShell } from "../core/shell.js";
-// @ts-ignore TS7016
 import { mountTerrain } from "../core/terrain.js";
 import { loadSites, apiOnline } from "../core/data.js";
-// @ts-ignore TS7016
 import { createLayerCard, sealEl, barEl } from "../core/layers.js";
-// @ts-ignore TS7016
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { judge, slack, verdictOf, dailyFractions, parseHash, buildHash } from "./scenario-calc.js";
