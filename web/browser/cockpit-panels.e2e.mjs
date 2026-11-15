@@ -13,7 +13,7 @@ export async function verifyCockpitPanels(page) {
   await guide.waitFor({ state: "visible", timeout: 15000 });
   assert.equal(await guide.getAttribute("aria-modal"), "true", "first visit offers an accessible guide");
   await page.locator("#mp-tour-next").click();
-  assert.match(await page.locator("#mp-tour-progress").innerText(), /1\\s+(?:of|de)\\s+7/);
+  assert.match(await page.locator("#mp-tour-progress").innerText(), /1\s+(?:of|de)\s+7/);
   await page.locator("#mp-tour-skip").click();
   await guide.waitFor({ state: "hidden" });
   await help.click();
