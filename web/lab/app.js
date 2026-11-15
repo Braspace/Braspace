@@ -95,7 +95,7 @@ async function region() {
   const get = async f => { const r = await fetch("./data/region/" + f); if (!r.ok) throw new Error(f); return new Uint8Array(await r.arrayBuffer()); };
   const [sun, earth] = await Promise.all([get(grid.h.layers.pgda_sun.file), get(grid.h.layers.pgda_earth.file)]);
   state.pgda = { sun, earth }; state.slope = grid.slopeField(); state.region = grid;
-  status("");
+  status(state.handoffNote || ""); // keep a rejected-link notice visible after loading
   return grid;
 }
 

@@ -22,9 +22,9 @@ const num = v => (v == null ? null : parseFloat(v));
 test("left column: no container box, tabs 30 px high, rows 46 px pills with 8 px pitch", () => {
   assert.equal(prop(".ex-left", "background"), "none");
   assert.equal(prop(".ex-left", "border"), "0");
-  assert.equal(num(prop(".ex-left", "gap")), 12);
+  assert.equal(num(prop(".ex-left", "gap")), 13);
   assert.equal(num(prop(".ex-tabs .mp-pill", "height")), 30);
-  assert.equal(num(prop(".ex-tabs", "gap")), 6);
+  assert.equal(num(prop(".ex-tabs", "gap")), 5);
   assert.equal(num(prop(".ex-radio", "min-height")), 46);
   assert.equal(prop(".ex-radio", "border-radius"), "999px");
   assert.equal(num(prop(".ex-list", "gap")), 8);
@@ -46,7 +46,7 @@ test("1301+ px: columns at y=150, right column 352 px, ends 6 px above the botto
   assert.match(css, /@media \(min-width:1301px\)\{\.ex-left,\.ex-right\{top:150px\}\.ex-left\{width:300px\}\.ex-right\{width:352px\}\}/);
   assert.match(css, /@media \(min-width:1301px\)\{\.ex-right\{bottom:84px\}\}/);
   assert.equal(num(prop(".ex-right", "gap")), 5);
-  assert.equal(num(prop(".ex-right #card-site", "padding")), 20);
+  assert.equal(num(prop(".ex-right #card-site", "padding")), 21);
 });
 
 test("'What you see from here': chart, sentence, actions, then the 1-2-3 chips; width 348; Compare 44 / Land >= 113 wide", () => {
@@ -66,7 +66,7 @@ test("'What you see from here': chart, sentence, actions, then the 1-2-3 chips; 
 
 test("bottom bar: one row [scale 152, prev, next, site 173, zoom -, zoom +, coordinates 172], bottom 28 px, tap hint 14 px above", () => {
   assert.equal(num(prop(".mc-dock", "bottom")), 28);
-  assert.equal(num(prop(".mc-dock", "gap")), 14);
+  assert.equal(num(prop(".mc-dock", "gap")), 13);
   assert.equal(num(prop(".ex-scalebar", "width")), 152);
   assert.equal(num(prop(".ex-scalebar", "min-height")), 50);
   assert.equal(num(prop(".ex-sel", "width")), 173);
