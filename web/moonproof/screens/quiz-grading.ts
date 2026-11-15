@@ -1,5 +1,5 @@
 // Question-specific, fail-closed classroom quiz grading. Never equate missing NASA data with "wrong".
-export type QuizMetric = { longestDarkH: { value: number | null }; longestBlackoutH: { value: number | null } };
+export type QuizMetric = { longestDarkH: { value: number | null | undefined }; longestBlackoutH: { value: number | null | undefined } };
 export type QuizAnswer = { verdicts: (boolean | null)[]; correctIds: string[]; status: "ready" | "unknown" };
 export function evaluateQuestion(question: number, metrics: readonly QuizMetric[], limits: { night: number; blackout: number }): QuizAnswer {
   const needsNight = question !== 3;
