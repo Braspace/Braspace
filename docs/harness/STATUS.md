@@ -16,9 +16,9 @@ Horas em BRT (America/Sao_Paulo). Horas UTC entre parênteses quando informadas 
 
 ## API em produção (harness, `/docker/braspace`)
 
-- Imagem: `482aa03c656c-sha` (main `482aa03`, #415: séries LOLA+SPICE dos 9 locais que faltavam, 16/16 locais com série), publicada às 15:25 BRT (18:25Z) com `swap-api.sh`, sem downtime.
-- Backup antes do deploy: `backup/pre-482aa03c656c-sha-20261115-182458.dump`.
-- Rollback: `./swap-api.sh 5f06ee30aa2c-sha`. Depois disso, `2b6247498db4-sha`.
+- Imagem: `c8ed6fe63c3b-sha` (main `c8ed6fe`, #414: erros do `/api/onboard/report` em JSON com códigos do enum), publicada às 15:31 BRT (18:31Z) com `swap-api.sh`, sem downtime.
+- Backup antes do deploy: `backup/pre-c8ed6fe63c3b-sha-20261115-183050.dump`.
+- Rollback: `./swap-api.sh 482aa03c656c-sha`. Depois disso, `5f06ee30aa2c-sha`.
 
 ## Verificado ao vivo pela borda
 
@@ -160,3 +160,12 @@ Estado do pgvector depois do deploy: `index_ready`, 4 auditados com manifesto `8
 - **Verificado depois do deploy:**
   - contrato com `BRASPACE_EXPECT_COMMIT=482aa03…`: 49/49 pela borda e 49/49 direto, agora exigindo cálculo no servidor nos 16 locais;
   - `smoke-publico.sh` passou.
+
+## Deploy da API `c8ed6fe63c3b-sha` — 15/11/2026 18:31Z, EXO-X1
+
+- **Conteúdo (#414, sessão 3):** `/api/onboard/report` respondia todos os erros em `text/plain`, com `http.Error`, e o 422 genérico. Agora responde JSON `{code, error}` com os códigos do enum: `UNSUPPORTED_MEDIA_TYPE`, `REQUEST_TOO_LARGE`, `INVALID_JSON`, `INVALID_SCENARIO` com detalhe, e `INTERNAL`. Não houve migration.
+- **Troca:** `swap-api.sh` com um watcher na borda, **170/170 respostas 200** durante a troca.
+- **Verificado depois do deploy:**
+  - contrato com `BRASPACE_EXPECT_COMMIT=c8ed6fe…`: 49/49 pela borda e 49/49 direto;
+  - `smoke-publico.sh` passou;
+  - pela borda, `report` responde 415 `UNSUPPORTED_MEDIA_TYPE` e 400 `INVALID_JSON`, os dois em JSON.
