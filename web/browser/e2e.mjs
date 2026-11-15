@@ -61,6 +61,9 @@ try{
  assert(["moonhd","lola-2d"].includes(await desktop.locator(".mp-terrain").getAttribute("data-relief")),"mission relief state");
  await desktop.screenshot({path:path.join(out,"moonproof-mission.png")});
 
+ // Explore's first-run coach would block unrelated pointer QA. The Cockpit
+ // tutorial is tested separately below on its own fresh completion key.
+ await desktop.evaluate(() => localStorage.setItem("moonproof.tour.explore.v1", "done"));
  // Explore: one analysis layer at a time (radio group).
  await open(desktop,"/moonproof/explore.html","#left [role=radio][data-layer]");
  await desktop.locator('#left [role=radio][data-layer="slope"]').click();

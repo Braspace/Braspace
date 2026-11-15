@@ -5,6 +5,21 @@ import assert from "node:assert/strict";
 export const PANEL_IDS = ["battery", "visibility", "illumination", "rules", "alerts", "faults", "crew", "timeline", "report"];
 
 export async function verifyCockpitPanels(page) {
+  // The Cockpit is now the canonical landing: verify the guide actually appears,
+  // can be dismissed and reopened, then leave the page interactive for panel QA.
+  const help = page.locator(".mp-tour-help");
+  await help.waitFor({ state: "visible", timeout: 15000 });
+  const guide = page.locator(".mp-tour-dialog");
+  await guide.waitFor({ state: "visible", timeout: 15000 });
+  assert.equal(await guide.getAttribute("aria-modal"), "true", "first visit offers an accessible guide");
+  await page.locator("#mp-tour-next").click();
+  assert.match(await page.locator("#mp-tour-progress").innerText(), /1\s+(?:of|de)\s+7/);
+  await page.locator("#mp-tour-skip").click();
+  await guide.waitFor({ state: "hidden" });
+  await help.click();
+  await guide.waitFor({ state: "visible" });
+  await page.locator("#mp-tour-close").click();
+  await guide.waitFor({ state: "hidden" });
   const menu = page.locator("#ck-panel-controls details.ck-panel-menu");
   await page.locator("#left .mp-visrow").waitFor({ state: "visible", timeout: 30000 });
   await menu.locator("summary").click();
