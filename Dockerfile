@@ -65,7 +65,8 @@ COPY --from=rustbuilder /build/engine/target/release/braspace-lunar-engine /src/
 # No package-lock.json in web/ (no dependencies): npm ci is not applicable.
 RUN mkdir -p /src/api
 ENV BRASPACE_E2E_API_BIN=/opt/e2e/braspace-e2e-api
-RUN npm --prefix web run lint \
+RUN node web/scripts/check-ts.mjs \
+ && npm --prefix web run lint \
  && npm --prefix web test \
  && node --test web/onboard/test/*.mjs \
  && node scripts/fullstack-e2e.mjs
