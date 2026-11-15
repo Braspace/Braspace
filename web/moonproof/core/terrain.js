@@ -264,6 +264,10 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
                 const hit = cx >= 0 && cy >= 0 && cx < W && cy < H ? document.elementFromPoint(cx, cy) : null;
                 b.dataset.covered = String(!(hit && (hit === b || b.contains(hit))) && b.getAttribute("aria-pressed") !== "true");
             }
+            // Site names under the markers: with many sites near the pole they collide. The selected site keeps its name;
+            // the others keep theirs in order (catalogue number) unless it would overlap one already shown or another
+            // marker — those show the name on hover/focus only (.is-quiet). The marker itself is never hidden here.
+            quietSiteLabels(layer);
             // Names: plain text, larger features first; hidden under panels, visible markers and each other.
             const marks = [...layer.querySelectorAll(".mp-marker:not([data-covered=true]), .mp-marker:not([data-covered=true]) .mp-marker-label")].map(e => e.getBoundingClientRect());
             const cands = features.filter(f => !sites.some(s => s.name && s.name.startsWith(f.name))).sort((a, b) => b.d - a.d)
@@ -320,4 +324,35 @@ export async function mountTerrain(container, { sites = [], selected = null, rou
         document.fonts.ready.then(reframe);
     draw();
     return api;
+}
+/** Rectangle overlap with a small gap (CSS px). */
+const overlaps = (a, b, pad = 2) => a.left < b.right + pad && b.left < a.right + pad && a.top < b.bottom + pad && b.top < a.bottom + pad;
+/**
+ * Greedy declutter of the site-name labels of a marker layer (see the call in draw()). Exported for tests:
+ * returns the ids of the sites whose label was made quiet.
+ */
+export function quietSiteLabels(layer) {
+    const marks = [...layer.querySelectorAll(".mp-marker:not([data-covered=true])")];
+    for (const m of marks)
+        m.classList.remove("is-quiet");
+    const order = [...marks].sort((a, b) => Number(b.getAttribute("aria-pressed") === "true") - Number(a.getAttribute("aria-pressed") === "true"));
+    const markerRects = marks.map(m => m.getBoundingClientRect());
+    const shown = [], quiet = [];
+    for (const m of order) {
+        const lab = m.querySelector(".mp-marker-label");
+        if (!lab)
+            continue;
+        const r = lab.getBoundingClientRect();
+        if (!r.width)
+            continue;
+        const hitsLabel = shown.some(o => overlaps(r, o));
+        const hitsMarker = markerRects.some((mr, i) => marks[i] !== m && overlaps(r, mr));
+        if (m.getAttribute("aria-pressed") !== "true" && (hitsLabel || hitsMarker)) {
+            m.classList.add("is-quiet");
+            quiet.push(m.dataset.site || "");
+        }
+        else
+            shown.push(r);
+    }
+    return quiet;
 }
