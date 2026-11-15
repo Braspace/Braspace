@@ -52,7 +52,7 @@ register({
         "act.students": "students",
         "act.access": "Students can open the link without an account. Discuss answers together; responses are not collected automatically.",
         "act.qrLabel": "QR code of the share link",
-        "act.layers": "Layers"
+        "act.layers": "Layers", "act.previewLayer.answer": "Quick answer: compare the three places.", "act.previewLayer.why": "Understand how sunlight and Earth visibility change the mission.", "act.previewLayer.proof": "Check where the numbers come from; data are preliminary."
     },
     "pt-BR": {
         "act.kit": "Kit Aula",
@@ -97,7 +97,7 @@ register({
         "act.students": "alunos",
         "act.access": "A turma abre o link sem cadastro. Respostas são discutidas em aula; não há coleta automática.",
         "act.qrLabel": "QR code do link de compartilhamento",
-        "act.layers": "Camadas"
+        "act.layers": "Camadas", "act.previewLayer.answer": "Resposta rápida: compare os três lugares.", "act.previewLayer.why": "Entenda como luz do Sol e visão da Terra mudam a missão.", "act.previewLayer.proof": "Veja de onde vêm os números; os dados são preliminares."
     }
 });
 // The board has no context bar on this screen: context null hides it (core/shell.js).
@@ -228,7 +228,8 @@ function draw() {
             h("span", { id: "prev-seal", class: "mp-pv-seal" }),
             h("div", { class: "mp-pv-q mp-glass" },
                 h("strong", null, t("act.prompt")),
-                h("span", null, t("act.promptSub")))),
+                h("span", null, t("act.promptSub")),
+                h("span", { class: "mp-pv-layer-note" }, t("act.previewLayer." + cfg.openLayer)))),
         h("div", { class: "mp-act-head mp-act-open" },
             h("span", null, t("act.openIn")),
             h("div", { class: "mp-chip-row mp-layer-tabs", role: "tablist", "aria-label": t("act.layers") }, LAYERS.map(([k, label], i) => (h("button", { role: "tab", class: `mp-layer-tab ${i < openIdx ? "is-open" : ""} ${k === cfg.openLayer ? "is-active" : ""}`, "data-layer": k, "data-focus": `layer-${k}`, type: "button", "aria-selected": k === cfg.openLayer, tabIndex: k === cfg.openLayer ? 0 : -1, onClick: () => setLayer(k), onKeyDown: (ev) => {
