@@ -151,6 +151,16 @@ export async function mountTerrain(container: HTMLElement, { sites = [], selecte
   // same stereographic projection, so markers, rays and routes stay where they are. Hardware WebGL only;
   // ?relief=2d, no WebGL or a lost context keep the original LOLA 400 m hillshade. Phones get the 320 m grid
   // only (the existing wideOnly level of detail): the 80 m grid is 8.4 MB.
+  // All state the async loaders below touch is declared first: a cached grid resolves in a microtask and
+  // would otherwise hit these bindings in their temporal dead zone (ReferenceError on explore/compare).
+  // view: centre (metres) and span (metres across the free area's short side).
+  const xs = sites.map(s => (s.stereo_x_m as number)), ys = sites.map(s => (s.stereo_y_m as number));
+  const view = { cx: xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0, cy: ys.length ? (Math.min(...ys) + Math.max(...ys)) / 2 : 0,
+    span: xs.length ? Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * 1.6 + 30000 : geo.nx * geo.dx };
+  let features: Feature[] = [];
+  let lastMpp = 0, lastSx = 0, lastSy = 0, lastW = 0, lastH = 0;
+  let sel = selected, focus = selected, free: Free | null = null, relief: ImageData | null = null, reliefKey = "";
+  const ext = geo.nx * geo.dx;
   let hd: StereoRelief | null = null;
   container.dataset.relief = "lola-2d";
   if (!RELIEF_2D)
@@ -162,18 +172,10 @@ export async function mountTerrain(container: HTMLElement, { sites = [], selecte
   // The 2D hillshade needs the heights: draw as soon as they arrive (a failed load keeps the poster, no map).
   const gridP = loadRegion().then(g => { grid = g as Grid; reliefKey = ""; draw(); });
   if (!progressive) await gridP; else gridP.catch(() => { container.dataset.relief = "none"; });
-  // view: centre (metres) and span (metres across the free area's short side).
-  const xs = sites.map(s => (s.stereo_x_m as number)), ys = sites.map(s => (s.stereo_y_m as number));
-  const view = { cx: xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0, cy: ys.length ? (Math.min(...ys) + Math.max(...ys)) / 2 : 0,
-    span: xs.length ? Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * 1.6 + 30000 : geo.nx * geo.dx };
   // Crater and mons names on the map (IAU/USGS, web/moonproof/data/features.json, label only), added when they arrive.
-  let features: Feature[] = [];
   container.dataset.features = "0";
   const featuresP = labels ? loadFeatures().then(f => { features = f; container.dataset.features = String(f.length); draw(); }) : null;
   if (!progressive) await featuresP;
-  let lastMpp = 0, lastSx = 0, lastSy = 0, lastW = 0, lastH = 0;
-  let sel = selected, focus = selected, free: Free | null = null, relief: ImageData | null = null, reliefKey = "";
-  const ext = geo.nx * geo.dx;
   function frame(W: number, H: number) {
     const fr: Free = free = freeArea(W, H, overlayRects(container));
     const fw = fr.r - fr.l, fh = fr.b - fr.t;
