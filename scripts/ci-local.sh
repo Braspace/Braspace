@@ -31,6 +31,7 @@ step() { # step <name> <command...>
 skip() { SUMMARY+=("SKIP  $1 ($2)"); }
 cleanup() {
   "${DC[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true
+  docker rm -f "$PROJECT-pgvector" >/dev/null 2>&1
   [ -n "${BCID:-}" ] && docker rm -f "$BCID" >/dev/null 2>&1
   [ -n "${BTMP:-}" ] && rm -rf "$BTMP"
 }
@@ -78,6 +79,17 @@ postgres_tests() {
     -e "TEST_DATABASE_URL=postgres://braspace:${POSTGRES_PASSWORD}@db:5432/braspace_test?sslmode=disable" \
     "$PROJECT-go" go test -count=1 -v -run "TestDB" ./ 2>&1); echo "$out" | grep -E "^(--- |ok|FAIL)" 
   ! echo "$out" | grep -q -- "--- SKIP" && echo "$out" | grep -q -- "--- PASS: TestDB"
+}
+pgvector_tests() { # real pgvector lane: own container in this project's network, disposable
+  local vc="$PROJECT-pgvector"; docker rm -f "$vc" >/dev/null 2>&1
+  docker run -d --name "$vc" --network "${PROJECT}_default" -e POSTGRES_USER=braspace -e "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" \
+    -e POSTGRES_DB=braspace_vector_test pgvector/pgvector:pg17 >/dev/null || return 1
+  for i in $(seq 1 30); do docker exec "$vc" pg_isready -U braspace -d braspace_vector_test >/dev/null 2>&1 && break; sleep 1; done
+  local out; out=$(docker run --rm --network "${PROJECT}_default" \
+    -e "TEST_VECTOR_DATABASE_URL=postgres://braspace:${POSTGRES_PASSWORD}@$vc:5432/braspace_vector_test?sslmode=disable" \
+    "$PROJECT-go" go test -count=1 -v -run "TestVector" ./ 2>&1); local rc=$?
+  echo "$out" | grep -E "^(--- |ok|FAIL)"; docker rm -f "$vc" >/dev/null 2>&1
+  [ $rc = 0 ] && ! echo "$out" | grep -q -- "--- SKIP" && echo "$out" | grep -q -- "--- PASS: TestVectorDBQuarantineAndStates"
 }
 freeport() { python3 -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1]);s.close()'; }
 cockpit_focus_qa() {
@@ -158,14 +170,22 @@ worker_contract() {
   if command -v node >/dev/null 2>&1; then node --test deploy/cloudflare/*.test.mjs
   else docker run --rm --security-opt label=disable -v "$PWD:/src:ro" -w /src node:22.23.5-alpine sh -c 'node --test deploy/cloudflare/*.test.mjs'; fi
 }
+cockpit_contract() {
+  # The MoonProof cockpit's own request builders/readers (web/moonproof/screens/cockpit-*.js) against the compose
+  # Go + Rust + Postgres stack: every site, fallback route, determinism, energy/crew/report, negatives, vector status.
+  if command -v node >/dev/null 2>&1; then BRASPACE_COCKPIT_API="$BASE" node scripts/cockpit-backend-contract.mjs
+  else docker run --rm --network host --security-opt label=disable -e BRASPACE_COCKPIT_API="$BASE" -v "$PWD:/src:ro" -w /src node:22.23.5-alpine node scripts/cockpit-backend-contract.mjs; fi
+}
 step "cloudflare worker same-origin API proxy contract (node --test)" worker_contract || finish
 step "docker build --target test (go vet+race, rust, web, science)" build_tests || finish
 step "build release image (needs test)" build_rel || finish
 step "build go test image" build_go_img || finish
 if step "compose up (api + postgres + ingest)" compose_up; then
   step "endpoints /healthz /readyz /api/sites /v1/capabilities + replay" endpoints
+  step "cockpit ↔ Go/Rust/Postgres contract (scripts/cockpit-backend-contract.mjs)" cockpit_contract
   step "public smoke (scripts/smoke-publico.sh: dev-server front + compose API)" smoke_publico
   step "go tests against compose Postgres" postgres_tests
+  step "go tests against real pgvector (quarantine, states, rollback)" pgvector_tests
 else
   "${DC[@]}" logs 2>&1 | tail -30
 fi

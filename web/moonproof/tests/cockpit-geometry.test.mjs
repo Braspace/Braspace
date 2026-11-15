@@ -44,6 +44,7 @@ test("phone keeps its own layout: the timeline wrapper vanishes below 701 px; no
 test("compact cockpit overrides legacy board dimensions without global scaling", () => {
   assert.match(html, /data-cockpit-density/);
   assert.match(compact, /html\[data-cockpit-density\]\{--mp-density:1\}/);
+  assert.match(compact, /@media \(min-width:701px\) and \(max-width:1100px\)\{\s*body:has\(#ck-panel-controls\) \.mp-nav \.mp-pill\{font-size:0/);
   assert.match(compact, /width:clamp\(190px,19vw,270px\)/);
   assert.match(compact, /\.mp-stat\{width:132px!important;height:132px!important/);
   assert.match(compact, /\.mp-player \.mp-tl\{[^}]*height:44px/);

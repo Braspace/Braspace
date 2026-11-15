@@ -27,7 +27,9 @@ test('camera zoom is bounded; both cockpit and landing use the same ship model',
   assert.equal(clampDistance(1), 32); assert.equal(clampDistance(400), 220); assert.equal(clampDistance(75), 75);
   const cockpit = readFileSync(new URL('../screens/cockpit-3d.tsx', import.meta.url), 'utf8');
   const landing = readFileSync(new URL('../../lab/scene.ts', import.meta.url), 'utf8');
-  assert.match(cockpit, /createArtemisLander\(T\)/); assert.match(landing, /createArtemisLander\(THREE\)/);
+  assert.match(cockpit, /buildArtemisLander\(T,/); assert.match(landing, /buildArtemisLander\(THREE,/);
+  assert.match(cockpit, /hoverPose\(performance\.now\(\) \/ 1000, \{ reducedMotion: reduced\.matches/);
+  assert.match(cockpit, /clearInterval\(animation\)/);
   assert.match(cockpit, /createCap\(/); assert.match(cockpit, /shared\.realLight\.value = 0/);
   assert.match(cockpit, /illustrative Artemis lander/);
   const screen = readFileSync(new URL('../screens/cockpit.tsx', import.meta.url), 'utf8');

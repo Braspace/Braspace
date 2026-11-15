@@ -15,7 +15,8 @@ import type { TerrainGrid } from "./terrain.js";
 import { latLonToBodyFixed, southStereoInverse, enuToBody, R_REF } from "./coords.js";
 import type { Vec3 } from "./coords.js";
 import type { Sim } from "./physics.js";
-import { createArtemisLander } from "../moonproof/core/artemis-lander.js";
+import { buildArtemisLander } from "../moon-hd/artemis.js";
+import type { ArtemisLander } from "../moon-hd/artemis.js";
 
 /** A catalogue site as the lab passes it in (web/data/sites.json). */
 export interface LabSite { id: string; name: string; lat: number; lon: number; site_height_m: number; stereo_x_m: number; stereo_y_m: number; [extra: string]: unknown; }
@@ -149,7 +150,7 @@ export class Viewer {
   declare selectedSite: string | undefined; declare onTextureError: (() => void) | undefined;
   declare region: Three; declare site: Three; declare landerGroup: Three; declare sunLight: Three; declare sunDirSite: Three;
   declare ambient: Three; declare sunDisc: Three; declare earthDisc: Three; declare sunLabel: Label; declare earthLabel: Label; declare target: Three;
-  declare flame: Three; declare camMode: string;
+  declare flame: Three; declare camMode: string; declare lander: ArtemisLander | null;
   constructor(container: HTMLElement, { onFrame = () => {}, reducedMotion = false }: ViewerOptions = {}) {
     this.container = container; this.onFrame = onFrame; this.reducedMotion = reducedMotion;
     const probe = document.createElement("canvas");
@@ -167,7 +168,7 @@ export class Viewer {
     this.orbit = new Orbit(this.camera, this.renderer.domElement, this);
     this.labelLayer = document.createElement("div"); this.labelLayer.className = "labels"; container.appendChild(this.labelLayer);
     this.labels = [];
-    this.scene = null; this.mode = null; this.followLander = null;
+    this.scene = null; this.mode = null; this.followLander = null; this.lander = null;
     this.clock = new THREE.Clock();
     new ResizeObserver(() => this.resize()).observe(container);
     this.resize();
@@ -187,7 +188,7 @@ export class Viewer {
     if (this.moonHD) this.onMoonHD?.(null);
     this.moonHD = null; this.regionSunDir = null; this.renderer.domElement.style.visibility = ""; this.labelLayer.style.visibility = "";
     this.scene = null; this.labels.forEach((l: Label) => l.el.remove()); this.labels = []; this.followLander = null;
-    this.region = null; this.site = null; this.landerGroup = null; this.sunLight = null; this.sunDirSite = null;
+    this.region = null; this.site = null; this.landerGroup = null; this.lander = null; this.sunLight = null; this.sunDirSite = null;
     this.orbit.enabled = true; this.orbit.anim = null; // a fly-to from another scale must not leak into this scene
   }
 
@@ -537,9 +538,12 @@ export class Viewer {
     }
   }
 
-  // Same original illustrative Artemis-inspired geometry as the Cockpit, not NASA vehicle data.
+  // Hypothetical "Artemis / HLS style" lander (original design, no mission insignia), shared with the cockpit's
+  // 3D Moon through moon-hd/artemis.js: one lander for every view. Scale 1 = metres, 4 m leg span.
   addLander() {
-    const { group: g, flame } = createArtemisLander(THREE); this.flame = flame;
+    this.lander = buildArtemisLander(THREE, { scale: 1, shadows: true });
+    const g = this.lander.group;
+    this.flame = this.lander.flame;
     this.landerGroup = g; this.scene.add(g);
     this.camMode = "chase";
     return g;
@@ -551,8 +555,7 @@ export class Viewer {
     g.position.set(x, z, -y);
     g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), enuToSite(tiltDir).normalize());
     const th = sim.outcome ? 0 : sim.throttle;
-    this.flame.visible = th > 0.01;
-    this.flame.scale.set(1, 0.6 + 5 * th, 1); this.flame.position.y = -1.15 - (0.6 + 5 * th) / 2;
+    this.lander?.setThrottle(th);
   }
 
   startFollow() {

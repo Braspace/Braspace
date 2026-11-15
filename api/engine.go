@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"net/http"
@@ -227,19 +228,46 @@ func (e *engineClient) callRaw(ctx context.Context, req visibilityRequest) (engi
 func parseEngineResult(req visibilityRequest, payload []byte) (engineResult, error) {
 	// The current engine is a classifier of caller-supplied inputs, not a
 	// NASA-validated solver; reject attempts to self-certify or forge margins.
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(payload, &raw); err != nil || raw == nil {
+	// Read exact keys before struct decoding: encoding/json otherwise accepts
+	// null as zero/false, duplicate keys and case-insensitive field aliases.
+	// The raw result also goes to /v1/visibility, so both consumers must agree.
+	dec := json.NewDecoder(bytes.NewReader(payload))
+	if tok, err := dec.Token(); err != nil || tok != json.Delim('{') {
 		return engineResult{}, errEngineContract
 	}
-	for _, key := range []string{"site_id", "epoch_utc", "science_status",
+	required := []string{"site_id", "epoch_utc", "science_status",
 		"sun_horizon_deg", "earth_horizon_deg", "sun_margin_deg",
-		"earth_margin_deg", "sun_visible", "earth_visible", "simultaneous_visibility"} {
-		if _, present := raw[key]; !present {
+		"earth_margin_deg", "sun_visible", "earth_visible", "simultaneous_visibility"}
+	allowed := make(map[string]bool, len(required)+1)
+	for _, key := range required {
+		allowed[key] = true
+	}
+	allowed["source_warning"] = true
+	for dec.More() {
+		tok, err := dec.Token()
+		key, validKey := tok.(string)
+		if err != nil || !validKey || !allowed[key] {
+			return engineResult{}, errEngineContract
+		}
+		delete(allowed, key) // repeated and escaped-equivalent keys are invalid
+		var value json.RawMessage
+		if err := dec.Decode(&value); err != nil || bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+			return engineResult{}, errEngineContract
+		}
+	}
+	if tok, err := dec.Token(); err != nil || tok != json.Delim('}') {
+		return engineResult{}, errEngineContract
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		return engineResult{}, errEngineContract
+	}
+	for _, key := range required {
+		if allowed[key] {
 			return engineResult{}, errEngineContract
 		}
 	}
 	var res engineResult
-	dec := json.NewDecoder(bytes.NewReader(payload))
+	dec = json.NewDecoder(bytes.NewReader(payload))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&res); err != nil ||
 		res.SiteID != req.SiteID || res.EpochUTC != req.EpochUTC ||

@@ -2,7 +2,7 @@
 import { h, Fragment, render } from "../../vendor/preact/preact.module.js";
 import { probeWebGL } from "../../moon-hd/backdrop.js";
 import { bilinearHeight, localToScene, stereoToLocal, latLonToStereo } from "../../moon-hd/polar-math.js";
-import { createArtemisLander } from "../core/artemis-lander.js";
+import { buildArtemisLander, hoverPose } from "../../moon-hd/artemis.js";
 /** CPU site registration uses the same grid blending as Joel's CAP_COMMON shader. */
 export function polarSiteCoordinates(site) {
     if (typeof site.stereo_x_m === "number" && typeof site.stereo_y_m === "number" && Number.isFinite(site.stereo_x_m) && Number.isFinite(site.stereo_y_m))
@@ -59,6 +59,8 @@ export function shouldRestoreSceneFocus(ready, leavingReady, active) {
 }
 const BASE = new URL("../../data/moonhd/", import.meta.url).href;
 function release(r) {
+    r.lander?.dispose();
+    r.lander = undefined;
     const seen = new Set();
     const dispose = (value) => { if (value && !seen.has(value)) {
         seen.add(value);
@@ -89,7 +91,8 @@ function release(r) {
 }
 export function mountCockpit3D(host, options) {
     let mode = "map", selected = options.selected, generation = 0, disposed = false, resources = null, loading = null;
-    let azimuth = .6, elevation = .9, distance = 105, pending = 0, timeout = 0;
+    let azimuth = .6, elevation = .9, distance = 105, pending = 0, timeout = 0, animation = 0;
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     const labels = new Map();
     const choices = siteChoices(options.sites);
     const choiceIds = new Set(choices.map(s => s.id));
@@ -150,7 +153,7 @@ export function mountCockpit3D(host, options) {
                         h("button", { type: "button", "aria-label": tr("Inclinar para baixo", "Tilt down"), onClick: () => rotate(0, -.15) }, "\u2193"),
                         h("button", { type: "button", "aria-label": tr("Afastar", "Zoom out"), onClick: () => zoom(1.25) }, "\u2212"),
                         h("button", { type: "button", "aria-label": tr("Restaurar câmera", "Reset camera"), onClick: () => { azimuth = .6; elevation = .9; distance = 105; draw(); } }, "\u21BB"))),
-                h("span", { class: "mp-cockpit-3d-status", role: "status" }, mode === "loading" ? tr("Carregando Moon HD de Joel…", "Loading Joel’s Moon HD…") : outside ? tr("Local fora do relevo 3D · use o mapa LOLA 2D", "Site outside 3D relief · use the LOLA 2D map") : ready ? tr("NASA LRO/LOLA · nave Artemis ilustrativa, escala e luz visuais", "NASA LRO/LOLA · illustrative Artemis lander; visual scale and light") : mode === "unavailable" ? tr("3D indisponível; mapa LOLA 2D preservado", "3D unavailable; LOLA 2D map retained") : tr("Mapa georreferenciado LOLA 2D", "LOLA georeferenced 2D map")))), ui);
+                h("span", { class: "mp-cockpit-3d-status", role: "status" }, mode === "loading" ? tr("Carregando Moon HD de Joel…", "Loading Joel’s Moon HD…") : outside ? tr("Local fora do relevo 3D · use o mapa LOLA 2D", "Site outside 3D relief · use the LOLA 2D map") : ready ? tr("NASA LRO/LOLA · nave Artemis ilustrativa, não é telemetria", "NASA LRO/LOLA · illustrative Artemis lander, not telemetry") : mode === "unavailable" ? tr("3D indisponível; mapa LOLA 2D preservado", "3D unavailable; LOLA 2D map retained") : tr("Mapa georreferenciado LOLA 2D", "LOLA georeferenced 2D map")))), ui);
         positionControls();
     }
     function point(s) {
@@ -237,12 +240,18 @@ export function mountCockpit3D(host, options) {
             r.camera.setViewOffset(W, H, ox, oy, W, H);
             r.camera.lookAt(focus);
             r.camera.updateProjectionMatrix();
+            const pose = hoverPose(performance.now() / 1000, { reducedMotion: reduced.matches, low: 6, high: 9 });
             r.cap.camPolar.copy(r.camera.position);
-            r.ship.position.copy(focus).add(new r.T.Vector3(0, 7.5, 0));
+            r.ship.position.copy(focus).add(new r.T.Vector3(0, pose.r, 0));
             r.ship.visible = !!s && !!point(s);
+            r.lander.setThrottle(pose.throttle);
             try {
-                r.renderer.setPixelRatio(Math.min(1.5, devicePixelRatio || 1));
-                r.renderer.setSize(W, H, false);
+                const ratio = Math.min(1.5, devicePixelRatio || 1), key = `${W}:${H}:${ratio}`;
+                if (key !== r.renderKey) {
+                    r.renderer.setPixelRatio(ratio);
+                    r.renderer.setSize(W, H, false);
+                    r.renderKey = key;
+                }
                 r.renderer.render(r.scene, r.camera);
             }
             catch {
@@ -281,6 +290,8 @@ export function mountCockpit3D(host, options) {
     function stop(next) {
         generation++;
         clearTimeout(timeout);
+        clearInterval(animation);
+        animation = 0;
         if (pending)
             cancelAnimationFrame(pending);
         pending = 0;
@@ -338,9 +349,9 @@ export function mountCockpit3D(host, options) {
             const light = new T.DirectionalLight(0xffffff, 3);
             light.position.set(-.62, .7, .35);
             r.scene.add(light, new T.HemisphereLight(0xc9d5e6, 0x303030, 1.6));
-            r.ship = createArtemisLander(T).group;
-            r.ship.scale.setScalar(1.35);
-            r.scene.add(r.ship); // exaggeration for regional visibility, not dimensions or actual altitude
+            r.lander = buildArtemisLander(T, { scale: 1.35, shadows: false });
+            r.ship = r.lander.group;
+            r.scene.add(r.ship); // exaggerated display scale/altitude, not telemetry
             probe.canvas.setAttribute("aria-label", tr("Mapa lunar tridimensional e nave ilustrativa", "3D lunar map and illustrative lander"));
             probe.canvas.setAttribute("role", "img");
             canvasHost.append(probe.canvas);
@@ -349,6 +360,8 @@ export function mountCockpit3D(host, options) {
             clearTimeout(timeout);
             change("ready");
             draw();
+            animation = window.setInterval(() => { if (!document.hidden && !reduced.matches)
+                draw(); }, 67);
         }
         catch {
             release(r);
@@ -378,6 +391,7 @@ export function mountCockpit3D(host, options) {
     const language = new MutationObserver(() => { paint(); draw(); });
     language.observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
     document.addEventListener("visibilitychange", draw);
+    reduced.addEventListener("change", draw);
     const pagehide = (e) => { if (!e.persisted)
         handle.dispose(); };
     addEventListener("pagehide", pagehide);
@@ -390,7 +404,7 @@ export function mountCockpit3D(host, options) {
         else
             stop("map"); },
         dispose() { if (disposed)
-            return; disposed = true; stop("map"); observer.disconnect(); layout.disconnect(); language.disconnect(); document.removeEventListener("toggle", layoutChanged, true); document.removeEventListener("visibilitychange", draw); removeEventListener("pagehide", pagehide); removeEventListener("pageshow", draw); render(null, ui); host.replaceChildren(); delete document.body.dataset.cockpitView; },
+            return; disposed = true; stop("map"); observer.disconnect(); layout.disconnect(); language.disconnect(); document.removeEventListener("toggle", layoutChanged, true); document.removeEventListener("visibilitychange", draw); reduced.removeEventListener("change", draw); removeEventListener("pagehide", pagehide); removeEventListener("pageshow", draw); render(null, ui); host.replaceChildren(); delete document.body.dataset.cockpitView; },
     };
     change("map");
     handle.setActive(true);

@@ -20,9 +20,14 @@ test('preview is a checked lightweight WebP, not a fabricated asset',()=>{
   assert.equal(file.toString('ascii',8,12),'WEBP'); assert.ok(file.length<100000);
   assert.equal(createHash('sha256').update(file).digest('hex'),'9eacf3af78202bb35ee41d5c795621ecb1cf168a30260e5cda39f26eba4e99b7');
 });
-test('every MoonProof page and the 3D viewer link the common preview stylesheet',()=>{
+test('every rendered MoonProof page and the 3D viewer link the preview stylesheet; entry redirects without loading Moon assets',()=>{
   for (const page of ['moon-hd.html',...readdirSync(new URL('../moonproof/',import.meta.url)).filter(f=>f.endsWith('.html')).map(f=>'moonproof/'+f)]) {
     const html=readFileSync(new URL('../'+page,import.meta.url),'utf8');
+    if (page === 'moonproof/index.html') {
+      assert.match(html,/src="screens\/entry\.js"/);
+      assert.doesNotMatch(html,/moon-hd\/preview\.css|backdrop\.js/);
+      continue;
+    }
     assert.match(html,/moon-hd\/preview\.css/,page);
     if (/moonproof\/(mission|explore|compare|recover|cockpit|landing|plan|present|activity)\.html/.test(page)) assert.match(html,/data-moon-preview="map"/,page);
   }

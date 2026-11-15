@@ -126,6 +126,11 @@ body:has(#ck-panel-controls) .mp-cockpit-3d-controls button{font-size:12px;min-h
   body:has(#ck-panel-controls) .mp-player .mp-tl{gap:8px;height:44px;padding:0 10px}
   body:has(#ck-panel-controls) .mp-player select{width:76px;padding:0 25px 0 10px;background-position:right 8px center}
 }
+/* Preserve main's tablet icon-only navigation under the stronger cockpit scope. */
+@media (min-width:701px) and (max-width:1100px){
+  body:has(#ck-panel-controls) .mp-nav .mp-pill{font-size:0;gap:0;padding:0 8px;min-width:44px;justify-content:center}
+  body:has(#ck-panel-controls) .mp-nav .mp-pill svg{width:17px;height:17px}
+}
 @media(max-width:700px){
   body:has(#ck-panel-controls){--margin:8px}
   body:has(#ck-panel-controls) .mp-top{top:8px;left:8px;right:8px;height:auto;min-height:50px;padding:2px 5px 2px 9px}
