@@ -58,7 +58,7 @@ export function resolveRoute(routes, path) {
 /** URL of the cockpit page for a board route (keeps ?site=). */
 export function bordoURL(base, parts, query) {
   const slug = parts[1] && BORDO_SECTIONS[parts[1]] ? parts[1] : "";
-  return base + buildHash("/bordo" + (slug ? "/" + slug : ""), { site: query.site });
+  return base + buildHash("/bordo" + (slug ? "/" + slug : ""), { site: query.site, t: query.t, d: query.d });
 }
 
 // The onboard cockpit is a classic-script page; it uses the same router helpers through this global.
