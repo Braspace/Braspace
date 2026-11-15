@@ -52,6 +52,27 @@ type engineResult struct {
 	SunVisible             bool    `json:"sun_visible"`
 	EarthVisible           bool    `json:"earth_visible"`
 	SimultaneousVisibility bool    `json:"simultaneous_visibility"`
+	SourceWarning          string  `json:"source_warning,omitempty"`
+}
+
+// maxEngineOutputBytes caps what the engine may write to stdout (the real
+// result is well under 1 KiB).
+const maxEngineOutputBytes = 64 << 10
+
+// cappedBuffer stops accepting bytes past max and reports the overflow, so a
+// runaway engine is killed by a write error instead of filling memory.
+type cappedBuffer struct {
+	buf      bytes.Buffer
+	max      int
+	overflow bool
+}
+
+func (c *cappedBuffer) Write(p []byte) (int, error) {
+	if c.buf.Len()+len(p) > c.max {
+		c.overflow = true
+		return 0, errors.New("engine output too large")
+	}
+	return c.buf.Write(p)
 }
 
 type engineClient struct {
@@ -155,15 +176,25 @@ func (e *engineClient) available() bool {
 }
 
 func (e *engineClient) call(ctx context.Context, req visibilityRequest) (engineResult, error) {
+	res, _, err := e.callRaw(ctx, req)
+	return res, err
+}
+
+// callRaw is call plus the validated engine stdout, for routes that return the
+// engine document as-is (/v1/visibility).
+func (e *engineClient) callRaw(ctx context.Context, req visibilityRequest) (engineResult, []byte, error) {
+	if !e.available() {
+		return engineResult{}, nil, errEngineUnavailable
+	}
 	payload, err := json.Marshal(req)
 	if err != nil {
-		return engineResult{}, err
+		return engineResult{}, nil, err
 	}
 	select {
 	case engineSlots <- struct{}{}:
 		defer func() { <-engineSlots }()
 	case <-ctx.Done():
-		return engineResult{}, ctxError(ctx)
+		return engineResult{}, nil, ctxError(ctx)
 	}
 	parent := ctx
 	ctx, cancel := context.WithTimeout(ctx, e.callTimeout)
@@ -171,19 +202,24 @@ func (e *engineClient) call(ctx context.Context, req visibilityRequest) (engineR
 	cmd := exec.CommandContext(ctx, e.binary)
 	cmd.WaitDelay = 500 * time.Millisecond
 	cmd.Stdin = bytes.NewReader(payload)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	stdout := &cappedBuffer{max: maxEngineOutputBytes}
+	var stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = stdout, &stderr
 	if err := cmd.Run(); err != nil {
 		if parent.Err() != nil {
-			return engineResult{}, ctxError(parent)
+			return engineResult{}, nil, ctxError(parent)
 		}
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return engineResult{}, errEngineTimeout
+			return engineResult{}, nil, errEngineTimeout
 		}
 		log.Printf("engine error: %v; stderr: %.300s", err, stderr.String())
-		return engineResult{}, errEngineFailed
+		return engineResult{}, nil, errEngineFailed
 	}
-	return parseEngineResult(req, stdout.Bytes())
+	if stdout.overflow {
+		return engineResult{}, nil, errEngineContract
+	}
+	res, err := parseEngineResult(req, stdout.buf.Bytes())
+	return res, stdout.buf.Bytes(), err
 }
 
 // parseEngineResult is the shared fail-closed contract for direct and
@@ -203,7 +239,9 @@ func parseEngineResult(req visibilityRequest, payload []byte) (engineResult, err
 		}
 	}
 	var res engineResult
-	if err := json.Unmarshal(payload, &res); err != nil ||
+	dec := json.NewDecoder(bytes.NewReader(payload))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&res); err != nil ||
 		res.SiteID != req.SiteID || res.EpochUTC != req.EpochUTC ||
 		res.ScienceStatus != "UNVERIFIED_INPUTS" ||
 		!finite(res.SunHorizonDeg) || !finite(res.EarthHorizonDeg) ||
