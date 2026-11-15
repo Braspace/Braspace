@@ -9,7 +9,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const read=f=>readFile(path.join(root,f),"utf-8");
 
 test("the mission form says solar power is an assumed input, not a result",async()=>{
-  const html=await read("index.html");
+  const html=await read("classic.html");
   assert.match(html,/Assumed solar power \(W\)/);
   assert.match(html,/Power is an assumed constant whenever the synthetic Sun is visible/);
   assert.match(html,/Earth geometric visibility only, not an RF link/);
