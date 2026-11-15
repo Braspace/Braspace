@@ -101,6 +101,107 @@ export function cameraPosition(view: string, angle: number, lat?: number, distan
   return [c * Math.cos(angle), Math.sin(phi) * dist, -c * Math.sin(angle)];
 }
 
+// ---- Explore camera: orbit around a target on the surface (pure, NaN-safe; plain [x, y, z] arrays) ----
+export type Vec3 = [number, number, number];
+/** The camera never comes closer than this to the Moon's centre (radii): above the highest polar relief. */
+export const MIN_CAMERA_RADIUS = 1.02;
+/** Distance to the target (radii) in explore mode, pitch above the local horizon (deg), and the default fly-to. */
+export const MIN_RANGE = 0.06, MAX_RANGE = 2.5, MIN_PITCH = 8, MAX_PITCH = 85;
+export const FOCUS_RANGE = 0.45, FOCUS_PITCH = 42;
+/** Camera azimuth = the Sun's azimuth at the site plus this (rad): from the lit side, light raking across the relief. */
+export const FOCUS_SUN_OFFSET = 50 * Math.PI / 180;
+const DEG = Math.PI / 180;
+const fin = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+const sane = (v: ArrayLike<number> | null | undefined): Vec3 => [fin(v?.[0], 0), fin(v?.[1], 0), fin(v?.[2], 0)];
+const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a: Vec3, b: Vec3): Vec3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const scale = (a: Vec3, k: number): Vec3 => [a[0] * k, a[1] * k, a[2] * k];
+const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const len = (a: Vec3) => Math.hypot(a[0], a[1], a[2]);
+const unit = (a: Vec3, d: Vec3 = [0, 1, 0]): Vec3 => { const l = len(a); return l > 1e-12 ? scale(a, 1 / l) : d; };
+export const clampRange = (r: number) => Math.min(MAX_RANGE, Math.max(MIN_RANGE, fin(r, FOCUS_RANGE)));
+export const clampPitch = (p: number) => Math.min(MAX_PITCH, Math.max(MIN_PITCH, fin(p, FOCUS_PITCH)));
+const isOrigin = (t: Vec3) => !(len(t) > 1e-9);
+
+/**
+ * Local frame at a target: up = surface normal, north = world +Y on the tangent plane (world +X at the poles),
+ * east = up x north. The origin gets the global frame of cameraPosition (up +Y, north +X, east -Z).
+ */
+export function orbitFrame(target: ArrayLike<number>): { up: Vec3; north: Vec3; east: Vec3 } {
+  const t = sane(target);
+  if (isOrigin(t)) return { up: [0, 1, 0], north: [1, 0, 0], east: [0, 0, -1] };
+  const up = unit(t);
+  let north = add([0, 1, 0], scale(up, -up[1]));
+  if (len(north) < 1e-6) north = add([1, 0, 0], scale(up, -up[0]));
+  north = unit(north, [1, 0, 0]);
+  return { up, north, east: cross(up, north) };
+}
+
+/** Pushes a position out to MIN_CAMERA_RADIUS when it would be inside (or on) the Moon. */
+export function outsideMoon(p: ArrayLike<number>, fallbackUp: Vec3 = [0, 1, 0]): Vec3 {
+  const v = sane(p), r = len(v);
+  return r >= MIN_CAMERA_RADIUS ? v : scale(r > 1e-9 ? scale(v, 1 / r) : unit(fallbackUp), MIN_CAMERA_RADIUS);
+}
+
+/**
+ * Camera position orbiting `target`: yaw (rad) around the local up from north toward east, pitch (deg) above the
+ * local horizon, dist = distance to the target. Target at the origin = the global view (same as cameraPosition,
+ * pitch = latitude, dist = distance from the centre). Never inside the Moon, never NaN.
+ */
+export function orbitCamera(target: ArrayLike<number>, yaw: number, pitch: number, dist: number): Vec3 {
+  const t = sane(target), global = isOrigin(t), f = orbitFrame(t);
+  const p = (global ? clampLat(pitch) : clampPitch(pitch)) * DEG, d = global ? clampDistance(dist) : clampRange(dist), y = fin(yaw, 0);
+  const h = add(scale(f.north, Math.cos(y)), scale(f.east, Math.sin(y)));
+  return outsideMoon(add(t, scale(add(scale(h, Math.cos(p)), scale(f.up, Math.sin(p))), d)), f.up);
+}
+
+/** Yaw (rad, as in orbitCamera) of a direction seen from `target`, projected on the local horizon. */
+export function yawToward(target: ArrayLike<number>, dir: ArrayLike<number>): number {
+  const f = orbitFrame(target), d = sane(dir);
+  const n = dot(d, f.north), e = dot(d, f.east);
+  return Math.abs(n) + Math.abs(e) > 1e-12 ? Math.atan2(e, n) : 0;
+}
+
+/** Spherical interpolation of two directions; antiparallel ones turn around `axis` (e.g. the view direction). */
+export function slerpUnit(a: ArrayLike<number>, b: ArrayLike<number>, t: number, axis?: ArrayLike<number>): Vec3 {
+  const u = unit(sane(a)), v = unit(sane(b)), k = Math.min(1, Math.max(0, fin(t, 1)));
+  const c = Math.min(1, Math.max(-1, dot(u, v)));
+  if (c > 0.99999) return unit(add(scale(u, 1 - k), scale(v, k)), v);
+  let ax = cross(u, v);
+  if (len(ax) < 1e-6) { // antiparallel: any axis perpendicular to u, preferably the hint
+    const hint = sane(axis);
+    ax = add(hint, scale(u, -dot(hint, u)));
+    if (len(ax) < 1e-6) ax = cross(u, Math.abs(u[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]);
+  }
+  ax = unit(ax);
+  const th = Math.acos(c) * k, cs = Math.cos(th), sn = Math.sin(th); // Rodrigues
+  return unit(add(add(scale(u, cs), scale(cross(ax, u), sn)), scale(ax, dot(ax, u) * (1 - cs))), v);
+}
+
+export interface CameraPose { position: Vec3; target: Vec3; up: Vec3; }
+/** Pose between two poses (e in 0..1): target on a straight line, camera on a great circle, never inside the Moon. */
+export function tweenPose(from: CameraPose, to: CameraPose, e: number): CameraPose {
+  const k = Math.min(1, Math.max(0, fin(e, 1)));
+  const p0 = sane(from.position), p1 = sane(to.position), t0 = sane(from.target), t1 = sane(to.target);
+  const target = add(scale(t0, 1 - k), scale(t1, k));
+  const dir = slerpUnit(p0, p1, k), r = len(p0) * (1 - k) + len(p1) * k;
+  const position = outsideMoon(scale(dir, r), dir);
+  const forward = add(target, scale(position, -1));
+  return { position, target, up: slerpUnit(from.up, to.up, k, forward) };
+}
+
+/** Near plane for a camera at `position`: a fraction of its height above the surface, so close-ups never clip. */
+/** Portrait screens see less sideways: the fly-to distance grows by 1/sqrt(aspect) (at most x1.6) to keep the framing. */
+export const portraitRange = (dist: number, aspect: number) => clampRange(fin(dist, FOCUS_RANGE) * (fin(aspect, 1) > 0 && fin(aspect, 1) < 1 ? Math.min(1.6, 1 / Math.sqrt(fin(aspect, 1))) : 1));
+export const nearPlane = (position: ArrayLike<number>) => Math.min(0.02, Math.max(0.0005, 0.2 * (len(sane(position)) - 1)));
+
+/** Whether a surface point `p` faces the camera: the camera-to-pin vector against the point's outward normal
+ * (elevation of the camera seen from the pin, as a sine). Works for any camera position, not only far ones. */
+export function facesCamera(p: ArrayLike<number>, camera: ArrayLike<number>, minSine = 0.004): boolean {
+  const v = sane(p), c = sane(camera), toCam = add(c, scale(v, -1)), d = len(toCam);
+  return d > 1e-9 && dot(toCam, unit(v)) / d > minSine;
+}
+
 function stylesheet(doc: Document): Promise<void> {
   const href = new URL("./backdrop.css", import.meta.url).href;
   return new Promise<void>((resolve, reject) => {
@@ -169,6 +270,12 @@ export async function mountMoonBackdrop(options?: BackdropOptions): Promise<{ di
     // Start on the sunlit side, a little past the sub-solar meridian, so the terminator is in view.
     const home = { angle: Math.atan2(-moon.lightDir.z, moon.lightDir.x) + 0.6, lat: VIEW_DEFAULTS[view].lat, distance: VIEW_DEFAULTS[view].distance };
     let angle = home.angle, lat = home.lat, distance = home.distance;
+    // Explore: orbit around a point of the surface (target); target at the origin = the global view above.
+    let target: Vec3 = [0, 0, 0], yaw = 0, pitch = FOCUS_PITCH, range = FOCUS_RANGE;
+    const isLocal = () => !(Math.hypot(...target) < 1e-9);
+    const currentPose = (): CameraPose => isLocal()
+      ? { position: orbitCamera(target, yaw, pitch, range), target: [...target] as Vec3, up: orbitFrame(target).up }
+      : { position: cameraPosition(view, angle, lat, distance), target: [0, 0, 0], up: [0, 1, 0] };
 
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     let onScreen = true, last = 0, streak = 0, still = false, idleUntil = 0, pending = 0, exploring = false;
@@ -178,37 +285,68 @@ export async function mountMoonBackdrop(options?: BackdropOptions): Promise<{ di
     const pinLayer = document.createElement("div"); pinLayer.className = "moon-pins"; wrap.append(pinLayer);
     interface Pin { id: string; name: string; lat: number; lon: number; p: Three; el: HTMLButtonElement; }
     let pins: Pin[] = [], selectedId = "";
-    const v3 = new THREE.Vector3(), camDir = new THREE.Vector3();
+    const v3 = new THREE.Vector3();
     const toScene = (lat: number, lon: number, r = 1) => new THREE.Vector3(...E.toGlobeScene(E.bodyDirection(lat, lon))).multiplyScalar(r);
     function placePins() {
       if (!pins.length) return;
       const w = innerWidth, h = innerHeight;
-      camDir.copy(camera.position);
+      const cam = camera.position.toArray();
       for (const pin of pins) {
-        // visible when the pin's outward normal faces the camera (horizon test on the unit sphere)
-        const facing = pin.p.dot(camDir) - pin.p.lengthSq() > 0.02;
+        // horizon test: the camera-to-pin vector against the pin's outward normal (any camera position)
+        const facing = facesCamera(pin.p.toArray(), cam);
         v3.copy(pin.p).project(camera);
-        const off = !facing || v3.z > 1 || Math.abs(v3.x) > 1.05 || Math.abs(v3.y) > 1.05;
+        const off = !facing || v3.z > 1 || v3.z < -1 || Math.abs(v3.x) > 1.05 || Math.abs(v3.y) > 1.05;
         pin.el.classList.toggle("is-off", off);
         if (!off) pin.el.style.transform = `translate(${((v3.x * .5 + .5) * w).toFixed(1)}px,${((-v3.y * .5 + .5) * h).toFixed(1)}px)`;
       }
     }
-    // Camera tween to a site (angle/lat/distance), used by pins and by other screens (moonBackdrop.focusSite).
-    let tween: { t0: number; from: number[]; to: number[] } | null = null;
+    // Camera tween between two poses (position, target, up), used by pins, explore, reset and other screens.
+    // The end state (global angle/lat/distance or local target/yaw/pitch/range) is applied when it lands.
+    let tween: { t0: number; from: CameraPose; to: CameraPose; land: () => void } | null = null, shown: CameraPose | null = null;
     const stepTween = (now: number) => {
       if (!tween) return;
-      const k = Math.min(1, (now - tween.t0) / 900), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-      [angle, lat, distance] = tween.from.map((f, i) => f + (tween!.to[i] - f) * e);
-      if (k >= 1) tween = null;
+      const k = Math.min(1, (now - tween.t0) / 1100), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      shown = tweenPose(tween.from, tween.to, e);
+      if (k >= 1) { tween.land(); tween = null; shown = null; }
     };
-    const focusLatLon = (la: number, lo: number, dist = 2.4) => {
-      const d = toScene(la, lo);
-      let a = Math.atan2(-d.z, d.x);
-      while (a - angle > Math.PI) a -= 2 * Math.PI; while (angle - a > Math.PI) a += 2 * Math.PI;
-      tween = { t0: performance.now(), from: [angle, lat, distance], to: [a, clampLat(Math.asin(Math.max(-1, Math.min(1, d.y))) * 180 / Math.PI), clampDistance(dist)] };
+    /** Lands a running tween at once (user input takes over from where the flight was going). */
+    const settle = () => { if (tween) { tween.land(); tween = null; shown = null; } };
+    const flyTo = (land: () => void) => {
+      const from = shown || currentPose();
+      settle();
+      const save = { target, yaw, pitch, range, angle, lat, distance };
+      land(); const to = currentPose();
+      ({ target, yaw, pitch, range, angle, lat, distance } = save);
       idleUntil = performance.now() + 12000;
+      if (reduced.matches) { land(); requestDraw(); return; } // prefers-reduced-motion: straight there
+      tween = { t0: performance.now(), from, to, land };
       const run = (t: number) => { stepTween(t); draw(); if (tween && !dead) requestAnimationFrame(run); };
       requestAnimationFrame(run);
+    };
+    /**
+     * Flies to a site. dist = camera distance from the site (Moon radii). Explore mode: orbit around the surface
+     * point, tilted FOCUS_PITCH above its horizon, from the sunlit side. Behind the panels: the global view
+     * turned toward the site (centre distance 1 + dist), as before.
+     */
+    const focusLatLon = (la: number, lo: number, dist?: number) => {
+      if (!Number.isFinite(la) || !Number.isFinite(lo)) return;
+      const d = toScene(la, lo);
+      if (exploring) {
+        const t = d.toArray() as Vec3, sunYaw = yawToward(t, moon.lightDir.toArray());
+        flyTo(() => { target = t; yaw = sunYaw + FOCUS_SUN_OFFSET; pitch = FOCUS_PITCH; range = portraitRange(dist ?? FOCUS_RANGE, innerWidth / innerHeight); });
+        return;
+      }
+      let a = Math.atan2(-d.z, d.x);
+      while (a - angle > Math.PI) a -= 2 * Math.PI; while (angle - a > Math.PI) a += 2 * Math.PI;
+      const la2 = clampLat(Math.asin(Math.max(-1, Math.min(1, d.y))) * 180 / Math.PI), dist2 = clampDistance(1 + (dist ?? 1.4));
+      flyTo(() => { target = [0, 0, 0]; angle = a; lat = la2; distance = dist2; });
+    };
+    /** Back to the global view (target at the origin): the home framing, turned to where the camera now is. */
+    const goGlobal = (keepAzimuth: boolean) => {
+      const p = (shown || currentPose()).position;
+      let a = keepAzimuth ? Math.atan2(-p[2], p[0]) : home.angle;
+      while (a - angle > Math.PI) a -= 2 * Math.PI; while (angle - a > Math.PI) a += 2 * Math.PI;
+      flyTo(() => { target = [0, 0, 0]; angle = a; lat = home.lat; distance = home.distance; });
     };
     const selectSite = (id: string, focus = true) => {
       const pin = pins.find(p => p.id === id); if (!pin) return;
@@ -240,13 +378,17 @@ export async function mountMoonBackdrop(options?: BackdropOptions): Promise<{ di
         const wanted = new URLSearchParams(location.search).get("site") || new URLSearchParams(String(location.hash).split("?")[1] || "").get("site");
         if (wanted) selectSite(wanted, false);
         // explore was opened before the catalogue arrived: fly now so the pins spread out
-        if (exploring && !tween && pins.length) { const sel = pins.find(p => p.id === selectedId); if (sel) focusLatLon(sel.lat, sel.lon, 1.5); else focusLatLon(-88.6, 20, 1.55); }
+        if (exploring && !tween && pins.length) { const sel = pins.find(p => p.id === selectedId); if (sel) focusLatLon(sel.lat, sel.lon); else focusLatLon(-88.6, 20); }
         requestDraw();
       } catch { /* no pins: the Moon stays a complete backdrop */ }
     };
     const draw = () => {
-      camera.position.set(...cameraPosition(view, angle, lat, distance));
-      camera.lookAt(0, 0, 0);
+      const pose = shown || currentPose();
+      camera.position.set(...pose.position);
+      camera.up.set(...pose.up); // explore: the local up, so the horizon stays at the top of the screen
+      camera.lookAt(...pose.target);
+      const near = nearPlane(pose.position);
+      if (Math.abs(camera.near - near) > 1e-6) { camera.near = near; camera.updateProjectionMatrix(); }
       camera.updateMatrixWorld();
       stars?.position.copy(camera.position);
       if (cap) S.setPolarFrame(cap, moon.lightDir, camera);
@@ -265,7 +407,7 @@ export async function mountMoonBackdrop(options?: BackdropOptions): Promise<{ di
       streak = slowStreak(streak, now - last);
       if (streak >= SLOW_FRAMES_TO_STOP) { still = true; cancelAnimationFrame(raf); raf = 0; return; }
       const dt = Math.min(0.25, (now - last) / 1000);
-      if (now > idleUntil && !tween) angle += dt * 2 * Math.PI / ORBIT_SECONDS;
+      if (now > idleUntil && !tween && !isLocal()) angle += dt * 2 * Math.PI / ORBIT_SECONDS; // slow orbit: global view only
       stepTween(now);
       for (const cb of frameCallbacks) { try { cb(dt, now); } catch { frameCallbacks.delete(cb); } }
       last = now;
@@ -289,11 +431,20 @@ export async function mountMoonBackdrop(options?: BackdropOptions): Promise<{ di
     // ---- Interaction: drag = turn, wheel / pinch / buttons = zoom. Never steals clicks from page controls. ----
     const touched = () => { idleUntil = performance.now() + 6000; requestDraw(); };
     const turn = (dx: number, dy: number) => {
+      settle();
+      if (isLocal()) { // yaw/pitch around the target
+        const k = 0.006 * Math.min(1.4, Math.max(0.6, range / FOCUS_RANGE));
+        yaw -= dx * k; pitch = clampPitch(pitch + dy * 0.25); touched(); return;
+      }
       const k = 0.0055 * Math.min(1.6, Math.max(0.35, (distance - 1) / 3.4));
       angle -= dx * k; lat = clampLat(lat + dy * k * 57.3); touched();
     };
-    const zoomBy = (factor: number) => { distance = clampDistance(distance * factor); touched(); };
-    const reset = () => { angle = home.angle; lat = home.lat; distance = home.distance; touched(); };
+    const zoomBy = (factor: number) => {
+      settle();
+      if (isLocal()) range = clampRange(range * factor); else distance = clampDistance(distance * factor);
+      touched();
+    };
+    const reset = () => { if (isLocal() || tween) goGlobal(false); else { angle = home.angle; lat = home.lat; distance = home.distance; } touched(); };
     const pointers = new Map<number, { x: number; y: number }>();
     let pinch = 0, dragging = false;
     const pinchSpan = () => { const [a, b] = [...pointers.values()]; return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0; };
@@ -366,8 +517,10 @@ export async function mountMoonBackdrop(options?: BackdropOptions): Promise<{ di
       // point. Opening explore flies close to the selected site (or the pole) so the pins spread out.
       if (onOff && !tween) {
         const sel = pins.find(p => p.id === selectedId);
-        if (sel) focusLatLon(sel.lat, sel.lon, 1.5); else if (pins.length) focusLatLon(-88.6, 20, 1.55);
+        if (sel) focusLatLon(sel.lat, sel.lon); else if (pins.length) focusLatLon(-88.6, 20);
       }
+      // Back behind the panels: the far global view and its slow orbit.
+      if (!onOff && (isLocal() || tween)) goGlobal(true);
       touched(); kick();
     };
     const openBtn = button("moon-open", T.open, T.open, () => setExplore(!exploring));
