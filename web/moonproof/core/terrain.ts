@@ -242,7 +242,10 @@ export async function mountTerrain(container: HTMLElement, { sites = [], selecte
       for (const b of layer.children as unknown as Iterable<HTMLElement>) {
         const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
         const hit = cx >= 0 && cy >= 0 && cx < W && cy < H ? document.elementFromPoint(cx, cy) : null;
-        b.dataset.covered = String(!(hit && (hit === b || b.contains(hit))) && b.getAttribute("aria-pressed") !== "true");
+        // A marker cut by the map edge (14 sites near the pole: Haworth, de Gerlache Rim 1 at 768/1024) is treated
+        // like one under a panel: hidden, still reachable by the ‹ › selector. The selected site always stays.
+        const cut = r.left < 0 || r.top < 0 || r.right > W || r.bottom > H;
+        b.dataset.covered = String((cut || !(hit && (hit === b || b.contains(hit)))) && b.getAttribute("aria-pressed") !== "true");
       }
       // Site names under the markers: with many sites near the pole they collide. The selected site keeps its name;
       // the others keep theirs in order (catalogue number) unless it would overlap one already shown or another
