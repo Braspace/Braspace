@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -57,6 +58,83 @@ type engineClient struct {
 	binary      string
 	callTimeout time.Duration
 	workers     int
+	// shared keeps engine results across requests. A stored series never changes while the process
+	// runs (it is loaded once and checked against its SHA-256), and the engine is a pure function of
+	// one sample, so a result is valid for as long as the series object lives. Without this, every
+	// request re-runs one engine process per sample and a handful of parallel 30-day comparisons
+	// time out together.
+	shared      sync.Map // sharedKey -> engineResult
+	sharedCount atomic.Int64
+	// inflight lets parallel requests that need the same sample wait for one engine run instead of
+	// each starting their own: eight identical cold requests cost one request's worth of processes.
+	inflight sync.Map // sharedKey -> chan struct{}, closed when that run ends
+}
+
+// sharedKey identifies one sample of one loaded series. The pointer, not the site id, is the identity:
+// a different series object (a reload, a test double) never sees results computed for another one.
+type sharedKey struct {
+	series *siteSeries
+	index  int
+}
+
+// maxSharedResults bounds the cross-request cache: 7 series of 35,064 samples are 245,448 entries.
+const maxSharedResults = 400000
+
+func (e *engineClient) remembered(s *siteSeries, i int) (engineResult, bool) {
+	v, ok := e.shared.Load(sharedKey{s, i})
+	if !ok {
+		return engineResult{}, false
+	}
+	res := v.(engineResult)
+	res.EpochUTC = s.epoch(i).Format(time.RFC3339) // not stored: it is a function of the index
+	return res, true
+}
+
+func (e *engineClient) remember(s *siteSeries, i int, res engineResult) {
+	if e.sharedCount.Load() >= maxSharedResults {
+		return
+	}
+	// Keep the entry small: the site id shares the series' string and the epoch is rebuilt on read.
+	res.SiteID, res.EpochUTC = s.SiteID, ""
+	if _, loaded := e.shared.LoadOrStore(sharedKey{s, i}, res); !loaded {
+		e.sharedCount.Add(1)
+	}
+}
+
+// evaluateSample returns the engine result for one stored sample: remembered, taken from a run another
+// request already started, or computed here. Failures are never remembered; a waiter whose owner failed
+// (for example because that request was canceled) runs the engine itself.
+func (e *engineClient) evaluateSample(ctx context.Context, s *siteSeries, i int) (engineResult, error) {
+	key := sharedKey{s, i}
+	for {
+		if res, ok := e.remembered(s, i); ok {
+			return res, nil
+		}
+		done := make(chan struct{})
+		if other, busy := e.inflight.LoadOrStore(key, done); busy {
+			select {
+			case <-other.(chan struct{}):
+				if res, ok := e.remembered(s, i); ok {
+					return res, nil
+				}
+				// The other run failed or the cache is full: fall through and run it here.
+			case <-ctx.Done():
+				return engineResult{}, ctxError(ctx)
+			}
+			res, err := e.call(ctx, s.request(i))
+			if err == nil {
+				e.remember(s, i, res)
+			}
+			return res, err
+		}
+		res, err := e.call(ctx, s.request(i))
+		if err == nil {
+			e.remember(s, i, res)
+		}
+		e.inflight.Delete(key)
+		close(done)
+		return res, err
+	}
 }
 
 func newEngineClient(binary string) *engineClient {
@@ -197,8 +275,7 @@ func (ev *evaluator) evaluate(ctx context.Context, s *siteSeries, from, to int) 
 				ev.mu.Unlock()
 				if !hit {
 					var err error
-					res, err = ev.engine.call(ctx, s.request(i))
-					if err != nil {
+					if res, err = ev.engine.evaluateSample(ctx, s, i); err != nil {
 						once.Do(func() { firstErr = err; cancel() })
 						continue
 					}
