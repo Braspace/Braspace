@@ -63,7 +63,12 @@ func parseVectorRequest(r *http.Request)(vectorSearchRequest,string,error){
  var tail any
  if err:=dec.Decode(&tail);err!=io.EOF{return req,"INVALID_JSON",errors.New("trailing JSON payload")}
  if !modelNameRe.MatchString(req.ModelID){return req,"INVALID_MODEL",errors.New("invalid model_id")}
- if req.Limit==0 {req.Limit=5}
+ // OpenAPI: limit minimum 1; omitido=5, mas 0 ou null explícitos são inválidos; vector não aceita null.
+ var present struct{Limit json.RawMessage `json:"limit"`;Vector []json.RawMessage `json:"vector"`}
+ if err:=json.Unmarshal(raw,&present);err!=nil{return req,"INVALID_JSON",errors.New("invalid JSON payload")}
+ for _,e:=range present.Vector{if string(bytes.TrimSpace(e))=="null"{return req,"INVALID_VECTOR",errors.New("vector must contain only numbers")}}
+ if present.Limit==nil&&req.Limit==0 {req.Limit=5}
+ if present.Limit!=nil&&string(bytes.TrimSpace(present.Limit))=="null"{return req,"INVALID_LIMIT",errors.New("limit must be 1..10")}
  if req.Limit<1||req.Limit>10 {return req,"INVALID_LIMIT",errors.New("limit must be 1..10")}
  v,err:=vectorLiteral(req.Vector)
  if err!=nil{return req,"INVALID_VECTOR",err}
