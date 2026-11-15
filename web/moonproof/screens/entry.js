@@ -3,6 +3,7 @@
 import { h, Fragment, render as mount } from "../../vendor/preact/preact.module.js";
 import { t, apply, setLang, pickLang, lang } from "../core/i18n.js";
 import { getState, setState, hrefTo, TASKS } from "../core/state.js";
+const TASK_PAGES = { explore: "explore.html", class: "activity.html", plan: "plan.html" };
 const ICONS = {
     explore: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>',
     class: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 17v-3M12 17v-6M15 17v-8"/></svg>',
@@ -12,10 +13,10 @@ const ICONS = {
 function paint(vnode, host) { mount(null, host); host.replaceChildren(); mount(vnode, host); }
 function render() {
     const st = getState();
-    const chosen = st.task || "explore";
+    const chosen = st.task;
     const cards = document.getElementById("cards");
     const onFocus = (e) => cards.querySelectorAll(".mp-task").forEach(c => c.setAttribute("aria-current", String(c === e.currentTarget)));
-    paint(h(Fragment, null, Object.keys(TASKS).map(task => (h("a", { class: "mp-task", role: "listitem", "data-task": task, "aria-current": task === chosen, href: hrefTo("mission.html", { ...st, task, layer: TASKS[task] }), onFocus: onFocus },
+    paint(h(Fragment, null, Object.keys(TASKS).map(task => (h("a", { class: "mp-task", role: "listitem", "data-task": task, "aria-current": task === chosen, href: hrefTo(TASK_PAGES[task], { ...st, task, layer: TASKS[task] }), onFocus: onFocus },
         h("span", { class: "mp-task-icon", dangerouslySetInnerHTML: { __html: ICONS[task] } }),
         h("h2", null, t(`entry.${task}.title`)),
         h("p", { class: "who" }, t(`entry.${task}.who`)),
@@ -23,17 +24,11 @@ function render() {
             h("li", null, t(`entry.${task}.b1`)),
             h("li", null, t(`entry.${task}.b2`)),
             h("li", null, t(`entry.${task}.b3`))),
-        h("p", { class: "opens" }, t("entry.opensIn", { layer: t("layer." + TASKS[task]) })))))), cards);
+        h("p", { class: "opens" }, t("entry.destination." + task)))))), cards);
     const hint = document.getElementById("hint");
-    const [pre, mid, post] = t("entry.hint", { a: "\u0000", b: "\u0001" }).split(/[\u0000\u0001]/);
-    paint(h(Fragment, null,
-        "ⓘ ",
-        pre,
-        h("b", null, t("nav.class")),
-        mid,
-        h("b", null, t("nav.plan")),
-        post), hint);
-    document.getElementById("skip").href = hrefTo("mission.html");
+    paint(h(Fragment, null, t("entry.hint")), hint);
+    document.getElementById("skip").href = hrefTo("explore.html");
+    document.title = "MoonProof · " + t("entry.title");
     apply();
 }
 setLang(pickLang(getState().lang));
