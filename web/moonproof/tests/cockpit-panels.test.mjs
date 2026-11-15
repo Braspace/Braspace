@@ -35,3 +35,25 @@ test('controller matches current Preact DOM, keeps a single shared Three.js scen
   assert.match(js,/\.moon-ui \.moon-open/,'Moon only requests the same scene as the existing button');
   assert.equal(requestSharedMoon(),false,'SSR/Node needs no document or GPU');
 });
+
+test('Moon-only deferred open never overrides a user who restored the panels',()=>{
+  // Backdrop.js is lazy and may not expose its button until a later load/timer tick.
+  const hadDocument=Object.hasOwn(globalThis,'document');
+  const oldDocument=globalThis.document, oldTimeout=globalThis.setTimeout;
+  let schedule, clicks=0, wanted=true, available=false;
+  globalThis.document={readyState:'complete',querySelector:()=> available ? {disabled:false,click:()=>{clicks++;}} : null};
+  globalThis.setTimeout=callback=>{schedule=callback;return 1;};
+  try{
+    assert.equal(requestSharedMoon(()=>wanted),false,'not yet ready');
+    assert.equal(typeof schedule,'function','deferred request scheduled');
+    wanted=false;available=true; // user has restored all nine cards before Moon backdrop appears
+    schedule();
+    assert.equal(clicks,0,'stale callback must not hide restored UI');
+    wanted=true;
+    assert.equal(requestSharedMoon(()=>wanted),true,'new explicit request should still work');
+    assert.equal(clicks,1,'only the fresh request opens the existing backdrop');
+  }finally{
+    globalThis.setTimeout=oldTimeout;
+    if(hadDocument)globalThis.document=oldDocument;else delete globalThis.document;
+  }
+});
