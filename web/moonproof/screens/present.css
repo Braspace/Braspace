@@ -314,5 +314,5 @@ body.mp-present { font-variant-numeric: tabular-nums; }
 .mp-quiz-feedback[data-status="unknown"]{color:#edd39b}
 .mp-quiz-none{height:44px;min-height:44px;font-size:14px}
 .mp-timer-card[aria-pressed="false"]{outline:2px solid var(--jade)}
-@media(min-width:901px){.mp-present-actions{width:260px;gap:6px}.mp-quiz-feedback{max-height:100px;overflow:auto}.mp-quiz-pick{min-height:36px}}
+@media(min-width:901px){.mp-present-actions{width:260px;gap:6px}.mp-quiz-feedback{max-height:100px;overflow:auto}}
 @media(max-width:900px){.mp-quiz-feedback{min-height:0}.mp-quiz-pick{min-height:44px}}
