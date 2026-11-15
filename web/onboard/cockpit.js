@@ -176,7 +176,7 @@
         }
         catch (err) {
             S.api = null;
-            S.apiError = ["Sem conexão com a API (" + err.message + "). Confira BRASPACE_API_BASE (config.js) ou suba dev-server.py e a API Go."];
+            S.apiError = ["Sem conexão com a API (" + err.message + "). Confira BRASPACE_API_BASE (config.js) ou suba web/dev-server.mjs e a API Go."];
             setLamp("bad", "API OFF");
         }
         finally {
@@ -1107,7 +1107,7 @@
     function apiError(res) {
         // status 0 = no connection. Any other status means the API answered and refused: show its code and message.
         return h("div", { class: "caution", role: "alert" }, res.status === 0
-            ? "API indisponível: " + (res.error || "sem conexão") + ". Suba a API Go (e o Rust engine, se o endpoint pedir) e o dev-server.py."
+            ? "API indisponível: " + (res.error || "sem conexão") + ". Suba a API Go (e o Rust engine, se o endpoint pedir) e o web/dev-server.mjs."
             : L.refusalText(res));
     }
     function apiPanelFrame(title, note, button, body) {

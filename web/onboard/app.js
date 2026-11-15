@@ -131,7 +131,7 @@
             render(JSON.parse(text));
         }
         catch (err) {
-            showFormErrors(["Não foi possível falar com a API (" + err.message + "). Suba o servidor com dev-server.py ou o docker compose."]);
+            showFormErrors(["Não foi possível falar com a API (" + err.message + "). Suba o servidor com node web/dev-server.mjs ou o docker compose."]);
         }
         finally {
             btn.disabled = false;
