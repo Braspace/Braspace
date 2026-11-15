@@ -74,8 +74,14 @@ export function sunCaveat(site) {
 const seriesCache = new Map();
 export function loadSeries(site) {
     // SiteSeriesLike is the screens' loose view of SiteSeries (a NOT_COMPUTED window carries no metrics), hence the cast.
-    if (!seriesCache.has(site.id))
-        seriesCache.set(site.id, SiteSeries.load(DATA_BASE + site.series));
+    if (!seriesCache.has(site.id)) {
+        const pending = SiteSeries.load(DATA_BASE + site.series).catch(error => {
+            if (seriesCache.get(site.id) === pending)
+                seriesCache.delete(site.id);
+            throw error;
+        });
+        seriesCache.set(site.id, pending);
+    }
     return seriesCache.get(site.id);
 }
 /** Window metrics for [startIso, +hours) from the stored hourly series, each value sourced. */
