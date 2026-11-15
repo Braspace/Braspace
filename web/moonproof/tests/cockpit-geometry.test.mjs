@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const css = await readFile(new URL("../screens/cockpit.css", import.meta.url), "utf8");
-const js = await readFile(new URL("../screens/cockpit.js", import.meta.url), "utf8");
+const js = await readFile(new URL("../screens/cockpit.tsx", import.meta.url), "utf8");
 const html = await readFile(new URL("../cockpit.html", import.meta.url), "utf8");
 const desktop = css.slice(css.indexOf("@media (min-width:701px){\n  .mp-ck-left,.mp-ck-right"));
 const has = (re, msg) => assert.match(desktop, re, msg);

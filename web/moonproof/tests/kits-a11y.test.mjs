@@ -8,7 +8,7 @@ const read = f => readFile(new URL(f, dir), "utf8");
 
 test("plan.html has a (screen-reader) h1 that plan.js translates", async () => {
   assert.match(await read("plan.html"), /<h1 class="sr-only" id="plan-h1">/);
-  const js = await read("screens/plan.js");
+  const js = await read("screens/plan.tsx");
   assert.match(js, /getElementById\("plan-h1"\)\.textContent = t\("plan\.h1"\)/);
 });
 

@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const css = (await readFile(process.env.EVIDENCE_CSS || new URL("../screens/evidence.css", import.meta.url), "utf8")).replace(/\/\*[\s\S]*?\*\//g, "");
-const js = await readFile(new URL("../screens/evidence.js", import.meta.url), "utf8");
+const js = await readFile(new URL("../screens/evidence.tsx", import.meta.url), "utf8");
 // Every rule as [selector, body] with the media query it lives in ("" when none); nested one level only.
 function rules() {
   const out = []; const re = /(@media[^{]+)\{|([^{}@]+)\{([^{}]*)\}|\}/g; let m, media = "";
