@@ -103,3 +103,15 @@
   .mp-scn-dock select.mp-pill{min-width:0;flex:1 1 120px;text-overflow:ellipsis}
 }
 .mp-nearby{margin-top:13px;border-top:1px solid var(--line);padding-top:8px}.mp-nearby-row{margin:4px 0;font-size:13px}.mp-nearby-row .is-ok{color:var(--jade)}.mp-nearby-row .is-fail{color:var(--fail-text)}
+/* iPhone (Safari, 14/11): the dock was pinned at top:116px and stretched over the whole sheet. On phones it sits right above the sheet. */
+@media (max-width:700px){.mp-scn-dock{top:auto!important;bottom:calc(var(--sheet-h,38vh) + 84px);height:auto;align-items:center}}
+@media (max-width:700px){.mp-scn-time{display:none}}
+@media (max-width:700px){.mp-sheet .mp-scn-dock{position:static!important;transform:none;margin:0 0 10px;bottom:auto;top:auto!important;left:auto;right:auto;width:100%;max-width:none}}
+.mp-scn-dock .mp-sel{min-width:0;overflow:hidden}.mp-scn-dock .mp-ellip{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Phone Replan: the delay dial (core + 4 satellites) is whole at the sheet's default height. */
+@media (max-width:700px){
+  .mp-sheet:has(.mp-dial){--sheet-h:56vh}
+  .mp-sheet .mp-dial{width:120px;height:120px;margin:28px auto 30px}
+  .mp-sheet .mp-dial .mp-stat-core{inset:22px}
+  .mp-sheet .mp-dial button.mp-sat{width:44px;height:44px;margin:-22px 0 0 -22px;font-size:12px}
+}

@@ -36,6 +36,7 @@ const TEXT = {
     statusTitle: "Rendered from NASA data for display. Not independently validated, not a NASA product.",
     siteSun: "Sun centre now", siteEarth: "Earth centre now", above: "above the terrain by", below: "below the terrain by",
     siteLoading: "Loading the site series…", siteFailed: "The site series could not be loaded.", siteGo: "Fly to this site", close: "Close",
+    siteCap: "Sun figures here are an upper bound: the NASA PGDA map gives {pgda} % and the horizon behind this series stops at 100 km.",
     mSun: "Sun above terrain", mEarth: "Earth above terrain", mBoth: "Both at once", mDark: "Longest darkness", mBlackout: "Longest Earth blackout",
     siteStatus: "PRELIMINARY · team series",
     siteNote: "Team series, hourly, 2025 to 2028: LOLA horizon traced to 100 km, centres of the Sun and Earth from SPICE. Not independently validated. It is a separate computation from the shadows drawn here.",
@@ -56,6 +57,7 @@ const TEXT = {
     statusTitle: "Renderizado a partir de dados da NASA para exibição. Sem validação independente; não é um produto da NASA.",
     siteSun: "Centro do Sol agora", siteEarth: "Centro da Terra agora", above: "acima do relevo por", below: "abaixo do relevo por",
     siteLoading: "Carregando a série do local…", siteFailed: "Não foi possível carregar a série do local.", siteGo: "Voar até este local", close: "Fechar",
+    siteCap: "Os números de Sol aqui são um teto: o mapa PGDA da NASA dá {pgda} % e o horizonte desta série para em 100 km.",
     mSun: "Sol acima do relevo", mEarth: "Terra acima do relevo", mBoth: "Os dois juntos", mDark: "Maior escuridão", mBlackout: "Maior bloqueio da Terra",
     siteStatus: "PRELIMINAR · série do time",
     siteNote: "Série do time, hora a hora, de 2025 a 2028: horizonte do LOLA traçado até 100 km, centros do Sol e da Terra pelo SPICE. Sem validação independente. É um cálculo separado das sombras desenhadas aqui.",
@@ -85,9 +87,22 @@ const projected = new THREE.Vector3();
 function placeLabel(label, camera, visible) {
   if (visible) projected.copy(label.position).project(camera);
   const show = visible && projected.z < 1 && Math.abs(projected.x) < 1.05 && Math.abs(projected.y) < 1.05;
-  label.el.hidden = !show;
-  if (show) label.el.style.transform = `translate(${((projected.x + 1) / 2 * innerWidth + 8).toFixed(1)}px, ${((1 - projected.y) / 2 * innerHeight - 10).toFixed(1)}px)`;
+  let x = 0, y = 0, free = show;
+  if (show) {
+    x = (projected.x + 1) / 2 * innerWidth + 8; y = (1 - projected.y) / 2 * innerHeight - 10;
+    // No label over another label or over a panel (phone: names were piling up and running under the readout).
+    const w = label.el.textContent.length * (label.kind === "mare" ? 8.5 : 7) + 22;
+    if (x + w > innerWidth - 4) { x = innerWidth - 4 - w; label.el.style.maxWidth = (innerWidth - 8) + "px"; } if (x < 4) x = 4; // never off the screen edge
+    const box = { l: x, t: y, r: x + w, b: y + 20 };
+    free = !taken.some(q => box.l < q.r && box.r > q.l && box.t < q.b && box.b > q.t);
+    if (free) taken.push(box);
+  }
+  label.el.hidden = !free;
+  if (free) label.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
 }
+let taken = [];
+const obstacles = () => [".top", ".views", ".readout", ".site-card", ".panel", ".credits"].map(q => document.querySelector(q))
+  .filter(e => e && !e.hidden).map(e => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; });
 
 // ---------------------------------------------------------------- app
 async function main() {
@@ -223,8 +238,13 @@ async function main() {
     $("site-go").textContent = t("siteGo");
     $("site-close").setAttribute("aria-label", t("close"));
     const pct = v => (Number.isFinite(v) ? v.toFixed(1) + " %" : "–"), hours = v => (Number.isFinite(v) ? v.toFixed(0) + " h" : "–");
-    fillRows($("site-metrics"), [[t("mSun"), pct(m.sun_center_visible_pct)], [t("mEarth"), pct(m.earth_center_visible_pct)],
-      [t("mBoth"), pct(m.sun_and_earth_visible_pct)], [t("mDark"), hours(m.longest_darkness_h)], [t("mBlackout"), hours(m.longest_earth_blackout_h)]]);
+    // Same rule as moonproof/core/data.js sunCaveat: more sunlight than NASA PGDA by over 5 points means "at most".
+    const capped = Number.isFinite(site.pgda_sun_pct) && m.mean_solar_disc_visible_pct - site.pgda_sun_pct > 5;
+    $("site-caveat").hidden = !capped;
+    if (capped) $("site-caveat").textContent = t("siteCap").replace("{pgda}", site.pgda_sun_pct.toFixed(1));
+    const sunPct = v => (capped && Number.isFinite(v) ? "≤ " : "") + pct(v);
+    fillRows($("site-metrics"), [[t("mSun"), sunPct(m.sun_center_visible_pct)], [t("mEarth"), pct(m.earth_center_visible_pct)],
+      [t("mBoth"), sunPct(m.sun_and_earth_visible_pct)], [t("mDark"), hours(m.longest_darkness_h)], [t("mBlackout"), hours(m.longest_earth_blackout_h)]]);
     if (!series) { fillRows($("site-now"), [[failed ? t("siteFailed") : t("siteLoading"), ""]]); return; }
     const sample = (timeAt(eph, index) - series.startMs) / series.stepMs;
     if (!(sample >= 0 && sample <= series.count - 1)) { fillRows($("site-now"), []); return; }
@@ -356,10 +376,23 @@ async function main() {
 
   function resize() {
     renderer.setSize(innerWidth, innerHeight, false);
-    for (const view of [globe, pole]) { view.camera.aspect = innerWidth / innerHeight; view.camera.updateProjectionMatrix(); }
+    for (const view of [globe, pole]) { view.camera.aspect = innerWidth / innerHeight; view.camera.clearViewOffset(); view.camera.updateProjectionMatrix(); }
+    frameGlobe();
+  }
+  // Phone: the globe sits whole in the gap between the readout (top) and the controls (bottom), not under their glass.
+  function frameGlobe() {
+    const W = innerWidth, H = innerHeight, cam = globe.camera; cam.clearViewOffset();
+    if (W > 720) return cam.updateProjectionMatrix();
+    const top = Math.max(...[".top", ".views", ".readout"].map(q => document.querySelector(q)?.getBoundingClientRect().bottom || 0)) + 8;
+    const bottom = (document.querySelector(".panel")?.getBoundingClientRect().top || H) - 8;
+    const d = cam.position.length() || 6.4, diam = Math.tan(Math.asin(1 / d)) / Math.tan(cam.fov * Math.PI / 360) * H;
+    const fit = Math.min(bottom - top, W - 16); if (fit < 80) return cam.updateProjectionMatrix();
+    const k = Math.max(1, diam / fit), fw = W / k, fh = H / k; // full frame smaller than the window = zoom out
+    cam.setViewOffset(fw, fh, fw / 2 - W / 2, fh / 2 - (top + bottom) / 2, W, H);
   }
   addEventListener("resize", resize);
   resize();
+  new ResizeObserver(frameGlobe).observe(document.querySelector(".panel"));
 
   // ---- loop
   const toCamera = new THREE.Vector3(), right = new THREE.Vector3(), upCam = new THREE.Vector3(), back = new THREE.Vector3();
@@ -387,7 +420,8 @@ async function main() {
 
     const names = $("markers").checked, distance = camera.position.length();
     sites.visible = names;
-    for (const l of labels) {
+    taken = obstacles();
+    for (const l of [...labels].sort((a, b) => (a.kind === "body" ? 0 : a.kind === "site" ? 1 : a.kind === "feature" ? 2 : 3) - (b.kind === "body" ? 0 : b.kind === "site" ? 1 : b.kind === "feature" ? 2 : 3))) {
       let visible = !flying && (l.kind === "body" || names);
       if (visible && l.kind === "feature") visible = mode === "pole" || distance < 2.4;
       if (visible && l.kind === "mare") visible = mode === "globe" && distance > 2.4;
@@ -400,6 +434,7 @@ async function main() {
   applyTime();
   // First view: from the sunlit side, looking up from the south so the polar region is in frame.
   globe.camera.position.copy(sunDir).multiplyScalar(0.75).add(earthDir.clone().multiplyScalar(0.45)).setY(-0.62).normalize().multiplyScalar(small ? 6.4 : 4.6);
+  frameGlobe();
   await setMode(params.get("view") === "pole" ? "pole" : "globe", false);
   globe.controls.enabled = mode === "globe"; pole.controls.enabled = mode === "pole";
   $("loading").classList.add("done");

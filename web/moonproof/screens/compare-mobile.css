@@ -52,3 +52,5 @@
   .mp-proof td,.mp-proof th{overflow-wrap:anywhere}
   .mp-legend{flex-wrap:wrap}
 }
+/* iPhone (Safari, 14/11): the last row ("Folga da bateria") ended under the sheet edge. Room to scroll it into view. */
+@media (max-width:700px){.mp-sheet::after{content:"";display:block;height:32px}}

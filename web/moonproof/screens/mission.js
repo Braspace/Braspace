@@ -49,9 +49,11 @@ function rays() {
   for (const [body, az, margin, color] of [["sun", g.sunAz, g.sunMargin, "#FFD166"], ["earth", g.earthAz, g.earthMargin, "#4C9BFF"]]) {
     const [dx, dy] = mapDir(s.lon, az);
     // keep the Sun/Earth icon inside the free map area (below the context bar, above the dock)
-    let L2 = len; const top = 150, bot = Hh - 130;
+    // Phone: the icon and its label (about 60 px) end above the sheet, never behind its glass.
+    const pTop = matchMedia("(max-width:700px)").matches ? $("panels").getBoundingClientRect().top : Infinity;
+    let L2 = len; const top = 150, bot = Math.min(Hh - 130, pTop - 64);
     if (dy < 0) L2 = Math.min(L2, (py - top) / -dy); if (dy > 0) L2 = Math.min(L2, (bot - py) / dy);
-    L2 = Math.max(60, L2);
+    L2 = Math.max(pTop < Infinity ? 40 : 60, L2);
     const x2 = px + dx * L2, y2 = py + dy * L2, x1 = px + dx * 30, y1 = py + dy * 30;
     const ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
     Object.entries({ x1, y1, x2, y2, stroke: color, "stroke-width": 3, "stroke-dasharray": "2 8", "stroke-linecap": "round", opacity: margin >= 0 ? 1 : .45 }).forEach(([k, v]) => ln.setAttribute(k, v));
@@ -61,7 +63,7 @@ function rays() {
     const lab = $("ray-" + body); lab.hidden = false;
     lab.textContent = t((body === "sun" ? "mc.sun" : "mc.earth") + (margin >= 0 ? "Above" : "Below"), { n: deg(Math.abs(margin)) });
     lab.style.left = (x2 - dy * 0 + (dx >= 0 ? 0 : 0)) + "px"; { const ctxB = Math.max(...[".mp-top", ".mp-context", ].map(q => document.querySelector(q)?.getBoundingClientRect().bottom || 0)); // never under the context bar
-      let ly = y2 + (dy > 0 ? 34 : -34); if (ly - 12 < ctxB + 8) ly = Math.max(y2 + 34, ctxB + 20); lab.style.top = ly + "px"; }
+      let ly = y2 + (dy > 0 ? 34 : -34); if (ly - 12 < ctxB + 8) ly = Math.max(y2 + 34, ctxB + 20); if (ly + 14 > pTop - 8) { ly = y2; lab.style.left = (x2 + (x2 < W / 2 ? 1 : -1) * (26 + lab.offsetWidth / 2)) + "px"; } lab.style.top = ly + "px"; }
   }
 }
 
@@ -248,6 +250,11 @@ function dock(s) {
 
 // Mobile sheet: drag the handle to resize.
 const handle = $("handle"), panels = $("panels");
+// Phone: the site/zoom dock lives inside the sheet, right under the handle, so it never covers the map
+// (iPhone Safari 14/11: over the site label, and before that over the Earth marker). Desktop keeps it fixed at the bottom.
+const phone = matchMedia("(max-width:700px)");
+const placeDock = () => { const d = $("dock"); if (phone.matches) { if (d.parentElement !== panels) handle.after(d); } else if (d.parentElement !== document.body) document.body.append(d); };
+phone.addEventListener?.("change", placeDock); placeDock();
 handle.onpointerdown = e => { handle.setPointerCapture(e.pointerId); const y0 = e.clientY, h0 = panels.offsetHeight;
   handle.onpointermove = ev => { panels.style.height = Math.max(120, Math.min(innerHeight - 140, h0 + (y0 - ev.clientY))) + "px"; };
   handle.onpointerup = () => { handle.onpointermove = null; frame(); }; };
