@@ -30,6 +30,7 @@ register({
     "present.selected": "Your choice: {choice}. Reveal to check.", "present.correct": "Correct!", "present.incorrect": "Not this time.",
     "present.answer": "Qualifying scenario(s): {choices}.", "present.noPossible": "None of these scenarios meets this question’s rule.",
     "present.unknown": "There are not enough computed values to determine an answer. Missing data are not marked wrong.",
+    "present.unknownChoice": "This scenario has missing measurements, so your choice cannot be graded.",
     "present.timerPaused": "Timer paused. Press to continue."
   },
   "pt-BR": {
@@ -53,6 +54,7 @@ register({
     "present.selected": "Sua escolha: {choice}. Revele para conferir.", "present.correct": "Você acertou!", "present.incorrect": "Não foi dessa vez.",
     "present.answer": "Cenário(s) que atende(m): {choices}.", "present.noPossible": "Nenhum destes cenários atende à regra desta pergunta.",
     "present.unknown": "Ainda não há dados suficientes para concluir. Dados ausentes não contam como erro.",
+    "present.unknownChoice": "Faltam medições para este cenário; sua escolha não pode ser avaliada.",
     "present.timerPaused": "Cronômetro pausado. Pressione para continuar."
   }
 });
@@ -161,6 +163,7 @@ function draw() {
   feedback.dataset.status = revealed ? result : "unanswered";
   feedback.textContent = revealed
     ? answer.status === "unknown" ? t("present.unknown")
+      : result === "unknown" ? t("present.unknownChoice")
       : (result === "correct" ? t("present.correct") + " " : result === "incorrect" ? t("present.incorrect") + " " : "") +
         (answer.correctIds.includes("none") ? t("present.noPossible") : t("present.answer", { choices: answer.correctIds.join(", ") }))
     : chosen ? t("present.selected", { choice: chosen === "none" ? t("present.none") : chosen }) : t("present.choose");
