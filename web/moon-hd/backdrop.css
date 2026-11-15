@@ -70,3 +70,6 @@ html.moon-explore-on { overflow: hidden; }
 }
 /* Desktop: bottom-right (bottom-left holds the cockpit links / mission cards; QA 15/11). */
 @media (min-width: 1024px) { .moon-ui:not(.is-explore) { left: auto; right: max(16px, env(safe-area-inset-right)); } }
+/* Overlapping labels (sites < 1° apart): the lower-priority label hides; hover/focus shows it again. */
+.moon-backdrop.is-explore .moon-pin.is-quiet span{display:none}
+.moon-backdrop.is-explore .moon-pin.is-quiet:hover span,.moon-backdrop.is-explore .moon-pin.is-quiet:focus-visible span{display:inline-block;position:relative;z-index:2}

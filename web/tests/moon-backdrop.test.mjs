@@ -276,3 +276,13 @@ test("local preview serves the backdrop module, its stylesheet and the shared sc
  for(const page of ["/","/moonproof/","/moonproof/evidence.html","/classic.html"])
   assert.match((await fetch(base+page,{method:"HEAD"})).headers.get("content-security-policy"),/style-src 'self'(;|$)/,page);
 });
+
+test("overlapping pin labels: higher priority keeps its label, the other hides (dot stays)",()=>{
+ const {declutterLabels}=backdrop;
+ const a={id:"a",x:0,y:0,w:100,h:20,priority:0},b={id:"b",x:50,y:5,w:100,h:20,priority:1},c={id:"c",x:300,y:0,w:80,h:20,priority:0};
+ assert.deepEqual([...declutterLabels([a,b,c])],["a"],"b (with series) wins over a; c is clear");
+ assert.deepEqual([...declutterLabels([{...a,priority:3},b])],["b"],"the selected site always keeps its label");
+ assert.deepEqual([...declutterLabels([a,{...a,id:"d",x:a.x+a.w+10}])],[],"side by side with a gap: both shown");
+ assert.deepEqual([...declutterLabels([{...a,w:NaN}])],["a"],"unmeasured box is hidden, never throws");
+ assert.equal(declutterLabels([]).size,0);
+});
