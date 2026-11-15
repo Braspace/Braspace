@@ -45,6 +45,8 @@ export function moonproofFile(pathname){
 export function moonHdFile(pathname){
  if(pathname==="/moon-hd.html")return {name:"moon-hd.html",type:labTypes[".html"]};
  if(pathname==="/moon-hd/pole-preview.webp")return {name:"moon-hd/pole-preview.webp",type:"image/webp"};
+ // GPU captures of the pole scene (renders/manifest.json): three fixed files, nothing else in that folder.
+ if(/^\/moon-hd\/renders\/pole-gpu-(?:desktop|tablet|portrait)\.webp$/.test(pathname))return {name:pathname.slice(1),type:"image/webp"};
  if(!/^\/moon-hd\/[a-z0-9\-]+\.(js|css)$/.test(pathname))return null;
  return {name:path.normalize(pathname.slice(1)),type:labTypes[pathname.slice(pathname.lastIndexOf("."))]};
 }
