@@ -8,6 +8,26 @@ import { probeWebGL } from "./backdrop.js";
 // (x toward 0°E = screen up, z toward 90°E = screen right, y = up out of the map).
 const KEY = [0.52, 0.58, -0.62];
 /** opts.wideOnly: draw the cap from the 320 m grid alone (createCap's existing lighter level of detail, used on phones). */
+/** Colour map decoded off the main thread (createImageBitmap) before the GPU upload. three's TextureLoader decodes the
+ *  4096×2048 JPEG synchronously inside texImage2D: ~0.5 s of main thread on a mid phone (CPU profile, 15/11).
+ *  imageOrientation "flipY" reproduces TextureLoader's default flipY; without createImageBitmap, the old path. */
+async function bitmapTexture(S, renderer, base, name) {
+    if (typeof createImageBitmap !== "function")
+        return S.textureLoader(renderer, base)(name, true);
+    const res = await fetch(base + name);
+    if (!res.ok)
+        throw new Error("texture " + name + " " + res.status);
+    const bitmap = await createImageBitmap(await res.blob(), { imageOrientation: "flipY" });
+    const tex = new S.THREE.Texture(bitmap);
+    tex.flipY = false; // already flipped by createImageBitmap (WebGL ignores UNPACK_FLIP_Y for ImageBitmap)
+    tex.colorSpace = S.THREE.SRGBColorSpace;
+    tex.wrapS = S.THREE.RepeatWrapping;
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    tex.needsUpdate = true;
+    const dispose = tex.dispose.bind(tex);
+    tex.dispose = () => { dispose(); bitmap.close?.(); };
+    return tex;
+}
 export async function mountStereoRelief(parent, before, onLost, opts = {}) {
     const probe = probeWebGL(() => document.createElement("canvas"));
     if (!probe)
@@ -41,7 +61,7 @@ export async function mountStereoRelief(parent, before, onLost, opts = {}) {
         renderer = new S.THREE.WebGLRenderer({ canvas, context: gl });
         renderer.setClearColor(0x07090c, 1);
         const manifest = await S.fetchJSON(base + "manifest.json");
-        const colorTex = await S.textureLoader(renderer, base)("color_4k.jpg", true);
+        const colorTex = await bitmapTexture(S, renderer, base, "color_4k.jpg");
         textures.add(colorTex);
         // The cap reads the colour map and the light uniforms of a Moon; the globe mesh itself is never drawn.
         const moon = S.createMoon({ manifest, colorTex, normalTex: colorTex, heightTex: colorTex, lon: 8, lat: 4, steps: 1 });
