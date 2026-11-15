@@ -127,7 +127,7 @@ async function draw() {
     shell.setContext({ site: `${s.n} · ${s.name}`, date: fmtDate(new Date(m.t0)), days: fmtNum(hours() / DAY), seal: sealFor(doc.status), online,
         action: { label: t("ctx.compare"), href: hrefTo("compare.html") } });
     // ---- left column
-    const tabs = (h("div", { class: "mc-tabs", role: "tablist" }, ["overview", "notes"].map(k => (h("button", { class: "mp-pill", type: "button", role: "tab", "aria-selected": tab === k, "aria-pressed": tab === k, onClick: () => { tab = k; draw(); } }, t("mc." + k))))));
+    const tabs = (h("div", { class: "mc-tabs", role: "tablist" }, ["overview", "notes"].map(k => (h("button", { class: "mp-pill", type: "button", role: "tab", "aria-selected": tab === k, onClick: () => { tab = k; draw(); } }, t("mc." + k))))));
     let body;
     if (tab === "notes") {
         body = (h("div", { class: "mp-card mc-notes" },

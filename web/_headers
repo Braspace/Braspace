@@ -1,0 +1,38 @@
+# Cloudflare Workers Static Assets custom headers (applies to ASSETS responses only,
+# not to Worker-generated /api/* responses). Default is "public, max-age=0, must-revalidate".
+# Rules are applied in file order; a "! Header" line detaches the default value first.
+# Only files whose URL never changes content in place get long caching (fonts, models/data
+# regenerated with a new deploy tolerate up to a day of staleness). JS/CSS/HTML stay
+# revalidated on every load so a deploy never mixes module versions.
+
+/moonproof/fonts/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/data/moonhd/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/data/moon/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/data/region/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/data/terrain/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/moonproof/assets/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/moon-hd/pole-preview.webp
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/moon-hd/renders/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
