@@ -154,6 +154,9 @@ func runVectorIngestCLI(args []string) int {
 	lexical := f.Bool("lexical", false, "generate the pinned lexical projection for the exact embedded registry")
 	apply := f.Bool("apply", false, "explicitly write validated data to optional metadata database")
 	if err := f.Parse(args); err != nil || (*input == "") == !*lexical || f.NArg() != 0 {
+		// Loud, not silent: deployments written for the older seed command
+		// (`vector-ingest` with no flags) must see what changed.
+		fmt.Fprintln(os.Stderr, "usage: api vector-ingest (-lexical | -input FILE) [-apply]; -apply also requires VECTOR_DATABASE_URL and BRASPACE_VECTOR_MODEL_ID")
 		return 2
 	}
 	catalog, sha, err := vectorLayerRegistry()

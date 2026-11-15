@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -109,5 +110,23 @@ func TestVectorIngestRealPostgres(t *testing.T) {
 	}
 	if err = pool.QueryRow(ctx, "SELECT count(*) FROM public.source_semantic_index WHERE source_ref=$1 AND model_id IN ($2,$3)", rows[0].Ref, rep.ModelID, other.ModelID).Scan(&n); err != nil || n != 2 {
 		t.Fatalf("cross-model overwrite: %d %v", n, err)
+	}
+}
+
+// Production compose (pre-#279) runs `api vector-ingest` with no flags. That
+// must fail loudly with the required invocation, never a silent exit 2.
+func TestVectorIngestCLIUsageIsExplicit(t *testing.T) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := os.Stderr
+	os.Stderr = w
+	code := runVectorIngestCLI(nil)
+	w.Close()
+	os.Stderr = old
+	msg, _ := io.ReadAll(r)
+	if code != 2 || !strings.Contains(string(msg), "-lexical") || !strings.Contains(string(msg), "-input") {
+		t.Fatalf("exit %d, stderr %q", code, msg)
 	}
 }
