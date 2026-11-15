@@ -8,15 +8,11 @@ import { h, Fragment, render } from "../../vendor/preact/preact.module.js";
 import type { ComponentChild } from "../../vendor/preact/preact.module.js";
 // @ts-ignore TS7016: JS module without types
 import { mountSheet } from "./sheet.js";
-// @ts-ignore TS7016
 import { mountShell } from "../core/shell.js";
-// @ts-ignore TS7016
 import { mountTerrain } from "../core/terrain.js";
 import { loadSites, apiOnline } from "../core/data.js";
 import type { Site, SitesDoc, SiteSeriesLike } from "../core/data.js";
-// @ts-ignore TS7016
 import { sealEl, createLayerCard } from "../core/layers.js";
-// @ts-ignore TS7016
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import type { Layer } from "../core/state.js";
@@ -180,7 +176,7 @@ async function draw() {
   const proof = one(<table class="mp-proof"><tbody>{add(t("rec.def"), t("rec.def.txt"))}{add(t("rec.rules"), t("rec.assumed") + `: ${fmtNum(rules.night)} h · ${fmtNum(rules.blackout)} h`)}{add(t("rec.battery"), t("rec.battery.nd"))}{add(t("rec.src"), src)}</tbody></table>);
   const card = createLayerCard({ id: "exits", title: t("rec.step3"), status: m ? m.status : "NO_SERIES_DATA", answer: head, why: list, proof, layer: st.layer, onLayer: (layer: Layer) => setState({ layer }) });
   // exits are the content of Step 3, so they stay visible in every layer: move them under the answer
-  card.el.querySelector(".mp-layer-answer").after(list); card.el.querySelector(".mp-chips").before(go);
+  card.el.querySelector(".mp-layer-answer")!.after(list); card.el.querySelector(".mp-chips")!.before(go);
   $("right").replaceChildren(card.el);
 
   // timeline

@@ -39,7 +39,7 @@ test("labels use the sites' own stereographic transform (lat/lon -> metres)", as
 });
 
 test("terrain.js draws names from features.json as DOM text, not canvas, and no longer reads sites.json features", async () => {
-  const js = await readFile(new URL("../core/terrain.js", import.meta.url), "utf8");
+  const js = await readFile(new URL("../core/terrain.ts", import.meta.url), "utf8");
   assert.match(js, /data\/features\.json/); assert.match(js, /mp-terrain-labels/); assert.match(js, /mp-feature/);
   assert.doesNotMatch(js, /fillText/); assert.doesNotMatch(js, /loadSites/);
   assert.match(js, /southStereoForward/, "one projection: the sites' transform from lab/coords.js");

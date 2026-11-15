@@ -7,10 +7,12 @@
 // fetch; the CSS animation in components.css covers a script that throws.
 let held = 0;
 const root = () => (typeof document === "undefined" ? null : document.documentElement);
-const go = () => { if (!held) root()?.classList?.add("mp-ready"); };
+const go = () => { if (!held)
+    root()?.classList?.add("mp-ready"); };
 export function holdReady() { held = 1; setTimeout(markReady, 1800); }
 export function markReady() { held = 0; go(); }
 if (root()) {
-  if (typeof requestAnimationFrame === "function") requestAnimationFrame(go);
-  setTimeout(go, 250);
+    if (typeof requestAnimationFrame === "function")
+        requestAnimationFrame(go);
+    setTimeout(go, 250);
 }
