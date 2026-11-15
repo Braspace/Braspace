@@ -1,4 +1,3 @@
-// Question-specific, fail-closed classroom quiz grading. Never equate missing NASA data with "wrong".
 export function evaluateQuestion(question, metrics, limits) {
     const needsNight = question !== 3;
     const needsEarth = question !== 2;
