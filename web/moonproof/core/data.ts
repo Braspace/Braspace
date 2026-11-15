@@ -101,10 +101,10 @@ export function sunCaveat(site: Partial<Pick<Site, "id" | "metrics" | "pgda_sun_
 }
 
 const seriesCache = new Map<string, Promise<SiteSeriesLike>>();
-export function loadSeries(site: Pick<Site, "id" | "series">): Promise<SiteSeriesLike> {
+export function loadSeries(site: Pick<Site, "id" | "series">, opts: { priority?: "low" | "high" | "auto" } = {}): Promise<SiteSeriesLike> {
   // SiteSeriesLike is the screens' loose view of SiteSeries (a NOT_COMPUTED window carries no metrics), hence the cast.
   if (!seriesCache.has(site.id)) {
-    const pending = (SiteSeries.load(DATA_BASE + site.series) as unknown as Promise<SiteSeriesLike>).catch(error => {
+    const pending = (SiteSeries.load(DATA_BASE + site.series, opts) as unknown as Promise<SiteSeriesLike>).catch(error => {
       if (seriesCache.get(site.id) === pending) seriesCache.delete(site.id);
       throw error;
     });

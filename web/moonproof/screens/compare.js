@@ -9,12 +9,12 @@ import { h, Fragment, render } from "../../vendor/preact/preact.module.js";
 import { mountSheet } from "./sheet.js";
 import { mountShell } from "../core/shell.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, apiOnline } from "../core/data.js";
+import { loadSites, apiOnline, loadSeries, afterPaint, sealFor } from "../core/data.js";
 import { createLayerCard, sealEl, barEl } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { judge, slack, verdictOf, dailyFractions, parseHash, buildHash } from "./scenario-calc.js";
-import { loadAll, staticMetrics, flagsOf, apiCompareMetrics, HOUR_MS } from "./scenario-data.js";
+import { staticMetrics, flagsOf, apiCompareMetrics, HOUR_MS } from "./scenario-data.js";
 register({
     en: {
         "cmp.ctx": "{n} scenarios · {s} sites", "cmp.dates": "{n} dates", "cmp.q": "Which scenario is best?",
@@ -79,11 +79,9 @@ function Node({ node }) {
 const LETTERS = ["A", "B", "C"];
 const DAY = 24, MAXSC = 3;
 const $ = (id) => document.getElementById(id);
-const shell = mountShell({ screen: "compare", context: null, onLang: () => draw() });
+const shell = mountShell({ screen: "compare", context: null, onLang: () => { paintContext(); draw(); } });
 mountSheet($("sheet"));
 const doc = (await loadSites());
-const all = await loadAll(doc);
-const online = await apiOnline();
 const siteOf = (id) => doc.sites.find(s => s.id === id);
 const hoursDefault = () => getState().hours || 14 * DAY;
 const t0Default = () => getState().start || doc.window.start_utc;
@@ -98,6 +96,21 @@ function scenarios() {
     return [{ site: ids[0], start: a, hours: hrs }, { site: second, start: a, hours: hrs }, { site: second, start: later, hours: hrs }].slice(0, Math.min(MAXSC, 3));
 }
 let sel = 0;
+// First paint (mobile LCP): the context bar comes from the URL hash and the catalogue (seal, window), and the panels show
+// the loading shimmer (scenario.css). Only after that paint do the hourly series (280 KB each) and the API figures start:
+// Compare needs the series of the sites in the visible scenarios (up to 3) and of nobody else; a site chosen later in the
+// editor is fetched then. Screen state is declared before the first await: the data callbacks may fire while it starts.
+let online = null, drawRev = 0;
+const onlineP = apiOnline().then(v => { online = v; paintContext(); return v; });
+/** The hourly series of a site, fetched on demand (one download per site, shared with every other caller). */
+function seriesOf(id) { return loadSeries(siteOf(id)); }
+function paintContext() {
+    const list = scenarios(), cur = Math.min(sel, list.length - 1);
+    const dates = new Set(list.map(s => s.start)).size, sites = new Set(list.map(s => s.site)).size;
+    shell.setContext({ site: t("cmp.ctx", { n: list.length, s: sites }), date: t("cmp.dates", { n: dates }), days: fmtNum(list[cur].hours / DAY),
+        seal: ctxSeal ?? sealFor(doc.status), online, action: { label: t("cmp.delay", { L: LETTERS[cur] }), href: recoverHref(list) } });
+}
+let ctxSeal = null;
 const save = (list) => { history.replaceState(null, "", location.search + "#" + buildHash({ sc: list })); draw(); };
 async function metricsFor(sc) {
     const startMs = Date.parse(sc.start);
@@ -106,26 +119,30 @@ async function metricsFor(sc) {
         if (r.metrics)
             return r.metrics;
     }
-    return staticMetrics(all.get(sc.site), startMs, sc.hours, doc.status, sc.site);
+    return staticMetrics(await seriesOf(sc.site), startMs, sc.hours, doc.status, sc.site);
 }
 const fmtDate = (ms) => new Intl.DateTimeFormat(lang(), { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(ms);
 const hv = (x) => (x == null ? t("nd") : fmtNum(x, 0) + " h");
 const pv = (x) => (x == null ? t("nd") : fmtNum(x, 0) + "%");
 const ndSeal = () => h(Node, { node: sealEl("N/D") });
 async function draw() {
+    const rev = ++drawRev;
     const list = scenarios();
     if (sel >= list.length)
         sel = 0;
     const st = getState(), rules = { night: st.night, blackout: st.blackout };
-    const ms = await Promise.all(list.map(metricsFor));
+    const seriesP = seriesOf(list[sel].site);
+    seriesP.catch(() => { }); // the chart's series downloads while /readyz answers
+    await onlineP;
+    const [ms, series] = await Promise.all([Promise.all(list.map(metricsFor)), seriesP]);
+    if (rev !== drawRev)
+        return; // a newer draw started meanwhile: it paints
     const judged = ms.map(m => judge(m, rules));
     const verdict = verdictOf(judged, ms.map(m => m?.bothPct ?? null));
     const L = (i) => LETTERS[i];
     const cur = ms[sel];
-    const sealCtx = cur ? cur.seal : "N/D";
-    const dates = new Set(list.map(s => s.start)).size, sites = new Set(list.map(s => s.site)).size;
-    shell.setContext({ site: t("cmp.ctx", { n: list.length, s: sites }), date: t("cmp.dates", { n: dates }), days: fmtNum(list[sel].hours / DAY),
-        seal: sealCtx, online, action: { label: t("cmp.delay", { L: L(sel) }), href: recoverHref(list) } });
+    ctxSeal = cur ? cur.seal : "N/D";
+    paintContext();
     // verdict (layer card): answer = sentence, why = reasons, proof = rules + sources
     const reasons = one(h("div", null, list.map((_, i) => {
         const j = judged[i];
@@ -157,7 +174,7 @@ async function draw() {
             h("small", null, `${siteOf(sc.site).n} · ${fmtDate(Date.parse(sc.start))}`)),
         badge(judged[i]))))));
     // chart for selected scenario
-    const fl = flagsOf(all.get(list[sel].site), Date.parse(list[sel].start), list[sel].hours);
+    const fl = flagsOf(series, Date.parse(list[sel].start), list[sel].hours);
     const sunD = dailyFractions(fl.sun.map(v => v)), earthD = dailyFractions(fl.earth.map(v => v));
     const eb = barEl(earthD, "var(--earth)");
     eb.classList.add("is-mirror");
@@ -296,13 +313,19 @@ function markRoute() {
     } });
 }
 let terrain = null;
-terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: scenarios()[0].site,
+paintContext();
+await afterPaint(document.querySelector(".mp-ctx-text"));
+// After the paint, in parallel: the visible scenarios' series and API figures (draw) and the map (its relief draws when the heights arrive).
+const first = draw().catch(() => { $("left").replaceChildren(one(h("p", { class: "mp-label" }, t("nd")))); });
+terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: scenarios()[0].site, progressive: true,
     route: [...new Set(scenarios().map(s => s.site))], onSelect: (id) => { const i = scenarios().findIndex(s => s.site === id); if (i >= 0) {
         sel = i;
         draw();
     } } });
 new MutationObserver(() => markRoute()).observe($("terrain"), { childList: true, subtree: true });
 markRoute();
+await first;
+terrain.select(scenarios()[sel].site);
+markRoute();
 onState(() => draw());
 addEventListener("hashchange", () => draw());
-draw();
