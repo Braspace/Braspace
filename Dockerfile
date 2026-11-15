@@ -88,6 +88,8 @@ COPY web/ ./web/
 COPY api/db/ ./api/db/
 COPY compose.yaml ./
 COPY api/sitedata/ ./api/sitedata/
+# science/tests/test_render_polar_map.py checks the archived polar map product (moved by #330).
+COPY archive/web-legacy/assets/ ./archive/web-legacy/assets/
 # science/tests/test_terrain_backgrounds.py checks the products against this matrix.
 COPY docs/ASSET_LICENSE_MATRIX.md ./docs/ASSET_LICENSE_MATRIX.md
 RUN python3 -m compileall -q scripts tests science \
