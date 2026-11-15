@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="core/tokens.css">
   <link rel="stylesheet" href="core/components.css">
   <link rel="stylesheet" href="screens/present.css">
+  <link rel="stylesheet" href="screens/tour.css">
+  <script type="module" src="screens/tour.js" data-moon-tour="present"></script>
 <link rel="stylesheet" href="../moon-hd/preview.css">
 <script type="module" src="../moon-hd/backdrop.js" data-moon-backdrop="globe" data-moon-lazy></script>
 </head>
@@ -35,6 +37,8 @@
   <section class="mp-present-bottom">
     <div id="present-cards" class="mp-present-cards"></div>
     <div class="mp-present-actions">
+      <button id="btn-none" class="mp-btn-outline mp-quiz-none" type="button" aria-pressed="false"></button>
+      <div id="present-feedback" class="mp-quiz-feedback" role="status" aria-live="polite"></div>
       <button id="btn-reveal" class="mp-btn-jade" type="button"></button>
       <button id="btn-next" class="mp-btn-outline" type="button"></button>
     </div>

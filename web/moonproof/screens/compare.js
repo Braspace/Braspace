@@ -23,7 +23,7 @@ register({
         "cmp.why.night": "{L}: longest night {v} h, above the assumed limit of {lim} h.",
         "cmp.why.blackout": "{L}: {v} h without Earth, above the assumed limit of {lim} h.",
         "cmp.why.nd": "{L}: no data for this window.", "cmp.why.ok": "{L} meets every rule.",
-        "cmp.delay": "What if {L} is delayed?", "cmp.land": "Land", "cmp.viewFailures": "See why it fails", "cmp.pass": "Meets every rule", "cmp.fail.night": "Fail: long night",
+        "cmp.delay": "What if {L} is delayed?", "cmp.land": "Land", "cmp.teach": "Teach with these scenarios", "cmp.viewFailures": "See why it fails", "cmp.pass": "Meets every rule", "cmp.fail.night": "Fail: long night",
         "cmp.fail.blackout": "Fail: no Earth", "cmp.nd": "No data",
         "cmp.chart": "Sun and Earth per day · {L}", "cmp.sun": "Sun", "cmp.earth": "Earth",
         "cmp.diff": "Differences", "cmp.full": "Full table", "cmp.power": "Power", "cmp.contact": "Contact",
@@ -45,7 +45,7 @@ register({
         "cmp.why.night": "{L}: noite mais longa de {v} h, acima do limite assumido de {lim} h.",
         "cmp.why.blackout": "{L}: {v} h sem Terra, acima do limite assumido de {lim} h.",
         "cmp.why.nd": "{L}: sem dado nesta janela.", "cmp.why.ok": "{L} atende a todas as regras.",
-        "cmp.delay": "E se {L} atrasar?", "cmp.land": "Pousar", "cmp.viewFailures": "Ver o que falha", "cmp.pass": "Atende a tudo", "cmp.fail.night": "Falha: noite longa",
+        "cmp.delay": "E se {L} atrasar?", "cmp.land": "Pousar", "cmp.teach": "Dar aula com estes cenários", "cmp.viewFailures": "Ver o que falha", "cmp.pass": "Atende a tudo", "cmp.fail.night": "Falha: noite longa",
         "cmp.fail.blackout": "Falha: sem Terra", "cmp.nd": "Sem dado",
         "cmp.chart": "Sol e Terra por dia · {L}", "cmp.sun": "Sol", "cmp.earth": "Terra",
         "cmp.diff": "Diferenças", "cmp.full": "Tabela completa", "cmp.power": "Energia", "cmp.contact": "Contato",
@@ -162,6 +162,7 @@ async function draw() {
     const card = createLayerCard({ id: "verdict", title: t("cmp.q"), status: statusOf(ms), answer, why: reasons, proof, layer: st.layer, onLayer: (layer) => setState({ layer }) });
     const actions = one(h("div", { class: "mp-actions" },
         h("a", { class: "mp-pill is-primary", href: recoverHref(list) }, t("cmp.delay", { L: L(sel) })),
+        h("a", { class: "mp-pill", href: hrefTo("activity.html") + "#" + buildHash({ sc: list }) }, t("cmp.teach")),
         judged[sel].status === "pass" ? h("a", { class: "mp-pill is-sim", href: hrefTo("landing.html", { ...getState(), site: list[sel].site, start: list[sel].start, hours: list[sel].hours }) }, t("cmp.land")) : h("button", { class: "mp-pill", type: "button", onClick: () => setState({ layer: "why" }) }, t("cmp.viewFailures"))));
     card.el.insertBefore(actions, card.el.querySelector(".mp-chips"));
     // scenario list

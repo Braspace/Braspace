@@ -1,0 +1,33 @@
+// Question-specific, fail-closed classroom quiz grading. Never equate missing NASA data with "wrong".
+export type QuizMetric = { longestDarkH: { value: number | null | undefined }; longestBlackoutH: { value: number | null | undefined } };
+export type QuizAnswer = { verdicts: (boolean | null)[]; correctIds: string[]; status: "ready" | "unknown" };
+/** A failed scientific lookup has no numeric evidence; never turn it into zero or a false answer. */
+export function unavailableQuizMetric(): QuizMetric {
+  return { longestDarkH: { value: null }, longestBlackoutH: { value: null } };
+}
+export function evaluateQuestion(question: number, metrics: readonly QuizMetric[], limits: { night: number; blackout: number }): QuizAnswer {
+  if (!metrics.length) return { verdicts: [], correctIds: [], status: "unknown" };
+  const needsNight = question !== 3;
+  const needsEarth = question !== 2;
+  const verdicts = metrics.map(m => {
+    const requirements: [number | null | undefined, number][] = [];
+    if (needsNight) requirements.push([m.longestDarkH?.value, limits.night]);
+    if (needsEarth) requirements.push([m.longestBlackoutH?.value, limits.blackout]);
+    let missing = false;
+    for (const [value, limit] of requirements) {
+      if (value == null || !Number.isFinite(value) || !Number.isFinite(limit)) { missing = true; continue; }
+      if (value > limit) return false;
+    }
+    return missing ? null : true;
+  });
+  const passing = verdicts.flatMap((v, i) => v === true ? [String.fromCharCode(65 + i)] : []);
+  const unknown = passing.length === 0 && verdicts.some(v => v === null);
+  return { verdicts, status: unknown ? "unknown" : "ready", correctIds: unknown ? [] : passing.length ? passing : ["none"] };
+}
+export function gradeChoice(choice: string | null, result: QuizAnswer): "correct" | "incorrect" | "unknown" | "unanswered" {
+  if (result.status === "unknown") return "unknown";
+  if (!choice) return "unanswered";
+  const index = choice.charCodeAt(0) - 65;
+  if (choice.length === 1 && index >= 0 && index < result.verdicts.length && result.verdicts[index] === null) return "unknown";
+  return result.correctIds.includes(choice) ? "correct" : "incorrect";
+}

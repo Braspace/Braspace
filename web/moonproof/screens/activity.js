@@ -8,14 +8,16 @@ import { sealEl } from "../core/layers.js";
 import { register, t } from "../core/i18n.js";
 import { getState, setState, hrefTo, DEFAULT_RULES } from "../core/state.js";
 import { qrSvg } from "./qr.js";
+import { buildHash } from "./scenario-calc.js";
+import { classroomWindows } from "./class-scenarios.js";
 register({
     en: {
         "act.kit": "Class Kit",
         "act.title": "Build activity",
         "act.s1": "Choose scenarios",
-        "act.s1d": "Real sites from Compare",
-        "act.s2": "What students can change",
-        "act.s2d": "dates locked, sites free",
+        "act.s1d": "Scenarios from Compare",
+        "act.s2": "Classroom suggestions",
+        "act.s2d": "guidance, not technical restrictions",
         "act.s3": "Question & answer",
         "act.s3d": "answer only at the end",
         "act.s4": "Share",
@@ -31,7 +33,7 @@ register({
         "act.l1": "1 Answer",
         "act.l2": "2 Why",
         "act.l3": "3 Proof",
-        "act.ctrlTitle": "Step 2 · what can be changed",
+        "act.ctrlTitle": "Step 2 · suggestions for the activity",
         "act.tSite": "Switch site",
         "act.tDate": "Switch date",
         "act.tProof": "See Proof layer",
@@ -42,7 +44,7 @@ register({
         "act.notesBody2": "Model simplification: ideal battery, no temperature effect (SIM).",
         "act.shareTitle": "Step 4 · share with the class",
         "act.copy": "Copy link",
-        "act.copied": "Copied!",
+        "act.copied": "Copied!", "act.copyError": "Copy unavailable. Select the link above to copy it.", "act.suggest": "These choices guide the activity; they do not block controls on students’ devices.",
         "act.present": "Present on projector",
         "act.tSiteD": "among the scenarios",
         "act.tDateD": "stays on {date}",
@@ -50,17 +52,17 @@ register({
         "act.tRulesD": "assumed limits {night} h and {blackout} h stay fixed",
         "act.tLabD": "as an extra challenge",
         "act.students": "students",
-        "act.access": "Students join without an account · you follow the answers here",
+        "act.access": "Students can open the link without an account. Discuss answers together; responses are not collected automatically.",
         "act.qrLabel": "QR code of the share link",
-        "act.layers": "Layers"
+        "act.layers": "Layers", "act.previewLayer.answer": "Quick answer: compare the three places.", "act.previewLayer.why": "Understand how sunlight and Earth visibility change the mission.", "act.previewLayer.proof": "Check where the numbers come from; data are preliminary."
     },
     "pt-BR": {
         "act.kit": "Kit Aula",
         "act.title": "Montar atividade",
         "act.s1": "Escolher cenários",
-        "act.s1d": "Sítios reais do Comparar",
-        "act.s2": "O que os alunos podem mexer",
-        "act.s2d": "datas travadas, locais livres",
+        "act.s1d": "Cenários escolhidos no Comparar",
+        "act.s2": "O que propor à turma",
+        "act.s2d": "sugestões, não bloqueios técnicos",
         "act.s3": "Pergunta e resposta",
         "act.s3d": "a resposta só aparece no fim",
         "act.s4": "Compartilhar",
@@ -76,7 +78,7 @@ register({
         "act.l1": "1 Resposta",
         "act.l2": "2 Por quê",
         "act.l3": "3 Prova",
-        "act.ctrlTitle": "Passo 2 · o que pode mexer",
+        "act.ctrlTitle": "Passo 2 · sugestões para a atividade",
         "act.tSite": "Trocar de local",
         "act.tDate": "Trocar a data",
         "act.tProof": "Ver a camada Prova",
@@ -87,7 +89,7 @@ register({
         "act.notesBody2": "Simplificação do modelo: bateria ideal, sem efeito de temperatura (SIM).",
         "act.shareTitle": "Passo 4 · compartilhar com a turma",
         "act.copy": "Copiar link",
-        "act.copied": "Copiado!",
+        "act.copied": "Copiado!", "act.copyError": "Não foi possível copiar automaticamente. Selecione o link acima.", "act.suggest": "Estas escolhas orientam a atividade, mas não bloqueiam botões no aparelho do aluno.",
         "act.present": "Apresentar no projetor",
         "act.tSiteD": "entre os cenários",
         "act.tDateD": "fica em {date}",
@@ -95,20 +97,21 @@ register({
         "act.tRulesD": "limites assumidos de {night} h e {blackout} h ficam fixos",
         "act.tLabD": "como desafio extra",
         "act.students": "alunos",
-        "act.access": "Alunos entram sem conta · você acompanha as respostas aqui",
+        "act.access": "A turma abre o link sem cadastro. Respostas são discutidas em aula; não há coleta automática.",
         "act.qrLabel": "QR code do link de compartilhamento",
-        "act.layers": "Camadas"
+        "act.layers": "Camadas", "act.previewLayer.answer": "Resposta rápida: compare os três lugares.", "act.previewLayer.why": "Entenda como luz do Sol e visão da Terra mudam a missão.", "act.previewLayer.proof": "Veja de onde vêm os números; os dados são preliminares."
     }
 });
 // The board has no context bar on this screen: context null hides it (core/shell.js).
 holdReady();
 mountShell({ screen: "compare", context: null, onLang: draw });
 const doc = await loadSites();
-const scenarios = doc.sites.slice(0, 3);
+const chosenWindows = classroomWindows(doc.sites, location.hash, getState());
+const scenarios = chosenWindows.map(s => s.site);
 const grid = (await loadRegion());
-await mountTerrain(document.getElementById("terrain"), { sites: doc.sites.map((s) => { const i = scenarios.indexOf(s); return i >= 0 ? { ...s, n: String.fromCharCode(65 + i) } : s; }), selected: getState().site, labels: false });
+await mountTerrain(document.getElementById("terrain"), { sites: doc.sites.map((s) => { const letters = chosenWindows.flatMap((w, i) => w.site.id === s.id ? [String.fromCharCode(65 + i)] : []).join("/"); return letters ? { ...s, n: letters } : s; }), selected: getState().site, labels: false });
 const cfg = {
-    step: 2,
+    step: 1,
     device: "laptop",
     openLayer: "why",
     allowSite: true,
@@ -126,13 +129,14 @@ function paint(vnode, host) { mount(null, host); host.replaceChildren(); mount(v
 const $ = (id) => document.getElementById(id);
 // location.href keeps the scenario (site, start, rules…) and the activity switches ride on the query string.
 function shareUrl() {
-    const u = new URL(location.href);
+    const u = new URL(hrefTo("present.html"), location.href);
     u.searchParams.set("layer", cfg.openLayer);
     u.searchParams.set("allowSite", cfg.allowSite ? "1" : "0");
     u.searchParams.set("allowDate", cfg.allowDate ? "1" : "0");
     u.searchParams.set("allowProof", cfg.allowProof ? "1" : "0");
     u.searchParams.set("allowRules", cfg.allowRules ? "1" : "0");
     u.searchParams.set("allowLab", cfg.allowLab ? "1" : "0");
+    u.hash = buildHash({ sc: chosenWindows.map(w => ({ site: w.site.id, start: w.start, hours: w.hours })) });
     return u.toString();
 }
 /** Hillshade of the real LOLA grid fitted to the scenarios, drawn once per size; markers use the same transform. */
@@ -205,7 +209,7 @@ function draw() {
         h("div", null,
             h("span", { class: "mp-act-kicker" }, t("act.kit")),
             h("h1", { class: "mp-act-h1" }, t("act.title"))),
-        steps.map(([n, title, sub]) => (h("button", { class: `mp-step-item ${n < cfg.step ? "is-done" : n === cfg.step ? "is-active" : ""}`, "data-step": n, "data-focus": `step${n}`, type: "button", "aria-current": n === cfg.step ? "step" : undefined, onClick: () => { cfg.step = n; draw(); } },
+        steps.map(([n, title, sub]) => (h("button", { class: `mp-step-item ${n < cfg.step ? "is-done" : n === cfg.step ? "is-active" : ""}`, "data-step": n, "data-focus": `step${n}`, type: "button", "aria-current": n === cfg.step ? "step" : undefined, onClick: () => { cfg.step = n; draw(); setTimeout(() => document.getElementById(({ 1: "act-preview", 2: "act-controls", 3: "btn-present", 4: "act-share" })[n])?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 0); } },
             h("span", { class: "mp-step-num" }, n < cfg.step ? "✓" : n),
             h("span", { class: "mp-step-txt" },
                 h("strong", null, title),
@@ -228,7 +232,8 @@ function draw() {
             h("span", { id: "prev-seal", class: "mp-pv-seal" }),
             h("div", { class: "mp-pv-q mp-glass" },
                 h("strong", null, t("act.prompt")),
-                h("span", null, t("act.promptSub")))),
+                h("span", null, t("act.promptSub")),
+                h("span", { class: "mp-pv-layer-note" }, t("act.previewLayer." + cfg.openLayer)))),
         h("div", { class: "mp-act-head mp-act-open" },
             h("span", null, t("act.openIn")),
             h("div", { class: "mp-chip-row mp-layer-tabs", role: "tablist", "aria-label": t("act.layers") }, LAYERS.map(([k, label], i) => (h("button", { role: "tab", class: `mp-layer-tab ${i < openIdx ? "is-open" : ""} ${k === cfg.openLayer ? "is-active" : ""}`, "data-layer": k, "data-focus": `layer-${k}`, type: "button", "aria-selected": k === cfg.openLayer, tabIndex: k === cfg.openLayer ? 0 : -1, onClick: () => setLayer(k), onKeyDown: (ev) => {
@@ -258,6 +263,7 @@ function draw() {
                 h("span", null, t(label)),
                 h("small", null, t(sub, vars))),
             h("button", { class: `mp-switch ${cfg[k] ? "is-on" : ""}`, "data-toggle": k, "data-focus": `sw-${k}`, type: "button", role: "switch", "aria-checked": cfg[k], onClick: () => { cfg[k] = !cfg[k]; draw(); } })))),
+        h("p", { class: "mp-act-suggest" }, t("act.suggest")),
         h("div", { class: "mp-teacher-notes" },
             h("strong", null,
                 t("act.notesTitle").split(" · ")[0],
@@ -282,12 +288,16 @@ function draw() {
             h("button", { id: "btn-copy", class: "mp-btn-outline", "data-focus": "copy", type: "button", onClick: async (e) => {
                     const btn = e.currentTarget;
                     try {
-                        await navigator.clipboard?.writeText(url);
+                        if (!navigator.clipboard?.writeText)
+                            throw new Error("Clipboard unavailable");
+                        await navigator.clipboard.writeText(url);
+                        btn.textContent = t("act.copied");
                     }
-                    catch { }
-                    btn.textContent = t("act.copied");
+                    catch {
+                        btn.textContent = t("act.copyError");
+                    }
                 } }, t("act.copy")),
-            h("a", { class: "mp-btn-jade", id: "btn-present", href: hrefTo("present.html") },
+            h("a", { class: "mp-btn-jade", id: "btn-present", href: url },
                 h(PresentIcon, null),
                 t("act.present")))), $("act-share"));
     if (focusKey)

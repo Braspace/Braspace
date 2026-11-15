@@ -29,9 +29,11 @@ test("K1 plan.js uses sealFor, t(\"nd\"), DEFAULT_RULES and location.href", () =
   assert.match(src, /location\.href/);
 });
 
-test("K2 present.js computes answer from metrics and has no teacher notes", () => {
+test("K2 present.js uses the question-specific quiz evaluator with no teacher notes", () => {
   const src = fs.readFileSync(path.join(root, "screens/present.tsx"), "utf8");
-  assert.match(src, /evaluateScenario/);
+  assert.match(src, /evaluateQuestion\(qIndex, metrics/);
+  assert.match(src, /gradeChoice\(chosen, answer\)/);
+  assert.doesNotMatch(src, /function evaluateScenario\(/);
   assert.match(src, /longestDarkH\.value/);
   assert.match(src, /longestBlackoutH\.value/);
   assert.doesNotMatch(src, /act\.notesBody/);

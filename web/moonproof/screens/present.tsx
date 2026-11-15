@@ -6,6 +6,8 @@ import { loadSites, windowMetrics, apiWindowMetrics, sealFor } from "../core/dat
 import { sealEl } from "../core/layers.js";
 import { register, t, fmtNum, pickLang, setLang } from "../core/i18n.js";
 import { getState, hrefTo, DEFAULT_RULES } from "../core/state.js";
+import { evaluateQuestion, gradeChoice, unavailableQuizMetric } from "./quiz-grading.js";
+import { classroomWindows, classroomWindowLabel } from "./class-scenarios.js";
 
 register({
   en: {
@@ -14,8 +16,8 @@ register({
     "present.qOf": "Question {n} of 4",
     "present.scenario": "Scenario {n}",
     "present.q1": "Where would you land?",
-    "present.q2": "Which site stays within the battery limit?",
-    "present.q3": "Which site keeps Earth radio contact?",
+    "present.q2": "Which site stays within the darkness limit?",
+    "present.q3": "Which site stays within the assumed maximum time without seeing Earth?",
     "present.q4": "Which scenario meets both mission rules?",
     "present.rules": "Battery limit: {night} h in darkness (assumed limit). Radio needs Earth at least every {blackout} h (assumed limit).",
     "present.timer": "Discuss in pairs",
@@ -24,7 +26,15 @@ register({
     "present.blackout": "Without seeing Earth",
     "present.reveal": "Reveal answer",
     "present.hide": "Hide answer",
-    "present.next": "Next question"
+    "present.next": "Next question",
+    "present.pick": "Choose", "present.none": "None of these", "present.choose": "Pick a scenario or None, then reveal the answer.",
+    "present.selected": "Your choice: {choice}. Reveal to check.", "present.correct": "Correct!", "present.incorrect": "Not this time.",
+    "present.answer": "Qualifying scenario(s): {choices}.", "present.noPossible": "None of these scenarios meets this question’s rule.",
+    "present.unknown": "There are not enough computed values to determine an answer. Missing data are not marked wrong.",
+    "present.unknownChoice": "This scenario has missing measurements, so your choice cannot be graded.",
+    "present.timerPaused": "Timer paused. Press to continue.",
+    "present.window": "UTC window: {start} · {hours} h",
+    "present.windowDefault": "Default window · {hours} h (start not specified)"
   },
   "pt-BR": {
     "present.badge": "Apresentando · Missão",
@@ -32,8 +42,8 @@ register({
     "present.qOf": "Pergunta {n} de 4",
     "present.scenario": "Cenário {n}",
     "present.q1": "Onde vocês pousariam?",
-    "present.q2": "Qual local fica dentro do limite da bateria?",
-    "present.q3": "Qual local mantém contato de rádio com a Terra?",
+    "present.q2": "Qual local fica dentro do limite de horas no escuro?",
+    "present.q3": "Qual local respeita o limite assumido de tempo sem ver a Terra?",
     "present.q4": "Qual cenário atende às duas regras da missão?",
     "present.rules": "A bateria aguenta {night} h no escuro (limite assumido). O rádio precisa ver a Terra pelo menos a cada {blackout} h (limite assumido).",
     "present.timer": "Discutam em dupla",
@@ -42,7 +52,15 @@ register({
     "present.blackout": "Sem ver a Terra",
     "present.reveal": "Revelar resposta",
     "present.hide": "Ocultar resposta",
-    "present.next": "Próxima pergunta"
+    "present.next": "Próxima pergunta",
+    "present.pick": "Escolher", "present.none": "Nenhum deles", "present.choose": "Escolha um cenário ou Nenhum deles. Depois, revele a resposta.",
+    "present.selected": "Sua escolha: {choice}. Revele para conferir.", "present.correct": "Você acertou!", "present.incorrect": "Não foi dessa vez.",
+    "present.answer": "Cenário(s) que atende(m): {choices}.", "present.noPossible": "Nenhum destes cenários atende à regra desta pergunta.",
+    "present.unknown": "Ainda não há dados suficientes para concluir. Dados ausentes não contam como erro.",
+    "present.unknownChoice": "Faltam medições para este cenário; sua escolha não pode ser avaliada.",
+    "present.timerPaused": "Cronômetro pausado. Pressione para continuar.",
+    "present.window": "Janela UTC: {start} · {hours} h",
+    "present.windowDefault": "Janela padrão · {hours} h (início não informado)"
   }
 });
 
@@ -54,8 +72,9 @@ holdReady();
 const doc = await loadSites();
 const LETTERS = ["A", "B", "C"];
 // Scenarios are real sites; the terrain marker shows the scenario letter instead of the site number.
-const scenarios = doc.sites.slice(0, 3).map((s, i) => ({ ...s, n: LETTERS[i] }));
 const st = getState();
+const chosenWindows = classroomWindows(doc.sites, location.hash, st);
+const scenarios = chosenWindows.map((w, i) => ({ ...w.site, n: LETTERS[i] }));
 const nightLimit = Number(st.night ?? DEFAULT_RULES.night);
 const blackoutLimit = Number(st.blackout ?? DEFAULT_RULES.blackout);
 
@@ -64,11 +83,12 @@ await mountTerrain(document.getElementById("terrain")!, {
   selected: st.site || scenarios[0]?.id
 });
 
-const metrics = await Promise.all(scenarios.map((s) => apiWindowMetrics(doc, s, st.start, st.hours || 336)));
+const metrics = await Promise.all(chosenWindows.map((w) => apiWindowMetrics(doc, w.site, w.start, w.hours || 336).catch(() => unavailableQuizMetric())));
 type Metrics = (typeof metrics)[number];
 
 let qIndex = 1;
 let revealed = false;
+let chosen: string | null = null;
 let secondsLeft = 120;
 let running = true;
 
@@ -99,18 +119,12 @@ function fmtClock(sec: number): string {
   return `${m}:${s}`;
 }
 
-function evaluateScenario(m: Metrics): boolean | null {
-  const n = m.longestDarkH.value;
-  const b = m.longestBlackoutH.value;
-  if (n == null || b == null) return null;
-  return n <= nightLimit && b <= blackoutLimit;
-}
-
 function draw() {
+  const answer = evaluateQuestion(qIndex, metrics, { night: nightLimit, blackout: blackoutLimit });
   $("present-badge").textContent = t("present.badge");
   const exitEl = $("present-exit") as HTMLAnchorElement;
   paint(<><IconX />{t("present.exit")}</>, exitEl);
-  exitEl.href = hrefTo("activity.html");
+  exitEl.href = hrefTo("activity.html") + location.hash;
 
   const progEl = $("present-progress");
   progEl.setAttribute("aria-label", t("present.qOf", { n: qIndex }));
@@ -125,24 +139,41 @@ function draw() {
 
   const timerEl = $("present-timer");
   paint(<><span class="mp-timer-label">{t("present.timer")}</span><span id="timer-val" class="mp-timer-val">{fmtClock(secondsLeft)}</span></>, timerEl);
-  timerEl.onclick = () => { running = !running; };
+  timerEl.setAttribute("aria-pressed", String(running));
+  timerEl.setAttribute("aria-label", running ? t("present.timer") : t("present.timerPaused"));
+  timerEl.onclick = () => { running = !running; draw(); };
 
   paint(<><IconInfo /><span>{t("present.privacy")}</span></>, $("present-privacy"));
 
   paint(<>{scenarios.map((s, idx) => {
     const m = metrics[idx];
-    const pass = evaluateScenario(m);
+    const pass = answer.verdicts[idx];
     const nVal = m.longestDarkH.value == null ? t("nd") : `${fmtNum(m.longestDarkH.value)} h`;
     const bVal = m.longestBlackoutH.value == null ? t("nd") : `${fmtNum(m.longestBlackoutH.value)} h`;
+    const win = classroomWindowLabel(chosenWindows[idx]);
     return (
-      <article class={"mp-glass mp-sc-card" + (revealed ? (pass === true ? " is-winner" : pass === false ? " is-fail" : "") : "")}>
-        <div class="mp-sc-head"><span class="mp-sc-letter">{s.n}</span><span class="mp-sc-title"><span class="mp-sc-name">{t("present.scenario", { n: s.n })}</span><span class="mp-sc-site">{s.name}</span></span><span class="mp-sc-seal"><Node node={sealEl(sealFor(m.longestDarkH.value == null ? "NOT_COMPUTED" : doc.status))} /></span></div>
+      <article class={"mp-glass mp-sc-card" + (chosen === String(s.n) ? " is-chosen" : "") + (revealed && pass === true ? " is-winner" : "") + (revealed && chosen === String(s.n) && pass === false ? " is-fail" : "")}>
+        <button type="button" class="mp-quiz-pick" aria-pressed={chosen === String(s.n)} onClick={() => { chosen = String(s.n); draw(); }}>{t("present.pick")} {s.n}</button>
+        <div class="mp-sc-head"><span class="mp-sc-letter">{s.n}</span><span class="mp-sc-title"><span class="mp-sc-name">{t("present.scenario", { n: s.n })}</span><span class="mp-sc-site">{s.name}</span><span class="mp-sc-window">{win.startUtc ? t("present.window", { start: win.startUtc, hours: win.hours }) : t("present.windowDefault", { hours: win.hours })}</span></span><span class="mp-sc-seal"><Node node={sealEl(sealFor(m.longestDarkH.value == null || m.longestBlackoutH.value == null ? "NOT_COMPUTED" : doc.status))} /></span></div>
         <div class="mp-sc-row"><IconNight /><span class="mp-sc-label">{t("present.night")}</span><strong class="mp-sc-val">{nVal}</strong></div>
         <div class="mp-sc-row"><IconEarth /><span class="mp-sc-label">{t("present.blackout")}</span><strong class="mp-sc-val">{bVal}</strong></div>
       </article>
     );
   })}</>, $("present-cards"));
 
+  const none = $("btn-none") as HTMLButtonElement;
+  none.textContent = t("present.none");
+  none.setAttribute("aria-pressed", String(chosen === "none"));
+  none.onclick = () => { chosen = "none"; draw(); };
+  const result = gradeChoice(chosen, answer);
+  const feedback = $("present-feedback");
+  feedback.dataset.status = revealed ? result : "unanswered";
+  feedback.textContent = revealed
+    ? answer.status === "unknown" ? t("present.unknown")
+      : result === "unknown" ? t("present.unknownChoice")
+      : (result === "correct" ? t("present.correct") + " " : result === "incorrect" ? t("present.incorrect") + " " : "") +
+        (answer.correctIds.includes("none") ? t("present.noPossible") : t("present.answer", { choices: answer.correctIds.join(", ") }))
+    : chosen ? t("present.selected", { choice: chosen === "none" ? t("present.none") : chosen }) : t("present.choose");
   const btnReveal = $("btn-reveal");
   btnReveal.textContent = revealed ? t("present.hide") : t("present.reveal");
   btnReveal.onclick = () => { revealed = !revealed; draw(); };
@@ -152,6 +183,7 @@ function draw() {
   btnNext.onclick = () => {
     qIndex = qIndex >= 4 ? 1 : qIndex + 1;
     revealed = false;
+    chosen = null;
     draw();
   };
 }
