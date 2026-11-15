@@ -4,7 +4,6 @@ import test, {after} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {createServer} from "../dev-server.mjs";
-import {parseConfigCommit} from "../moonproof/screens/evidence-model.js";
 
 const server = createServer();
 await new Promise(r => server.listen(0, "127.0.0.1", r));
@@ -18,7 +17,8 @@ test("config.js is a real same-origin file the smoke script can read; no stale c
   assert.equal(body, readFileSync(new URL("../config.js", import.meta.url), "utf8"));
   // scripts/smoke-publico.sh: sed -n 's/.*const API = "\([^"]*\)".*/\1/p'
   assert.equal(/const API = "([^"]*)"/.exec(body)?.[1], "https://braspace-moonproof.almeida-me.workers.dev");
-  assert.equal(parseConfigCommit(body), null, "a committed BRASPACE_COMMIT would go stale; deploy writes it");
+  // #336 moved the build id to /healthz build_commit (parseConfigCommit is gone); config.js must still not pin one.
+  assert.doesNotMatch(body, /BRASPACE_COMMIT\s*=\s*["'][0-9a-f]{7,40}["']/, "a committed BRASPACE_COMMIT would go stale; deploy writes it");
 });
 
 test("favicon.ico is a real icon (no 404 in the console of any page)", async () => {
