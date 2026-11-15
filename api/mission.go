@@ -115,7 +115,7 @@ func (m *missionAPI) health(w http.ResponseWriter, r *http.Request) {
 	}
 	store := map[string]any{"source": m.store.source, "status": "ok"}
 	if m.storePing != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), storePingTimeout)
+		ctx, cancel := context.WithTimeout(r.Context(), storePingTimeout)
 		start := time.Now()
 		err := m.storePing(ctx)
 		cancel()
