@@ -23,7 +23,7 @@ const px = v => parseFloat(v);
 
 test("columns: 220 menu | 524 card | free | 422 right, 20 px gap, from y=150", () => {
   assert.equal(decl(".mp-ev", "grid-template-columns")?.replace(/\s+/g, " "), "220px minmax(0,524px) minmax(0,1fr) minmax(0,422px)");
-  assert.equal(decl(".mp-ev", "column-gap"), "20px");
+  assert.equal(decl(".mp-ev", "column-gap"), "21px");
   assert.equal(decl(".mp-ev", "top"), "150px");
   assert.equal(decl(".mp-ev-main", "grid-column"), "2");
   assert.equal(decl(".mp-ev-right", "grid-column"), "4");
@@ -31,7 +31,7 @@ test("columns: 220 menu | 524 card | free | 422 right, 20 px gap, from y=150", (
 test("the card fills the column and scrolls inside (the scenario passport stays reachable, the page never grows)", () => {
   assert.equal(decl(".mp-ev", "align-items"), "stretch");
   assert.equal(decl(".mp-ev-main", "overflow"), "auto");
-  assert.equal(decl(".mp-ev-main", "padding"), "26px");
+  assert.equal(decl(".mp-ev-main", "padding"), "21px");
 });
 test("right column: sources rows 54 px, trust rows 45 px, trust meter is four blocks across the card", () => {
   assert.equal(decl("#sources .mp-src", "height"), "54px");

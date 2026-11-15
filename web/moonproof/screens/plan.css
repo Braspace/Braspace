@@ -5,7 +5,7 @@
   display: grid;
   grid-template-columns: 382px 1fr 368px;
   grid-template-rows: 260px 1fr;
-  gap: 12px 6px;
+  gap: 13px 5px;
   pointer-events: none;
   z-index: 15;
 }
@@ -20,27 +20,27 @@
   grid-row: 1 / span 2;
   align-self: start;
   max-height: 100%;
-  padding: 20px;
+  padding: 21px;
   pointer-events: auto;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 .mp-plan-export {
   grid-column: 3;
   grid-row: 1;
   align-self: start;
-  padding: 18px;
+  padding: 21px;
   pointer-events: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .mp-plan-table {
   grid-column: 2 / span 2;
   grid-row: 2;
-  padding: 8px 8px 4px;
+  padding: 8px 8px 5px;
   pointer-events: auto;
   overflow: hidden;
   display: flex;
@@ -56,9 +56,9 @@
   gap: 8px;
   min-height: 22px;
 }
-.mp-plan-rules .mp-plan-head { margin-bottom: 6px; }
-.mp-plan-rules > .mp-note { margin-top: 6px; }
-.mp-plan-table .mp-plan-head { padding: 10px 12px 4px; }
+.mp-plan-rules .mp-plan-head { margin-bottom: 5px; }
+.mp-plan-rules > .mp-note { margin-top: 5px; }
+.mp-plan-table .mp-plan-head { padding: 8px 13px 5px; }
 .mp-plan-head h2 {
   margin: 0;
   font-size: 16px;
@@ -84,7 +84,7 @@
   box-sizing: border-box;
   width: 70px;
   height: 40px;
-  padding: 0 4px;
+  padding: 0 5px;
   text-align: center;
   border-radius: 999px;
   border: 1px solid #5E6C7D;
@@ -112,7 +112,7 @@
 .mp-rule-select select {
   box-sizing: border-box;
   height: 27px;
-  padding: 0 21px 0 4px;
+  padding: 0 21px 0 5px;
   border: 0;
   border-radius: 6px;
   background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%23F2F4F5' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 4px center;
@@ -129,19 +129,19 @@
   color: var(--jade-ink, var(--jade-text));
   border: none;
   border-radius: var(--r-pill);
-  padding: 0 22px;
+  padding: 0 21px;
   height: 48px;
   flex: none;
   font: 700 15px/1 var(--font);
   cursor: pointer;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 .mp-btn-white {
   background: var(--pill-white, var(--pill));
   color: var(--pill-ink, var(--pill-text));
   border: none;
   border-radius: var(--r-pill);
-  padding: 0 18px 0 16px;
+  padding: 0 21px 0 13px;
   height: 38px;
   font: 600 14px/1 var(--font);
   cursor: pointer;
@@ -149,12 +149,12 @@
 .mp-export-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
 }
 .mp-url-box {
   background: rgba(255,255,255,.07);
   border-radius: 18px;
-  padding: 10px 12px;
+  padding: 8px 13px;
   font-family: var(--font-mono, var(--mono));
   font-size: 11.5px;
   line-height: 17px;
@@ -174,14 +174,14 @@
   font-variant-numeric: tabular-nums;
 }
 .mp-metrics-table th, .mp-metrics-table td {
-  padding: 9px 12px;
+  padding: 8px 13px;
   text-align: right;
   white-space: nowrap;
 }
 .mp-metrics-table tbody tr { border-top: 1px solid rgba(255,255,255,.06); }
 .mp-metrics-table th:first-child, .mp-metrics-table td:first-child { text-align: left; }
 .mp-metrics-table th {
-  padding-top: 10px; padding-bottom: 10px;
+  padding-top: 8px; padding-bottom: 8px;
   color: var(--text-dim, #8E99A6);
   font-weight: 700;
   font-size: 12px;
@@ -203,7 +203,7 @@
 @media (max-width: 900px) {
   .mp-plan-layout {
     position: static;
-    margin: 76px 12px 84px 12px;
+    margin: 76px 13px 84px 13px;
     grid-template-columns: 1fr;
     grid-template-rows: auto;
   }
@@ -216,5 +216,5 @@
 }
 
 /* Rules that do not change the numbers carry a small "no effect" tag (the reason is in its title and read by screen readers). */
-.mp-rule-info { font-style: normal; font-size: 11px; font-weight: 600; padding: 1px 7px; margin-left: 4px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); color: var(--text-dim, #8E99A6); white-space: nowrap; cursor: help; }
-.mp-plan-status { padding: 2px 12px 6px; }
+.mp-rule-info { font-style: normal; font-size: 11px; font-weight: 600; padding: 1px 8px; margin-left: 5px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); color: var(--text-dim, #8E99A6); white-space: nowrap; cursor: help; }
+.mp-plan-status { padding: 2px 13px 5px; }

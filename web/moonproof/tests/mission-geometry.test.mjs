@@ -37,7 +37,7 @@ test("compass: eight directions and the EARTH/TERRA label exist in both language
   setLang("pt-BR"); assert.equal(t("mc.compass"), "TERRA"); assert.equal(t("mc.dir.2"), "L"); setLang("en"); assert.equal(t("mc.compass"), "EARTH"); assert.equal(t("mc.dir.2"), "E");
 });
 test("geometry 1440: key boxes of the Main board are set in CSS", async () => {
-  const all = await read(CSS_FILE), at = all.lastIndexOf("@media (min-width:1301px){\n  .mc-left{gap:12px}");
+  const all = await read(CSS_FILE), at = all.lastIndexOf("@media (min-width:1301px){\n  .mc-left{gap:13px}");
   const css = at < 0 ? all : all.slice(at, all.indexOf("\n}\n", at)) + "\n" + all;  // the 1301+ block wins over the generic rules
   assert.equal(decl(css, ".mc-right", "width"), "342px", "numbers/now column");
   assert.equal(decl(css, ".mc-circles .mp-stat", "width"), "142px", "stat halo");

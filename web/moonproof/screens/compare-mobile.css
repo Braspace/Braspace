@@ -13,7 +13,7 @@
   .mp-scn-dock,#dock{display:none}
   .mp-sheet-handle,#right>.mp-sheet-grip{display:none!important}
   /* the scrolling column */
-  #sheet{display:flex;flex-direction:column;gap:10px;position:fixed;z-index:10;left:12px;right:12px;top:128px;bottom:90px;height:auto;min-height:0;max-height:none;overflow-y:auto;overflow-x:hidden;padding:0;background:none;border:0;border-radius:0;-webkit-backdrop-filter:none;backdrop-filter:none;transition:none;overscroll-behavior:contain}
+  #sheet{display:flex;flex-direction:column;gap:8px;position:fixed;z-index:10;left:12px;right:12px;top:128px;bottom:90px;height:auto;min-height:0;max-height:none;overflow-y:auto;overflow-x:hidden;padding:0;background:none;border:0;border-radius:0;-webkit-backdrop-filter:none;backdrop-filter:none;transition:none;overscroll-behavior:contain}
   #left,#right{display:contents}
   #left>*,#right>*{flex:none;min-width:0}
   #verdict{order:1;width:100%;padding:18px}
@@ -25,10 +25,10 @@
   #verdict .mp-layer-answer{font-size:19px;font-weight:800;line-height:1.26}
   #verdict .mp-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
   #verdict .mp-actions .mp-pill{min-height:48px;font-weight:700;font-size:15px}
-  #verdict .mp-chip{min-height:44px;min-width:44px;padding:0 14px}
+  #verdict .mp-chip{min-height:44px;min-width:44px;padding:0 13px}
   #verdict .mp-chips{margin-top:var(--s2)}
   /* A / B / C pills: one row, 44 px, selected in Jade, letter + site (the status badge stays for screen readers) */
-  .mp-scn{min-height:44px;padding:0 10px 0 6px;gap:6px;border-radius:var(--r-pill);min-width:0}
+  .mp-scn{min-height:44px;padding:0 8px 0 5px;gap:5px;border-radius:var(--r-pill);min-width:0}
   .mp-scn-letter{width:32px;height:32px;font-size:14px}
   .mp-scn-name{min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .mp-scn-name small{display:none}
@@ -36,7 +36,7 @@
   /* differences table: label column + three narrow value columns */
   .mp-diff{font-size:13px;table-layout:fixed}
   .mp-diff th[scope=row]{width:36%;font-size:13px}
-  .mp-diff th,.mp-diff td{padding:6px 2px;overflow-wrap:anywhere}
+  .mp-diff th,.mp-diff td{padding:5px 2px;overflow-wrap:anywhere}
   .mp-diff .grp th{font-size:11.5px;white-space:normal}
   .mp-diff .grp small{display:block;margin:2px 0 0}
   #right .mp-foot{flex-wrap:wrap;justify-content:space-between}
