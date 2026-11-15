@@ -1,4 +1,5 @@
 // MoonProof shell: top navigation, context bar, "Open in", kits Class/Plan, language, mobile bottom nav.
+import { enhancePanels } from "./collapse.js";
 import { t, setLang, pickLang, apply, lang } from "./i18n.js";
 import { getState, setState, hrefTo, LAYERS } from "./state.js";
 import { sealEl } from "./layers.js";
@@ -142,6 +143,7 @@ export function mountShell({ screen, context = null, onLang, kit = null } = { sc
     render();
     apply();
     wireSheet();
+    enhancePanels(); // fold buttons for #left/#right/#dock/#player (desktop), see core/collapse.ts
     return { setContext(c) { cur = c; renderCtx(); }, render };
 }
 /** "?" — legend of the seals (each seal's meaning comes from i18n, nothing invented). */
