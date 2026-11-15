@@ -73,3 +73,9 @@ html.moon-explore-on { overflow: hidden; }
 /* Overlapping labels (sites < 1° apart): the lower-priority label hides; hover/focus shows it again. */
 .moon-backdrop.is-explore .moon-pin.is-quiet span{display:none}
 .moon-backdrop.is-explore .moon-pin.is-quiet:hover span,.moon-backdrop.is-explore .moon-pin.is-quiet:focus-visible span{display:inline-block;position:relative;z-index:2}
+.moon-btn.is-loading{cursor:progress;opacity:.85}
+.moon-btn.is-loading::after{content:"";display:inline-block;width:10px;height:10px;margin-left:8px;border-radius:50%;border:2px solid #2EC4A0;border-right-color:transparent;vertical-align:-1px;animation:moon-spin .8s linear infinite}
+@keyframes moon-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.moon-btn.is-loading::after{animation:none}}
+/* Below 1024 px the lazy button is icon-only: keep the icon, the spinner shows the wait. */
+@media (max-width:1023px){.moon-ui:not(.is-explore) .moon-open.is-loading::after{position:absolute;inset:auto 2px 2px auto;margin:0}}
