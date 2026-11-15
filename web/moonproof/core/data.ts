@@ -68,9 +68,14 @@ export function sourced<T = unknown>(value: T | null | undefined, { unit = "", s
 let sitesP: Promise<SitesDoc> | null = null;
 /** The five real sites of web/data/sites.json, numbered 1..n in file order. */
 export function loadSites(): Promise<SitesDoc> {
-  return sitesP ||= fetch(DATA_BASE + "sites.json").then(r => { if (!r.ok) throw new Error("sites.json " + r.status); return r.json(); })
-    .then(doc => ({ status: doc.science_status, note: doc.note, window: doc.series_window, generated: doc.generated_utc, features: doc.features || [],
-      sites: (doc.sites as Site[]).map((s, i) => ({ ...s, n: i + 1 })) }));
+  if (!sitesP) {
+    const pending = fetch(DATA_BASE + "sites.json").then(r => { if (!r.ok) throw new Error("sites.json " + r.status); return r.json(); })
+      .then(doc => ({ status: doc.science_status, note: doc.note, window: doc.series_window, generated: doc.generated_utc, features: doc.features || [],
+        sites: (doc.sites as Site[]).map((s, i) => ({ ...s, n: i + 1 })) }))
+      .catch(error => { if (sitesP === pending) sitesP = null; throw error; });
+    sitesP = pending;
+  }
+  return sitesP;
 }
 
 /** Long-term metric of a site as a sourced value (from sites.json metrics). */
