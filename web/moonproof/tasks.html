@@ -1,0 +1,25 @@
+<!doctype html>
+<html data-moon-preview="decorative" lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>moonproof · what do you want to do today?</title>
+<meta name="description" content="MoonProof turns lunar polar illumination, Earth visibility and battery margin into plain-language answers for choosing a landing site. Pick a task to start.">
+<link rel="stylesheet" href="core/tokens.css"><link rel="stylesheet" href="core/components.css"><link rel="stylesheet" href="screens/entry.css">
+<script type="module" src="screens/entry.js"></script>
+<script type="module" src="../moon-hd/backdrop.js" data-moon-backdrop="pole"></script>
+<link rel="stylesheet" href="../moon-hd/preview.css">
+</head>
+<body class="mp-entry">
+<div id="terrain" aria-hidden="true"></div>
+<header class="mp-entry-top"><a class="mp-brand" href="./"><svg class="mp-logo" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13.5" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M16 2.5a13.5 13.5 0 0 1 0 27a9 13.5 0 0 0 0-27z" fill="#2EC4A0"/></svg><span data-i18n="brand">moonproof</span></a>
+<div class="mp-entry-actions"><button type="button" class="mp-pill" id="lang" data-i18n="nav.lang">Português</button><a id="skip" class="mp-entry-skip" href="mission.html" data-i18n="entry.skip">Skip</a></div></header>
+<main>
+<p class="mp-entry-eyebrow" data-i18n="entry.eyebrow"></p>
+<h1 data-i18n="entry.title"></h1>
+<p class="mp-entry-lead" data-i18n="entry.lead"></p>
+<div class="mp-entry-cards" id="cards" role="list"></div>
+<p class="mp-entry-hint" id="hint"></p>
+<p class="mp-label" data-i18n="nav.moon3d.credit"></p>
+</main>
+</body>
+</html>
