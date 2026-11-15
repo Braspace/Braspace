@@ -6,6 +6,19 @@ on:
     branches: ["main", "team/**"]
     tags: ["v*"]
   pull_request:
+    # Docs-only PRs do not take the single self-hosted runner (one full run is ~6 min). Later patterns win:
+    # everything, minus docs/** and the root Markdown files (README*, CHANGELOG…), plus the docs that tests read
+    # (grep of web/api/science/tests for .md) and docs/API.md (docs/API.md is generated from
+    # api/openapi.json and verified by `gen-api-md.mjs --check`). Pushes to main always run the full CI.
+    paths:
+      - "**"
+      - "!docs/**"
+      - "!*.md"
+      - "docs/API.md"
+      - "docs/MOON_HD.md"
+      - "docs/ASSET_LICENSE_MATRIX.md"
+      - "docs/SCIENTIFIC_ACCEPTANCE.md"
+      - "docs/SOLAR_ANGLE_VS_POWER.md"
   workflow_dispatch:
 
 permissions:
