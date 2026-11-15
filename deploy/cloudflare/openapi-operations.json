@@ -1,0 +1,93 @@
+{
+  "ref": "20e6ef8825c3dc963ca439927bf6fd2acfe1dfe2",
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/api/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/sites"
+    },
+    {
+      "method": "GET",
+      "path": "/api/sites/{id}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/compare"
+    },
+    {
+      "method": "POST",
+      "path": "/api/scenarios/delay"
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboard/site-evaluate"
+    },
+    {
+      "method": "GET",
+      "path": "/api/layers"
+    },
+    {
+      "method": "GET",
+      "path": "/api/layers/{id}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/layers/{id}/asset"
+    },
+    {
+      "method": "GET",
+      "path": "/api/sites/{id}/media"
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboard/site-report"
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboard/report"
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboard/navigation"
+    },
+    {
+      "method": "POST",
+      "path": "/api/onboard/evaluate"
+    },
+    {
+      "method": "GET",
+      "path": "/api/openapi.json"
+    },
+    {
+      "method": "GET",
+      "path": "/healthz"
+    },
+    {
+      "method": "GET",
+      "path": "/readyz"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/capabilities"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/visibility"
+    },
+    {
+      "method": "GET",
+      "path": "/api/sites/{id}/sky"
+    },
+    {
+      "method": "GET",
+      "path": "/api/vector/status"
+    },
+    {
+      "method": "POST",
+      "path": "/api/vector/search"
+    }
+  ]
+}

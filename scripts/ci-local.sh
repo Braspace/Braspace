@@ -107,7 +107,7 @@ browser_qa() {
   kill $ap 2>/dev/null; return $rc
 }
 
-step "cloudflare worker same-origin API proxy contract (node --test)" node --test deploy/cloudflare/moonproof-worker.test.mjs || finish
+step "cloudflare worker same-origin API proxy contract (node --test)" node --test deploy/cloudflare/*.test.mjs || finish
 step "docker build --target test (go vet+race, rust, web, science)" build_tests || finish
 step "build release image (needs test)" build_rel || finish
 step "build go test image" build_go_img || finish
