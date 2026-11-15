@@ -43,6 +43,15 @@ jobs:
           assert any(x['data_status']=='AVAILABLE' for x in compare['results']), 'Synthetic training site unavailable'
           print('PASS anonymous public frontend/API/CORS/synthetic-science-honesty')
           PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify actual public browser API requests
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock playwright@1.58.2
+          npx playwright install --with-deps chromium
+          node scripts/public-api-browser-smoke.mjs | tee /tmp/braspace-public-smoke/browser.txt
       - name: Archive public smoke evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4

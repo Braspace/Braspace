@@ -10,7 +10,7 @@ import { contextBar, LETTERS, isoHour, download, setQuery } from "./common.js";
 const short = n => n.replace(/\s*\(.*\)$/, "");
 
 export async function render(outlet, ctx) {
-  const { sc, entries, rules, result } = await loadComparison(ctx);
+  const { sc, entries, rules, result, live } = await loadComparison(ctx);
   const { rows } = result;
 
   const head = h("div", { class: "page-head" },
@@ -46,7 +46,7 @@ export async function render(outlet, ctx) {
         rows.map(r => h("td", { class: "num", text: r.computed ? fmtMetric(r.w[m.key], m.unit) : "N/D" })),
         h("td", { text: m.rule ? m.text(rules) : "—" }),
         h("td", { class: "num", text: m.rule ? rows.map(r => { const c = r.checks.find(x => x.key === m.key); return c && Number.isFinite(c.margin) ? (c.margin >= 0 ? "+" : "") + num(c.margin, 0) : "N/D"; }).join(" / ") : "—" }),
-        h("td", {}, badge("est"), " LOLA + SPICE"))),
+        h("td", {}, badge("est"), live ? " Go API · LOLA + SPICE" : " série estática · LOLA + SPICE"))),
       h("tr", {}, h("th", { scope: "row", text: "Folga da bateria" }), h("td", { text: "Wh" }), rows.map(() => h("td", { text: "N/D" })), h("td", { text: "—" }), h("td", { text: "N/D" }), h("td", {}, badge("nd"), " não calculado")),
       h("tr", {}, h("th", { scope: "row", text: "Altura do relevo" }), h("td", { text: "m" }), rows.map(r => h("td", { class: "num", text: num(r.site.site_height_m, 0) })), h("td", { text: "—" }), h("td", { text: "—" }), h("td", {}, badge("est"), " LOLA LDEM_80S_80M"))));
 
@@ -60,14 +60,15 @@ export async function render(outlet, ctx) {
       letter: LETTERS[i], id: r.id, name: r.name, lat: r.site.lat, lon: r.site.lon, source: r.site.source,
       metrics: r.computed ? Object.fromEntries(METRICS.map(m => [m.key, r.w[m.key]])) : null, battery_margin: "N/D",
       passes_all_rules: r.computed ? r.passAll : null,
-      series_sha256: r.series ? r.series.meta.series.sha256 : null, science_status: r.series ? r.series.meta.science_status : null,
-      provenance: r.series ? r.series.meta.provenance : null,
+      metrics_origin: live ? "POST /api/compare" : "static series", request_sha256: r.w?.request_sha256 || null,
+      series_sha256: live ? r.w.series_sha256 : r.series ? r.series.meta.series.sha256 : null, science_status: live ? r.w.science_status : r.series ? r.series.meta.science_status : null,
+      provenance: live ? r.w.provenance : r.series ? r.series.meta.provenance : null,
     })),
     disclaimer: "Preliminary, not NASA-reviewed. No flight recommendation.",
   });
   const exp = h("section", { class: "solid card" }, h("h2", { class: "h-card", text: "Exportar e reproduzir" }),
     h("div", { class: "row wrap" },
-      h("button", { type: "button", class: "btnG", text: "CSV horário", onclick: () => {
+      h("button", { type: "button", class: "btnG", text: "CSV horário (série estática)", onclick: () => {
         const lines = ["site,utc,sun_az_deg,sun_el_deg,sun_margin_deg,earth_az_deg,earth_el_deg,earth_margin_deg"];
         for (const r of rows) if (r.series) for (const row of hourlyRows(r.series, sc.t0, sc.hours)) lines.push(r.id + "," + row.map(x => (typeof x === "number" ? x.toFixed(3) : x)).join(","));
         download("moonproof_" + isoHour(sc.t0).slice(0, 10) + "_" + sc.days + "d.csv", lines.join("\n"), "text/csv");
@@ -80,7 +81,7 @@ export async function render(outlet, ctx) {
       try { await navigator.clipboard.writeText(location.href); e.target.textContent = "Link copiado"; } catch { e.target.textContent = "Copie o link acima"; }
     } }));
 
-  outlet.append(head, sitePickers(ctx, sc, entries), form,
+  outlet.append(head, h("p", {class:"t3 small",role:"status",text: live ? "API Go ao vivo · métricas preliminares" : "API indisponível para esta janela · métricas da série estática versionada"}), sitePickers(ctx, sc, entries), form,
     h("section", { class: "solid card tablewrap" }, h("h2", { class: "h-card", text: "Todas as métricas" }), table,
       h("p", { class: "t3 small", text: "Margem = folga até a regra (positivo atende). Valores da série horária LOLA + SPICE, prévios e não revisados pela NASA." })),
     exp,

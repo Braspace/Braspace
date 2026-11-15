@@ -2,7 +2,7 @@
 import { mountShell } from "../core/shell.js";
 import { holdReady, markReady } from "../core/ready.js";
 import { mountTerrain } from "../core/terrain.js";
-import { loadSites, loadSeries, loadRegion, api, apiBase, sealFor, DATA_BASE } from "../core/data.js";
+import { loadSites, loadSeries, loadRegion, api, sealFor, DATA_BASE } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState } from "../core/state.js";
@@ -23,7 +23,7 @@ if (!doc.sites.some(s => s.id === getState().site)) setState({ site: doc.sites[0
 const [ready, health, caps, layers, apiSites, vector] = await Promise.all([api("/readyz", { timeoutMs: 3000 }), api("/api/health", { timeoutMs: 3000 }), api("/v1/capabilities", { timeoutMs: 3000 }), api("/api/layers", { timeoutMs: 3000 }), api("/api/sites", { timeoutMs: 3000 }), api("/api/vector/status", { timeoutMs: 3000 })]);
 const online = ready.ok;
 let configCommit = null;
-try { const r = await fetch(apiBase() + "/config.js", { cache: "no-store" }); if (r.ok) configCommit = parseConfigCommit(await r.text()); } catch { /* no config.js here */ }
+try { const r = await fetch(new URL("../../config.js", import.meta.url), { cache: "no-store" }); if (r.ok) configCommit = parseConfigCommit(await r.text()); } catch { /* no config.js here */ }
 const version = pickVersion({ configCommit, health: health.ok ? health.data : null });
 const region = await fetch(DATA_BASE + "region/south_pole_400m.json").then(r => r.ok ? r.json() : null).catch(() => null);
 await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: id => setState({ site: id }) });

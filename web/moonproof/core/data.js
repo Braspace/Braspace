@@ -1,8 +1,10 @@
 // MoonProof data layer: every value travels with its origin and state.
 // Static NASA-derived products come from web/data/ (loaded with web/lab/ modules, not copied);
-// the API (window.BRASPACE_API_BASE || "") is optional and its absence is shown, never hidden.
+// the API uses the shared deployment-aware URL resolver; absence is shown, never hidden.
 import { SiteSeries, HOUR_MS } from "../../lab/data.js";
 import { TerrainGrid } from "../../lab/terrain.js";
+import { apiURL } from "../../api-base.js";
+export { apiBase } from "../../api-base.js";
 
 export const DATA_BASE = new URL("../../data/", import.meta.url).href;
 export const SEALS = ["VAL", "PRE", "EST", "SIM", "N/D", "FALHA"];
@@ -91,8 +93,6 @@ export function dailySun(series, t0, hours) {
 let gridP = null;
 export function loadRegion() { return gridP ||= TerrainGrid.load(DATA_BASE + "region/south_pole_400m"); }
 
-/** API base; "" = same origin. */
-export function apiBase() { return (globalThis.window && window.BRASPACE_API_BASE) || ""; }
 /**
  * Call the API. Resolves {ok:true, data, status} or {ok:false, offline:true, error}. Never throws.
  * status is the payload's own science state when present (science_status / status / state).
@@ -100,7 +100,7 @@ export function apiBase() { return (globalThis.window && window.BRASPACE_API_BAS
 export async function api(path, { method = "GET", body, timeoutMs = 8000, as = "json" } = {}) {
   const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), timeoutMs);
   try {
-    const r = await fetch(apiBase() + path, { method, signal: ctl.signal,
+    const r = await fetch(apiURL(path), { method, signal: ctl.signal,
       headers: body ? { "content-type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined });
     if (!r.ok) return { ok: false, offline: r.status >= 500, error: "HTTP " + r.status };
     if (as === "text") return { ok: true, data: await r.text(), status: null };

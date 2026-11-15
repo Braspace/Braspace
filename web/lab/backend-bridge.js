@@ -1,6 +1,7 @@
 // Typed same-origin bridge for the optional Go/Rust/PostgreSQL API.
 // Geometry from NASA-derived static assets is NEVER silently replaced by
 // synthetic API fixtures; no client-side scientific status promotion.
+import {apiURL} from "../api-base.js";
 const sitePattern=/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 const datePattern=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 function validUTC(utc){
@@ -8,7 +9,7 @@ function validUTC(utc){
  return utc;
 }
 async function json(path,options={},fetcher=fetch){
- const response=await fetcher(path,{redirect:"error",signal:AbortSignal.timeout(12000),...options});
+ const response=await fetcher(apiURL(path),{redirect:"error",signal:AbortSignal.timeout(12000),...options});
  const body=await response.json().catch(()=>null);
  if(!response.ok){
   const err=new Error(body?.code||"HTTP_"+response.status);

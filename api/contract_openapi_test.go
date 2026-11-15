@@ -62,8 +62,8 @@ func contractCases(t *testing.T) map[string]contractCase {
 		"GET /healthz":                    {contractCall{"GET", "/healthz", "", []int{200}}, contractCall{"POST", "/healthz", "{}", []int{404, 405}}},
 		"GET /readyz":                     {contractCall{"GET", "/readyz", "", []int{200, 503}}, contractCall{"POST", "/readyz", "{}", []int{404, 405}}},
 		"GET /v1/capabilities":            {contractCall{"GET", "/v1/capabilities", "", []int{200}}, contractCall{"POST", "/v1/capabilities", "{}", []int{404, 405}}},
-		"POST /v1/visibility":             {contractCall{"POST", "/v1/visibility", brVisibilityBody, []int{200, 502}}, postBad("/v1/visibility")},
-		"GET /api/sites/{id}/sky":         {contractCall{"GET", "/api/sites/synthetic-demo-a/sky?utc=2026-12-01T00:00:00Z", "", []int{200}}, contractCall{"GET", "/api/sites/atlantis/sky", "", []int{404}}},
+		"POST /v1/visibility":             {contractCall{"POST", "/v1/visibility", brVisibilityBody, []int{200}}, postBad("/v1/visibility")},
+		"GET /api/sites/{id}/sky":         {contractCall{"GET", "/api/sites/synthetic-demo-a/sky?start=2026-12-01T00:00:00Z&hours=1", "", []int{200}}, contractCall{"GET", "/api/sites/atlantis/sky", "", []int{404}}},
 		"GET /api/vector/status":          {contractCall{"GET", "/api/vector/status", "", []int{200}}, contractCall{"POST", "/api/vector/status", "{}", []int{404, 405}}},
 		"POST /api/vector/search":         {contractCall{"POST", "/api/vector/search", `{"model":"x","vector":[1],"limit":1}`, []int{200, 400, 422, 503}}, contractCall{"POST", "/api/vector/search", junk, []int{400, 422, 503}}},
 	}
@@ -180,10 +180,6 @@ func TestOpenAPIContractGoodAndBadCalls(t *testing.T) {
 				t.Errorf("%s %s: invalid JSON: %v", key, label, err)
 				continue
 			}
-			if knownSchemaGap[key+" "+itoa(code)] != "" {
-				t.Logf("KNOWN GAP (not asserted): %s %d: %s", key, code, knownSchemaGap[key+" "+itoa(code)])
-				continue
-			}
 			if schema := responseSchema(t, raw, path, method, code); schema != nil {
 				for _, e := range validateSchema(raw, schema, v, key+" "+label) {
 					t.Error(e)
@@ -191,12 +187,6 @@ func TestOpenAPIContractGoodAndBadCalls(t *testing.T) {
 			}
 		}
 	}
-}
-
-// knownSchemaGap lists confirmed deviations between openapi.json and the
-// server, each with its issue. Remove the entry when the issue is fixed.
-var knownSchemaGap = map[string]string{
-	"POST /v1/visibility 400": "legacy handler answers {error} without the documented required  (issue #186)",
 }
 
 func itoa(n int) string {

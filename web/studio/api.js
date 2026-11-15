@@ -1,4 +1,5 @@
-// Source-gated, same-origin Go API client. No fixtures, cross-origin calls, or synthetic fallback.
+// Source-gated Go API client. No fixtures or silent synthetic fallback.
+import {apiURL} from "../api-base.js";
 const idPattern=/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 export function safeID(id){if(typeof id!=="string"||!idPattern.test(id))throw new TypeError("INVALID_SITE_ID");return id;}
 export function toUTC(local){
@@ -21,7 +22,7 @@ export function recoverRequest(id,local,hours,dark,comm){
 }
 export async function json(path,options={},fetcher=fetch){
  if(!/^\/api\/[A-Za-z0-9/?=&%_.-]+$/.test(path)||path.includes(".."))throw new TypeError("UNSAFE_API_PATH");
- const response=await fetcher(path,{redirect:"error",signal:AbortSignal.timeout(12000),...options});
+ const response=await fetcher(apiURL(path),{redirect:"error",signal:AbortSignal.timeout(12000),...options});
  const body=await response.json().catch(()=>null);
  if(!response.ok){const e=new Error(body?.code||"HTTP_"+response.status);e.code=body?.code||"HTTP_ERROR";throw e;}
  if(!body||Array.isArray(body)||typeof body!=="object")throw new TypeError("INVALID_API_RESPONSE");
