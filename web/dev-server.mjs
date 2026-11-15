@@ -13,6 +13,7 @@ const staticFiles=new Map([
   ["/index.html",{name:"index.html",type:"text/html; charset=utf-8"}],
   ["/styles.css",{name:"styles.css",type:"text/css; charset=utf-8"}],
   ["/api-base.js",{name:"api-base.js",type:"text/javascript; charset=utf-8"}],
+  ["/vector-embed.js",{name:"vector-embed.js",type:"text/javascript; charset=utf-8"}],
   ["/app.js",{name:"app.js",type:"text/javascript; charset=utf-8"}],
   ["/moon3d.js",{name:"moon3d.js",type:"text/javascript; charset=utf-8"}],
   ["/classic.html",{name:"classic.html",type:"text/html; charset=utf-8"}],
