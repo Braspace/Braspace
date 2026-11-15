@@ -6,7 +6,8 @@
 // or    import { mountMoonBackdrop } from "…/moon-hd/backdrop.js"; mountMoonBackdrop({ view: "globe" });
 //
 // three.js is not imported here: it arrives with scene.js, after the page content, and only when WebGL 2 exists.
-// If anything fails (no WebGL, lost context, missing asset) the canvas is removed and the page keeps its own background.
+// If anything fails (no WebGL, software-only WebGL, lost context, missing asset) the canvas is removed and the
+// page keeps its own background. If the GPU turns out too slow, the animation stops and one still frame stays.
 const BASE = new URL("../data/moonhd/", import.meta.url).href;
 
 export const MAX_PIXEL_RATIO = 1.5;
@@ -26,12 +27,32 @@ export function pickAssets({ width, maxTextureSize }) {
   };
 }
 
-/** A WebGL 2 context on a new canvas, or null. Never throws. */
+/**
+ * Software rasterisers (no GPU: CI browsers, some VMs and remote desktops). Measured with SwiftShader at
+ * 1440 x 900: one frame of this backdrop takes about 500 ms and keeps the page's main thread from running
+ * (20 animation frames took 10 to 14 s, against 0.3 s without the backdrop).
+ */
+export const isSoftwareRenderer = name => /swiftshader|llvmpipe|softpipe|software|basic render/i.test(String(name || ""));
+
+/** Frames slower than this, this many times in a row, end the animation and leave the last frame as a still. */
+export const SLOW_FRAME_MS = 120, SLOW_FRAMES_TO_STOP = 4;
+export const slowStreak = (streak, elapsedMs) => (elapsedMs > SLOW_FRAME_MS ? streak + 1 : 0);
+
+/** A hardware WebGL 2 context on a new canvas, or null. Never throws. */
 export function probeWebGL(makeCanvas) {
   try {
     const canvas = makeCanvas();
-    const gl = canvas?.getContext?.("webgl2", { antialias: true, alpha: false, powerPreference: "default" });
-    return gl ? { canvas, gl } : null;
+    // failIfMajorPerformanceCaveat: the browser refuses the context when it would be rendered in software.
+    const gl = canvas?.getContext?.("webgl2", { antialias: true, alpha: false, powerPreference: "default", failIfMajorPerformanceCaveat: true });
+    if (!gl) return null;
+    // Belt and braces: some builds hand out a software context anyway, so read the renderer's name too.
+    const info = gl.getExtension?.("WEBGL_debug_renderer_info");
+    const name = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter?.(gl.RENDERER);
+    if (isSoftwareRenderer(name)) {
+      gl.getExtension?.("WEBGL_lose_context")?.loseContext();
+      return null;
+    }
+    return { canvas, gl };
   } catch { return null; }
 }
 
@@ -123,7 +144,7 @@ export async function mountMoonBackdrop(options) {
     let angle = Math.atan2(-moon.lightDir.z, moon.lightDir.x) + 0.6;
 
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-    let onScreen = true, last = 0;
+    let onScreen = true, last = 0, streak = 0, still = false;
     const draw = () => {
       camera.position.set(...cameraPosition(view, angle));
       camera.lookAt(0, 0, 0);
@@ -137,11 +158,15 @@ export async function mountMoonBackdrop(options) {
       if (dead || !shouldAnimate({ hidden: document.hidden, onScreen, reducedMotion: reduced.matches })) return;
       raf = requestAnimationFrame(frame);
       if (now - last < FRAME_MS - 2) return; // 30 fps target
+      // A GPU that cannot keep up (weak, or software that slipped past the probe) must not hold the page back:
+      // stop animating and keep what is drawn as a still background.
+      streak = slowStreak(streak, now - last);
+      if (streak >= SLOW_FRAMES_TO_STOP) { still = true; cancelAnimationFrame(raf); raf = 0; return; }
       angle += Math.min(0.25, (now - last) / 1000) * 2 * Math.PI / ORBIT_SECONDS;
       last = now;
       draw();
     };
-    const kick = () => { if (!raf && !dead) { last = performance.now(); raf = requestAnimationFrame(frame); } };
+    const kick = () => { if (!raf && !dead && !still) { last = performance.now(); raf = requestAnimationFrame(frame); } };
     const resize = () => {
       renderer.setPixelRatio(Math.min(devicePixelRatio || 1, MAX_PIXEL_RATIO));
       renderer.setSize(innerWidth, innerHeight, false);
