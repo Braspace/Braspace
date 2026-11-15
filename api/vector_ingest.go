@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"regexp"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -15,36 +17,36 @@ import (
 var optionalVectorSQL string
 
 type vectorSeedEntry struct {
-	SourceRef string
-	Title     string
-	SourceURL string
-	SHA256    string
-	Text      string
+	SourceRef string `json:"source_ref"`
+	Title     string `json:"title"`
+	SourceURL string `json:"source_url"`
+	SHA256    string `json:"sha256"`
+	Text      string `json:"text"`
 }
 
+var sha256Re = regexp.MustCompile(`^[0-9a-f]{64}$`)
+
+func embeddedVectorFS() fs.FS { f, _ := fs.Sub(embeddedSiteData, "sitedata"); return f }
+
 func buildProvenanceSeedEntries(fsys fs.FS) ([]vectorSeedEntry, error) {
-	entries := []vectorSeedEntry{
-		{
-			SourceRef: "nasa-lro-lola-ldem-80s-80m",
-			Title:     "NASA LRO LOLA South Pole DEM (LDEM_80S_80M.IMG, 80 m/px)",
-			SourceURL: "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img/ldem_80s_80m.img",
-			SHA256:    "e6591eeea35402ca5e124ca00f5bf0774381a2d4fa919144b455d82b8ff65fdc",
-			Text:      "NASA LRO LOLA LDEM_80S_80M Lunar Orbiter Laser Altimeter South Pole DEM elevation terrain horizon 80m",
-		},
-		{
-			SourceRef: "nasa-pgda-artemis-iii-illumination",
-			Title:     "NASA PGDA South Pole Illumination & Earth Visibility Reference",
-			SourceURL: "https://pgda.gsfc.nasa.gov/products/81",
-			SHA256:    "3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b",
-			Text:      "NASA PGDA Goddard Planetary Geodynamics Data Archive solar illumination earth visibility south pole",
-		},
-		{
-			SourceRef: "naif-spice-de440s-ephemeris",
-			Title:     "NAIF SPICE Planetary Ephemeris Kernel (de440s.bsp)",
-			SourceURL: "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
-			SHA256:    "c1a5e8c4c0b8c58b9d5f4e6a7c8b9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c",
-			Text:      "NAIF JPL SPICE de440s bsp planetary ephemeris sun earth moon geometry azimuth elevation",
-		},
+	// Every provenance row comes from data/ASSET_REGISTRY.json and
+	// data/POLAR_SOURCE_EVIDENCE.json via scripts/build_vector_sources.py:
+	// only entries with a recorded sha256 and an https URL. No hand-typed hashes.
+	var corpus struct {
+		Sources []vectorSeedEntry `json:"sources"`
+	}
+	raw, err := fs.ReadFile(embeddedVectorFS(), "vector_sources.json")
+	if err != nil {
+		return nil, fmt.Errorf("vector_sources.json: %w", err)
+	}
+	if err := json.Unmarshal(raw, &corpus); err != nil {
+		return nil, fmt.Errorf("vector_sources.json: %w", err)
+	}
+	entries := corpus.Sources
+	for _, e := range entries {
+		if !strings.HasPrefix(e.SourceURL, "https://") || !sha256Re.MatchString(e.SHA256) {
+			return nil, fmt.Errorf("vector source %s lacks https URL or sha256 pin", e.SourceRef)
+		}
 	}
 
 	rawCatalog, err := fs.ReadFile(fsys, "catalog.json")
