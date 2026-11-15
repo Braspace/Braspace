@@ -43,7 +43,8 @@ body.mp { margin: 0; background: var(--c-bg); color: var(--c-t1); font: 500 14px
 .wpill.on, .wpill[aria-pressed="true"] { background: var(--c-jade); color: var(--c-jade-ink); }
 .wpill.on small, .wpill[aria-pressed="true"] small { color: var(--c-jade-ink); }
 .wpill .letter { width: 30px; height: 30px; border-radius: 15px; background: var(--c-card); color: var(--c-t1); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; flex-shrink: 0; }
-.chipa, .chipg { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 14px; border-radius: var(--r-pill); font-size: 13px; border: 0; white-space: nowrap; cursor: pointer; text-decoration: none; }
+.chipa, .chipg { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 14px; border-radius: var(--r-pill); font-size: 13px; border: 0; white-space: nowrap; cursor: pointer; text-decoration: none; max-width: 100%; }
+@media (max-width: 860px) { .chipa, .chipg { white-space: normal; padding-top: 6px; padding-bottom: 6px; } }
 .chipa, .mp a.chipa { background: var(--c-jade); color: var(--c-jade-ink); font-weight: 700; }
 .chipg, .mp a.chipg { background: var(--c-glass-in); color: var(--c-t1); font-weight: 600; }
 .chipg[aria-pressed="true"] { background: var(--c-white); color: var(--c-ink); }
@@ -70,6 +71,8 @@ body.mp { margin: 0; background: var(--c-bg); color: var(--c-t1); font: 500 14px
 
 /* provenance strip: one component for the global status (prototype · validation · API · flight) */
 .pstrip { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 8px 6px 14px; border-radius: var(--r-pill); font-size: 12.5px; }
+/* phones: the strip wraps to several lines, so it is a card, not a pill (a pill radius turns it into an oval) */
+@media (max-width: 860px) { .pstrip { border-radius: var(--r-card); padding: 12px 16px; flex-direction: column; align-items: flex-start; } }
 .pstrip .k { color: var(--c-t3); font-weight: 600; }
 .pstrip .it { display: inline-flex; align-items: center; gap: 6px; color: var(--c-t2); }
 .pstrip .api-ok { color: var(--c-jade); font-weight: 700; } .pstrip .api-off { color: var(--c-t3); font-weight: 700; }

@@ -1948,6 +1948,10 @@
     loadSites();
     const fab = document.getElementById("fab");
     if (fab) fab.addEventListener("click", calculate);
+    // Phones: the button sits in the header flow (cockpit.css), not floating over the text.
+    const fabMq = globalThis.matchMedia && matchMedia("(max-width: 860px)"), topBar = document.querySelector("header.top"), fabHome = fab && fab.parentNode;
+    const placeFab = () => { if (fab && topBar) (fabMq.matches ? topBar : fabHome).append(fab); };
+    if (fabMq && fab) { placeFab(); fabMq.addEventListener("change", placeFab); }
     const top = document.getElementById("top-site");
     if (top) {
       fillSites();
