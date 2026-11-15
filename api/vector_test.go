@@ -68,17 +68,21 @@ func TestVectorPostgresOptionalIntegration(t *testing.T){
  raw,err:=os.ReadFile(filepath.Join("db","optional-vector.sql"));if err!=nil{t.Fatal(err)}
  if _,err:=pool.Exec(ctx,string(raw));err!=nil{t.Fatalf("optional schema cannot initialize: %v",err)}
  model:="qa-synthetic-384"
+ man:=strings.Repeat("c",64)
+ if _,err:=pool.Exec(ctx,`INSERT INTO source_semantic_ingest_runs(manifest_sha256,model_id,entry_count) VALUES ($1,$2,2) ON CONFLICT DO NOTHING`,man,model);err!=nil{t.Fatal(err)}
+ defer pool.Exec(context.Background(),`DELETE FROM source_semantic_ingest_runs WHERE manifest_sha256=$1`,man)
  v1:=vectorFixture();v2:=make([]float64,vectorDimensions);v2[1]=1
  literal1,_:=vectorLiteral(v1);literal2,_:=vectorLiteral(v2)
  for _,entry:=range []struct{id,title,url,vec string}{
   {"qa-braspace-source-a","Synthetic test A","https://example.org/qa-a",literal1},
   {"qa-braspace-source-b","Synthetic test B","https://example.org/qa-b",literal2},
  }{
-  _,err:=pool.Exec(ctx,`INSERT INTO source_semantic_index(source_ref,title,source_url,sha256,model_id,embedding)
-  VALUES ($1,$2,$3,$4,$5,$6::vector) ON CONFLICT(source_ref) DO UPDATE SET embedding=EXCLUDED.embedding`,
-  entry.id,entry.title,entry.url,strings.Repeat("a",64),model,entry.vec)
+  _,err:=pool.Exec(ctx,`INSERT INTO source_semantic_index(source_ref,title,source_url,sha256,model_id,embedding,ingest_manifest_sha256)
+  VALUES ($1,$2,$3,$4,$5,$6::vector,$7) ON CONFLICT(source_ref) DO UPDATE SET embedding=EXCLUDED.embedding`,
+  entry.id,entry.title,entry.url,strings.Repeat("a",64),model,entry.vec,man)
   if err!=nil{t.Fatal(err)}
  }
+ // runs before the manifest delete (LIFO), satisfying the FK
  defer pool.Exec(context.Background(),`DELETE FROM source_semantic_index WHERE source_ref LIKE 'qa-braspace-source-%'`)
  api:=&vectorAPI{enabled:true,modelID:model,pool:pool}
  if !api.ready(ctx){t.Fatal("pgvector extension and table should be ready")}
