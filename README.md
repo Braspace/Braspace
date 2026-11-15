@@ -6,13 +6,13 @@ BRASPACE / MoonProof is an educational and engineering prototype for evaluating 
 
 ---
 
-## Cockpit-only canonical entry — integrated in main, production SHA must be verified (2026-11-15)
+## Three-mode MoonProof entry restored (2026-11-15)
 
-**GitHub integration checkpoint, not a production claim:** PR #411 (nine panel controller + cockpit entry), #426 (desktop 75% density) and #452 (first-visit tour) are merged into `main`. The Moon-only immersive overlay may occlude the **Restore panels** control on working WebGL hardware; a focused CSS layer fix and genuine-pointer Chromium regression are proposed in [Moon-only pointer gate](docs/agents/COCKPIT_MOON_ONLY_POINTER_GATE_20261115.md). Gate on exact SHA/EXO-X1 and recheck the deployed Worker before claiming the UI is live.
+**The homepage is the choice screen:** `/moonproof/` shows three styled, working cards — **Explore the Moon**, **Teach a class**, and **Plan a mission**. Selecting one opens `explore.html`, `activity.html`, or `plan.html` respectively, with selected task and scenario options carried by the Preact entry module. A no-JavaScript fallback renders and links all three cards, so unavailable scripts never leave a blank text-only redirect.
 
-The product owner has explicitly selected **one primary Cockpit** at `/moonproof/`, with Joel's shared 3D south-pole Moon, the existing Preact/Three.js Artemis demonstration and nine independently collapsible telemetry cards (included in this combined candidate). The former Explore / Teach / Plan task chooser is preserved at `/moonproof/tasks.html` and its deep links continue to work; no other scientific, landing or evidence modules have been deleted. The entry adapter preserves URL query parameters and fragments and does not instantiate a second 3D renderer.
+The same chooser remains at `/moonproof/tasks.html`. The full nine-panel Cockpit is still available directly at `/moonproof/cockpit.html` and via navigation in the application; its shared Three.js scene and Artemis demonstration are unchanged. First-time visitors receive an optional four-step chooser tutorial, which they can skip; mode-specific tutorials remain available from **View tutorial**.
 
-**Candidate only** until the exact Git SHA passes TypeScript/generated-code drift, Node, browser/GPU/no-GPU, real Go/Rust/Postgres/pgvector and Worker deployment smoke checks. The public website may still show the older entry until it is redeployed. This note is not a production verification.
+**Release status:** source changes need tests and deployment from the exact main SHA before claims about the public Cloudflare Worker. The screenshot of a white entry page concerns the previous JavaScript redirect, which this change removes.
 
 ## Live Demo & API
 
