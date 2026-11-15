@@ -32,3 +32,11 @@ test("core/terrain keeps the LOLA 400 m hillshade as fallback and honours ?relie
   assert.match(terrain, /renderRelief\(grid, w, h/);
   assert.match(terrain, /container\.dataset\.relief = "lola-2d"/);
 });
+
+test("shell regionMap lays the same relief exactly over its hillshade canvas", () => {
+  const common = read("../shell/views/common.tsx");
+  assert.match(common, /hdRelief\(canvas, \(grid\.x0 \+ i0 \* grid\.dx\) \+ W \* grid\.dx \/ 2, \(grid\.y0 \+ j0 \* grid\.dx\) \+ H \* grid\.dx \/ 2, W \* grid\.dx\)/);
+  assert.match(common, /inset: "auto", left: canvas\.offsetLeft/);
+  assert.match(common, /const RELIEF_2D = [^\n]*get\("relief"\) === "2d"/);
+  assert.match(common, /box\.dataset\.relief = "lola-2d"; canvas\.style\.visibility = ""/);
+});

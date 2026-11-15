@@ -102,6 +102,29 @@ export function download(name: string, text: string, type: string): void {
 }
 
 
+// Joel Moon HD relief (LOLA 80 m near the pole, same stereographic projection) laid exactly over the 2D
+// hillshade canvas; the markers stay on their stereographic x/y. Hardware WebGL only; ?relief=2d, no
+// WebGL or a lost context keep the 400 m hillshade underneath.
+const RELIEF_2D = typeof location !== "undefined" && new URLSearchParams(location.search).get("relief") === "2d";
+function hdRelief(canvas: HTMLCanvasElement, cx: number, cy: number, spanX: number): void {
+  const box = canvas.parentElement;
+  if (RELIEF_2D || !box || box.dataset.relief) return;
+  box.dataset.relief = "lola-2d";
+  import("../../moon-hd/stereo-relief.js").then(m => m.mountStereoRelief(box, canvas.nextSibling as Element | null, () => {
+    box.dataset.relief = "lola-2d"; canvas.style.visibility = "";
+  })).then(hd => {
+    if (!hd) return;
+    const place = () => {
+      if (!canvas.isConnected) { ro.disconnect(); hd.dispose(); return; }
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      Object.assign(hd.canvas.style, { inset: "auto", left: canvas.offsetLeft + "px", top: canvas.offsetTop + "px", width: w + "px", height: h + "px" });
+      hd.draw(cx, cy, w, h, spanX / Math.max(1, w));
+    };
+    const ro = new ResizeObserver(place); ro.observe(canvas);
+    canvas.style.visibility = "hidden"; box.dataset.relief = "moonhd"; place();
+  }).catch(() => {});
+}
+
 /**
  * LOLA region hillshade (illustrative shading, NOT an illumination simulation) with numbered site markers.
  * Marker positions come from the sites' stereographic x/y (data/sites.json). The canvas pixels are drawn
@@ -139,6 +162,7 @@ export async function regionMap(sites: Site[], selectedId: string, onSelect?: (i
       }
     }
     g.putImageData(img, 0, 0);
+    hdRelief(canvas, (grid.x0 + i0 * grid.dx) + W * grid.dx / 2, (grid.y0 + j0 * grid.dx) + H * grid.dx / 2, W * grid.dx);
   };
   const km = ((W * grid.dx) / 1000).toFixed(0);
   return (
@@ -160,7 +184,7 @@ export async function regionMap(sites: Site[], selectedId: string, onSelect?: (i
         </div>
       </div>
       <div class="maplegend glass">
-        <strong>Relevo LOLA (LDEM 80 m → 400 m)</strong>
+        <strong>Relevo LOLA · Moon HD do Joel (80 m; sem WebGL: 400 m)</strong>
         <div class="ramp" aria-hidden="true" />
         <div class="t3">{"Sombreado ilustrativo, não é iluminação. Quadro ≈ " + km + " km, norte da grade estereográfica para cima."}</div>
       </div>
