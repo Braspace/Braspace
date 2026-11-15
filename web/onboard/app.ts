@@ -146,7 +146,7 @@ type EvalResponse = {
       if (!res.ok) { showFormErrors(["API respondeu " + res.status + ": " + text.slice(0, 300)]); return; }
       render(JSON.parse(text));
     } catch (err) {
-      showFormErrors(["Não foi possível falar com a API (" + (err as Error).message + "). Suba o servidor com dev-server.py ou o docker compose."]);
+      showFormErrors(["Não foi possível falar com a API (" + (err as Error).message + "). Suba o servidor com node web/dev-server.mjs ou o docker compose."]);
     } finally {
       btn.disabled = false;
       btn.textContent = "Simular";

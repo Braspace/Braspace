@@ -77,8 +77,9 @@ test("cockpit.js: model numbers are sealed, fuel never drives alarms or verdicts
 });
 
 test("dev-server proxies the badge routes (/readyz, /v1/capabilities) as well as /api/*", () => {
-  const p = src("dev-server.py");
-  assert.ok(/PROXY_PREFIXES\s*=.*"\/readyz".*"\/v1\//.test(p));
+  // The onboard is served by the shared web/dev-server.mjs (the Python dev-server.py was removed).
+  const p = readFileSync(new URL("../../dev-server.mjs", import.meta.url), "utf8");
+  assert.ok(/pathname\.startsWith\("\/api\/"\)/.test(p) && /pathname==="\/readyz"/.test(p) && /pathname==="\/v1\/capabilities"/.test(p));
 });
 
 // BR62: the browser-model track has no ms; stepOf used tr[1].ms - tr[0].ms => NaN => NaN bars.
