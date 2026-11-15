@@ -193,6 +193,16 @@ export const REGISTRY = {
    "author_credit": "Elevation: NASA/GSFC/LOLA (LRO LOLA LDEM_80S_80M). Rendering: BRASPACE (science/render_terrain_backgrounds.py).",
    "redistribution_status": "project_derived_from_nasa_pds",
    "scientific_role": "visualization_only"
+  },
+  {
+   "asset_id": "iau-usgs-moon-nomenclature-south-pole",
+   "category": "polar_feature_names",
+   "source_page": "https://planetarynames.wr.usgs.gov/",
+   "file_id": "features.json",
+   "sha256": "126d1918965a73e0379ede8b650afa2295a13e48fce7c47c0ef7e4bdcd584309",
+   "author_credit": "IAU Gazetteer of Planetary Nomenclature, USGS Astrogeology Science Center. Source file MOON_nomenclature_center_pts.zip (metadata pubdate 2012-10-02, public domain), accessed 2026-11-14 UTC.",
+   "redistribution_status": "public_domain_source_cited",
+   "scientific_role": "labels_only"
   }
  ],
  "matrix": [
@@ -225,6 +235,11 @@ export const REGISTRY = {
    "class": "Google Map/Moon tiles",
    "example": "Google Maps Tile API content",
    "status": "rejected"
+  },
+  {
+   "class": "IAU/USGS Gazetteer of Planetary Nomenclature (Moon, centre points)",
+   "example": "web/moonproof/data/features.json",
+   "status": "public_domain_source_cited"
   },
   {
    "class": "BRASPACE polar elevation map (derived)",

@@ -1,4 +1,5 @@
 import { mountTerrain } from "../core/terrain.js";
+import { holdReady, markReady } from "../core/ready.js";
 import { loadSites, windowMetrics, sealFor } from "../core/data.js";
 import { sealEl } from "../core/layers.js";
 import { register, t, fmtNum, pickLang, setLang } from "../core/i18n.js";
@@ -47,6 +48,7 @@ register({
 setLang(pickLang(getState().lang));
 document.title = `MoonProof · ${t("present.badge")}`;
 
+holdReady();
 const doc = await loadSites();
 const LETTERS = ["A", "B", "C"];
 // Scenarios are real sites; the terrain marker shows the scenario letter instead of the site number.
@@ -149,3 +151,4 @@ function draw() {
 }
 
 draw();
+markReady();
