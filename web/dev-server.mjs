@@ -11,6 +11,10 @@ const upstreamHost="127.0.0.1",upstreamPort=Number.parseInt(process.env.BRASPACE
 const staticFiles=new Map([
   ["/",{name:"index.html",type:"text/html; charset=utf-8"}],
   ["/index.html",{name:"index.html",type:"text/html; charset=utf-8"}],
+  ["/manifest.webmanifest",{name:"manifest.webmanifest",type:"application/manifest+json; charset=utf-8"}],
+  ["/sw.js",{name:"sw.js",type:"text/javascript; charset=utf-8"}],
+  ["/offline.html",{name:"offline.html",type:"text/html; charset=utf-8"}],
+  ["/shell/app-icon.svg",{name:"shell/app-icon.svg",type:"image/svg+xml"}],
   ["/styles.css",{name:"styles.css",type:"text/css; charset=utf-8"}],
   ["/api-base.js",{name:"api-base.js",type:"text/javascript; charset=utf-8"}],
   ["/vector-embed.js",{name:"vector-embed.js",type:"text/javascript; charset=utf-8"}],
@@ -111,6 +115,8 @@ export function dashboardFile(pathname){
 const csp=[
   "default-src 'none'",
   "script-src 'self' https://cdn.jsdelivr.net",
+  "manifest-src 'self'",
+  "worker-src 'self'",
   "style-src 'self'",
   "img-src 'self' https://svs.gsfc.nasa.gov data: blob:",
   "connect-src 'self' blob:",
@@ -218,3 +224,4 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1]
   process.stdout.write("Private Go API expected: http://127.0.0.1:8080\n");
  });
 }
+

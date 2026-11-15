@@ -1,0 +1,12 @@
+{
+  "id": "./",
+  "name": "BRASPACE MoonProof — Lunar Landing Site Navigator",
+  "short_name": "MoonProof",
+  "lang": "pt-BR",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#07090C",
+  "theme_color": "#07090C",
+  "icons": [{"src":"./shell/app-icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]
+}

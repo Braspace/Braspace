@@ -5,6 +5,8 @@
 import { h, Fragment, render } from "../vendor/preact/preact.module.js";
 import { startRouter, buildHash, bordoURL, loadLastRoute, parseHash } from "../ds/router.js";
 import { ProvStrip, mount } from "../ds/ui.js";
+import { MODES, TOOLS, activeMode, scenarioQuery } from "./modes.js";
+import { initMoonStage } from "./moon-stage.js";
 const ICONS = {
     explorar: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.5 4 5.6 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.6-4-9s1.5-6.5 4-9z",
     comparar: "M3 4h5v16H3zM10 4h5v16h-5zM17 4h4v16h-4z",
@@ -58,29 +60,28 @@ const routes = [
                 h("a", { class: "btnA", href: "#/" }, "Voltar para a escolha")));
         } },
 ];
-const NAV = [
-    { path: "/explorar", label: "Explorar", ic: "explorar" },
-    { path: "/comparar", label: "Comparar", ic: "comparar" },
-    { path: "/bordo", label: "Painel de bordo", ic: "bordo" },
-    { path: "/evidencias", label: "Evidências", ic: "evidencias" },
-    { path: "/terreno", label: "Terreno 3D", ic: "terreno", cls: "lab" },
-];
-const KITS = [{ path: "/aula", label: "Aula" }, { path: "/comparar/tecnico", label: "Planejar" }];
-const BOTTOM = [
-    { path: "/explorar", label: "Explorar", ic: "explorar" }, { path: "/comparar", label: "Comparar", ic: "comparar" },
-    { path: "/bordo", label: "Bordo", ic: "bordo" }, { path: "/aula", label: "Aula", ic: "aula" }, { path: "/evidencias", label: "Provas", ic: "evidencias" },
-];
-function isCurrent(path, current) { return current === path || (path !== "/" && current.startsWith(path + "/") && path !== "/comparar"); }
+const dialog = document.getElementById("tools-dialog");
+const moonStage = initMoonStage();
+document.getElementById("open-tools")?.addEventListener("click", () => { if (!dialog.open)
+    dialog.showModal(); });
+document.getElementById("close-tools")?.addEventListener("click", () => dialog.close());
 function paintChrome(ctx) {
-    const q = { site: ctx.site, t: ctx.query.t, d: ctx.query.d }; // scenario travels with every nav link
+    const q = scenarioQuery(ctx.query, ctx.site);
     const el = (id) => document.getElementById(id);
-    render(h(Fragment, null, NAV.map(n => h("a", { class: "navp" + (n.cls ? " " + n.cls : ""), href: buildHash(n.path, q), "aria-current": isCurrent(n.path, ctx.path) || (n.path === "/comparar" && ctx.path === "/comparar") ? "page" : undefined },
-        icon(ICONS[n.ic]),
+    const active = activeMode(ctx.path);
+    el("top").querySelector(".brand")?.setAttribute("href", buildHash("/", q));
+    if (dialog.open)
+        dialog.close();
+    moonStage.update(ctx);
+    render(h(Fragment, null, MODES.map(n => h("a", { class: "navp", href: buildHash(n.path, q), "aria-current": n.path === active ? "page" : undefined },
+        icon(ICONS[n.icon]),
         n.label))), el("nav"));
-    render(h(Fragment, null, KITS.map(k => h("a", { class: "navp", href: buildHash(k.path, q), "aria-current": ctx.path === k.path || ctx.path.startsWith(k.path + "/") ? "page" : undefined }, k.label))), el("kits"));
-    render(h(Fragment, null, BOTTOM.map(n => h("a", { href: buildHash(n.path, q), "aria-current": isCurrent(n.path, ctx.path) || (n.path === "/comparar" && ctx.path.startsWith("/comparar")) ? "page" : undefined },
-        icon(ICONS[n.ic]),
-        n.label))), el("bottomnav"));
+    render(h(Fragment, null, MODES.map(n => h("a", { href: buildHash(n.path, q), "aria-current": n.path === active ? "page" : undefined },
+        icon(ICONS[n.icon]),
+        n.action))), el("bottomnav"));
+    render(h(Fragment, null, TOOLS.map(n => h("a", { class: "navp", href: buildHash(n.path, q), onClick: () => dialog.close() },
+        icon(ICONS[n.icon]),
+        n.label))), el("toolsnav"));
     // The Escolha shows its own short provenance notice above the task cards.
     render(ctx.path === "/" ? null : h(ProvStrip, { items: [{ kind: "est", text: "Luz e Terra: LOLA + SPICE, prévio, não revisado pela NASA" }, { kind: "sim", text: "Simulações marcadas com SIM" }], note: "Sem recomenda\u00E7\u00E3o de voo" }), el("pstrip"));
 }
@@ -93,3 +94,7 @@ export function lastRouteLabel() {
     return base ? { hash: last, label: ROUTE_NAMES[base] } : null;
 }
 startRouter({ routes, outlet: document.getElementById("view"), onAfter: paintChrome });
+// The offline worker only serves a clear offline notice; API/science requests always stay network-owned.
+if ("serviceWorker" in navigator && window.isSecureContext) {
+    void navigator.serviceWorker.register("./sw.js").catch(() => { });
+}

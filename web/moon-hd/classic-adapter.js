@@ -38,6 +38,7 @@ export async function createMoon(stage,status,{date,onUnavailable=()=>{}}={}) {
   S.setPolarFrame(cap,moon.lightDir,camera);renderer.render(scene,camera);
  }
  function focus(a,b){if(Number.isFinite(a)&&Number.isFinite(b)){lat=clamp(a,-89.8,89.8);lon=b;draw()}}
+ function zoom(delta){if(Number.isFinite(delta)){distance=clamp(distance+delta,1.35,5);draw()}}
  function reset(){lat=-84;lon=0;distance=2.65;draw()}
  function setTime(value){
   if(dead||!eph)return;
@@ -82,8 +83,9 @@ export async function createMoon(stage,status,{date,onUnavailable=()=>{}}={}) {
   on(canvas,"pointerdown",e=>{drag=[e.pointerId,e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId)});
   on(canvas,"pointermove",e=>{if(drag?.[0]!==e.pointerId)return;lon-=(e.clientX-drag[1])*.35;lat=clamp(lat+(e.clientY-drag[2])*.35,-89.8,89.8);drag=[e.pointerId,e.clientX,e.clientY];draw()});
   for(const type of ["pointerup","pointercancel","lostpointercapture"])on(canvas,type,()=>drag=null);
-  on(canvas,"wheel",e=>{e.preventDefault();distance=clamp(distance+e.deltaY*.002,1.35,5);draw()},{passive:false});
-  on(stage,"keydown",e=>{if(e.target!==stage)return;const moves={ArrowUp:[3,0],ArrowDown:[-3,0],ArrowLeft:[0,-3],ArrowRight:[0,3]};if(moves[e.key]){e.preventDefault();focus(lat+moves[e.key][0],lon+moves[e.key][1])}});
-  return {focus,reset,setSites,setTime,dispose};
+  on(canvas,"wheel",e=>{e.preventDefault();zoom(e.deltaY*.002)},{passive:false});
+  on(stage,"keydown",e=>{if(e.target!==stage)return;const moves={ArrowUp:[3,0],ArrowDown:[-3,0],ArrowLeft:[0,-3],ArrowRight:[0,3]};if(moves[e.key]){e.preventDefault();focus(lat+moves[e.key][0],lon+moves[e.key][1])}else if(e.key==="+"||e.key==="="||e.key==="-"){e.preventDefault();zoom(e.key==="-"?.3:-.3)}});
+  return {focus,reset,zoom,setSites,setTime,dispose};
  }catch(err){dispose();throw err}
 }
+

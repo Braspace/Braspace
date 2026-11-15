@@ -4,13 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#07090C">
+  <link rel="manifest" href="./manifest.webmanifest">
   <meta name="description" content="moonproof (BRASPACE): compare lunar south-pole landing sites and dates with NASA LOLA terrain and JPL/NAIF Sun–Earth geometry. Educational prototype.">
   <title>Escolha · moonproof</title>
   <link rel="stylesheet" href="./ds/tokens.css">
   <link rel="stylesheet" href="./ds/components.css">
   <link rel="stylesheet" href="./shell/shell.css">
   <script type="module" src="./shell/app.js"></script>
-  <script type="module" src="./moon-hd/backdrop.js" data-moon-backdrop="pole"></script>
 <link rel="stylesheet" href="./moon-hd/preview.css">
 </head>
 <body class="mp">
@@ -20,9 +21,29 @@
     <svg width="32" height="32" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11" class="logo-ring"/><path d="M14 3a11 11 0 0 1 0 22a7 11 0 0 0 0-22z" class="logo-fill"/></svg>
     <span>moonproof</span>
   </a>
-  <nav id="nav" class="mainnav" aria-label="Módulos"></nav>
-  <div id="kits" class="kits" role="group" aria-label="Kits"></div>
+  <nav id="nav" class="mainnav" aria-label="Experiências"></nav>
+  <div id="kits" class="kits" role="group" aria-label="Ações">
+    <button type="button" class="navp" id="moon-toggle" aria-pressed="false" aria-controls="moon-stage">Interagir com a Lua</button>
+    <button type="button" class="navp" id="open-tools" aria-haspopup="dialog" aria-controls="tools-dialog">Ferramentas</button>
+  </div>
 </header>
+<section id="moon-stage" class="moon-stage" aria-label="Lua 3D do polo sul" aria-hidden="true" tabindex="-1" inert>
+  <div id="moon-controls" class="moon-controls glass" hidden>
+    <strong>Lua · polo sul</strong>
+    <p id="moon-status" role="status">Carregando a cena 3D. Prévia estática do relevo LOLA 80 m.</p>
+    <p class="small t2">Arraste ou use as setas para orbitar. Use + e − para o zoom. Escape volta ao conteúdo.</p>
+    <div class="row wrap">
+      <button type="button" id="moon-zoom-in" class="btnG" aria-label="Aproximar Lua" disabled>+</button>
+      <button type="button" id="moon-zoom-out" class="btnG" aria-label="Afastar Lua" disabled>−</button>
+      <button type="button" id="moon-reset" class="btnG" disabled>Restaurar visão</button>
+    </div>
+    <p class="small t2">Visualização ilustrativa; não é medição de luz ou recomendação de voo.</p>
+  </div>
+</section>
+<dialog id="tools-dialog" class="glass tools-dialog" aria-labelledby="tools-title">
+  <div class="row tools-heading"><h2 id="tools-title">Ferramentas</h2><button type="button" class="btnG" id="close-tools" autofocus>Fechar</button></div>
+  <nav id="toolsnav" aria-label="Todas as ferramentas"></nav>
+</dialog>
 <div id="pstrip" class="pstrip-slot"></div>
 <main id="view" class="view" tabindex="-1"><p class="t2 boot">Carregando…</p></main>
 <nav id="bottomnav" class="bottomnav glass" aria-label="Navegação principal"></nav>
@@ -30,9 +51,12 @@
   <span>BRASPACE · Uberlândia · NASA Space Apps 2026 · protótipo educativo.</span>
   <span>Dados: NASA LRO/LOLA, NASA GSFC PGDA, JPL/NAIF SPICE. A NASA não endossa esta ferramenta.</span>
   <span>Lua 3D (fundo e visualizador): NASA's Scientific Visualization Studio (CGI Moon Kit, Deep Star Maps), NASA LRO/LOLA, NASA/JPL NAIF SPICE, IAU/USGS Gazetteer, NASA Blue Marble. Imagem ilustrativa, sem validação independente; não é um produto da NASA.</span>
-  <a href="./moon-hd.html?view=pole&amp;lang=pt">Lua 3D (visualizador completo)</a>
-  <a href="./classic.html">Computador de missão (clássico)</a>
-  <a href="./moonproof/">Missão passo a passo (multi-página) ↗</a>
+  <details class="legacy-links"><summary>Compatibilidade e visualizador completo</summary>
+    <a href="./moon-hd.html?view=pole&amp;lang=pt">Lua 3D (visualizador completo)</a>
+    <a href="./classic.html">Computador de missão (clássico)</a>
+    <a href="./moonproof/">Missão passo a passo (multi-página) ↗</a>
+  </details>
 </footer>
 </body>
 </html>
+

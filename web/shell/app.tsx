@@ -5,6 +5,8 @@
 import { h, Fragment, render, type VNode } from "../vendor/preact/preact.module.js";
 import { startRouter, buildHash, bordoURL, loadLastRoute, parseHash, type RouteCtx, type RouteDef } from "../ds/router.js";
 import { ProvStrip, mount } from "../ds/ui.js";
+import { MODES, TOOLS, activeMode, scenarioQuery } from "./modes.js";
+import { initMoonStage } from "./moon-stage.js";
 
 const ICONS: Record<string, string> = {
   explorar: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.5 4 5.6 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.6-4-9s1.5-6.5 4-9z",
@@ -52,28 +54,21 @@ const routes: RouteDef[] = [
   } },
 ];
 
-interface NavItem { path: string; label: string; ic: string; cls?: string; }
-const NAV: NavItem[] = [
-  { path: "/explorar", label: "Explorar", ic: "explorar" },
-  { path: "/comparar", label: "Comparar", ic: "comparar" },
-  { path: "/bordo", label: "Painel de bordo", ic: "bordo" },
-  { path: "/evidencias", label: "Evidências", ic: "evidencias" },
-  { path: "/terreno", label: "Terreno 3D", ic: "terreno", cls: "lab" },
-];
-const KITS = [{ path: "/aula", label: "Aula" }, { path: "/comparar/tecnico", label: "Planejar" }];
-const BOTTOM = [
-  { path: "/explorar", label: "Explorar", ic: "explorar" }, { path: "/comparar", label: "Comparar", ic: "comparar" },
-  { path: "/bordo", label: "Bordo", ic: "bordo" }, { path: "/aula", label: "Aula", ic: "aula" }, { path: "/evidencias", label: "Provas", ic: "evidencias" },
-];
-
-function isCurrent(path: string, current: string) { return current === path || (path !== "/" && current.startsWith(path + "/") && path !== "/comparar"); }
+const dialog = document.getElementById("tools-dialog") as HTMLDialogElement;
+const moonStage = initMoonStage();
+document.getElementById("open-tools")?.addEventListener("click", () => { if (!dialog.open) dialog.showModal(); });
+document.getElementById("close-tools")?.addEventListener("click", () => dialog.close());
 
 function paintChrome(ctx: RouteCtx) {
-  const q = { site: ctx.site, t: ctx.query.t, d: ctx.query.d }; // scenario travels with every nav link
+  const q = scenarioQuery(ctx.query, ctx.site);
   const el = (id: string) => document.getElementById(id) as HTMLElement;
-  render(<>{NAV.map(n => <a class={"navp" + (n.cls ? " " + n.cls : "")} href={buildHash(n.path, q)} aria-current={isCurrent(n.path, ctx.path) || (n.path === "/comparar" && ctx.path === "/comparar") ? "page" : undefined}>{icon(ICONS[n.ic])}{n.label}</a>)}</>, el("nav"));
-  render(<>{KITS.map(k => <a class="navp" href={buildHash(k.path, q)} aria-current={ctx.path === k.path || ctx.path.startsWith(k.path + "/") ? "page" : undefined}>{k.label}</a>)}</>, el("kits"));
-  render(<>{BOTTOM.map(n => <a href={buildHash(n.path, q)} aria-current={isCurrent(n.path, ctx.path) || (n.path === "/comparar" && ctx.path.startsWith("/comparar")) ? "page" : undefined}>{icon(ICONS[n.ic])}{n.label}</a>)}</>, el("bottomnav"));
+  const active = activeMode(ctx.path);
+  el("top").querySelector(".brand")?.setAttribute("href", buildHash("/", q));
+  if (dialog.open) dialog.close();
+  moonStage.update(ctx);
+  render(<>{MODES.map(n => <a class="navp" href={buildHash(n.path, q)} aria-current={n.path === active ? "page" : undefined}>{icon(ICONS[n.icon])}{n.label}</a>)}</>, el("nav"));
+  render(<>{MODES.map(n => <a href={buildHash(n.path, q)} aria-current={n.path === active ? "page" : undefined}>{icon(ICONS[n.icon])}{n.action}</a>)}</>, el("bottomnav"));
+  render(<>{TOOLS.map(n => <a class="navp" href={buildHash(n.path, q)} onClick={() => dialog.close()}>{icon(ICONS[n.icon])}{n.label}</a>)}</>, el("toolsnav"));
   // The Escolha shows its own short provenance notice above the task cards.
   render(ctx.path === "/" ? null : <ProvStrip
     items={[{ kind: "est", text: "Luz e Terra: LOLA + SPICE, prévio, não revisado pela NASA" }, { kind: "sim", text: "Simulações marcadas com SIM" }]}
@@ -89,3 +84,8 @@ export function lastRouteLabel() {
 }
 
 startRouter({ routes, outlet: document.getElementById("view") as HTMLElement, onAfter: paintChrome });
+// The offline worker only serves a clear offline notice; API/science requests always stay network-owned.
+if ("serviceWorker" in navigator && window.isSecureContext) {
+  void navigator.serviceWorker.register("./sw.js").catch(() => { /* normal browsing remains available */ });
+}
+
