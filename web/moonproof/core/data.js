@@ -81,6 +81,21 @@ export async function windowMetrics(doc, site, startIso, hours) {
         longestDarkH: sourced(w.longestDarkH, { ...base, unit: "h" }), longestBlackoutH: sourced(w.longestBlackoutH, { ...base, unit: "h" }),
         maxSunElDeg: sourced(w.maxSunElDeg, { ...base, unit: "°" }) };
 }
+/** Same aggregate contract as windowMetrics, using the API when available. The
+ * browser series is still the source of per-hour traces and daily charts. */
+export async function apiWindowMetrics(doc, site, startIso, hours) {
+    const base = await windowMetrics(doc, site, startIso, hours);
+    const t0iso = new Date(base.t0).toISOString().replace(".000Z", "Z");
+    const r = await api("/api/compare", { method: "POST", body: { site_ids: [site.id], start_utc: t0iso, duration_hours: hours } });
+    const x = r.ok ? r.data?.results?.[0] : undefined, m = x?.evaluation?.metrics;
+    if (!x || x.data_status !== "AVAILABLE" || !m)
+        return { ...base, origin: "static" };
+    const info = { status: x.science_status, source: "POST /api/compare", detail: { sha256: x.site?.series_sha256 ?? null, start: t0iso, hours, step: "1 h" } };
+    const pct = (f) => (typeof f === "number" && Number.isFinite(f) ? 100 * f : null);
+    return { ...base, origin: "api",
+        sunPct: sourced(pct(m.sun_visible_fraction), { ...info, unit: "%" }), earthPct: sourced(pct(m.earth_visible_fraction), { ...info, unit: "%" }),
+        longestDarkH: sourced(m.longest_continuous_dark_hours, { ...info, unit: "h" }), longestBlackoutH: sourced(m.longest_continuous_comm_gap_hours, { ...info, unit: "h" }) };
+}
 /** Per-day sunlit fraction (0..1) over the window, for the "Why" bar. */
 export function dailySun(series, t0, hours) {
     const out = [];

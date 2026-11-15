@@ -24,6 +24,14 @@ const save = (id, v) => { try {
     sessionStorage.setItem(key(id), v ? "1" : "0");
 }
 catch { /* private mode */ } };
+/** A translated panel is still in the focus/accessibility tree unless made inert.
+ * At narrow breakpoints the desktop fold CSS is inactive, so restore interaction. */
+export function syncFoldAccessibility(panel, btn, folded, desktop, active) {
+    const hide = folded && desktop;
+    if (hide && active && panel.contains(active))
+        btn.focus();
+    panel.inert = hide;
+}
 /** Where the button sits (visual px): on the panel's inner edge when open, on the screen edge when folded. */
 export function buttonPlace(side, r, folded, W, H) {
     const bw = 28, bh = 44;
@@ -41,6 +49,7 @@ export function enhancePanels() {
         const desk = matchMedia(DESKTOP).matches, W = innerWidth, H = innerHeight;
         for (const f of folds) {
             f.btn.hidden = !desk || !f.panel.isConnected || getComputedStyle(f.panel).display === "none";
+            syncFoldAccessibility(f.panel, f.btn, f.folded, desk && !f.btn.hidden, document.activeElement);
             if (f.btn.hidden)
                 continue;
             const p = buttonPlace(f.side, f.panel.getBoundingClientRect(), f.folded, W, H);
@@ -57,6 +66,8 @@ export function enhancePanels() {
         f.btn.textContent = ICON[f.side][folded ? 1 : 0];
         if (persist)
             save(f.panel.id, folded);
+        // Remove hidden descendants from focus immediately, not after the animation.
+        syncFoldAccessibility(f.panel, f.btn, folded, matchMedia(DESKTOP).matches, document.activeElement);
         // The map re-frames on resize (core/terrain freeArea): give it the new free area after the slide.
         setTimeout(() => { place(); dispatchEvent(new Event("resize")); }, 260);
     };

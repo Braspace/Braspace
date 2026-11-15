@@ -1,4 +1,28 @@
 /* Heloísa's existing tokens, with one compact disclosure surface for every cockpit card. */
+/* Shared density is retained on other pages; native compact geometry here must not be zoomed twice. */
+html[data-cockpit-density]{--mp-density:1}
+/* Artemis scene surface — external CSS for the production style-src 'self' policy. */
+.mp-cockpit-3d{position:fixed;inset:0;z-index:4;pointer-events:none}
+.mp-cockpit-3d-canvas{position:absolute;inset:0;display:none;pointer-events:auto;touch-action:none;background:#07090c}
+.mp-cockpit-3d[data-mode=ready] .mp-cockpit-3d-canvas{display:block}
+.mp-cockpit-3d-canvas canvas{display:block;width:100%;height:100%;touch-action:none}
+.mp-cockpit-3d-ui{position:absolute;inset:0;pointer-events:none}
+.mp-cockpit-3d-controls{position:absolute;top:var(--cockpit-3d-top,var(--ck-panels-top,142px));left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:5px;padding:5px 8px;width:max-content;max-width:min(94vw,440px);border:1px solid var(--line,#64748b);border-radius:13px;background:rgba(7,9,12,.9);color:#f2f4f5;pointer-events:auto;backdrop-filter:blur(14px)}
+.mp-cockpit-3d-controls button,.mp-cockpit-3d-controls select,.mp-cockpit-3d-camera summary,.mp-cockpit-3d-marker{box-sizing:border-box;min-height:44px;min-width:44px;border-radius:8px;border:1px solid var(--line,#64748b);font:inherit;background:#18212a;color:#f2f4f5;cursor:pointer}
+.mp-cockpit-3d-controls button:focus-visible,.mp-cockpit-3d-controls select:focus-visible,.mp-cockpit-3d-camera summary:focus-visible,.mp-cockpit-3d-marker:focus-visible{outline:3px solid #9ee8db;outline-offset:2px}
+.mp-cockpit-3d-site{flex:1 1 145px;min-width:0!important;max-width:100%;padding:0 8px;font-size:13px!important;text-overflow:ellipsis}
+.mp-cockpit-3d-camera{position:relative;max-width:100%}
+.mp-cockpit-3d-camera summary{display:flex;align-items:center;justify-content:center;padding:0 8px;list-style:none}
+.mp-cockpit-3d-camera summary::-webkit-details-marker{display:none}
+.mp-cockpit-3d-camera-menu{position:absolute;z-index:1;left:auto;right:auto;top:calc(100% + 5px);box-sizing:border-box;width:154px;padding:5px;display:grid;grid-template-columns:repeat(3,44px);gap:5px;border:1px solid var(--line,#64748b);border-radius:9px;background:#07090c;box-shadow:0 4px 16px #0008;overflow:auto;overscroll-behavior:contain}
+.mp-cockpit-3d-camera-menu[data-open-up=true]{top:auto;bottom:calc(100% + 5px)}
+.mp-cockpit-3d-camera:not([open]) .mp-cockpit-3d-camera-menu{display:none}
+.mp-cockpit-3d-status{flex:1 0 100%;font-size:11px;text-align:center;line-height:1.4;max-width:100%;overflow-wrap:anywhere}
+.mp-cockpit-3d-marker{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;border-radius:999px;padding:0 8px;background:#141b25e8;white-space:nowrap;font-size:12px;min-height:44px}
+.mp-cockpit-3d-marker[aria-pressed=true]{color:#081b17;background:#9ee8db;border-color:#9ee8db;font-weight:bold}
+.mp-cockpit-3d-marker[hidden]{display:none!important}
+body[data-cockpit-view=3d] .mp-ck-lines,body[data-cockpit-view=3d] .mp-bodyic,body[data-cockpit-view=3d] .mp-ck-tag{visibility:hidden}
+@media(max-width:700px){.mp-cockpit-3d-controls{top:var(--cockpit-3d-top-mobile,var(--ck-panels-top,127px));max-width:calc(100vw - 16px);gap:3px}.mp-cockpit-3d-controls button{min-width:44px;padding:0 8px}}
 #ck-panel-controls{position:fixed;z-index:25;top:var(--ck-context-end,138px);left:50%;transform:translateX(-50%);max-width:calc(100vw - 16px)}
 .ck-panel-toolbar{display:flex;align-items:center;gap:8px;white-space:nowrap}
 .ck-panel-toolbar .mp-pill{min-height:44px;white-space:nowrap;padding:0 13px;background:var(--glass);font-weight:700}

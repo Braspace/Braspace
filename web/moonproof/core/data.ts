@@ -112,6 +112,23 @@ export async function windowMetrics(doc: Pick<SitesDoc, "status">, site: Pick<Si
     maxSunElDeg: sourced(w.maxSunElDeg, { ...base, unit: "°" }) };
 }
 
+/** Same aggregate contract as windowMetrics, using the API when available. The
+ * browser series is still the source of per-hour traces and daily charts. */
+export async function apiWindowMetrics(doc: Pick<SitesDoc, "status">, site: Pick<Site, "id" | "series">, startIso: string | null | undefined, hours: number) {
+  const base = await windowMetrics(doc, site, startIso, hours);
+  type Blk = { longest_continuous_dark_hours?: number; longest_continuous_comm_gap_hours?: number; sun_visible_fraction?: number; earth_visible_fraction?: number };
+  type Res = { results?: { data_status?: string; science_status?: string; evaluation?: { metrics?: Blk }; site?: { series_sha256?: string } }[] };
+  const t0iso = new Date(base.t0).toISOString().replace(".000Z", "Z");
+  const r = await api<Res>("/api/compare", { method: "POST", body: { site_ids: [site.id], start_utc: t0iso, duration_hours: hours } });
+  const x = r.ok ? r.data?.results?.[0] : undefined, m = x?.evaluation?.metrics;
+  if (!x || x.data_status !== "AVAILABLE" || !m) return { ...base, origin: "static" as const };
+  const info = { status: x.science_status, source: "POST /api/compare", detail: { sha256: x.site?.series_sha256 ?? null, start: t0iso, hours, step: "1 h" } };
+  const pct = (f: unknown) => (typeof f === "number" && Number.isFinite(f) ? 100 * f : null);
+  return { ...base, origin: "api" as const,
+    sunPct: sourced(pct(m.sun_visible_fraction), { ...info, unit: "%" }), earthPct: sourced(pct(m.earth_visible_fraction), { ...info, unit: "%" }),
+    longestDarkH: sourced(m.longest_continuous_dark_hours, { ...info, unit: "h" }), longestBlackoutH: sourced(m.longest_continuous_comm_gap_hours, { ...info, unit: "h" }) };
+}
+
 /** Per-day sunlit fraction (0..1) over the window, for the "Why" bar. */
 export function dailySun(series: Pick<SiteSeriesLike, "start" | "count" | "sunMargin">, t0: number, hours: number): (number | null)[] {
   const out: (number | null)[] = []; const i0 = Math.ceil((t0 - series.start) / HOUR_MS);

@@ -23,6 +23,14 @@ const save = (id: string, v: boolean) => { try { sessionStorage.setItem(key(id),
 
 interface Fold { panel: HTMLElement; side: Side; btn: HTMLButtonElement; folded: boolean }
 
+/** A translated panel is still in the focus/accessibility tree unless made inert.
+ * At narrow breakpoints the desktop fold CSS is inactive, so restore interaction. */
+export function syncFoldAccessibility(panel: Pick<HTMLElement, "inert" | "contains">, btn: Pick<HTMLButtonElement, "focus">, folded: boolean, desktop: boolean, active: Element | null): void {
+  const hide = folded && desktop;
+  if (hide && active && panel.contains(active)) btn.focus();
+  panel.inert = hide;
+}
+
 /** Where the button sits (visual px): on the panel's inner edge when open, on the screen edge when folded. */
 export function buttonPlace(side: Side, r: { left: number; right: number; top: number; bottom: number; width: number }, folded: boolean, W: number, H: number): { left: number; top: number } {
   const bw = 28, bh = 44;
@@ -38,6 +46,7 @@ export function enhancePanels(): void {
     const desk = matchMedia(DESKTOP).matches, W = innerWidth, H = innerHeight;
     for (const f of folds) {
       f.btn.hidden = !desk || !f.panel.isConnected || getComputedStyle(f.panel).display === "none";
+      syncFoldAccessibility(f.panel, f.btn, f.folded, desk && !f.btn.hidden, document.activeElement);
       if (f.btn.hidden) continue;
       const p = buttonPlace(f.side, f.panel.getBoundingClientRect(), f.folded, W, H);
       f.btn.style.left = p.left + "px"; f.btn.style.top = p.top + "px";
@@ -50,6 +59,8 @@ export function enhancePanels(): void {
     f.btn.title = f.btn.getAttribute("aria-label") || "";
     f.btn.textContent = ICON[f.side][folded ? 1 : 0];
     if (persist) save(f.panel.id, folded);
+    // Remove hidden descendants from focus immediately, not after the animation.
+    syncFoldAccessibility(f.panel, f.btn, folded, matchMedia(DESKTOP).matches, document.activeElement);
     // The map re-frames on resize (core/terrain freeArea): give it the new free area after the slide.
     setTimeout(() => { place(); dispatchEvent(new Event("resize")); }, 260);
   };

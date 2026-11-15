@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {buttonPlace, FOLDABLE} from "../core/collapse.js";
+import {buttonPlace, FOLDABLE, syncFoldAccessibility} from "../core/collapse.js";
 
 const read = p => readFileSync(new URL("../" + p, import.meta.url), "utf8");
 
@@ -39,4 +39,18 @@ test("non-cockpit screens get generic folds; cockpit owns its single controller"
   assert.match(src, /setAttribute\("aria-controls", panel\.id\)/);
   assert.match(src, /setAttribute\("aria-expanded"/);
   assert.match(src, /"pt-BR": \{ "fold\.left\.hide": "Recolher painel esquerdo"/);
+});
+
+test("desktop folded descendants are inert, focus returns to toggle; narrow layout restores interaction", () => {
+  const active = {}, other = {}, panel = { inert: false, contains: x => x === active };
+  let focused = 0;
+  const btn = { focus: () => focused++ };
+  syncFoldAccessibility(panel, btn, true, true, active);
+  assert.equal(panel.inert, true); assert.equal(focused, 1);
+  syncFoldAccessibility(panel, btn, true, true, other);
+  assert.equal(focused, 1);
+  syncFoldAccessibility(panel, btn, true, false, other);
+  assert.equal(panel.inert, false);
+  syncFoldAccessibility(panel, btn, false, true, other);
+  assert.equal(panel.inert, false);
 });

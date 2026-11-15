@@ -33,10 +33,29 @@ export function siteChoices(sites) {
         return [{ id: site.id, label: typeof site.n === "number" || typeof site.n === "string" ? `${site.n} · ${name}` : name }];
     });
 }
+/** Fit a 154px camera grid inside the actual viewport, switching above for short screens. */
+export function cameraMenuPlacement(summary, W, H) {
+    const width = Math.min(154, Math.max(0, W - 16));
+    const below = Math.max(0, H - summary.bottom - 13), above = Math.max(0, summary.top - 13);
+    const up = below < 154 && above > below;
+    const left = Math.max(8, Math.min(summary.right - width, W - 8 - width)) - summary.left;
+    return { up, left, maxHeight: Math.min(154, up ? above : below) };
+}
 /** A marker is interactive only when its entire hit area is visible and not behind an overlay. */
 export function visibleMarker(marker, viewport, occlusions) {
     return marker.left >= viewport.left && marker.right <= viewport.right && marker.top >= viewport.top && marker.bottom <= viewport.bottom &&
         !occlusions.some(box => marker.left < box.right && marker.right > box.left && marker.top < box.bottom && marker.bottom > box.top);
+}
+export const SCENE_LAYOUT_SELECTORS = "#left,#right,#sheet,.mp-top,.mp-context,.mp-bottomnav,#player,.mp-links,#ck-panel-controls";
+/** Mobile's scrolling sheet clips its children; desktop's display:contents sheet has no box. */
+export function cockpitOverlayBounds(boxes) {
+    const hasArea = ({ rect }) => rect.right > rect.left && rect.bottom > rect.top;
+    const sheetVisible = boxes.some(box => box.kind === "sheet" && hasArea(box));
+    return boxes.filter(box => hasArea(box) && !(sheetVisible && box.kind === "sheet-child")).map(box => box.rect);
+}
+/** The scene can lose WebGL asynchronously while a keyboard user is on a retiring control. */
+export function shouldRestoreSceneFocus(ready, leavingReady, active) {
+    return ready && leavingReady && !!active?.closest(".mp-cockpit-3d-marker,.mp-cockpit-3d-camera");
 }
 const BASE = new URL("../../data/moonhd/", import.meta.url).href;
 function release(r) {
@@ -82,31 +101,10 @@ export function mountCockpit3D(host, options) {
     canvasHost.className = "mp-cockpit-3d-canvas";
     ui.className = "mp-cockpit-3d-ui";
     host.append(canvasHost, ui);
-    const style = document.createElement("style");
-    style.textContent = `
-.mp-cockpit-3d{position:fixed;inset:0;z-index:4;pointer-events:none}
-.mp-cockpit-3d-canvas{position:absolute;inset:0;display:none;pointer-events:auto;touch-action:none;background:#07090c}
-.mp-cockpit-3d[data-mode=ready] .mp-cockpit-3d-canvas{display:block}
-.mp-cockpit-3d-canvas canvas{display:block;width:100%;height:100%;touch-action:none}
-.mp-cockpit-3d-ui{position:absolute;inset:0;pointer-events:none}
-.mp-cockpit-3d-controls{position:absolute;top:var(--cockpit-3d-top,var(--ck-panels-top,142px));left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:5px;padding:5px 8px;width:max-content;max-width:min(94vw,440px);border:1px solid var(--line,#64748b);border-radius:13px;background:rgba(7,9,12,.9);color:#f2f4f5;pointer-events:auto;backdrop-filter:blur(14px)}
-.mp-cockpit-3d-controls button,.mp-cockpit-3d-controls select,.mp-cockpit-3d-camera summary,.mp-cockpit-3d-marker{box-sizing:border-box;min-height:44px;min-width:44px;border-radius:8px;border:1px solid var(--line,#64748b);font:inherit;background:#18212a;color:#f2f4f5;cursor:pointer}
-.mp-cockpit-3d-controls button:focus-visible,.mp-cockpit-3d-controls select:focus-visible,.mp-cockpit-3d-camera summary:focus-visible,.mp-cockpit-3d-marker:focus-visible{outline:3px solid #9ee8db;outline-offset:2px}
-.mp-cockpit-3d-site{flex:1 1 145px;min-width:0!important;max-width:100%;padding:0 8px;font-size:13px!important;text-overflow:ellipsis}
-.mp-cockpit-3d-camera{position:relative;max-width:100%}
-.mp-cockpit-3d-camera summary{display:flex;align-items:center;justify-content:center;padding:0 8px;list-style:none}
-.mp-cockpit-3d-camera summary::-webkit-details-marker{display:none}
-.mp-cockpit-3d-camera-menu{position:absolute;z-index:1;right:0;top:calc(100% + 5px);padding:5px;display:grid;grid-template-columns:repeat(3,44px);gap:5px;border:1px solid var(--line,#64748b);border-radius:9px;background:#07090c;box-shadow:0 4px 16px #0008}
-.mp-cockpit-3d-camera:not([open]) .mp-cockpit-3d-camera-menu{display:none}
-.mp-cockpit-3d-status{flex:1 0 100%;font-size:11px;text-align:center;line-height:1.4;max-width:100%;overflow-wrap:anywhere}
-.mp-cockpit-3d-marker{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;border-radius:999px;padding:0 8px;background:#141b25e8;white-space:nowrap;font-size:12px;min-height:44px}
-.mp-cockpit-3d-marker[aria-pressed=true]{color:#081b17;background:#9ee8db;border-color:#9ee8db;font-weight:bold}
-.mp-cockpit-3d-marker[hidden]{display:none!important}
-body[data-cockpit-view=3d] .mp-ck-lines,body[data-cockpit-view=3d] .mp-bodyic,body[data-cockpit-view=3d] .mp-ck-tag{visibility:hidden}
-@media(max-width:700px){.mp-cockpit-3d-controls{top:var(--cockpit-3d-top-mobile,var(--ck-panels-top,127px));max-width:calc(100vw - 16px);gap:3px}.mp-cockpit-3d-controls button{min-width:44px;padding:0 8px}}
-`;
-    document.head.append(style);
+    // Scene styles are served from cockpit-panels.css under style-src 'self'.
     function change(modeNext) {
+        const active = document.activeElement;
+        const restore = !disposed && !!active && ui.contains(active) && shouldRestoreSceneFocus(mode === "ready", modeNext !== "ready", active);
         mode = modeNext;
         host.dataset.mode = mode;
         document.body.dataset.cockpitView = mode === "ready" ? "3d" : "map";
@@ -114,6 +112,8 @@ body[data-cockpit-view=3d] .mp-ck-lines,body[data-cockpit-view=3d] .mp-bodyic,bo
         if (fallback)
             fallback.inert = mode === "ready";
         paint();
+        if (restore)
+            ui.querySelector(".mp-cockpit-3d-site")?.focus();
     }
     function selectSite(id) {
         if (!choiceIds.has(id))
@@ -153,7 +153,6 @@ body[data-cockpit-view=3d] .mp-ck-lines,body[data-cockpit-view=3d] .mp-bodyic,bo
                 h("span", { class: "mp-cockpit-3d-status", role: "status" }, mode === "loading" ? tr("Carregando Moon HD de Joel…", "Loading Joel’s Moon HD…") : outside ? tr("Local fora do relevo 3D · use o mapa LOLA 2D", "Site outside 3D relief · use the LOLA 2D map") : ready ? tr("NASA LRO/LOLA · nave Artemis ilustrativa, escala e luz visuais", "NASA LRO/LOLA · illustrative Artemis lander; visual scale and light") : mode === "unavailable" ? tr("3D indisponível; mapa LOLA 2D preservado", "3D unavailable; LOLA 2D map retained") : tr("Mapa georreferenciado LOLA 2D", "LOLA georeferenced 2D map")))), ui);
         positionControls();
     }
-    const layoutSelectors = "#left,#right,#sheet,.mp-top,.mp-context,#player,.mp-links,#ck-panel-controls";
     function point(s) {
         const r = resources, xy = polarSiteCoordinates(s);
         if (!r || !xy)
@@ -163,13 +162,16 @@ body[data-cockpit-view=3d] .mp-ck-lines,body[data-cockpit-view=3d] .mp-bodyic,bo
             return null;
         return new r.T.Vector3(...localToScene(stereoToLocal(...xy, height)));
     }
+    function layoutBoxes() {
+        const sheet = document.getElementById("sheet");
+        return cockpitOverlayBounds([...document.querySelectorAll(SCENE_LAYOUT_SELECTORS)]
+            .filter(e => getComputedStyle(e).visibility !== "hidden" && e.getClientRects().length > 0)
+            .map(e => ({ rect: e.getBoundingClientRect(), kind: e === sheet ? "sheet" : sheet?.contains(e) ? "sheet-child" : "other" })));
+    }
     // Frame the selected site in the area unobscured by collapsible cockpit panels rather than under them.
     function frameBounds(W, H) {
         let left = 0, right = W, top = 0, bottom = H;
-        for (const e of document.querySelectorAll(layoutSelectors)) {
-            const box = e.getBoundingClientRect();
-            if (!box.width || !box.height || getComputedStyle(e).visibility === "hidden")
-                continue;
+        for (const box of layoutBoxes()) {
             if (box.right < W * .44 && box.height > H * .2)
                 left = Math.max(left, box.right);
             else if (box.left > W * .56 && box.height > H * .2)
@@ -182,9 +184,9 @@ body[data-cockpit-view=3d] .mp-ck-lines,body[data-cockpit-view=3d] .mp-bodyic,bo
         return { left, right, top, bottom };
     }
     function overlays() {
-        return [...document.querySelectorAll(`${layoutSelectors},.ck-panel-options,.mp-cockpit-3d-controls,.mp-cockpit-3d-camera-menu`)]
-            .filter(e => getComputedStyle(e).visibility !== "hidden" && e.getClientRects().length > 0)
-            .map(e => e.getBoundingClientRect()).filter(e => e.width > 0 && e.height > 0);
+        return [...layoutBoxes(), ...[...document.querySelectorAll(".ck-panel-options,.mp-cockpit-3d-controls,.mp-cockpit-3d-camera-menu")]
+                .filter(e => getComputedStyle(e).visibility !== "hidden" && e.getClientRects().length > 0)
+                .map(e => e.getBoundingClientRect()).filter(e => e.width > 0 && e.height > 0)];
     }
     function hideMarker(el) {
         const focused = document.activeElement === el;
@@ -199,6 +201,14 @@ body[data-cockpit-view=3d] .mp-ck-lines,body[data-cockpit-view=3d] .mp-bodyic,bo
         const { left, right } = frameBounds(W, H);
         control.style.left = `${(left + right) / 2}px`;
         control.style.maxWidth = `${Math.max(100, Math.min(440, right - left - 16))}px`;
+        const details = ui.querySelector(".mp-cockpit-3d-camera[open]");
+        const summary = details?.querySelector("summary"), menu = details?.querySelector(".mp-cockpit-3d-camera-menu");
+        if (summary && menu) {
+            const p = cameraMenuPlacement(summary.getBoundingClientRect(), W, H);
+            menu.dataset.openUp = String(p.up);
+            menu.style.left = `${p.left}px`;
+            menu.style.maxHeight = `${p.maxHeight}px`;
+        }
     }
     function focusArea(W, H) {
         let { left, right, top, bottom } = frameBounds(W, H);
@@ -360,7 +370,7 @@ body[data-cockpit-view=3d] .mp-ck-lines,body[data-cockpit-view=3d] .mp-bodyic,bo
     const layoutChanged = () => { positionControls(); draw(); };
     const observer = new ResizeObserver(layoutChanged);
     observer.observe(host);
-    for (const e of document.querySelectorAll(layoutSelectors))
+    for (const e of document.querySelectorAll(SCENE_LAYOUT_SELECTORS))
         observer.observe(e);
     const layout = new MutationObserver(layoutChanged);
     layout.observe(document.body, { attributes: true, attributeFilter: ["data-ck-hidden"] });
@@ -380,7 +390,7 @@ body[data-cockpit-view=3d] .mp-ck-lines,body[data-cockpit-view=3d] .mp-bodyic,bo
         else
             stop("map"); },
         dispose() { if (disposed)
-            return; disposed = true; stop("map"); observer.disconnect(); layout.disconnect(); language.disconnect(); document.removeEventListener("toggle", layoutChanged, true); document.removeEventListener("visibilitychange", draw); removeEventListener("pagehide", pagehide); removeEventListener("pageshow", draw); render(null, ui); style.remove(); host.replaceChildren(); delete document.body.dataset.cockpitView; },
+            return; disposed = true; stop("map"); observer.disconnect(); layout.disconnect(); language.disconnect(); document.removeEventListener("toggle", layoutChanged, true); document.removeEventListener("visibilitychange", draw); removeEventListener("pagehide", pagehide); removeEventListener("pageshow", draw); render(null, ui); host.replaceChildren(); delete document.body.dataset.cockpitView; },
     };
     change("map");
     handle.setActive(true);

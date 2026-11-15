@@ -11,17 +11,21 @@ import * as backdrop from "../moon-hd/backdrop.js";
 
 const web=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const read=name=>readFile(path.join(web,name),"utf8");
-const {mountMoonBackdrop,pickAssets,probeWebGL,backdropTime,shouldAnimate,normalizeOptions,cameraPosition,MAX_PIXEL_RATIO,FRAME_MS,isSoftwareRenderer,slowStreak,SLOW_FRAME_MS,SLOW_FRAMES_TO_STOP}=backdrop;
+const {mountMoonBackdrop,pickAssets,probeWebGL,backdropTime,shouldAnimate,normalizeOptions,cameraPosition,MAX_PIXEL_RATIO,FRAME_MS,isSoftwareRenderer,slowStreak,SLOW_FRAME_MS,SLOW_FRAMES_TO_STOP,VIEW_DEFAULTS,clampDistance,clampLat,MIN_DISTANCE,MAX_DISTANCE,isBackgroundTarget}=backdrop;
 
 // Pages whose background is decorative get the Moon; pages whose LOLA relief is the functional map never do.
 const WITH={"moonproof/rules.html":"../moon-hd/backdrop.js","moonproof/evidence.html":"../moon-hd/backdrop.js","moonproof/debrief.html":"../moon-hd/backdrop.js"};
-const WITHOUT=["moonproof/index.html","moonproof/mission.html","moonproof/explore.html","moonproof/compare.html","moonproof/recover.html","moonproof/cockpit.html","moonproof/landing.html",
- "moonproof/plan.html","moonproof/present.html","moonproof/activity.html","moon-hd.html"];
+// MoonProof map screens keep their functional LOLA relief and get the Moon only on demand ("Explorar a Lua").
+const LAZY=["moonproof/mission.html","moonproof/explore.html","moonproof/compare.html","moonproof/recover.html","moonproof/landing.html",
+ "moonproof/plan.html","moonproof/present.html","moonproof/activity.html"];
+// Entry redirects directly; Cockpit has a single independent Artemis renderer.
+const WITHOUT=["moonproof/index.html","moonproof/cockpit.html","moon-hd.html"];
 
 test("backdrop.js exports the documented API and does nothing without a document",async()=>{
  assert.equal(typeof mountMoonBackdrop,"function");
- assert.deepEqual(normalizeOptions(),{view:"pole",interactive:false});
- assert.deepEqual(normalizeOptions({view:"globe",interactive:true}),{view:"globe",interactive:false},"a backdrop is never interactive");
+ assert.deepEqual(normalizeOptions(),{view:"pole",interactive:true,lazy:false});
+ assert.deepEqual(normalizeOptions({view:"globe",interactive:false}),{view:"globe",interactive:false,lazy:false},"interaction can be turned off");
+ assert.deepEqual(normalizeOptions({lazy:true}),{view:"pole",interactive:true,lazy:true});
  assert.equal(normalizeOptions({view:"anything"}).view,"pole");
  assert.equal(MAX_PIXEL_RATIO,1.5);
  assert.ok(Math.abs(FRAME_MS-1000/30)<1e-9,"30 fps target");
@@ -115,9 +119,24 @@ test("the loop runs only when visible, on screen and with motion allowed",()=>{
 test("camera stays outside the Moon and south of the equator in both views",()=>{
  for(const view of ["pole","globe"])for(const angle of [0,1,2.5,4,6]){
   const [x,y,z]=cameraPosition(view,angle),r=Math.hypot(x,y,z);
-  assert.ok(r>2&&r<6,view+" distance "+r);assert.ok(y<0,"looks from the south");
+  assert.ok(r>=4&&r<=9,view+" distance "+r+": far enough to see the whole Moon");assert.ok(y<0,"looks from the south");
  }
- assert.ok(cameraPosition("pole",0)[1]/Math.hypot(...cameraPosition("pole",0))<-0.99,"pole view looks straight at the south pole");
+ const pole=cameraPosition("pole",0);
+ assert.ok(pole[1]/Math.hypot(...pole)<-0.8,"pole view still looks at the south polar region");
+ assert.ok(VIEW_DEFAULTS.globe.distance>=7&&VIEW_DEFAULTS.pole.distance>=4,"defaults moved away from the surface");
+ // user zoom/tilt are clamped: never inside the Moon, never past the poles, NaN-safe
+ assert.equal(clampDistance(0.1),MIN_DISTANCE);assert.equal(clampDistance(1e9),MAX_DISTANCE);assert.equal(clampDistance(NaN),MAX_DISTANCE);
+ assert.ok(MIN_DISTANCE>1.2);assert.equal(clampLat(120),88);assert.equal(clampLat(-120),-88);assert.equal(clampLat(NaN),0);
+ for(const d of [0.5,2,20]){const r=Math.hypot(...cameraPosition("globe",1,30,d));assert.ok(r>=MIN_DISTANCE-1e-9&&r<=MAX_DISTANCE+1e-9);}
+});
+
+test("only empty background turns the Moon: controls, text and maps keep their own pointer",()=>{
+ const el=({matches=[],text=""}={})=>({closest:sel=>matches.some(m=>sel.split(",").includes(m))?{}:null,childNodes:text?[{nodeType:3,textContent:text}]:[{nodeType:3,textContent:"  "}]});
+ assert.equal(isBackgroundTarget(null),false);
+ assert.equal(isBackgroundTarget(el()),true,"empty block");
+ assert.equal(isBackgroundTarget(el({matches:[".moon-backdrop"]})),true,"the Moon itself");
+ for(const m of ["a","button","input","canvas","svg","[role=button]","[tabindex]","[data-no-moon-drag]"])assert.equal(isBackgroundTarget(el({matches:[m]})),false,m);
+ assert.equal(isBackgroundTarget(el({text:"Connecting Ridge"})),false,"text stays selectable");
 });
 
 test("backdrop source: three.js only on demand, same pinned version as the viewer and the lab, silent fallback",async()=>{
@@ -131,7 +150,10 @@ test("backdrop source: three.js only on demand, same pinned version as the viewe
  assert.doesNotMatch(src,/console\.|alert\(|throw /,"fails silently");
  assert.match(src,/webglcontextlost/);assert.match(src,/prefers-reduced-motion/);assert.match(src,/visibilitychange/);assert.match(src,/IntersectionObserver/);
  assert.match(src,/aria-hidden/);
- assert.doesNotMatch(src,/\.style\b|cssText|style=/,"all styling lives in backdrop.css (CSP style-src 'self')");
+ // CSP style-src 'self' blocks style attributes and cssText, not CSSOM property writes: only the pin position
+ // (el.style.transform, computed per frame) is set from script; every other rule lives in backdrop.css.
+ assert.doesNotMatch(src,/cssText|style=|setAttribute\("style"/,"no style attribute (CSP style-src 'self')");
+ assert.deepEqual([...src.matchAll(/\.style\.(\w+)/g)].map(m=>m[1]),["transform"],"only the per-frame pin transform is set from script");
  assert.doesNotMatch(src,/holdReady|markReady|ready\.js/,"never touches the first-paint gate");
  const css=await read("moon-hd/backdrop.css");
  assert.match(css,/\.moon-backdrop\s*\{[^}]*position:\s*fixed[^}]*inset:\s*0[^}]*z-index:\s*-1[^}]*pointer-events:\s*none/);
@@ -141,7 +163,7 @@ test("backdrop source: three.js only on demand, same pinned version as the viewe
  assert.doesNotMatch(app,/GLOBE_FRAGMENT|CAP_FRAGMENT/,"shaders are not duplicated in the viewer");
 });
 
-test("pages with a decorative background mount the backdrop; functional-map screens never do",async()=>{
+test("decorative pages mount the backdrop, auxiliary maps use it lazily, entry and Cockpit do not",async()=>{
  for(const [page,src] of Object.entries(WITH)){
   const html=await read(page),tags=html.match(/<script[^>]*backdrop\.js[^>]*>/g)||[];
   assert.equal(tags.length,1,page);
@@ -151,7 +173,13 @@ test("pages with a decorative background mount the backdrop; functional-map scre
   assert.ok(!/<script(?![^>]*src=)/.test(html),page+": no inline script");
  }
  for(const page of WITHOUT)assert.ok(!(await read(page)).includes("backdrop.js"),page+" must keep its own background");
- for(const name of await readdir(path.join(web,"moonproof","screens")))if(name.endsWith(".js"))assert.ok(!(await read("moonproof/screens/"+name)).includes("backdrop.js"),name);
+ for(const page of LAZY){const html=await read(page);assert.match(html,/<script type="module" src="\.\.\/moon-hd\/backdrop\.js" data-moon-backdrop="globe" data-moon-lazy><\/script>/,page+": Moon on demand only");}
+ for(const name of await readdir(path.join(web,"moonproof","screens")))if(name.endsWith(".js")){
+  const screen=await read("moonproof/screens/"+name);
+  if(name==="cockpit-3d.js")assert.match(screen,/import \{ probeWebGL \} from "\.\.\/\.\.\/moon-hd\/backdrop\.js"/);
+  else assert.ok(!screen.includes("backdrop.js"),name);
+  assert.doesNotMatch(screen,/mountMoonBackdrop\(/,name+" must not mount a second renderer");
+ }
 });
 
 test("links to the full viewer and credits without endorsement",async()=>{
@@ -201,3 +229,4 @@ test("local preview serves the backdrop module, its stylesheet and the shared sc
  for(const page of ["/","/moonproof/","/moonproof/evidence.html","/classic.html"])
   assert.match((await fetch(base+page,{method:"HEAD"})).headers.get("content-security-policy"),/style-src 'self'(;|$)/,page);
 });
+
