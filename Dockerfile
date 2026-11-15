@@ -17,7 +17,8 @@ RUN cargo build --release
 FROM golang:1.26-alpine AS gobuilder
 WORKDIR /build/api
 COPY api/ ./
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o /out/api .
+ARG BRASPACE_GIT_SHA=unknown
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags "-X main.buildCommit=${BRASPACE_GIT_SHA}" -o /out/api .
 
 # ----------------------------------------------------------------- tests ---
 # test-go: vet + race tests (same flags as the old CI). Real Rust binary is wired in

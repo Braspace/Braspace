@@ -682,7 +682,7 @@
         },
         "responses": {
           "200": {
-            "description": "Standalone print-friendly HTML (Print \u2192 Save as PDF)",
+            "description": "Standalone print-friendly HTML (Print → Save as PDF)",
             "content": {
               "text/html": {}
             }
@@ -860,7 +860,28 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "object",
+                  "required": [
+                    "service",
+                    "status",
+                    "science_status",
+                    "build_commit"
+                  ],
+                  "properties": {
+                    "service": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "science_status": {
+                      "type": "string"
+                    },
+                    "build_commit": {
+                      "type": "string",
+                      "description": "Git commit linked into the running binary (Docker build arg BRASPACE_GIT_SHA), Go VCS stamp for local builds, or \"unknown\"; never guessed."
+                    }
+                  }
                 }
               }
             }

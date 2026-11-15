@@ -13,11 +13,31 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 )
 
 const maxRequestBytes = 128 << 10
+
+// buildCommit is stamped at link time (-ldflags "-X main.buildCommit=<sha>") so
+// /healthz names the commit actually running; local builds fall back to Go's
+// embedded VCS stamp, and "unknown" is reported rather than guessed.
+var buildCommit = ""
+
+func runningCommit() string {
+	if buildCommit != "" {
+		return buildCommit
+	}
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, s := range info.Settings {
+			if s.Key == "vcs.revision" && s.Value != "" {
+				return s.Value
+			}
+		}
+	}
+	return "unknown"
+}
 
 type direction struct {
 	AzimuthDeg   float64 `json:"azimuth_deg"`
@@ -120,7 +140,7 @@ func writeJSON(w http.ResponseWriter, code int, payload any) {
 func routes(binary string) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]string{"service": "braspace-api", "status": "alive", "science_status": "UNVERIFIED_INPUTS"})
+		writeJSON(w, http.StatusOK, map[string]string{"service": "braspace-api", "status": "alive", "science_status": "UNVERIFIED_INPUTS", "build_commit": runningCommit()})
 	})
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
 		st, err := os.Stat(binary)
