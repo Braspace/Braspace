@@ -5,29 +5,27 @@ import { cockpitEntryURL, openCockpit } from "../screens/cockpit-entry.js";
 
 const read = path => readFile(new URL(path, import.meta.url), "utf8");
 
-test("canonical MoonProof entry is the three-mode chooser, never a blank JS redirect", async () => {
+test("canonical MoonProof entry opens cockpit with accessible no-JS fallback", async () => {
   const html = await read("../index.html");
-  assert.match(html, /<script type="module" src="screens\/entry\.js"><\/script>/);
-  assert.match(html, /id="cards" role="list"/);
-  assert.match(html, /screens\/entry\.css/);
-  assert.match(html, /data-moon-tour="entry"/);
-  assert.doesNotMatch(html, /screens\/cockpit-entry\.js|http-equiv="refresh"/);
+  assert.ok(html.includes('src="screens/cockpit-entry.js"'));
+  assert.ok(html.includes('id="cockpit-entry" href="cockpit.html"'));
+  assert.ok(html.includes('href="tasks.html"'));
+  assert.ok(html.includes("<h1>MoonProof · Cockpit</h1>"));
+  assert.ok(html.includes("screens/entry.css"));
+  assert.doesNotMatch(html, /src="screens\/entry\.js"|http-equiv="refresh"/);
   assert.doesNotMatch(html, /<script(?![^>]*src=)/i, "fallback must not use inline JS");
   assert.doesNotMatch(html, /<[^>]+style=/i, "fallback must not use inline styles");
 });
-test("three functional fallback cards are visible even if JavaScript fails", async () => {
-  const html = await read("../index.html");
-  for (const [task,page,layer,label] of [
-    ["explore", "explore.html", "answer", "Explorar a Lua"],
-    ["class", "activity.html", "why", "Dar uma aula"],
-    ["plan", "plan.html", "proof", "Planejar uma missão"]
-  ]) {
-    assert.ok(html.includes(`data-task="${task}" href="${page}?task=${task}&amp;layer=${layer}"`));
-    assert.ok(html.includes(label));
-  }
-  assert.equal((html.match(/class="mp-task"/g) || []).length, 3);
-  assert.match(html, /O que você quer fazer hoje/);
-  assert.match(html, /href="screens\/tour\.css"/);
+
+test("task chooser and contextual tour remain mounted at tasks.html", async () => {
+  const html = await read("../tasks.html");
+  const taskSource = await read("../screens/entry.tsx");
+  assert.ok(html.includes('src="screens/entry.js"'));
+  assert.ok(html.includes('id="cards" role="list"'));
+  assert.ok(html.includes('data-moon-tour="tasks"'));
+  assert.ok(html.includes('screens/tour.css'));
+  assert.ok(html.includes("data-mp-tour-slot"));
+  assert.match(taskSource, /explore: "explore\.html", class: "activity\.html", plan: "plan\.html"/);
 });
 
 test("three existing task flows are retained at the auxiliary tasks.html URL", async () => {

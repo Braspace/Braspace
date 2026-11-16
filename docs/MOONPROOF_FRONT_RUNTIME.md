@@ -74,3 +74,12 @@ Headless cai em SwiftShader e o backdrop se recusa (de propósito). Para ver a L
 - Reused existing `screens/cockpit-entry.js` adapter; index now points at Cockpit, with manual no-JS link and Heloísa token/component styles. The full chooser remains `tasks.html`; cockpit tutorial remains in `cockpit.html`. No change to Three.js scene, Artemis, science, backend or data.
 - Source-only, **UNVERIFIED**: exact-SHA CI, Node/TypeScript, real Chromium pointer/keyboard/GPU/noGPU 320/390/768/1024/1440/1920, Go/Rust/PG/pgvector, Worker rollout and rollback. No merge or deploy authorized.
 - Next gates: verify entry query/hash and history, no-JS fallback, tours, poster fallback, shared renderer and restore pointer per #454, #456, #457. Preserve PRELIMINARY/SYNTHETIC scientific status.
+
+
+### 2026-11-16 — Isolated canonical-entry test reconciliation
+
+- Base: PR #498 head `199fde9a586610f1236b83a0c8810819b0ebc6f3` (main observed `5ad8313f9bc25f232d75d1362227d436eed2cbf9`).
+- Branch: `agent/cockpit-entry-tests-20261116-0806`; update only `web/moonproof/tests/cockpit-entry.test.mjs` plus this audit record. Do not overwrite PR #498's head.
+- Changed the two stale assertions: `/moonproof/` now expects the CSP-safe cockpit redirect and accessible manual link; three chooser cards and contextual entry tour are asserted at `tasks.html`. Existing URL/history tests remain intact.
+- This is a source-level correction, not proof of Node/Chromium execution. The last observed #498 CI and pgvector checks failed; Chromium was queued. EXO-X1 GPU/noGPU, six viewports, Go/Rust/Postgres/pgvector, rollout and rollback remain unverified. No merge or deploy authorized.
+- Preserve Heloísa visual tokens, Joel's shared 3D Moon/Artemis, nine panels, and scientific PRELIMINARY/SYNTHETIC labels.
