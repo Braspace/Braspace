@@ -27,6 +27,23 @@ async function ready(){
  throw new Error("web unavailable: "+diagnostics);
 }
 const errors=[];
+const networkFailures=[];
+function watchNetwork(page, label) {
+ page.on("requestfailed", request => {
+  const failure=request.failure()?.errorText || "unknown";
+  const message=label+" requestfailed "+request.method()+" "+request.url()+" "+failure;
+  networkFailures.push(message);
+  console.error("[chromium-network]", message);
+ });
+ page.on("response", response => {
+  if (response.status() >= 400) {
+   console.error("[chromium-http]", label, response.status(), response.request().method(), response.url());
+  }
+ });
+}
+child.on("exit", (code, signal) => {
+ console.error("[chromium-preview-exit]", {code, signal, diagnostics:diagnostics.slice(-4000)});
+});
 async function open(page,url,ready){
  const r=await page.goto(base+url,{waitUntil:"domcontentloaded",timeout:30000});
  assert(r?.status()===200,url+" HTTP "+r?.status());
@@ -38,6 +55,7 @@ try{
  browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||undefined,args:["--use-angle=swiftshader","--enable-webgl","--enable-unsafe-swiftshader"]});
  const desktop=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
  desktop.on("pageerror",error=>errors.push("desktop "+desktop.url()+": "+error.stack));
+ watchNetwork(desktop, "desktop");
 
  // / -> /moonproof/ -> three-mode selector; no JS-only redirect or white fallback.
  const home=await desktop.goto(base+"/",{waitUntil:"load",timeout:30000});
@@ -142,6 +160,7 @@ try{
  // Phone: no horizontal scroll on the main screens.
  const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
  mobile.on("pageerror",error=>errors.push("mobile "+mobile.url()+": "+error.stack));
+ watchNetwork(mobile, "mobile");
  for(const [page,sel] of [["mission","#dock .mp-marker, .mp-marker"],["explore","#sheet, #left [role=radio][data-layer]"],["cockpit","#player"],["activity","#act-steps"],["landing","#bar"]]){
   await open(mobile,"/moonproof/"+page+".html",sel);
   const o=await overflow(mobile);assert(o<=1,"mobile "+page+" horizontal overflow "+o);
@@ -150,5 +169,5 @@ try{
 
  assert(errors.length===0,"browser JS errors: "+errors.join(" | "));
  console.log("PASS Chromium MoonProof desktop+mobile, Go API onboard call"+(requireBackend?"":" (backend not required)")+", Three.js landing/viewer, archived routes 404",out);
-}catch(e){console.error("FAIL Chromium QA",e?.stack||e);console.error(diagnostics);process.exitCode=1;}
+}catch(e){console.error("FAIL Chromium QA",e?.stack||e);console.error("[chromium-network-summary]",networkFailures.slice(-30).join("\\n")||"no requestfailed events");console.error(diagnostics);process.exitCode=1;}
 finally{if(browser)await browser.close();child.kill("SIGTERM");}
