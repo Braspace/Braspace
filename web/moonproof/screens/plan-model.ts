@@ -89,7 +89,10 @@ function windowIndices(series: SiteSeriesLike, t0: number, hours: number, calcSt
   if (!sh || !series?.sunMargin || !series?.earthMargin || !fin(t0) || !fin(hours) || hours <= 0) return null;
   const k = calcStepH / sh, total = hours / sh;
   if (!(Number.isInteger(k) && k >= 1) || !Number.isInteger(total)) return null;
-  const i0 = Math.ceil((t0 - series.start) / (sh * HOUR_MS));
+  // Never silently round a start to a later ephemeris sample.
+  const relative = (t0 - series.start) / (sh * HOUR_MS);
+  if (!Number.isInteger(relative)) return null;
+  const i0 = relative;
   if (i0 < 0 || i0 + total > series.count) return null;
   const idx: number[] = [];
   for (let i = i0; i < i0 + total; i += k) idx.push(i);
