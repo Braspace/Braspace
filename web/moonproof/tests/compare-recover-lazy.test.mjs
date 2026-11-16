@@ -18,8 +18,8 @@ for (const name of ["compare", "recover"]) {
     assert.doesNotMatch(before, HEAVY, "no heavy load is started before the first paint");
     assert.doesNotMatch(before.replace("await loadSites()", ""), /\bawait\b/, "nothing else is awaited before the first paint");
     assert.match(src.slice(gate, gate + 400), /afterPaint\(document\.querySelector\("\.mp-ctx-text"\)\)/);
-    assert.match(src, /mountTerrain\([^;]*progressive: true/, "the map draws its relief when the heights arrive");
-    assert.match(src.slice(gate), /mountTerrain\(|mountMap\(/, "the map draws its relief when the heights arrive");
+    assert.match(src, /(?:mountTerrain|mountPolarMap)\([^;]*progressive: true/, "the map draws its relief when the heights arrive");
+    assert.match(src.slice(gate), /mountTerrain\(|mountPolarMap\(|mountMap\(/, "the map draws its relief when the heights arrive");
     assert.doesNotMatch(src, /loadAll/, "no screen-wide download of every site's series");
   });
 }
@@ -28,7 +28,7 @@ test("compare: series are fetched per visible scenario, never for the whole cata
   const src = read("../screens/compare.tsx");
   assert.doesNotMatch(src, /doc\.sites\.map\(s => s\.id\)[^;]*seriesOf|seriesOf\([^)]*doc\.sites/, "no series of every site");
   assert.match(src, /function seriesOf\(id: string\)/);
-  assert.equal((src.match(/seriesOf\(/g) || []).length, 3, "definition + chart series + static fallback of one scenario");
+  assert.equal((src.match(/seriesOf\(/g) || []).length, 4, "definition + chart series + static fallback + battery margin (LUA3D) of one scenario");
 });
 
 test("recover: the exit search runs after the panels are painted, at low priority, with a loading line in both languages", () => {
