@@ -121,31 +121,15 @@ test("site root opens the three-mode chooser and first-visit tutorial is on that
  assert.doesNotMatch(script,/attempts\+\+ > 65/,"slow API must not suppress first-site welcome");
  assert.doesNotMatch(script,/!document\.documentElement\.classList\.contains\("mp-ready"\)/,"welcome does not need science data");
 });
-test("one site-wide welcome on first entry, but guide can always be manually reopened",()=>{
- const storage=new Map();
- const mock={getItem:key=>storage.get(key)??null};
- assert.equal(SITE_WELCOME_KEY,"moonproof.tour.welcome.v1");
- assert.equal(hasCompletedSiteWelcome(mock),false);
- assert.equal(shouldAutoOpenTour("entry",hasCompletedSiteWelcome(mock)),true);
- assert.equal(shouldAutoOpenTour("cockpit",hasCompletedSiteWelcome(mock)),true);
- assert.equal(shouldAutoOpenTour("explore",hasCompletedSiteWelcome(mock)),true);
- assert.equal(shouldAutoOpenTour("present",false),true);
- assert.equal(shouldAutoOpenTour("moonhd",false),true);
- storage.set(SITE_WELCOME_KEY,"done");
- for(const mode of ["cockpit","explore","class"])
-   assert.equal(shouldAutoOpenTour(mode,hasCompletedSiteWelcome(mock)),false);
- storage.clear();
- storage.set(tourStorageKey("explore"),"done");
- assert.equal(hasCompletedSiteWelcome(mock),true,"old per-screen completions still count");
- storage.clear();
- storage.set(tourStorageKey("cockpit"),"done");
- assert.equal(hasCompletedSiteWelcome(mock),true);
-});
-test("dismiss or finish stores both site-wide and per-mode completion",async()=>{
- const js=await read("../screens/tour.js");
- assert.match(js,/localStorage\.setItem\(SITE_WELCOME_KEY, "done"\)/);
- assert.match(js,/localStorage\.setItem\(key, "done"\)/);
- assert.match(js,/function onOpen\(\) \{ open\(false\); \}/);
+test("each screen opens once independently of visits to other screens", async () => {
+ const source = await read("../screens/tour.js");
+ assert.match(source, /localStorage\.getItem\(key\) === "done"/);
+ assert.match(source, /localStorage\.setItem\(key, "done"\)/);
+ assert.match(source, /function onOpen\(\) \{ open\(false\); \}/);
+ for (const mode of Object.keys(TOUR_STEPS)) {
+   assert.ok(TOUR_STEPS[mode].length >= 4, mode + " needs a complete walkthrough");
+   assert.notEqual(tourStorageKey(mode), SITE_WELCOME_KEY);
+ }
 });
 
 test("shared tutorial Back button has an arrow, a localized label and stays hidden at the start",async()=>{
