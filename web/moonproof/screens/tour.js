@@ -28,6 +28,83 @@ export const TOUR_STEPS = {
     { targets: ["#btn-none"], en: ["None is also an answer", "If no place meets the rule, choose None. If data are missing, the quiz says it cannot decide."], pt: ["Nenhum também vale", "Se nenhum lugar atender à regra, escolha Nenhum. Se faltarem dados, o quiz dirá que não é possível concluir."] },
     { targets: ["#btn-reveal", "#btn-next"], en: ["Reveal, then continue", "Reveal the answer and its explanation. Next question starts a new round."], pt: ["Revele e avance", "Mostre a resposta e a explicação. Próxima pergunta começa uma nova rodada."] }
   ],
+  compare: [
+    { targets: ["#left", "#sheet"], en: ["Build a comparison", "Choose scenarios and adjust each site and time window."], pt: ["Monte a comparação", "Escolha cenários e ajuste o local e a janela de cada um."] },
+    { targets: ["#right", "#sheet"], en: ["Compare results", "Read each scenario’s indicators and evidence labels before selecting one."], pt: ["Compare os resultados", "Leia os indicadores e os selos de evidência de cada cenário antes de escolher."] },
+    { targets: [".mp-scn-list", "#left"], en: ["Choose scenarios", "Select available scenarios to compare sites and time windows."], pt: ["Escolha os cenários", "Selecione os cenários disponíveis para comparar locais e períodos."] },
+    { targets: [".mp-cmp-time", "#left"], en: ["Follow the timeline", "Review the time chart to see changes during the selected window."], pt: ["Acompanhe o tempo", "Confira o gráfico temporal para perceber mudanças durante a janela escolhida."] },
+    { targets: [".mp-actions", "#right"], en: ["Continue your analysis", "Use the available actions to take the selected scenario to the next step."], pt: ["Continue a análise", "Use as ações disponíveis para levar o cenário escolhido às próximas etapas."] }
+  ],
+  mission: [
+    { targets: [".mp-context", "#terrain"], en: ["Check the mission context", "Confirm the site and time window used to evaluate the scenario."], pt: ["Defina o contexto", "Confira o local e o período usados para avaliar o cenário."] },
+    { targets: ["#left", "#right", "#dock"], en: ["Read the indicators", "Use the panels to review illumination, Earth visibility and mission margins."], pt: ["Leia os indicadores", "Use os painéis para consultar iluminação, visibilidade da Terra e margens da missão."] },
+    { targets: ["#terrain", "#panels"], en: ["Explore the terrain", "Use the map and select a region to update the context."], pt: ["Explore o terreno", "Observe o mapa e selecione uma região para atualizar o contexto."] },
+    { targets: ["#left .mc-tabs", "#left"], en: ["Switch details", "Use the panel tabs to inspect the available mission information."], pt: ["Alterne os detalhes", "Use as abas dos painéis para examinar as informações disponíveis da missão."] },
+    { targets: ["#right", "#panels"], en: ["Check conditions", "Review the indicators and caveats shown for the selected scenario."], pt: ["Confira as condições", "Analise os indicadores e as ressalvas exibidas para o cenário selecionado."] },
+    { targets: ["#dock", "#panels"], en: ["Choose the next step", "Use the shortcuts to continue exploring or compare alternatives."], pt: ["Escolha o próximo passo", "Use os atalhos para continuar a exploração ou comparar alternativas."] }
+  ],
+  recover: [
+    { targets: ["#left", "#sheet"], en: ["Try a fault scenario", "Adjust the scenario and see how assumptions affect recovery."], pt: ["Experimente uma falha", "Ajuste o cenário e observe como as hipóteses afetam a recuperação."] },
+    { targets: ["#time", "#dock"], en: ["Review the simulation", "Use the timeline and check margins before and after the fault."], pt: ["Percorra a simulação", "Use a linha do tempo e confira as margens antes e depois da falha."] },
+    { targets: [".mp-step1", "#left"], en: ["Review the margin", "Check the initial situation and indicators before changing the scenario."], pt: ["Avalie a margem", "Confira a situação inicial e os indicadores antes de mudar o cenário."] },
+    { targets: [".mp-exits", "#right"], en: ["Examine alternatives", "Compare the options shown and their available margins."], pt: ["Examine alternativas", "Compare as opções apresentadas e suas margens disponíveis."] },
+    { targets: [".mp-proof", "#right"], en: ["Check the evidence", "Read the labels and caveats to understand what supports the result."], pt: ["Confira a evidência", "Leia os selos e as ressalvas para entender o que sustenta o resultado."] }
+  ],
+  debrief: [
+    { targets: ["#left", "#map"], en: ["Review the landing", "Check the simulator’s recorded outcome and available trajectory."], pt: ["Revise o pouso", "Confira o resultado registrado no simulador e a trajetória disponível."] },
+    { targets: ["#actions", "#right"], en: ["Choose the next step", "Use the debrief actions to continue your analysis or return to landing."], pt: ["Escolha o próximo passo", "Use as ações do debriefing para continuar a análise ou voltar ao pouso."] },
+    { targets: ["#map", "#left"], en: ["Inspect the trajectory", "The map shows the recorded trajectory when landing data are available."], pt: ["Observe a trajetória", "O mapa mostra a trajetória registrada quando há dados do pouso."] },
+    { targets: [".deb-chart", "#right"], en: ["Read the charts", "Inspect the indicators and their history to understand the result."], pt: ["Leia os gráficos", "Examine os indicadores e seu histórico para entender o resultado."] },
+    { targets: [".deb-rules", "#right"], en: ["Review the rules", "Check the criteria shown and the information available to assess them."], pt: ["Revise as regras", "Confira os critérios apresentados e as informações disponíveis para avaliá-los."] }
+  ],
+  evidence: [
+    { targets: ["#menu", "#ev"], en: ["Find evidence", "Use the menu to navigate the documented topics."], pt: ["Encontre uma evidência", "Use o menu para navegar entre os temas documentados."] },
+    { targets: ["#sources", "#trust", "#main"], en: ["Check provenance", "Review sources, limitations and confidence before interpreting a value."], pt: ["Confira a origem", "Leia as fontes, as limitações e o nível de confiança antes de interpretar um dado."] },
+    { targets: ["#main", "#ev"], en: ["Read the explanation", "The central area presents the selected topic and its caveats."], pt: ["Leia a explicação", "A área central apresenta o conteúdo do tópico selecionado e suas ressalvas."] },
+    { targets: ["#assumptions", "#main"], en: ["Check assumptions", "Review the stated assumptions before using results."], pt: ["Confira as hipóteses", "Revise as hipóteses indicadas antes de usar os resultados."] },
+    { targets: ["#limits", "#main"], en: ["Understand limitations", "Review the limitations and gaps stated for each dataset."], pt: ["Entenda os limites", "Consulte as limitações e as lacunas informadas para cada conjunto de dados."] },
+    { targets: ["#trust", "#sources"], en: ["Interpret confidence", "Consult the labels and explanations to distinguish information status."], pt: ["Interprete a confiança", "Consulte os selos e explicações para distinguir o estado das informações."] }
+  ],
+  landing: [
+    { targets: ["#stage"], en: ["Get to know the landing view", "Follow the vehicle in this educational simulation."], pt: ["Conheça a cena de pouso", "Acompanhe o veículo nesta simulação educacional."] },
+    { targets: ["#bottom", "#touch", "#bar"], en: ["Find the controls", "Read the instructions and watch the indicators while practicing the landing."], pt: ["Encontre os controles", "Consulte as instruções e acompanhe os indicadores ao praticar o pouso."] },
+    { targets: ["#bar", "#stage"], en: ["Choose how to fly", "Use the bar to switch modes and camera, pause, restart and open help."], pt: ["Escolha como pilotar", "Use a barra para alternar modos e câmera, pausar, reiniciar e abrir a ajuda."] },
+    { targets: ["#alt", "#stage"], en: ["Watch altitude", "Follow the altitude scale during descent."], pt: ["Acompanhe a altitude", "Observe a escala de altitude durante a descida."] },
+    { targets: ["#vz", "#stage"], en: ["Watch descent", "Follow vertical speed and the indications shown on the scale."], pt: ["Acompanhe a descida", "Observe a velocidade vertical e as indicações mostradas na escala."] },
+    { targets: ["#touch", "#bottom"], en: ["Control the vehicle", "On a phone, use the available touch controls. Help also describes keyboard controls."], pt: ["Controle o veículo", "No celular, use os controles de toque disponíveis. A ajuda também descreve os comandos de teclado."] },
+    { targets: ["#bottom", "#strip"], en: ["Read the guidance", "Follow simulator information and alerts to decide your next controls."], pt: ["Leia as orientações", "Acompanhe as informações e alertas do simulador para decidir seus próximos comandos."] }
+  ],
+  plan: [
+    { targets: ["#plan-rules", "#plan-root"], en: ["Review the rules", "Review the criteria and assumptions that guide planning."], pt: ["Confira as regras", "Revise os critérios e as hipóteses que orientam o planejamento."] },
+    { targets: ["#plan-table", "#plan-export"], en: ["Review and export", "Check the results table before using the export options."], pt: ["Revise e exporte", "Confira a tabela de resultados antes de usar as opções de exportação."] },
+    { targets: ["#r-night", "#plan-rules"], en: ["Adjust limits", "Edit the available night, communication, battery, slope and other limits."], pt: ["Ajuste os limites", "Edite os limites de noite, comunicação, bateria, inclinação e demais critérios disponíveis."] },
+    { targets: ["#plan-table", "#plan-root"], en: ["Compare results", "Read the table and scenario statuses with the chosen rules."], pt: ["Compare os resultados", "Leia a tabela e os estados dos cenários com as regras escolhidas."] },
+    { targets: ["#plan-export", "#plan-root"], en: ["Share the plan", "Use the available options to export or share the plan."], pt: ["Compartilhe o planejamento", "Use as opções disponíveis para exportar ou compartilhar o planejamento."] }
+  ],
+  rules: [
+    { targets: ["#rules-core", "#rules-root"], en: ["Understand the rules", "Read how mission criteria are applied to scenarios."], pt: ["Entenda as regras", "Leia como os critérios de missão são aplicados aos cenários."] },
+    { targets: ["#rules-layers", "#rules-example"], en: ["Interpret the layers", "Use the examples and layer descriptions to interpret results."], pt: ["Interprete as camadas", "Consulte os exemplos e a descrição das camadas para interpretar os resultados."] },
+    { targets: ["#rules-example", "#rules-layers"], en: ["See an example", "The example connects layers with interpretation of a scenario."], pt: ["Veja um exemplo", "O exemplo ajuda a relacionar as camadas com a interpretação de um cenário."] },
+    { targets: ["#rules-kits", "#rules-root"], en: ["Explore the kits", "Explore the available paths to teach, explore or plan."], pt: ["Conheça os kits", "Explore os caminhos disponíveis para ensinar, explorar ou planejar."] },
+    { targets: ["#rules-who", "#rules-root"], en: ["See who it serves", "Read the descriptions of intended audiences and uses."], pt: ["Saiba para quem serve", "Consulte as descrições para entender os públicos e usos previstos."] },
+    { targets: ["#rules-sys", "#rules-root"], en: ["Understand the system", "Read the information about the system and its limits."], pt: ["Entenda o sistema", "Leia as informações sobre o sistema e seus limites."] }
+  ],
+  tasks: [
+    { targets: ["#cards"], en: ["Choose a tool", "Open a task to explore the Moon, prepare a class or plan a scenario."], pt: ["Escolha uma ferramenta", "Abra uma tarefa para explorar a Lua, preparar uma aula ou planejar um cenário."] },
+    { targets: ["#skip"], en: ["Go straight to exploration", "Use the shortcut to open the exploration screen."], pt: ["Vá direto à exploração", "Use o atalho para abrir a tela de exploração."] },
+    { targets: ["#cards [data-task=\"explore\"]", "#cards"], en: ["Explore the Moon", "Choose exploration to discover south-pole regions and data."], pt: ["Explore a Lua", "Escolha exploração para conhecer regiões e dados do polo sul."] },
+    { targets: ["#cards [data-task=\"class\"]", "#cards"], en: ["Prepare a class", "Choose class to prepare and present an activity."], pt: ["Prepare uma aula", "Escolha aula para montar e apresentar uma atividade."] },
+    { targets: ["#cards [data-task=\"plan\"]", "#cards"], en: ["Plan scenarios", "Choose planning to compare scenarios and their rules."], pt: ["Planeje cenários", "Escolha planejamento para comparar cenários e suas regras."] },
+    { targets: ["#lang", "#cards"], en: ["Change language", "Use the language button to switch the available interface."], pt: ["Mude o idioma", "Use o botão de idioma para alternar a interface disponível."] }
+  ],
+  moonhd: [
+    { targets: ["#loading.error .moon-preview-actions", ".views"], en: ["Choose how to explore the Moon", "Switch between the globe and the south pole. If 3D is unavailable, retry or open the south pole map."], pt: ["Escolha como explorar a Lua", "Alterne entre o globo e o polo sul. Se o 3D estiver indisponível, tente novamente ou abra o mapa do Polo Sul."] },
+    { targets: ["#loading.error #moon-preview-map", ".panel"], en: ["Explore the scene or open the map", "In 3D, change time or lighting to see the scene respond. Use the 2D map for site details when 3D is unavailable."], pt: ["Explore a cena ou abra o mapa", "No 3D, ajuste o tempo ou a iluminação para ver a cena mudar. Use o mapa 2D para consultar os locais se o 3D estiver indisponível."] },
+    { targets: [".readout", "#view"], en: ["Read positions", "Follow the Sun and Earth indicators and their notes."], pt: ["Leia as posições", "Acompanhe os indicadores de Sol e Terra e suas observações."] },
+    { targets: ["#play", ".panel"], en: ["Control time", "Start or pause animation, adjust speed and choose a time."], pt: ["Controle o tempo", "Inicie ou pause a animação, ajuste a velocidade e escolha um instante."] },
+    { targets: [".options", ".panel"], en: ["Adjust the view", "Change color, lighting, relief, names and exposure with the available controls."], pt: ["Ajuste a visualização", "Altere cor, iluminação, relevo, nomes e exposição pelos controles disponíveis."] },
+    { targets: ["#site-card", "#view"], en: ["Inspect a site", "When available, select a site to see its card and continue exploring."], pt: ["Consulte um local", "Quando disponível, selecione um local para ver seu cartão e continuar a exploração."] }
+  ],
   class: [
     { targets: ["#act-steps"], en: ["Plan your class", "These four steps help you prepare an activity, from choosing places to sharing it."], pt: ["Prepare sua aula", "Estes quatro passos ajudam a montar uma atividade, da escolha dos lugares ao compartilhamento."] },
     { targets: ["#act-preview"], en: ["See the student view", "Preview what your class will see on a laptop or phone before presenting."], pt: ["Veja como a turma verá", "Confira como a atividade aparece no computador ou no celular dos alunos."] },
@@ -41,10 +118,10 @@ const WORDS = {
   en: { help:"View tutorial", welcome:"Want a quick tour?", welcomeBody:"A short walkthrough shows what each area does and where to start. You can close it any time.", start:"Start", skip:"Skip tutorial", close:"Close tutorial", next:"Next", prev:"Back", done:"Start using", progress:"Step", of:"of" }
 };
 export function tourStorageKey(mode) { return "moonproof.tour." + mode + ".v1"; }
-/** One automatic introduction per browser/site, regardless of which MoonProof screen opens first. */
+/** Previous releases recorded a site-wide welcome; each screen now has its own key. */
 export const SITE_WELCOME_KEY = "moonproof.tour.welcome.v1";
 export function shouldAutoOpenTour(mode, alreadyWelcomed) {
-  return mode !== "present" && !alreadyWelcomed;
+  return !alreadyWelcomed;
 }
 export function hasCompletedSiteWelcome(storage) {
   return [SITE_WELCOME_KEY, ...Object.keys(TOUR_STEPS).map(tourStorageKey)]
@@ -66,18 +143,20 @@ export function mountTour(mode) {
   const steps = TOUR_STEPS[mode];
   const key = tourStorageKey(mode);
   let index = -1, dialog = null, cover = null, spotlight = null, previousFocus = null;
-  // Respect both new site-wide completion and old per-screen completion keys.
+  // A previous visit to another screen does not suppress this screen’s tutorial.
   let alreadyWelcomed = false;
-  try { alreadyWelcomed = hasCompletedSiteWelcome(localStorage); } catch {}
+  try { alreadyWelcomed = localStorage.getItem(key) === "done"; } catch {}
   const lang = () => document.documentElement.lang.toLowerCase().startsWith("pt") ? "pt" : "en";
   const words = () => WORDS[lang()];
-  const help = document.createElement("button");
-  help.type = "button";
-  help.className = "mp-tour-help";
-  help.textContent = "? " + words().help;
-  help.setAttribute("aria-label", words().help);
-  help.addEventListener("click", () => open(false));
-  document.body.append(help);
+  const directButtons = [...document.querySelectorAll("[data-mp-tour-slot]")].map(slot => {
+    const button = createTourButton();
+    slot.append(button);
+    return button;
+  });
+  function onOpen() { open(false); }
+  function fillMenu(event) { event.detail.prepend(createTourButton()); }
+  document.addEventListener("mp-tour-open", onOpen);
+  document.addEventListener("mp-tour-slot", fillMenu);
   const remember = () => { try { localStorage.setItem(key, "done"); localStorage.setItem(SITE_WELCOME_KEY, "done"); } catch {} };
   function close() {
     if (!dialog) return;
@@ -87,7 +166,8 @@ export function mountTour(mode) {
     document.removeEventListener("keydown", onKey, true);
     window.removeEventListener("resize", place);
     window.removeEventListener("scroll", place, true);
-    (previousFocus?.isConnected ? previousFocus : help).focus();
+    (previousFocus?.isConnected && previousFocus !== document.body ? previousFocus :
+      directButtons[0] || document.querySelector("[data-mp-tour-opener]") || document.querySelector(".mp-top .mp-help"))?.focus();
   }
   function onKey(event) {
     if (!dialog) return;
@@ -102,7 +182,8 @@ export function mountTour(mode) {
   function place() {
     if (!dialog || !spotlight) return;
     const vw = window.innerWidth, vh = window.innerHeight;
-    const selected = index < 0 ? null : bestTarget(steps[index], document);
+    let selected = index < 0 ? null : bestTarget(steps[index], document);
+    if (selected && (selected.rect.bottom <= 0 || selected.rect.top >= vh || selected.rect.right <= 0 || selected.rect.left >= vw)) selected = null;
     const card = dialog.getBoundingClientRect();
     if (!selected) {
       spotlight.hidden = true;
@@ -120,7 +201,8 @@ export function mountTour(mode) {
     Object.assign(spotlight.style, { left:left+"px", top:top+"px", width:width+"px", height:height+"px" });
     const x = Math.max(12, Math.min(vw - card.width - 12, r.left + r.width / 2 - card.width / 2));
     const bottom = r.bottom + 18, above = r.top - card.height - 18;
-    const y = bottom + card.height < vh - 12 ? bottom : above > 12 ? above : Math.max(12, (vh - card.height) / 2);
+    const candidate = bottom + card.height < vh - 12 ? bottom : above > 12 ? above : (vh - card.height) / 2;
+    const y = Math.max(12, Math.min(vh - card.height - 12, candidate));
     dialog.style.left = x + "px";
     dialog.style.top = y + "px";
   }
@@ -143,11 +225,18 @@ export function mountTour(mode) {
     dialog.classList.remove("mp-tour-animate");
     void dialog.offsetWidth;
     dialog.classList.add("mp-tour-animate");
+    place();
     requestAnimationFrame(place);
-    next.focus();
+    next.focus({ preventScroll: true });
   }
   function open(auto) {
     if (dialog) return;
+    if (auto) {
+      try {
+        if (localStorage.getItem(key) === "done") return;
+        localStorage.setItem(key, "done");
+      } catch {}
+    }
     previousFocus = document.activeElement;
     index = auto ? -1 : 0;
     cover = document.createElement("div");
@@ -182,11 +271,30 @@ export function mountTour(mode) {
   // terrain and panels finish loading. Waiting for mp-ready could silently
   // suppress onboarding on a slow connection or an unavailable backend.
   const timer = setTimeout(() => {
-    if (help.isConnected && shouldAutoOpenTour(mode, alreadyWelcomed)) open(true);
+    if (shouldAutoOpenTour(mode, alreadyWelcomed)) open(true);
   }, 350); // Leave one browser paint for locale/shell initialization.
-  const langWatcher = new MutationObserver(() => { help.textContent = "? " + words().help; help.setAttribute("aria-label", words().help); if(dialog) show(); });
-  langWatcher.observe(document.documentElement,{attributes:true,attributeFilter:["lang"]});
-  return () => {clearTimeout(timer);langWatcher.disconnect();close();help.remove();};
+  const langWatcher = new MutationObserver(() => {
+    for (const button of document.querySelectorAll(".mp-tour-help")) button.textContent = words().help;
+    if (dialog) show();
+  });
+  langWatcher.observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
+  return () => {
+    clearTimeout(timer);
+    langWatcher.disconnect();
+    document.removeEventListener("mp-tour-open", onOpen);
+    document.removeEventListener("mp-tour-slot", fillMenu);
+    close();
+    for (const button of directButtons) button.remove();
+  };
+}
+function createTourButton() {
+  const locale = document.documentElement.lang.toLowerCase().startsWith("pt") ? "pt" : "en";
+  const help = document.createElement("button");
+  help.type = "button";
+  help.className = "mp-tour-help";
+  help.textContent = WORDS[locale].help;
+  help.addEventListener("click", () => document.dispatchEvent(new Event("mp-tour-open")));
+  return help;
 }
 if (typeof document !== "undefined") {
   const script = document.querySelector("script[data-moon-tour]");

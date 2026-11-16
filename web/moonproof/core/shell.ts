@@ -134,7 +134,15 @@ function helpPill() {
       for (const k of ["VAL", "PRE", "EST", "SIM", "N/D", "FALHA"]) { const r = document.createElement("p"); r.append(sealEl(k), " ", t("seal." + k)); pop.append(r); }
       const moon = document.createElement("p"), link = document.createElement("a"); link.href = "../moon-hd.html" + (lang() === "pt-BR" ? "?lang=pt" : ""); link.className = "mp-pill"; link.textContent = t("nav.moon3d"); moon.append(link); pop.append(moon);
       const credit = document.createElement("p"); credit.textContent = t("nav.moon3d.credit"); pop.append(credit);
+      document.dispatchEvent(new CustomEvent("mp-tour-slot", { detail: pop }));
       document.body.append(pop);
+      const tutorial = pop.querySelector<HTMLButtonElement>(".mp-tour-help");
+      tutorial?.addEventListener("click", () => {
+          pop?.remove();
+          b.setAttribute("aria-expanded", "false");
+          b.focus();
+      }, { capture: true, once: true });
+      tutorial?.focus();
     }
     b.setAttribute("aria-expanded", String(open));
   };

@@ -65,6 +65,11 @@ try{
  assert(await tourBack.isHidden(),"Back returns to hidden on the first step");
  await desktop.locator("#mp-tour-skip").click();
  await welcome.waitFor({state:"hidden"});
+ // Other screen tutorials are covered separately; keep navigation checks unobstructed.
+ await desktop.evaluate(() => {
+   for (const mode of ["tasks","explore","class","present","compare","debrief","evidence","landing","mission","plan","recover","rules","moonhd"])
+     localStorage.setItem("moonproof.tour." + mode + ".v1", "done");
+ });
  await desktop.screenshot({path:path.join(out,"moonproof-entry.png")});
  // All three cards must navigate to their own real screen, not to Cockpit.
  for(const [task,page,layer] of [["explore","explore.html","answer"],["class","activity.html","why"],["plan","plan.html","proof"]]){
@@ -106,7 +111,7 @@ try{
  // Isolate the seven-step tutorial regression from earlier navigation through Explore:
  // simulate a fresh visitor for this test, without affecting real user storage.
  await desktop.evaluate(() => {
-   for (const mode of ["welcome","cockpit","explore","class","present"])
+   for (const mode of ["welcome","entry","cockpit","explore","class","present"])
      localStorage.removeItem("moonproof.tour." + mode + ".v1");
  });
  const onboard=requireBackend?desktop.waitForResponse(r=>/\/api\/onboard\/(site-)?evaluate$/.test(new URL(r.url()).pathname),{timeout:40000}):null;

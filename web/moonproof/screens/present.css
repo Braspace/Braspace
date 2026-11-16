@@ -277,6 +277,7 @@ body.mp-present { font-variant-numeric: tabular-nums; }
   .mp-present-actions button { flex: 1; }
 }
 @media (max-width: 900px) {
+  .mp-present-right { flex-wrap: wrap; }
   .mp-present-top { position: relative; top: auto; left: auto; right: auto; margin: 13px 13px 0; flex-wrap: wrap; }
   .mp-present-brand { flex-wrap: wrap; min-width: 0; row-gap: 5px; }
   .mp-present-q, .mp-present-side, .mp-present-bottom { position: relative; left: auto; right: auto; top: auto; bottom: auto; width: auto; margin: 13px; }

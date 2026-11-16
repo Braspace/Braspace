@@ -22,6 +22,7 @@ if (typeof document !== 'undefined') {
   const retry = document.getElementById('moon-preview-retry');
   const link = document.getElementById('moon-preview-map');
   if (lang === 'pt') {
+    document.documentElement.lang = 'pt-BR';
     box.firstElementChild.textContent = 'Carregando o Moon HD…';
     retry.textContent = 'Tentar novamente';
     link.textContent = 'Abrir mapa do Polo Sul';
