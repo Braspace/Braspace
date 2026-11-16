@@ -79,3 +79,16 @@ test("nearby API candidates display their own UTC evaluation time, not the delay
     assert.match(src, /Date\.parse\(o\.start_utc\)/);
   }
 });
+
+test("a missing site series or API response cannot blank the entire Replanejar screen", async () => {
+  for (const path of ["screens/recover.tsx", "screens/recover.js"]) {
+    const src = await read(path);
+    assert.match(src, /if \(!series\) return null/, "never dereference unavailable site data");
+    assert.match(src, /seriesOf\(sc\.site\)\.catch\(\(\).*?null\)/, "selected site can fail independently");
+    assert.match(src, /Promise\.allSettled\(doc\.sites\.map/, "a single missing neighbor must not abort all alternatives");
+    assert.match(src, /apiDelayMetrics\(\{[\s\S]*?\}\.catch\(\(\) => \(\{ base: null/, "API errors have N/D fallback");
+    assert.match(src, /loaded\.size === doc\.sites\.length/, "do not cache an incomplete search as final");
+    assert.match(src, /rec\.coverage\.partial/, "partial coverage is explained to the user");
+    assert.match(src, /rec\.unavailable/, "timeline shows unavailable rather than inventing hours");
+  }
+});
