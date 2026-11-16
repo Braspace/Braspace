@@ -74,8 +74,8 @@ export function apiDelayMetrics({ siteId, startIso, hours, delayH, rules }) {
             return { online: !r.offline, base: null, delayed: null, nearby: [] };
         const pick = (o) => (o && o.data_status === "AVAILABLE" && o.metrics ? mapApiMetrics(o.metrics, o.science_status, "POST /api/scenarios/delay") : null);
         const opts = r.data?.options || [];
-        // Nearby catalog sites the API evaluated at the delayed start (from the Polar Lab / onboard replan, now in v3).
-        const nearby = opts.filter(o => o.kind === "nearby_site").map(o => ({ siteId: o.site_id, km: o.distance_km ?? null,
+        // Nearby options carry their own UTC evaluation starts. The API may use the original window, not the delayed one.
+        const nearby = opts.filter(o => o.kind === "nearby_site").map(o => ({ siteId: o.site_id, startUtc: o.start_utc && Number.isFinite(Date.parse(o.start_utc)) ? o.start_utc : null, km: o.distance_km ?? null,
             available: o.data_status === "AVAILABLE", admissible: o.data_status === "AVAILABLE" ? !!o.admissible : null, reason: o.reason || o.data_status, status: o.science_status || null }));
         return { online: true, base: pick(opts.find(o => o.kind === "baseline")), delayed: pick(opts.find(o => o.kind === "delay" && o.delay_hours === delayH)), nearby };
     });
