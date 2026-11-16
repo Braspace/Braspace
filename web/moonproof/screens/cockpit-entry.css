@@ -1,0 +1,15 @@
+/* MoonProof canonical Cockpit entry: readable no-JavaScript fallback only.
+   Source of truth remains Heloísa core/tokens.css; no second Moon/WebGL scene. */
+.mp-cockpit-entry{min-height:100dvh;display:grid;place-items:center;padding:max(24px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom));background:radial-gradient(circle at 50% 18%,rgba(46,196,160,.09),transparent 46%),var(--bg);color:var(--text)}
+.mp-entry-fallback{width:min(100%,520px);padding:clamp(20px,5vw,32px);border:1px solid var(--line-2);border-radius:var(--r-card);background:var(--glass);box-shadow:0 24px 72px rgba(0,0,0,.38);backdrop-filter:var(--glass-filter);-webkit-backdrop-filter:var(--glass-filter);text-align:center}
+.mp-entry-fallback .mp-entry-eyebrow{margin:0 0 var(--s2);font-family:var(--mono);font-size:var(--fs-label);letter-spacing:.12em;color:var(--jade)}
+.mp-entry-fallback h1{margin:0;font-size:clamp(27px,5vw,38px);line-height:1.12;letter-spacing:var(--ls-title);font-weight:var(--fw-title)}
+.mp-entry-fallback .mp-entry-lead{margin:var(--s2) 0 var(--s3);font-size:var(--fs-body);line-height:1.55;color:var(--text-2)}
+.mp-entry-fallback a{min-height:var(--touch);padding:12px 18px;border-radius:var(--r-pill);display:inline-flex;justify-content:center;align-items:center;text-align:center;font-size:var(--fs-body);font-weight:700;text-decoration:none;max-width:100%}
+.mp-entry-primary{background:var(--jade);color:var(--jade-text)}
+.mp-entry-primary:hover{filter:brightness(1.09)}
+.mp-entry-secondary{color:var(--text);border:1px solid var(--line-2);background:rgba(255,255,255,.04)}
+.mp-entry-secondary:hover{border-color:var(--jade)}
+.mp-entry-note{font-size:var(--fs-label);color:var(--text-2);margin:var(--s3) 0 0}
+@media(max-width:390px){.mp-entry-fallback{padding:20px 14px}.mp-entry-fallback a{width:100%}}
+@media(prefers-reduced-motion:reduce){.mp-entry-fallback *{animation:none!important;transition:none!important}}
