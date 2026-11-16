@@ -373,15 +373,15 @@ func (m *missionAPI) compare(w http.ResponseWriter, r *http.Request) {
 }
 
 type delayScenarioRequest struct {
-	SiteID          string             `json:"site_id"`
-	StartUTC        string             `json:"start_utc"`
-	DurationHours   float64            `json:"duration_hours"`
+	SiteID           string             `json:"site_id"`
+	StartUTC         string             `json:"start_utc"`
+	DurationHours    float64            `json:"duration_hours"`
 	DelaysHours      []float64          `json:"delays_hours"`
 	NearbyDelayHours *float64           `json:"nearby_delay_hours,omitempty"`
-	ObserverHeightM *float64           `json:"observer_height_m,omitempty"`
-	Constraints     missionConstraints `json:"constraints"`
-	IncludeNearby   *bool              `json:"include_nearby,omitempty"`
-	MaxNearby       int                `json:"max_nearby"`
+	ObserverHeightM  *float64           `json:"observer_height_m,omitempty"`
+	Constraints      missionConstraints `json:"constraints"`
+	IncludeNearby    *bool              `json:"include_nearby,omitempty"`
+	MaxNearby        int                `json:"max_nearby"`
 	// Optional resource models (#69): crew consumables, and the onboard
 	// energy/comms simulator from #70 applied to each option.
 	Crew                 *crewSpec      `json:"crew,omitempty"`
