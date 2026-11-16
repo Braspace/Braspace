@@ -26,7 +26,8 @@ test("immersive Moon keeps guided tour help, cover and dialog above the interact
   const layers = [
     zIndex(backdrop, ".moon-backdrop.is-explore"),
     zIndex(backdrop, ".moon-ui"),
-    zIndex(tour, "html.moon-explore-on .mp-tour-help"),
+    zIndex(tour, "html.moon-explore-on .mp-top"),
+    zIndex(tour, "html.moon-explore-on .mp-help-pop"),
     zIndex(tour, "html.moon-explore-on .mp-tour-cover"),
     zIndex(tour, "html.moon-explore-on .mp-tour-spotlight"),
     zIndex(tour, "html.moon-explore-on .mp-tour-dialog"),
@@ -37,9 +38,10 @@ test("immersive Moon keeps guided tour help, cover and dialog above the interact
 
 test("outside immersive mode, tour layers retain their normal lightweight stacking", async () => {
   const tour = await read("../screens/tour.css");
-  const help = zIndex(tour, ".mp-tour-help");
   const cover = zIndex(tour, ".mp-tour-cover");
   const spotlight = zIndex(tour, ".mp-tour-spotlight");
   const dialog = zIndex(tour, ".mp-tour-dialog");
-  assert.ok(help < cover && cover < spotlight && spotlight < dialog);
+  // PR #462 moved the standalone tour trigger into the shell help popup. It no
+  // longer needs a positioned/z-indexed default; the modal layer order does.
+  assert.ok(cover < spotlight && spotlight < dialog);
 });
