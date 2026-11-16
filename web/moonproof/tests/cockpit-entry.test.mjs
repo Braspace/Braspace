@@ -7,10 +7,10 @@ const read = path => readFile(new URL(path, import.meta.url), "utf8");
 
 test("canonical MoonProof entry uses the same-origin cockpit adapter, not three-mode cards", async () => {
   const html = await read("../index.html");
-  assert.match(html, /<script type="module" src="screens\\/cockpit-entry\\.js"><\\/script>/);
-  assert.match(html, /id="cockpit-entry" href="\\.\\/cockpit\\.html"/);
-  assert.match(html, /href="\\.\\/tasks\\.html"/);
-  assert.doesNotMatch(html, /id="cards"|screens\\/entry\\.js|http-equiv="refresh"/);
+  assert.match(html, /<script type="module" src="screens\/cockpit-entry\.js"><\/script>/);
+  assert.match(html, /id="cockpit-entry" href="\.\/cockpit\.html"/);
+  assert.match(html, /href="\.\/tasks\.html"/);
+  assert.doesNotMatch(html, /id="cards"|screens\/entry\.js|http-equiv="refresh"/);
   assert.doesNotMatch(html, /<script(?![^>]*src=)/i, "CSP: no inline JS");
   assert.doesNotMatch(html, /<[^>]+style=/i, "CSP: no inline styles");
 });
