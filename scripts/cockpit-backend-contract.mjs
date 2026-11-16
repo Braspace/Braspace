@@ -149,6 +149,45 @@ if (ref) {
   });
 }
 
+// ---------- release compatibility: frontend 34ad244+ sends nearby_delay_hours.
+// A successful legacy /api/scenarios/delay request is NOT sufficient: an older
+// deployed Go binary rejects the new field with 400 INVALID_JSON (#478).
+await check("replan nearby_delay_hours at matching UTC (frontend/API skew #478)", async () => {
+  const body = {
+    site_id: "synthetic-demo-a", start_utc: "2026-12-01T00:00:00Z",
+    duration_hours: 72, delays_hours: [48], nearby_delay_hours: 48,
+    include_nearby: true, max_nearby: 1,
+    constraints: { max_continuous_dark_hours: 20, min_earth_fraction: 0.5 },
+  };
+  const r = await call("/api/scenarios/delay", { method: "POST", body });
+  assert.equal(r.status, 200,
+    `frontend needs nearby_delay_hours, got ${r.status} ${r.error}: verify /healthz.build_commit and /api/openapi.json`);
+  const opts = r.data?.options;
+  assert.ok(Array.isArray(opts), "options array missing");
+  const delayed = opts.find((o) => o.kind === "delay" && o.delay_hours === 48);
+  const nearby = opts.find((o) => o.kind === "nearby_site");
+  const at = "2026-12-03T00:00:00Z";
+  assert.ok(delayed && nearby, "delayed and nearby_site options both required");
+  assert.equal(delayed.start_utc, at, "delayed window must match +48 h");
+  assert.equal(nearby.delay_hours, 48, "nearby must disclose the selected +48 h");
+  assert.equal(nearby.start_utc, at, "nearby must use the same UTC as delayed");
+  assert.equal(r.data.scientifically_validated, false, "do not promote preliminary data");
+  return `nearby ${nearby.site_id} at ${at}`;
+});
+
+await check("replan nearby_delay_hours rejects unrequested offset (422 JSON)", async () => {
+  const body = {
+    site_id: "synthetic-demo-a", start_utc: "2026-12-01T00:00:00Z",
+    duration_hours: 72, delays_hours: [48], nearby_delay_hours: 24,
+    include_nearby: true, max_nearby: 1,
+    constraints: { max_continuous_dark_hours: 20, min_earth_fraction: 0.5 },
+  };
+  const r = await call("/api/scenarios/delay", { method: "POST", body });
+  assert.equal(r.status, 422, `expected 422 INVALID_NEARBY_DELAY, got ${r.status}`);
+  assert.match(r.type || "", /json/i);
+  assert.equal(r.error, "INVALID_NEARBY_DELAY");
+});
+
 // ---------- negative contract: the cockpit relies on structured 4xx, never 5xx or HTML
 await check("site-evaluate: unknown site → 404 JSON SITE_NOT_FOUND", async () => {
   const r = await call("/api/onboard/site-evaluate", { method: "POST", body: siteEvaluateBody({ siteId: "atlantis", startIso: "2026-12-01T00:00:00Z", hours: 24, power, maxBlackoutH: 24 }) });
