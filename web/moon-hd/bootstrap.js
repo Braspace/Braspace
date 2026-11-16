@@ -10,6 +10,17 @@ export function showFallback(box, lang) {
   box.classList.add('error');
   if (box.firstElementChild) box.firstElementChild.textContent = fallbackText(lang);
 }
+/** Keep the requested mode meaningful while loading; do not advertise an active 3D mode
+ *  when the renderer fails. The static fallback is a south-pole poster, not a globe. */
+export function setViewControls(controls, requested, unavailable = false) {
+  for (const [view, button] of Object.entries(controls)) {
+    if (!button) continue;
+    button.disabled = unavailable;
+    button.setAttribute('aria-pressed', String(!unavailable && view === requested));
+    if (unavailable) button.setAttribute('aria-describedby', 'loading');
+    else button.removeAttribute('aria-describedby');
+  }
+}
 export async function startViewer({ box, lang, load, timeout = LOAD_LIMIT_MS }) {
   const watchdog = setTimeout(() => showFallback(box,lang),timeout);
   try { await load(); }
@@ -21,6 +32,9 @@ if (typeof document !== 'undefined') {
   const box = document.getElementById('loading');
   const retry = document.getElementById('moon-preview-retry');
   const link = document.getElementById('moon-preview-map');
+  const requested = new URLSearchParams(location.search).get('view') === 'pole' ? 'pole' : 'globe';
+  const viewControls = {globe: document.getElementById('view-globe'), pole: document.getElementById('view-pole')};
+  setViewControls(viewControls, requested);
   if (lang === 'pt') {
     document.documentElement.lang = 'pt-BR';
     box.firstElementChild.textContent = 'Carregando o Moon HD…';
@@ -28,10 +42,17 @@ if (typeof document !== 'undefined') {
     link.textContent = 'Abrir mapa do Polo Sul';
   }
   retry.addEventListener('click', () => location.reload());
+  let fallbackApplied = false;
   const observer = new MutationObserver(() => {
-    if (box.classList.contains('done') || box.classList.contains('error')) {
+    if (box.classList.contains('done')) {
+      setViewControls(viewControls, requested);
       observer.disconnect();
-      if (box.classList.contains('error')) showFallback(box, lang);
+    } else if (box.classList.contains('error') && !fallbackApplied) {
+      fallbackApplied = true;
+      showFallback(box, lang);
+      setViewControls(viewControls, requested, true);
+      // Keep observing: a slow renderer may complete after the watchdog fires.
+      // If it does, the buttons must not remain disabled forever.
     }
   });
   observer.observe(box, {attributes:true,attributeFilter:['class']});
