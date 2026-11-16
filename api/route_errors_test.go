@@ -58,3 +58,42 @@ func TestJSONRoutingErrors(t *testing.T) {
 		})
 	}
 }
+
+ 
+// Exercise the application's actual routes() registration, not only an isolated
+// ServeMux fixture. A regression that removes withJSONRoutingErrors from routes()
+// must fail even when the standalone wrapper tests remain green.
+func TestProductionRouteFallback(t *testing.T) {
+	h := withMiddleware(routes("/nonexistent/engine"))
+	for _, tc := range []struct {
+		method, path string
+		status int
+		code, allow string
+	}{
+		{"GET", "/api/nonexistent", 404, "API_ROUTE_NOT_FOUND", ""},
+		{"PUT", "/api/sites/malapert-massif", 405, "METHOD_NOT_ALLOWED", "GET, HEAD"},
+		{"GET", "/api/sites/malapert-massif", 200, "", ""},
+		{"GET", "/healthz", 200, "", ""},
+	} {
+		t.Run(tc.method+tc.path, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, httptest.NewRequest(tc.method, tc.path, nil))
+			if w.Code != tc.status {
+				t.Fatalf("status=%d, want %d: %s", w.Code, tc.status, w.Body.String())
+			}
+			if got := w.Header().Get("Allow"); got != tc.allow {
+				t.Errorf("Allow=%q, want %q", got, tc.allow)
+			}
+			if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+				t.Errorf("Content-Type=%q", ct)
+			}
+			var body map[string]any
+			if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+				t.Fatal(err)
+			}
+			if tc.code != "" && body["code"] != tc.code {
+				t.Errorf("code=%v, want %s", body["code"], tc.code)
+			}
+		})
+	}
+}
