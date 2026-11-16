@@ -34,8 +34,12 @@ Run: `node --test deploy/cloudflare/*.test.mjs` (also a step in `scripts/ci-loca
 
 ## Deploy
 
-The production Worker lives on a Cloudflare account outside this repository. Whoever owns it publishes
-**from a clean checkout of `main`** with the versioned script (same steps every time):
+Cloudflare Workers Builds connects `Braspace/Braspace` to the `braspace-moonproof` Worker.
+A push to `main`, including a merged pull request, runs `bash deploy/cloudflare/deploy.sh`
+from the repository root. Preview builds are disabled. Check the Cloudflare deployment and
+compare `/config.js` with the commit on `main` to confirm publication.
+
+For manual recovery, run the same versioned script **from a clean checkout of `main`**:
 
 ```bash
 CLOUDFLARE_ACCOUNT_ID=<account id> deploy/cloudflare/deploy.sh "#PR note"
