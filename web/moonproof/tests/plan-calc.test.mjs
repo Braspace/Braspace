@@ -194,10 +194,10 @@ test("AUD-07: the passport is an escaped, self-contained printable page with rul
   assert.ok(!html.includes("<b>") && html.includes("&lt;b&gt;") && html.includes("&lt;2&gt;") && html.includes("limite &lt;um&gt;"));
   assert.doesNotMatch(html, /\bVAL\b/); assert.doesNotMatch(html, /https?:\/\/(?!x\/)/); assert.doesNotMatch(html, /<script|<link|<img/i);
 });
-test("AUD-07: the button prints through a local window (no PDF service, no evidence &print=1) and says print / save as PDF", () => {
+test("AUD-07: the button prints through a local window (no PDF service, no evidence &print=1) and says it is an educational report (PDF), audit P2-12", () => {
   const js = read("screens/plan.tsx");
   assert.doesNotMatch(js, /print=1/); assert.match(js, /window\.open\(""/); assert.match(js, /\.print\(\)/); assert.match(js, /passportHtml\(/);
-  assert.match(js, /"plan\.print": "Print \/ save as PDF"/); assert.match(js, /"plan\.print": "Imprimir \/ salvar como PDF"/);
+  assert.match(js, /"plan\.print": "Print educational report \(PDF\)"/); assert.match(js, /"plan\.print": "Imprimir relatório educacional \(PDF\)"/);
   assert.doesNotMatch(js, /PDF Passport|Passaporte PDF/);
   assert.doesNotMatch(read("designer/K1-kit-planning.designer.mds"), /Passaporte PDF/);
 });

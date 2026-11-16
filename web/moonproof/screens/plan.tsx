@@ -51,7 +51,7 @@ register({
     "plan.csvWarn": "No hourly series for this window (outside the computed range)",
     "plan.popup": "The browser blocked the print window; the passport was saved as an HTML file you can open and print.",
     "plan.pTitle": "Planning passport",
-    "plan.pHow": "Use the browser print dialog and choose Save as PDF. This page is not a certified document.",
+    "plan.pHow": "Use the browser print dialog and choose Save as PDF. This page is not a certified document.", "plan.pSeal": "PRELIMINARY · educational report · hypothetical rules · not a landing decision",
     "plan.pGenerated": "Generated",
     "plan.pLink": "Link",
     "plan.pRules": "Rules and assumed limits",
@@ -70,7 +70,7 @@ register({
     "plan.exportTitle": "Export & reproduce",
     "plan.csv": "CSV · hourly",
     "plan.json": "JSON",
-    "plan.print": "Print / save as PDF",
+    "plan.print": "Print educational report (PDF)",
     "plan.version": "Plan version",
     "plan.urlNote": "The link reopens this exact calculation with the same rules and version.",
     "plan.tableTitle": "All metrics · Proof layer",
@@ -123,7 +123,7 @@ register({
     "plan.csvWarn": "Sem série horária para esta janela (fora do intervalo calculado)",
     "plan.popup": "O navegador bloqueou a janela de impressão; o passaporte foi salvo como arquivo HTML que você pode abrir e imprimir.",
     "plan.pTitle": "Passaporte do plano",
-    "plan.pHow": "Use a janela de impressão do navegador e escolha Salvar como PDF. Esta página não é documento certificado.",
+    "plan.pHow": "Use a janela de impressão do navegador e escolha Salvar como PDF. Esta página não é documento certificado.", "plan.pSeal": "PRELIMINAR · relatório educacional · regras hipotéticas · não é decisão de pouso",
     "plan.pGenerated": "Gerado em",
     "plan.pLink": "Link",
     "plan.pRules": "Regras e limites assumidos",
@@ -142,7 +142,7 @@ register({
     "plan.exportTitle": "Exportar e reproduzir",
     "plan.csv": "CSV · hora a hora",
     "plan.json": "JSON",
-    "plan.print": "Imprimir / salvar como PDF",
+    "plan.print": "Imprimir relatório educacional (PDF)",
     "plan.version": "Versão do plano",
     "plan.urlNote": "O link reabre exatamente este cálculo, com as mesmas regras e a mesma versão.",
     "plan.tableTitle": "Todas as métricas · camada Prova",
@@ -368,7 +368,7 @@ async function draw() {
     rules.push({ label: t("plan.sunMode"), value: t(rulesDraft.sunMode === "limb" ? "plan.sunLimb" : "plan.sunCenter"), effect: effectText("sunMode") });
     rules.push({ label: t("plan.step"), value: `${num(rulesDraft.step)} h`, effect: effectText("step") });
     rules.push({ label: t("plan.pPower"), value: t("plan.pPowerValue", { cap: fmtNum(H1_PROFILE.battery_capacity_wh), ini: fmtNum(H1_PROFILE.initial_charge_wh), sol: fmtNum(H1_PROFILE.solar_generation_w), load: fmtNum(H1_PROFILE.load_w) }), effect: t("plan.applied") });
-    const L: Record<string, string> = { title: t("plan.pTitle"), how: t("plan.pHow"), print: t("plan.print"), version: t("plan.version"), generated: t("plan.pGenerated"), origin: t("plan.pOrigin"), link: t("plan.pLink"),
+    const L: Record<string, string> = { title: t("plan.pTitle"), seal: t("plan.pSeal"), how: t("plan.pHow"), print: t("plan.print"), version: t("plan.version"), generated: t("plan.pGenerated"), origin: t("plan.pOrigin"), link: t("plan.pLink"),
       rules: t("plan.pRules"), value: t("plan.pValue"), effect: t("plan.pEffect"), scenarios: t("plan.pScenarios"), limits: t("plan.pLimits"),
       colMetric: t("plan.colMetric"), colUnit: t("plan.colUnit"), colRule: t("plan.colRule"), colMargin: t("plan.colMargin"), colUnc: t("plan.colUnc"), colOrigin: t("plan.colOrigin") };
     const html = passportHtml({ lang: document.documentElement.lang || "en", L, version: shortVersion(version?.value) ?? t("nd"), link, generatedAt: new Date().toISOString(),
