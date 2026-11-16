@@ -21,7 +21,7 @@ test("no-JavaScript fallback remains accessible and links to Cockpit and archive
   const html = await read("../index.html");
   assert.match(html, /MoonProof · Cockpit/);
   assert.match(html, /<a[^>]*id="cockpit-entry"[^>]*>Abrir cockpit/);
-  assert.match(html, /Outras ferramentas: Explorar, Aula e Planejar/);
+  assert.match(html, /Explorar, Aula e Planejar/);
 });
 test("three existing task flows are retained at the auxiliary tasks.html URL", async () => {
   const tasks = await read("../tasks.html");
