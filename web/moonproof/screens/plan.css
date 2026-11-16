@@ -142,7 +142,7 @@
   border: none;
   border-radius: var(--r-pill);
   padding: 0 21px 0 13px;
-  height: 38px;
+  height: 44px; /* WCAG-friendly, same visual treatment as the other primary actions. */
   font: 600 14px/1 var(--font);
   cursor: pointer;
 }
