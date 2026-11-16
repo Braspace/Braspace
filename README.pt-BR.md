@@ -6,13 +6,13 @@ O BRASPACE / MoonProof é um protótipo educacional e de engenharia para avaliar
 
 ---
 
-## Entrada restaurada: escolha entre três modos (15/11/2026)
+## Cockpit único — entrada principal canônica (15/11/2026, candidato)
 
-**A página inicial é a tela de escolha:** `/moonproof/` mostra três cartões funcionais — **Explorar a Lua**, **Dar uma aula** e **Planejar uma missão**. Ao escolher, a pessoa abre, respectivamente, `explore.html`, `activity.html` ou `plan.html`; o módulo Preact preserva as opções da missão e o modo escolhido no link. Mesmo sem JavaScript, os três cartões e seus links aparecem com estilo, evitando o redirecionamento em página branca.
+A decisão atual é **um único Cockpit** como experiência principal em `/moonproof/`, utilizando o adaptador same-origin `screens/cockpit-entry.js` para entrar em `cockpit.html`. O redirecionamento preserva todos os parâmetros e fragmentos de URL com `location.replace` e deixa um link visível para abrir o Cockpit quando não houver JavaScript, sem script inline (CSP). A Lua 3D do Polo Sul de Joel, a Artemis ilustrativa e os nove painéis independentes continuam no Cockpit; a Lua 3D sempre visível atrás dos painéis é o requisito do issue #456.
 
-O seletor também permanece em `/moonproof/tasks.html`. O Cockpit com nove painéis continua acessível diretamente em `/moonproof/cockpit.html` e pela navegação do aplicativo; a Lua Three.js e a demonstração educacional Artemis permanecem as mesmas. No primeiro acesso, há um tutorial opcional de quatro etapas para a tela de escolha, com opção de pular; os tours de cada modo continuam acessíveis pelo botão **Ver tutorial**.
+O seletor **Explorar / Aula / Planejar** foi mantido em `/moonproof/tasks.html`, junto com os módulos Preact, links, arquivos e ferramentas de cada integrante. O primeiro acesso ao Cockpit oferece tutorial acessível (PRs #451/#452) e os tours auxiliares continuam disponíveis. Esta reconciliação corrige a divergência da página inicial de três modos trazida pelo #455, conforme a decisão documentada no issue #457, com testes das rotas e dos links de contexto.
 
-**Situação da publicação:** os testes completos e o deploy do SHA exato ainda precisam ser comprovados antes de afirmar que a versão já aparece no Cloudflare. A imagem enviada mostrava a antiga entrada com redirecionamento JavaScript; esta correção elimina aquela dependência.
+**Gate de publicação:** candidato de código, não deploy confirmado. Exigir SHA exato, testes CI/Chromium GPU e sem GPU no EXO-X1, integração Go/Rust/Postgres/pgvector, responsividade Heloísa e verificação Worker/rollback.
 
 ## Demo no Ar e API
 
