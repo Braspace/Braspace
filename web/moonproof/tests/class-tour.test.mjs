@@ -133,3 +133,13 @@ test("dismiss or finish stores both site-wide and per-mode completion",async()=>
  assert.match(js,/localStorage\.setItem\(key, "done"\)/);
  assert.match(js,/help\.addEventListener\("click", \(\) => open\(false\)\)/);
 });
+
+test("shared tutorial Back button has an arrow, a localized label and stays hidden at the start",async()=>{
+ const js=await read("../screens/tour.js"), css=await read("../screens/tour.css");
+ assert.match(js,/prev\.textContent\s*=\s*"← "\s*\+\s*w\.prev/,"the button must never render as an empty pill");
+ assert.match(js,/prev\.setAttribute\("aria-label", w\.prev\)/,"assistive technology gets a localized label");
+ assert.match(js,/prev\.hidden\s*=\s*index\s*<=\s*0/,"there is no Back button on welcome or step one");
+ assert.match(css,/\.mp-tour-prev\[hidden\][^{]*\{display:none!important\}/,"CSS must respect the hidden attribute");
+ assert.match(js,/prev:"Voltar"/,"pt-BR label");
+ assert.match(js,/prev:"Back"/,"English label");
+});
