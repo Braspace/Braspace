@@ -4,14 +4,14 @@ import { readFile } from "node:fs/promises";
 const read = relative => readFile(new URL(relative, import.meta.url), "utf8");
 
 test("Planning Kit export actions are real 44px-high buttons", async () => {
-  const [css, html] = await Promise.all([read("../screens/plan.css"), read("../plan.html")]);
+  const [css, component] = await Promise.all([read("../screens/plan.css"), read("../screens/plan.tsx")]);
   const rule = /\.mp-btn-white\s*\{([^}]+)\}/.exec(css);
   assert.ok(rule, "export button style exists");
   const size = /\bheight\s*:\s*(\d+)px/.exec(rule[1]);
   assert.ok(size, "export button height is explicit");
   assert.ok(Number(size[1]) >= 44, "export controls must expose >=44px physical height");
   for (const id of ["btn-csv", "btn-json", "btn-pdf"])
-    assert.match(html, new RegExp(`id="${id}"[^>]*class="mp-btn-white"`));
+    assert.match(component, new RegExp(`id="${id}"[^>]*class="mp-btn-white"`));
 });
 
 test("Class Kit switches keep their visual track but provide a >=44px hit region", async () => {
