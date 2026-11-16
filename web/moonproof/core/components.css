@@ -228,5 +228,5 @@ html:not(.mp-ready) body{visibility:hidden;animation:mp-reveal 0s 2s forwards}
 :is(.lab-seg button,button.lnk,a.mp-link)::after{content:"";position:absolute;inset:-6px -2px;min-height:24px}
 /* .mp-switch::after is the knob and .mp-chip::after already gives 44 px: the switch gets its hit area on ::before. */
 .mp-switch{position:relative}
-.mp-switch::before{content:"";position:absolute;inset:-6px -4px}
+.mp-switch::before{content:"";position:absolute;inset:-9px -4px}
 select:is(.mc-win,.mc-vs){min-height:24px}
