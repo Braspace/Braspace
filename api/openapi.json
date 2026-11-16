@@ -1673,7 +1673,9 @@
               "INVALID_VECTOR",
               "INVALID_VISIBILITY_INPUT",
             "INVALID_INPUT",
-            "INVALID_NEARBY_DELAY"
+            "INVALID_NEARBY_DELAY",
+            "API_ROUTE_NOT_FOUND",
+            "METHOD_NOT_ALLOWED"
             ]
           },
           "state": {
