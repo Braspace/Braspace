@@ -6,13 +6,11 @@ BRASPACE / MoonProof is an educational and engineering prototype for evaluating 
 
 ---
 
-## Three-mode MoonProof entry restored (2026-11-15)
+## Canonical MoonProof Cockpit entry — candidate (2026-11-16)
 
-**The homepage is the choice screen:** `/moonproof/` shows three styled, working cards — **Explore the Moon**, **Teach a class**, and **Plan a mission**. Selecting one opens `explore.html`, `activity.html`, or `plan.html` respectively, with selected task and scenario options carried by the Preact entry module. A no-JavaScript fallback renders and links all three cards, so unavailable scripts never leave a blank text-only redirect.
+The primary `/moonproof/` and `/moonproof/index.html` entry now uses the existing CSP-safe `screens/cockpit-entry.js` adapter to open `cockpit.html`, preserving the query string and fragment through `location.replace`. The page provides a manual Cockpit link without JavaScript. The Explore / Teach / Plan chooser and its tutorials remain available at `/moonproof/tasks.html`; the cockpit tutorial remains in `cockpit.html`. Shared Joel South Pole Moon, Artemis and nine panel behavior are unchanged by this entry-only patch.
 
-The same chooser remains at `/moonproof/tasks.html`. The full nine-panel Cockpit is still available directly at `/moonproof/cockpit.html` and via navigation in the application; its shared Three.js scene and Artemis demonstration are unchanged. First-time visitors receive an optional four-step chooser tutorial, which they can skip; mode-specific tutorials remain available from **View tutorial**.
-
-**Release status:** source changes need tests and deployment from the exact main SHA before claims about the public Cloudflare Worker. The screenshot of a white entry page concerns the previous JavaScript redirect, which this change removes.
+**Verification status:** this is a source-only draft candidate; Node/TypeScript, Chromium GPU/noGPU, accessibility, Go/Rust/PostgreSQL/pgvector, exact-SHA CI, Worker deployment and rollback have **not** been verified in this change. Do not infer production release from this README. Acceptance tracked in #456 and #457.
 
 ## Live Demo & API
 
