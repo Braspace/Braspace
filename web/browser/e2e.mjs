@@ -57,7 +57,7 @@ try{
  assert(await tourBack.isHidden(),"Back is hidden on step one");
  await desktop.locator("#mp-tour-next").click(); // second step
  await tourBack.waitFor({state:"visible"});
- assert(/^←\\s+(?:Voltar|Back)$/.test((await tourBack.innerText()).trim()),
+ assert(/^←\s+(?:Voltar|Back)$/.test((await tourBack.innerText()).trim()),
    "Back uses a visible arrow and localized text rather than an empty pill");
  assert(["Voltar","Back"].includes(await tourBack.getAttribute("aria-label")),
    "Back is accessible in the current language");
