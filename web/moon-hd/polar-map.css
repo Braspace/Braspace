@@ -1,0 +1,46 @@
+/* LUA3D · polar map (moon-hd/polar-map.ts): ships as site selectors, zoom controls, overlay, poster fallback.
+   No inline <style>; colours from MoonProof tokens when present (var fallbacks for pages without them). */
+.pm-map { cursor: grab; }
+.pm-map.is-panning { cursor: grabbing; }
+.pm-map .mp-terrain-hd { filter: brightness(.86) contrast(1.45) saturate(.6) !important; }
+.pm-overlay { position: absolute; pointer-events: none; image-rendering: pixelated; mix-blend-mode: normal; }
+
+/* Ship marker: rocket glyph in a dark glass disc, badge (number/letter) at the upper right. */
+.mp-marker.pm-ship { width: 44px; height: 44px; margin: -22px 0 0 -22px; padding: 0; border-radius: 50%;
+  background: rgba(8, 11, 15, .78); border: 2px solid rgba(242, 244, 245, .92); color: #F2F4F5; display: grid; place-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .55); backdrop-filter: blur(2px); }
+.mp-marker.pm-ship .pm-ship-ico { width: 26px; height: 26px; display: block; pointer-events: none; }
+.mp-marker.pm-ship .pm-badge { position: absolute; top: -9px; right: -12px; min-width: 22px; height: 22px; padding: 0 6px; box-sizing: border-box;
+  border-radius: 11px; background: #F2F4F5; color: #07090C; font: 800 12.5px/22px system-ui, sans-serif; text-align: center; pointer-events: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .5); }
+.mp-marker.pm-ship[data-state="ok"] .pm-badge { background: var(--jade, #2EC4A0); color: var(--jade-text, #04110D); }
+.mp-marker.pm-ship[data-state="warn"] .pm-badge { background: var(--sun, #FFD166); color: #1b1300; }
+.mp-marker.pm-ship[data-state="fail"] .pm-badge { background: var(--risk, #FF6B6B); color: #1b0505; }
+.mp-marker.pm-ship:hover { transform: scale(1.08); }
+.mp-marker.pm-ship:focus-visible { outline: 3px solid var(--jade, #2EC4A0); outline-offset: 3px; }
+.mp-marker.pm-ship[aria-pressed="true"] { width: 52px; height: 52px; margin: -26px 0 0 -26px; background: var(--jade, #2EC4A0); color: var(--jade-text, #04110D);
+  border-color: transparent; box-shadow: 0 0 0 7px rgba(46, 196, 160, .28), 0 0 30px rgba(46, 196, 160, .6); }
+.mp-marker.pm-ship[aria-pressed="true"] .pm-ship-ico { width: 30px; height: 30px; }
+.mp-marker.pm-ship[aria-pressed="true"] .pm-badge { background: #07090C; color: #F2F4F5; }
+.mp-marker.pm-ship .mp-marker-label { top: 54px; max-width: min(300px, 70vw); overflow: hidden; text-overflow: ellipsis; }
+.mp-marker.pm-ship[aria-pressed="true"] .mp-marker-label { top: 60px; }
+
+/* Zoom + / − / centre: 44 px, lower right above the "Explore the Moon" button. */
+.pm-controls { position: absolute; right: 16px; bottom: 76px; z-index: 3; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; }
+.pm-btn { width: 44px; height: 44px; border-radius: 12px; border: 1px solid rgba(242, 244, 245, .28); background: rgba(8, 11, 15, .86); color: #F2F4F5;
+  font: 700 22px/1 system-ui, sans-serif; display: grid; place-items: center; cursor: pointer; padding: 0; box-shadow: 0 2px 10px rgba(0, 0, 0, .45); }
+.pm-btn:hover:not(:disabled) { border-color: var(--jade, #2EC4A0); }
+.pm-btn:focus-visible { outline: 3px solid var(--jade, #2EC4A0); outline-offset: 2px; }
+.pm-btn:disabled { opacity: .4; cursor: default; }
+.pm-btn.pm-center { font-size: 20px; }
+.pm-btn[hidden] { display: none; }
+
+/* Poster fallback: ships laid out over the illustrative image, CSS zoom. */
+.pm-poster-ships { position: absolute; inset: 0; transform-origin: 50% 50%; pointer-events: none; }
+.pm-note { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); margin: 0; max-width: min(560px, 90vw); padding: 6px 12px; border-radius: 10px;
+  background: rgba(8, 11, 15, .8); color: #F2F4F5; font: 500 12px/16px system-ui, sans-serif; text-align: center; pointer-events: none; z-index: 2; }
+
+@media (max-width: 700px) {
+  .pm-controls { bottom: auto; top: 128px; right: 10px; }
+  .pm-btn { width: 44px; height: 44px; font-size: 20px; }
+}

@@ -7,15 +7,21 @@
 // replaceChildren; the canvas overlay, the pin and the horizon SVG stay imperative (drawn from live geometry).
 import { h, Fragment, render } from "../../vendor/preact/preact.module.js";
 import { mountShell } from "../core/shell.js";
-import { mountTerrain } from "../core/terrain.js";
+import { mountPolarMap } from "../../moon-hd/polar-map.js";
 import { loadSites, apiWindowMetrics, sealFor, apiOnline, loadRegion, sourced, api } from "../core/data.js";
 import { createLayerCard, sealEl } from "../core/layers.js";
-import { t, fmtNum, lang } from "../core/i18n.js";
+import { t, fmtNum, lang, register } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import { coordText, parseCoord, pgdaAt, rampColor, rampCss, horizonPoints, elRange, fmtVal } from "./mission-calc.js";
 // @ts-ignore TS7016
 import { southStereoInverse, southStereoForward } from "../../lab/coords.js";
 import "./mission-i18n.js";
+// LUA3D L1 (inconsistency 10): the Sun/Earth angles are those of ONE instant (the scenario start, D0), while the
+// "visible %" rows cover the whole window; the sentence now says which instant it is.
+register({
+    en: { "ex.from.ansAt": "At the scenario start ({at}), the Sun is {s} the terrain horizon and Earth is {e}." },
+    "pt-BR": { "ex.from.ansAt": "No início do cenário ({at}), o Sol está {s} do horizonte do relevo e a Terra {e}." },
+});
 const DAY = 24, $ = (id) => document.getElementById(id);
 /** Renders a template into detached DOM nodes. Preact is only a template engine here: nothing re-renders them. */
 function build(v) {
@@ -51,7 +57,14 @@ if (!doc.sites.some(s => s.id === getState().site))
 const hours = () => getState().hours || 14 * DAY;
 const online = await apiOnline();
 const grid = (await loadRegion());
-const terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id) => { point = null; setState({ site: id }); } });
+// LUA3D: the 3D Moon seen from above (moon-hd/polar-map), every site a ship; zoom/pan repaint the active layer on top.
+let painter = null;
+const ship = (x) => ({ id: x.id, label: x.name, badge: String(x.n), lat: x.lat, lon: x.lon, x: x.stereo_x_m, y: x.stereo_y_m });
+const polar = mountPolarMap($("terrain"), { sites: doc.sites.map(ship), selectedId: getState().site ?? undefined, progressive: false, labels: true, controls: "center",
+    onSelect: (id) => { point = null; setState({ site: id }); }, onView: () => painter?.() });
+const terrain = (await polar.ready);
+if (!terrain)
+    throw new Error("explore: LOLA region unavailable");
 const fetchU8 = (f) => fetch(new URL("../../data/region/" + f, import.meta.url)).then(r => r.ok ? r.arrayBuffer() : null).then(b => b && new Uint8Array(b)).catch(() => null);
 const [pSun, pEarth] = await Promise.all([fetchU8(grid.h.layers.pgda_sun.file), fetchU8(grid.h.layers.pgda_earth.file)]);
 // Slope (and its range) only when the slope layer or legend needs it: ~0.25 s of CPU on load otherwise (profile 15/11).
@@ -66,6 +79,7 @@ tc.insertBefore(overlay, tc.children[1]);
 const pin = el("div", "ex-pin");
 pin.hidden = true;
 tc.append(pin);
+painter = () => { void paint(); };
 const cache = new Map();
 function finiteRange(arr) { let lo = Infinity, hi = -Infinity; for (let i = 0, n = arr.length; i < n; i++) {
     const v = arr[i];
@@ -326,7 +340,8 @@ function fromHere(s, m, size = []) {
     }
     else {
         const fmtM = (n) => t(n >= 0 ? "ex.above" : "ex.below", { n: fmtVal(Math.abs(n), fmtNum, nd(), 1, "°") });
-        answer = t("ex.from.ans", { s: fmtM(g.sunMargin), e: fmtM(g.earthMargin) });
+        const d0 = new Date(m.t0), p2 = (n) => String(n).padStart(2, "0");
+        answer = t("ex.from.ansAt", { at: `D0 ${p2(d0.getUTCHours())}:${p2(d0.getUTCMinutes())} UTC`, s: fmtM(g.sunMargin), e: fmtM(g.earthMargin) });
         why = horizonSvg(hz, g, ...size);
     }
     const c = createLayerCard({ id: "card-horizon", title: t("ex.from"), status: status || "NO_DATA", answer, why: why || undefined,
@@ -378,8 +393,8 @@ function dock(s) {
             btn("‹", t("mc.prev"), () => go(doc.sites[(i + n - 1) % n].id)),
             btn("›", t("mc.next"), () => go(doc.sites[(i + 1) % n].id)),
             h("select", { class: "mp-pill is-primary ex-sel", "aria-label": t("ctx.site"), onChange: (e) => go(e.currentTarget.value) }, doc.sites.map(x => h("option", { value: x.id, selected: x.id === s.id }, `${t("ctx.site")} ${x.n} · ${x.name}`))),
-            btn("−", t("mc.zout"), () => { terrain.zoom(0.7); frame(); }),
-            btn("+", t("mc.zin"), () => { terrain.zoom(1.4); frame(); }),
+            btn("−", t("mc.zout"), () => polar.zoomOut()),
+            btn("+", t("mc.zin"), () => polar.zoomIn()),
             h("form", { class: "ex-coord", onSubmit: (e) => {
                     e.preventDefault();
                     const inp = e.currentTarget.querySelector("input");

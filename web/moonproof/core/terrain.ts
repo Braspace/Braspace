@@ -126,7 +126,13 @@ export interface TerrainOptions { sites?: TerrainSite[]; selected?: string | nul
    *  screen can paint its text first; `ready` stays false until then. Default false: resolve once the map is drawn. */
   progressive?: boolean;
   /** Called after every draw (markers are in the DOM), e.g. to place things measured from them. */
-  onDraw?: () => void; }
+  onDraw?: () => void;
+  /** LUA3D: dotted A→B segments (site id pairs), read on every draw (the caller may mutate the array). */
+  links?: [string, string][];
+  /** LUA3D: crater/mons names smaller than this (km) are not labelled (a 3.5 km "Bay" read as a stray word). */
+  minFeatureKm?: number;
+  /** LUA3D: progressive mount only; called when the LOLA heights fail and no Moon HD relief exists (map unavailable). */
+  onUnavailable?: () => void; }
 export interface TerrainApi {
   /** The LOLA heights; null until the 1.4 MB grid has arrived (the map is framed from the region header before that). */
   el: HTMLElement; readonly grid: Grid | null; view: { cx: number; cy: number; span: number };
@@ -134,7 +140,7 @@ export interface TerrainApi {
   readonly free: Free | null; readonly mpp: number; readonly ready: boolean;
   toPx(x: number, y: number): [number, number]; fromPx(px: number, py: number): [number, number];
 }
-export async function mountTerrain(container: HTMLElement, { sites = [], selected = null, route = [], onSelect, labels = true, progressive = false, onDraw }: TerrainOptions = {}): Promise<TerrainApi> {
+export async function mountTerrain(container: HTMLElement, { sites = [], selected = null, route = [], onSelect, labels = true, progressive = false, onDraw, links = [], minFeatureKm = 0, onUnavailable }: TerrainOptions = {}): Promise<TerrainApi> {
   container.classList.add("mp-terrain");
   // No background yet: until a relief is drawn the page's decorative poster (moon-hd/preview.css) shows through,
   // instead of a black box. The heights (1.4 MB) load in parallel; only the ~1 KB header is awaited here.
@@ -178,7 +184,7 @@ export async function mountTerrain(container: HTMLElement, { sites = [], selecte
       .catch(stopWaiting);
   // The 2D hillshade needs the heights: draw as soon as they arrive (a failed load keeps the poster, no map).
   const gridP = loadRegion().then(g => { grid = g as Grid; reliefKey = ""; draw(); });
-  if (!progressive) await gridP; else gridP.catch(() => { container.dataset.relief = "none"; });
+  if (!progressive) await gridP; else gridP.catch(() => { if (!hd) { container.dataset.relief = "none"; onUnavailable?.(); } });
   // Crater and mons names on the map (IAU/USGS, web/moonproof/data/features.json, label only), added when they arrive.
   container.dataset.features = "0";
   const featuresP = labels ? loadFeatures().then(f => { features = f; container.dataset.features = String(f.length); draw(); }) : null;
@@ -226,6 +232,10 @@ export async function mountTerrain(container: HTMLElement, { sites = [], selecte
     vg.addColorStop(0, "rgba(7,9,12,0)"); vg.addColorStop(1, "rgba(7,9,12,.88)"); g.fillStyle = vg; g.fillRect(0, 0, W, H);
     const toPx = (x: number, y: number): [number, number] => [W / 2 + (x - sx) / mpp, H / 2 - (y - sy) / mpp];
     const pts = route.map(id => sites.find(s => s.id === id)).filter((s): s is TerrainSite => !!s).map(s => toPx((s.stereo_x_m as number), (s.stereo_y_m as number)));
+    const seg = links.map(([a, b]) => [sites.find(s => s.id === a), sites.find(s => s.id === b)]).filter((p): p is [TerrainSite, TerrainSite] => !!(p[0] && p[1]));
+    if (seg.length) { g.setLineDash([2, 8]); g.lineCap = "round"; g.lineWidth = 2.4; g.strokeStyle = "#F2F4F5"; g.beginPath();
+      for (const [a, b] of seg) { const [x0, y0] = toPx(a.stereo_x_m as number, a.stereo_y_m as number), [x1, y1] = toPx(b.stereo_x_m as number, b.stereo_y_m as number); g.moveTo(x0, y0); g.lineTo(x1, y1); }
+      g.stroke(); g.setLineDash([]); }
     if (pts.length > 1) { g.setLineDash([1, 9]); g.lineCap = "round"; g.lineWidth = 2.4; g.strokeStyle = "#F2F4F5"; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); g.setLineDash([]); }
     layer.replaceChildren(...sites.map(s => {
       const [x, y] = toPx((s.stereo_x_m as number), (s.stereo_y_m as number));
@@ -253,7 +263,7 @@ export async function mountTerrain(container: HTMLElement, { sites = [], selecte
       quietSiteLabels(layer);
       // Names: plain text, larger features first; hidden under panels, visible markers and each other.
       const marks = [...layer.querySelectorAll(".mp-marker:not([data-covered=true]), .mp-marker:not([data-covered=true]) .mp-marker-label")].map(e => e.getBoundingClientRect());
-      const cands = features.filter(f => !sites.some(s => s.name && s.name.startsWith(f.name))).sort((a, b) => b.d - a.d)
+      const cands = features.filter(f => f.d >= minFeatureKm && !sites.some(s => s.name && s.name.startsWith(f.name))).sort((a, b) => b.d - a.d)
         .map(f => { const [x, y] = toPx(f.stereo_x_m, f.stereo_y_m); return { f, x, y, w: f.name.length * 7 + 6, h: 16 }; })
         .filter(c => c.x > c.w / 2 && c.y > c.h / 2 && c.x < W - c.w / 2 && c.y < H - c.h / 2);
       const placed = placeLabels(cands, [...overlayRects(container), ...marks]).slice(0, MAX_LABELS);

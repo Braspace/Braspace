@@ -8,11 +8,12 @@
 import { h, Fragment, render } from "../../vendor/preact/preact.module.js";
 import type { ComponentChild } from "../../vendor/preact/preact.module.js";
 import { mountShell } from "../core/shell.js";
-import { mountTerrain } from "../core/terrain.js";
+import { mountPolarMap } from "../../moon-hd/polar-map.js";
+import type { PolarEngine, PolarSite } from "../../moon-hd/polar-map.js";
 import { loadSites, windowMetrics, apiWindowMetrics, sealFor, apiOnline, loadRegion, sourced, api } from "../core/data.js";
 import type { Site, SitesDoc, SiteSeriesLike } from "../core/data.js";
 import { createLayerCard, sealEl } from "../core/layers.js";
-import { t, fmtNum, lang } from "../core/i18n.js";
+import { t, fmtNum, lang, register } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import type { Layer } from "../core/state.js";
 import { coordText, parseCoord, pgdaAt, rampColor, rampCss, horizonPoints, elRange, fmtVal } from "./mission-calc.js";
@@ -20,6 +21,12 @@ import type { RampName, HorizonPoint } from "./mission-calc.js";
 // @ts-ignore TS7016
 import { southStereoInverse, southStereoForward } from "../../lab/coords.js";
 import "./mission-i18n.js";
+// LUA3D L1 (inconsistency 10): the Sun/Earth angles are those of ONE instant (the scenario start, D0), while the
+// "visible %" rows cover the whole window; the sentence now says which instant it is.
+register({
+  en: { "ex.from.ansAt": "At the scenario start ({at}), the Sun is {s} the terrain horizon and Earth is {e}." },
+  "pt-BR": { "ex.from.ansAt": "No início do cenário ({at}), o Sol está {s} do horizonte do relevo e a Terra {e}." },
+});
 
 interface ExSite extends Site { name: string; lat: number; lon: number; stereo_x_m: number; stereo_y_m: number; site_height_m: number | null }
 interface Doc extends Omit<SitesDoc, "sites"> { sites: ExSite[] }
@@ -75,7 +82,13 @@ if (!doc.sites.some(s => s.id === getState().site)) setState({ site: doc.sites[0
 const hours = (): number => getState().hours || 14 * DAY;
 const online = await apiOnline();
 const grid = (await loadRegion()) as Grid;
-const terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id: string) => { point = null; setState({ site: id }); } });
+// LUA3D: the 3D Moon seen from above (moon-hd/polar-map), every site a ship; zoom/pan repaint the active layer on top.
+let painter: (() => void) | null = null;
+const ship = (x: ExSite): PolarSite => ({ id: x.id, label: x.name, badge: String(x.n), lat: x.lat, lon: x.lon, x: x.stereo_x_m, y: x.stereo_y_m });
+const polar = mountPolarMap($("terrain"), { sites: doc.sites.map(ship), selectedId: getState().site ?? undefined, progressive: false, labels: true, controls: "center",
+  onSelect: (id: string) => { point = null; setState({ site: id }); }, onView: () => painter?.() });
+const terrain = (await polar.ready) as PolarEngine;
+if (!terrain) throw new Error("explore: LOLA region unavailable");
 const fetchU8 = (f: string): Promise<Uint8Array | null> => fetch(new URL("../../data/region/" + f, import.meta.url)).then(r => r.ok ? r.arrayBuffer() : null).then(b => b && new Uint8Array(b)).catch(() => null);
 const [pSun, pEarth] = await Promise.all([fetchU8(grid.h.layers.pgda_sun.file), fetchU8(grid.h.layers.pgda_earth.file)]);
 // Slope (and its range) only when the slope layer or legend needs it: ~0.25 s of CPU on load otherwise (profile 15/11).
@@ -87,6 +100,7 @@ let layer = new URLSearchParams(location.search).get("paint") || "altitude", tab
 const overlay = el("canvas", "ex-overlay") as HTMLCanvasElement; overlay.setAttribute("aria-hidden", "true");
 const tc = $("terrain"); tc.insertBefore(overlay, tc.children[1]);
 const pin = el("div", "ex-pin"); pin.hidden = true; tc.append(pin);
+painter = () => { void paint(); };
 const cache = new Map<string, HTMLCanvasElement>();
 function finiteRange(arr: ArrayLike<number>): [number, number] { let lo = Infinity, hi = -Infinity; for (let i = 0, n = arr.length; i < n; i++) { const v = arr[i]; if (Number.isFinite(v)) { if (v < lo) lo = v; if (v > hi) hi = v; } } return [lo, hi]; } // indexed: no copy of the grid
 const RANGES: RangeMap = { altitude: [grid.min, grid.max], get slope(): [number, number] { return [0, (slopeMax ??= finiteRange(getSlope())[1])]; }, sun: [0, 100], earth: [0, 100] };
@@ -268,7 +282,8 @@ function fromHere(s: ExSite, m: Metrics, size: [number, number] | [] = []): HTML
   if (!hz || !g) { answer = t("ex.from.nd"); why = null; }
   else {
     const fmtM = (n: number) => t(n >= 0 ? "ex.above" : "ex.below", { n: fmtVal(Math.abs(n), fmtNum, nd(), 1, "°") });
-    answer = t("ex.from.ans", { s: fmtM(g.sunMargin), e: fmtM(g.earthMargin) });
+    const d0 = new Date(m.t0), p2 = (n: number) => String(n).padStart(2, "0");
+    answer = t("ex.from.ansAt", { at: `D0 ${p2(d0.getUTCHours())}:${p2(d0.getUTCMinutes())} UTC`, s: fmtM(g.sunMargin), e: fmtM(g.earthMargin) });
     why = horizonSvg(hz, g, ...size);
   }
   const c = createLayerCard({ id: "card-horizon", title: t("ex.from"), status: status || "NO_DATA", answer, why: why || undefined,
@@ -319,8 +334,8 @@ function dock(s: ExSite) {
         <select class="mp-pill is-primary ex-sel" aria-label={t("ctx.site")} onChange={(e: Event) => go((e.currentTarget as HTMLSelectElement).value)}>
           {doc.sites.map(x => <option value={x.id} selected={x.id === s.id}>{`${t("ctx.site")} ${x.n} · ${x.name}`}</option>)}
         </select>
-        {btn("−", t("mc.zout"), () => { terrain.zoom(0.7); frame(); })}
-        {btn("+", t("mc.zin"), () => { terrain.zoom(1.4); frame(); })}
+        {btn("−", t("mc.zout"), () => polar.zoomOut())}
+        {btn("+", t("mc.zin"), () => polar.zoomIn())}
         <form class="ex-coord" onSubmit={(e: Event) => {
           e.preventDefault(); const inp = (e.currentTarget as HTMLFormElement).querySelector("input") as HTMLInputElement;
           const c = parseCoord(inp.value.replace(/;/g, " ").replace(/(\d),(\d)/g, "$1.$2")); if (!c) { inp.setCustomValidity(t("ex.coord.bad")); inp.reportValidity(); return; } inp.setCustomValidity(""); pointAt(c.lat, c.lon); draw(); }}>
