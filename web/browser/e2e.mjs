@@ -30,7 +30,7 @@ const errors=[];
 const networkFailures=[];
 function watchNetwork(page, label) {
  page.on("requestfailed", request => {
-  const failure=request.failure()?.errorText || "unknown";
+  const failure=request.failure() || "unknown";
   const message=label+" requestfailed "+request.method()+" "+request.url()+" "+failure;
   networkFailures.push(message);
   console.error("[chromium-network]", message);
@@ -169,5 +169,5 @@ try{
 
  assert(errors.length===0,"browser JS errors: "+errors.join(" | "));
  console.log("PASS Chromium MoonProof desktop+mobile, Go API onboard call"+(requireBackend?"":" (backend not required)")+", Three.js landing/viewer, archived routes 404",out);
-}catch(e){console.error("FAIL Chromium QA",e?.stack||e);console.error("[chromium-network-summary]",networkFailures.slice(-30).join("\\n")||"no requestfailed events");console.error(diagnostics);process.exitCode=1;}
+}catch(e){console.error("FAIL Chromium QA",e?.stack||e);console.error("[chromium-network-summary]",networkFailures.slice(-30).join("\n")||"no requestfailed events");console.error(diagnostics);process.exitCode=1;}
 finally{if(browser)await browser.close();child.kill("SIGTERM");}
