@@ -92,7 +92,9 @@ export function parseHash(h?: string | null): { sc: { site: string; start: strin
   const q = new URLSearchParams(String(h || "").replace(/^#/, ""));
   const sc = (q.get("sc") || "").split(",").filter(Boolean).slice(0, 3).map(p => {
     const [site, start, hours] = p.split("~"); const hv = Number(hours);
-    return { site, start: start && !Number.isNaN(Date.parse(start)) ? start : null, hours: Number.isFinite(hv) && hv > 0 ? hv : null };
+    const ms = start ? Date.parse(start) : NaN;
+    return { site, start: Number.isFinite(ms) && ms % HOUR_MS === 0 ? start : null,
+      hours: Number.isSafeInteger(hv) && hv > 0 ? hv : null };
   }).filter(s => s.site);
   const d = Number(q.get("d"));
   return { sc, d: Number.isFinite(d) && d > 0 ? d : null, x: q.get("x") || null };
