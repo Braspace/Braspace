@@ -5,6 +5,9 @@ export interface ClassroomWindow<T extends { id: string }> {
   site: T;
   start: string | null;
   hours: number | null;
+  invalid?: boolean;
+  rawStart?: string;
+  rawHours?: string;
 }
 
 /** Keep up to three Compare scenarios (including repeated sites with different windows). */
@@ -13,7 +16,7 @@ export function classroomWindows<T extends { id: string }>(
 ): ClassroomWindow<T>[] {
   const requested = parseHash(hash).sc.flatMap(ref => {
     const site = sites.find(s => s.id === ref.site);
-    return site ? [{ site, start: ref.start ?? defaults.start, hours: ref.hours ?? defaults.hours }] : [];
+    return site ? [{ site, start: ref.start ?? defaults.start, hours: ref.hours ?? defaults.hours, ...(ref.invalid ? { invalid: true, rawStart: ref.rawStart, rawHours: ref.rawHours } : {}) }] : [];
   });
   return requested.length ? requested : sites.slice(0, 3).map(site => ({ site, start: defaults.start, hours: defaults.hours }));
 }

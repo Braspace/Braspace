@@ -4,7 +4,7 @@ import { parseHash } from "./scenario-calc.js";
 export function classroomWindows(sites, hash, defaults) {
     const requested = parseHash(hash).sc.flatMap(ref => {
         const site = sites.find(s => s.id === ref.site);
-        return site ? [{ site, start: ref.start ?? defaults.start, hours: ref.hours ?? defaults.hours }] : [];
+        return site ? [{ site, start: ref.start ?? defaults.start, hours: ref.hours ?? defaults.hours, ...(ref.invalid ? { invalid: true, rawStart: ref.rawStart, rawHours: ref.rawHours } : {}) }] : [];
     });
     return requested.length ? requested : sites.slice(0, 3).map(site => ({ site, start: defaults.start, hours: defaults.hours }));
 }

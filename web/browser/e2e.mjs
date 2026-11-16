@@ -35,9 +35,9 @@ async function open(page,url,ready){
 const overflow=page=>page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
 try{
  await mkdir(out,{recursive:true});await ready();
- browser=await chromium.launch({headless:true,args:["--use-angle=swiftshader","--enable-webgl","--enable-unsafe-swiftshader"]});
+ browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||undefined,args:["--use-angle=swiftshader","--enable-webgl","--enable-unsafe-swiftshader"]});
  const desktop=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
- desktop.on("pageerror",error=>errors.push("desktop: "+error.message));
+ desktop.on("pageerror",error=>errors.push("desktop "+desktop.url()+": "+error.stack));
 
  // / -> /moonproof/ -> three-mode selector; no JS-only redirect or white fallback.
  const home=await desktop.goto(base+"/",{waitUntil:"load",timeout:30000});
@@ -81,13 +81,13 @@ try{
      && u.searchParams.get("task")===task && u.searchParams.get("layer")===layer,{timeout:15000});
  }
  // The selector preserves scenario and language when opened with a deep link.
- await desktop.goto(base+"/moonproof/?site=malapert-massif&lang=pt-BR&battery=30#scene",{waitUntil:"domcontentloaded",timeout:30000});
+ await desktop.goto(base+"/moonproof/?site=malapert-massif&lang=pt-BR&battery=31#scene",{waitUntil:"domcontentloaded",timeout:30000});
  await desktop.waitForURL(u=>/\/moonproof\/(?:index\.html)?$/.test(u.pathname)
    && u.searchParams.get("site")==="malapert-massif" && u.hash==="#scene",{timeout:15000});
  await desktop.waitForFunction(()=>document.querySelector('#cards .mp-task[data-task="plan"]')?.getAttribute('href')?.includes('site=malapert-massif'),null,{timeout:15000});
  const planURL=new URL(await desktop.locator('#cards .mp-task[data-task="plan"]').getAttribute("href"),base+"/moonproof/");
  assert(planURL.pathname.endsWith("/moonproof/plan.html"),"Plan card destination");
- for(const [key,value] of [["site","malapert-massif"],["lang","pt-BR"],["battery","30"],["task","plan"],["layer","proof"]])
+ for(const [key,value] of [["site","malapert-massif"],["lang","pt-BR"],["battery","31"],["task","plan"],["layer","proof"]])
    assert(planURL.searchParams.get(key)===value,"Plan link carries "+key);
  // The former tasks.html remains an equivalent optional entry, not a dead page.
  await open(desktop,"/moonproof/tasks.html","#cards .mp-task");
@@ -141,7 +141,7 @@ try{
  await desktop.close();
  // Phone: no horizontal scroll on the main screens.
  const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
- mobile.on("pageerror",error=>errors.push("mobile: "+error.message));
+ mobile.on("pageerror",error=>errors.push("mobile "+mobile.url()+": "+error.stack));
  for(const [page,sel] of [["mission","#dock .mp-marker, .mp-marker"],["explore","#sheet, #left [role=radio][data-layer]"],["cockpit","#player"],["activity","#act-steps"],["landing","#bar"]]){
   await open(mobile,"/moonproof/"+page+".html",sel);
   const o=await overflow(mobile);assert(o<=1,"mobile "+page+" horizontal overflow "+o);

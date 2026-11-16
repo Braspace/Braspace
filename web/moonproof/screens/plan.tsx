@@ -13,7 +13,7 @@ import type { PlanRow, PlanEntry, CompareResponse, SunMode } from "./plan-model.
 type Entry = Omit<PlanEntry, "site"> & { site: Site };
 const byId = (id: string): HTMLElement => document.getElementById(id) as HTMLElement;
 const within = <T extends Element>(root: ParentNode, sel: string): T => root.querySelector(sel) as T;
-import { parseRules, shareUrl, shortVersion, ruleEffects, compareScenarios, compareBody, compareOutcome, computePlan, violates, hourlyRows, seriesStepH, observerHeightM,
+import { parseRules, validateRuleInputs, shareUrl, shortVersion, ruleEffects, compareScenarios, compareBody, compareOutcome, computePlan, violates, hourlyRows, seriesStepH, observerHeightM,
   csvDocument, jsonDocument, passportHtml } from "./plan-model.js";
 import { pickVersion } from "./evidence-model.js";
 import { H1_PROFILE, runScenario } from "./cockpit-model.js";
@@ -34,6 +34,7 @@ register({
     "plan.sunLimb": "upper limb",
     "plan.step": "Calculation step",
     "plan.recalc": "Recalculate 3 scenarios",
+    "plan.invalidRules": "Enter finite non-negative limits, a battery floor from 0 to 100% and a slope from 0 to 90°. Previous rules are unchanged.",
     "plan.ruleNote": "Changing a rule recalculates the table. Nothing is saved: the link below reopens the calculation with these rules.",
     "plan.noEffect": "no effect",
     "plan.applied": "applied in the calculation",
@@ -105,6 +106,7 @@ register({
     "plan.sunLimb": "borda superior",
     "plan.step": "Passo de cálculo",
     "plan.recalc": "Recalcular 3 cenários",
+    "plan.invalidRules": "Informe limites finitos não negativos, bateria de 0 a 100% e inclinação de 0 a 90°. As regras anteriores foram mantidas.",
     "plan.ruleNote": "Mudar uma regra recalcula a tabela. Nada é salvo: o link abaixo reabre o cálculo com estas regras.",
     "plan.noEffect": "sem efeito",
     "plan.applied": "aplicada no cálculo",
@@ -171,7 +173,7 @@ const siteOf = (id: string): Site => doc.sites.find((s) => s.id === id) as Site;
 // The three scenarios are the ones Compare shows (#sc= in the link, else its derived defaults), each with its own site, start and duration.
 const st0 = getState();
 const scenarios = compareScenarios({ hash: location.hash, sites: doc.sites, start: st0.start, hours: st0.hours || 14 * 24, windowStart: (doc.window as { start_utc: string }).start_utc });
-const seriesList: (SiteSeriesLike | null)[] = await Promise.all(scenarios.map((sc) => loadSeries(siteOf(sc.site)).catch(() => null)));
+const seriesList: (SiteSeriesLike | null)[] = await Promise.all(scenarios.map((sc) => sc.invalid ? null : loadSeries(siteOf(sc.site)).catch(() => null)));
 const terrain = await mountTerrain(document.getElementById("terrain") as HTMLElement, {
   sites: doc.sites,
   selected: getState().site || scenarios[1]?.site || scenarios[0]?.site,
@@ -276,17 +278,15 @@ async function draw() {
       </select>
     </label>
     <button id="btn-recalc" class="mp-btn-jade" type="button">${t("plan.recalc")}</button>
+    <p id="plan-rule-error" role="alert" hidden></p>
     <p class="mp-note">${t("plan.ruleNote")}</p>
   `;
 
   within(rulesEl, "#btn-recalc").addEventListener("click", () => {
-    rulesDraft.night = Number(within<HTMLInputElement>(rulesEl, "#r-night").value);
-    rulesDraft.blackout = Number(within<HTMLInputElement>(rulesEl, "#r-blackout").value);
-    rulesDraft.battery = Number(within<HTMLInputElement>(rulesEl, "#r-battery").value);
-    rulesDraft.mast = Number(within<HTMLInputElement>(rulesEl, "#r-mast").value);
-    rulesDraft.slope = Number(within<HTMLInputElement>(rulesEl, "#r-slope").value);
-    rulesDraft.sunMode = within<HTMLSelectElement>(rulesEl, "#r-sun").value as SunMode;
-    rulesDraft.step = Number(within<HTMLSelectElement>(rulesEl, "#r-step").value);
+    const raw = Object.fromEntries(["night", "blackout", "battery", "mast", "slope", "sun", "step"].map(k => [k === "sun" ? "sunMode" : k, within<HTMLInputElement>(rulesEl, "#r-" + k).value]));
+    const valid = validateRuleInputs(raw);
+    if (!valid) { const error = within<HTMLElement>(rulesEl, "#plan-rule-error"); error.hidden = false; error.textContent = t("plan.invalidRules"); return; }
+    Object.assign(rulesDraft, valid);
     setState({ night: rulesDraft.night, blackout: rulesDraft.blackout, battery: rulesDraft.battery, layer: "proof" });
   });
 
@@ -326,6 +326,7 @@ async function draw() {
   const tableEl = byId("plan-table");
   tableEl.innerHTML = `
     <div class="mp-plan-head"><h2>${t("plan.tableTitle")}</h2><span class="mp-note">${t("plan.legend")}</span></div>
+    <p class="mp-note">${t("plan.lim1")} ${t("plan.lim3")}</p>
     <div class="mp-table-wrap" tabindex="0" role="region" aria-label="${t("plan.tableRegion")}">
       <table class="mp-metrics-table">
         <thead>

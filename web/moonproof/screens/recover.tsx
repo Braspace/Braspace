@@ -16,7 +16,7 @@ import { sealEl, createLayerCard } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import type { Layer } from "../core/state.js";
-import { judge, slack, computeExits, longestRun, parseHash, buildHash } from "./scenario-calc.js";
+import { judge, slack, computeExits, longestRun, parseHash, buildHash, ruleHeadlineKind } from "./scenario-calc.js";
 import type { Exit, LimitRules } from "./scenario-calc.js";
 import { staticMetrics, flagsOf, apiDelayMetrics, HOUR_MS } from "./scenario-data.js";
 import type { ScenarioMetrics, Nearby } from "./scenario-data.js";
@@ -29,12 +29,12 @@ register({
     "rec.step1": "Step 1 · how long is the delay?", "rec.hours": "hours", "rec.newland": "New landing", "rec.end": "Mission end", "rec.endval": "{d} · {n} days after",
     "rec.step2": "Step 2 · what changed", "rec.night": "Longest night", "rec.slack": "Margin to the rule", "rec.earth": "Earth visible", "rec.loss": "Longest Earth loss",
     "rec.step3": "Step 3 · choose an option", "rec.exit.wait": "Wait until {d}", "rec.exit.wait.s": "same site · window moves", "rec.exit.switch": "Land at {name}", "rec.exit.switch.s": "same date · other site",
-    "rec.exit.shorten": "Mission of {n} days", "rec.exit.shorten.s": "same site · shorter window", "rec.slackWord": "margin", "rec.searching": "Searching exits…", "rec.none": "No option meets every rule in the search done. Nothing is shown without a calculation.", "rec.nearby.title": "Live API · nearby catalog sites at the delayed start (PRE)", "rec.nearby.ok": "meets the rules", "rec.nearby.no": "breaks a rule", "rec.nearby.nd": "no data ({r})", "rec.coverage": "Searched: waits up to +{d} days, the other {n} catalog sites at the same start, shorter windows. Options come from the stored hourly series (web/data), even when the delay itself came from the API.",
-    "rec.step4": "Step 4 · compare and decide", "rec.step4.short": "Compare", "rec.head.break": "The delay makes the longest night {v} h, above the assumed limit of {lim} h.", "rec.head.ok": "With this delay every rule is still met.", "rec.head.nd": "No data for this delay.",
+    "rec.exit.shorten": "Mission of {n} days", "rec.exit.shorten.s": "same site · shorter window", "rec.slackWord": "margin", "rec.searching": "Searching exits…", "rec.none": "No option meets every rule in the search done. Nothing is shown without a calculation.", "rec.nearby.title": "Live API · nearby catalog sites (see each evaluated UTC time; PRE)", "rec.nearby.window": "Evaluated start (UTC): {start}", "rec.nearby.ok": "meets the rules", "rec.nearby.no": "breaks a rule", "rec.nearby.nd": "no data ({r})", "rec.coverage": "Searched: waits up to +{d} days, the other {n} catalog sites at the same start, shorter windows. Options come from the stored hourly series (web/data), even when the delay itself came from the API.",
+    "rec.step4": "Step 4 · compare and decide", "rec.step4.short": "Compare", "rec.head.break": "The delay makes the longest night {v} h, above the assumed limit of {lim} h.", "rec.head.ok": "With this delay every rule is still met.", "rec.head.nd": "No data for this delay.", "rec.head.blackout": "Earth is out of sight for {v} consecutive hours, exceeding the assumed {lim} h limit. Geometric visibility does not guarantee radio contact.", "rec.head.both": "Both assumed limits are exceeded: darkness {dark} h (limit {darkLim} h); Earth out of sight {earth} h (limit {earthLim} h).",
     "rec.timeline": "Sun over the window · red = rule-breaking night", "rec.planned": "Planned", "rec.after": "+{d} h", "rec.nightOf": "night of {v} h", "rec.exitLine": "Exit {L} · {what}",
     "rec.src.api": "Live API (delay scenario)", "rec.src.static": "stored hourly series (web/data)", "rec.src": "Source", "rec.rules": "Rules", "rec.assumed": "assumed limit",
     "rec.def": "Margin", "rec.def.txt": "Hours left to the tighter rule (night or Earth loss); negative = violated. Not the onboard battery margin.",
-    "rec.outside": "Window outside the computed series.", "rec.site": "Site", "rec.battery": "Battery margin", "rec.battery.nd": "needs the onboard API", "rec.sha": "Series SHA-256",
+    "rec.outside": "Window outside the computed series.", "rec.unavailable": "Hourly series unavailable; the timeline cannot be computed.", "rec.coverage.partial": "Partial search: {done} of {total} catalog sites could be evaluated. Missing sites are not ruled out.", "rec.site": "Site", "rec.battery": "Battery margin", "rec.battery.nd": "needs the onboard API", "rec.sha": "Series SHA-256",
     "rec.delay.aria": "Delay of {n} hours", "rec.day": "D{n}", "rec.chip.exit": "Exit D · switch site",
   },
   "pt-BR": {
@@ -42,19 +42,19 @@ register({
     "rec.step1": "Passo 1 · quanto o pouso atrasou?", "rec.hours": "horas", "rec.newland": "Novo pouso", "rec.end": "Fim da missão", "rec.endval": "{d} · {n} dias depois",
     "rec.step2": "Passo 2 · o que mudou", "rec.night": "Maior noite", "rec.slack": "Folga até a regra", "rec.earth": "Terra visível", "rec.loss": "Maior perda da Terra",
     "rec.step3": "Passo 3 · escolha uma saída", "rec.exit.wait": "Esperar até {d}", "rec.exit.wait.s": "mesmo local · a janela anda", "rec.exit.switch": "Pousar em {name}", "rec.exit.switch.s": "mesma data · outro local",
-    "rec.exit.shorten": "Missão de {n} dias", "rec.exit.shorten.s": "mesmo local · janela menor", "rec.slackWord": "folga", "rec.searching": "Buscando saídas…", "rec.none": "Nenhuma saída atende a todas as regras na busca feita. Sem cálculo, nada aparece.", "rec.nearby.title": "API ao vivo · locais vizinhos do catálogo no início atrasado (PRE)", "rec.nearby.ok": "atende às regras", "rec.nearby.no": "quebra uma regra", "rec.nearby.nd": "sem dado ({r})", "rec.coverage": "Buscado: esperar até +{d} dias, os outros {n} locais do catálogo no mesmo início e janelas menores. As saídas vêm das séries horárias gravadas (web/data), mesmo quando o atraso veio da API.",
-    "rec.step4": "Passo 4 · comparar e decidir", "rec.step4.short": "Comparar", "rec.head.break": "O atraso leva a maior noite a {v} h, acima do limite assumido de {lim} h.", "rec.head.ok": "Com este atraso todas as regras ainda valem.", "rec.head.nd": "Sem dado para este atraso.",
+    "rec.exit.shorten": "Missão de {n} dias", "rec.exit.shorten.s": "mesmo local · janela menor", "rec.slackWord": "folga", "rec.searching": "Buscando saídas…", "rec.none": "Nenhuma saída atende a todas as regras na busca feita. Sem cálculo, nada aparece.", "rec.nearby.title": "API ao vivo · locais vizinhos (confira o horário UTC avaliado; PRE)", "rec.nearby.window": "Início avaliado (UTC): {start}", "rec.nearby.ok": "atende às regras", "rec.nearby.no": "quebra uma regra", "rec.nearby.nd": "sem dado ({r})", "rec.coverage": "Buscado: esperar até +{d} dias, os outros {n} locais do catálogo no mesmo início e janelas menores. As saídas vêm das séries horárias gravadas (web/data), mesmo quando o atraso veio da API.",
+    "rec.step4": "Passo 4 · comparar e decidir", "rec.step4.short": "Comparar", "rec.head.break": "O atraso leva a maior noite a {v} h, acima do limite assumido de {lim} h.", "rec.head.ok": "Com este atraso todas as regras ainda valem.", "rec.head.nd": "Sem dado para este atraso.", "rec.head.blackout": "A Terra fica fora de vista por {v} horas consecutivas, acima do limite assumido de {lim} h. Visibilidade geométrica não garante contato por rádio.", "rec.head.both": "Os dois limites assumidos são excedidos: noite de {dark} h (limite {darkLim} h); Terra fora de vista por {earth} h (limite {earthLim} h).",
     "rec.timeline": "Sol na janela · vermelho = noite que quebra a regra", "rec.planned": "Planejado", "rec.after": "+{d} h", "rec.nightOf": "noite de {v} h", "rec.exitLine": "Saída {L} · {what}",
     "rec.src.api": "API ao vivo (cenário de atraso)", "rec.src.static": "série horária gravada (web/data)", "rec.src": "Fonte", "rec.rules": "Regras", "rec.assumed": "limite assumido",
     "rec.def": "Folga", "rec.def.txt": "Horas que sobram até a regra mais apertada (noite ou perda da Terra); negativa = violada. Não é a folga da bateria de bordo.",
-    "rec.outside": "Janela fora da série calculada.", "rec.site": "Local", "rec.battery": "Folga da bateria", "rec.battery.nd": "exige a API de bordo", "rec.sha": "SHA-256 da série",
+    "rec.outside": "Janela fora da série calculada.", "rec.unavailable": "Série horária indisponível; não é possível calcular a linha do tempo.", "rec.coverage.partial": "Busca parcial: {done} de {total} locais do catálogo avaliados. Locais sem dados não foram descartados.", "rec.site": "Local", "rec.battery": "Folga da bateria", "rec.battery.nd": "exige a API de bordo", "rec.sha": "SHA-256 da série",
     "rec.delay.aria": "Atraso de {n} horas", "rec.day": "D{n}", "rec.chip.exit": "Saída D · trocar de local",
   },
 });
 
 interface RecSite extends Site { name: string }
 interface Doc extends Omit<SitesDoc, "sites" | "window"> { sites: RecSite[]; window: { start_utc: string } }
-interface Sc { site: string; start: string; hours: number; d: number; x: string | null }
+interface Sc { site: string; start: string; hours: number; d: number; x: string | null; invalid?: boolean; rawStart?: string; rawHours?: string }
 type Metrics = ScenarioMetrics | null;
 type Exits = (Exit & { slack: number })[];
 type Chosen = (Exit & { slack: number }) | null;
@@ -95,9 +95,9 @@ function scenario(): Sc {
   const h = parseHash(location.hash), st = getState();
   const site = siteOf(h.sc[0]?.site) ? (h.sc[0].site) : (siteOf(st.site ?? undefined) ? (st.site as string) : doc.sites[0].id);
   return { site, start: h.sc[0]?.start || st.start || doc.window.start_utc, hours: h.sc[0]?.hours || st.hours || 14 * DAY,
-    d: DELAYS.includes(h.d as number) ? (h.d as number) : DELAYS[Math.floor(DELAYS.length / 2)], x: h.x };
+    d: DELAYS.includes(h.d as number) ? (h.d as number) : DELAYS[Math.floor(DELAYS.length / 2)], x: h.x, invalid: h.sc[0]?.invalid, rawStart: h.sc[0]?.rawStart, rawHours: h.sc[0]?.rawHours };
 }
-const write = (patch: Partial<Sc>) => { const s = { ...scenario(), ...patch }; history.replaceState(null, "", location.search + "#" + buildHash({ sc: [{ site: s.site, start: s.start, hours: s.hours }], d: s.d, x: s.x })); draw(); };
+const write = (patch: Partial<Sc>) => { const s = { ...scenario(), ...patch }; history.replaceState(null, "", location.search + "#" + buildHash({ sc: [s], d: s.d, x: s.x })); draw(); };
 
 // First paint (mobile LCP): the context bar comes from the URL hash and the catalogue (seal), the panels show the loading
 // shimmer (scenario.css), and only after that paint do the series start. Step 1-2 need the series of the chosen site only;
@@ -118,16 +118,17 @@ function paintContext() {
 let ctxSeal: string | null = null, ctxChosen: Chosen = null;
 const exitCache = new Map<string, Exits>(); // one search per site, window, delay and rules
 
-const metricsAt = (id: string, startMs: number, hours: number): ScenarioMetrics | null => { const m = staticMetrics(loaded.get(id) as SiteSeriesLike, startMs, hours, doc.status, id); return m ? { ...m, dark: m.dark, blackout: m.blackout } : null; };
+const metricsAt = (id: string, startMs: number, hours: number): ScenarioMetrics | null => { const series = loaded.get(id); if (!series) return null; const m = staticMetrics(series, startMs, hours, doc.status, id); return m ? { ...m, dark: m.dark, blackout: m.blackout } : null; };
 
 async function draw() {
   const rev = ++drawRev;
   const sc = scenario(), st = getState(), rules: LimitRules = { night: st.night, blackout: st.blackout };
   const t0 = Date.parse(sc.start), t1 = t0 + sc.d * HOUR_MS;
-  const [series] = await Promise.all([seriesOf(sc.site), onlineP]); // the chosen site's series downloads while /readyz answers
-  let base: Metrics = metricsAt(sc.site, t0, sc.hours), delayed: Metrics = metricsAt(sc.site, t1, sc.hours), apiNearby: Nearby[] | null = null;
-  if (online) { const r = await apiDelayMetrics({ siteId: sc.site, startIso: new Date(t0).toISOString(), hours: sc.hours, delayH: sc.d, rules }); if (r.base && r.delayed) { base = r.base; delayed = r.delayed; } apiNearby = r.nearby || []; }
+  const [series] = await Promise.all([seriesOf(sc.site).catch((): null => null), onlineP]); // the chosen site's series downloads while /readyz answers
+  let base: Metrics = sc.invalid ? null : metricsAt(sc.site, t0, sc.hours), delayed: Metrics = sc.invalid ? null : metricsAt(sc.site, t1, sc.hours), apiNearby: Nearby[] | null = null;
+  if (online && !sc.invalid) { const r = await apiDelayMetrics({ siteId: sc.site, startIso: new Date(t0).toISOString(), hours: sc.hours, delayH: sc.d, rules }).catch(() => ({ base: null, delayed: null, nearby: [] as Nearby[] })); if (r.base && r.delayed) { base = r.base; delayed = r.delayed; } apiNearby = r.nearby || []; }
   if (rev !== drawRev) return; // a newer draw started meanwhile: it paints
+  const nearbyUTC = (raw: string | null): string => raw && Number.isFinite(Date.parse(raw)) ? new Date(raw).toISOString().slice(0, 16).replace("T", " ") : t("nd");
   const jd = judge(delayed, rules);
   const paint = (exits: Exits | null) => {
     const chosen: Chosen = exits ? exits.find(e => e.kind === sc.x) || exits[0] || null : null;
@@ -163,7 +164,12 @@ async function draw() {
     document.querySelector(".mp-context")?.querySelectorAll(".mp-alert").forEach(a => a.remove()); document.querySelector(".mp-context")?.prepend(alert);
 
     // Step 3 (right)
-    const head = jd.status === "nd" ? t("rec.head.nd") : jd.reasons.some(r => r.key === "night") ? t("rec.head.break", { v: fmtNum((delayed as ScenarioMetrics).dark), lim: fmtNum(rules.night) }) : jd.status === "pass" ? t("rec.head.ok") : t("rec.head.break", { v: fmtNum((delayed as ScenarioMetrics).dark), lim: fmtNum(rules.night) });
+    const kind = ruleHeadlineKind(jd);
+    const head = kind === "nd" ? t("rec.head.nd")
+      : kind === "pass" ? t("rec.head.ok")
+      : kind === "night" ? t("rec.head.break", { v: fmtNum((delayed as ScenarioMetrics).dark), lim: fmtNum(rules.night) })
+      : kind === "blackout" ? t("rec.head.blackout", { v: fmtNum((delayed as ScenarioMetrics).blackout), lim: fmtNum(rules.blackout) })
+      : t("rec.head.both", { dark: fmtNum((delayed as ScenarioMetrics).dark), darkLim: fmtNum(rules.night), earth: fmtNum((delayed as ScenarioMetrics).blackout), earthLim: fmtNum(rules.blackout) });
     const compareLink = hrefTo("compare.html") + "#" + compareHash(sc, chosen);
     // AUD-12/13: say what was actually searched and where the options come from.
     // AUD-13: API nearby sites are a separate block with their own source; never ranked with the static exits.
@@ -185,10 +191,10 @@ async function draw() {
         {apiNearby && apiNearby.length ? (
           <div class="mp-nearby"><p class="mp-label">{t("rec.nearby.title")}</p>{apiNearby.map(nb => (
             <p class="mp-nearby-row"><b>{nb.siteId}</b>{" · " + (nb.km == null ? t("nd") : fmtNum(nb.km, 1) + " km") + " · "}
-              <span class={nb.admissible === true ? "is-ok" : nb.admissible === false ? "is-fail" : undefined}>{nb.admissible === true ? t("rec.nearby.ok") : nb.admissible === false ? t("rec.nearby.no") : t("rec.nearby.nd", { r: nb.reason })}</span></p>
+              <span class={nb.admissible === true ? "is-ok" : nb.admissible === false ? "is-fail" : undefined}>{nb.admissible === true ? t("rec.nearby.ok") : nb.admissible === false ? t("rec.nearby.no") : t("rec.nearby.nd", { r: nb.reason })}</span><br /><small class="mp-nearby-time">{t("rec.nearby.window", { start: nearbyUTC(nb.startUtc) })}</small></p>
           ))}</div>
         ) : null}
-        <p class="mp-label mp-coverage">{t("rec.coverage", { d: fmtNum(SEARCH_DAYS), n: fmtNum(doc.sites.length - 1) })}</p>
+        <p class="mp-label mp-coverage">{t("rec.coverage", { d: fmtNum(SEARCH_DAYS), n: fmtNum(doc.sites.length - 1) })}{loaded.size < doc.sites.length ? " " + t("rec.coverage.partial", { done: loaded.size, total: doc.sites.length }) : ""}</p>
       </div>);
     const go = one(<a class="mp-pill is-primary" href={compareLink} style={{ justifyContent: "center" }}>{t("rec.step4")}</a>);
     const m = delayed || base;
@@ -205,21 +211,22 @@ async function draw() {
     // timeline
     $("time").replaceChildren(one(
       <section class="mp-glass mp-scn-time"><p class="mp-label mp-q">{t("rec.timeline")}</p>
-        {trackRow(t("rec.planned"), series, t0, sc.hours, rules)}{trackRow(t("rec.after", { d: sc.d }), series, t1, sc.hours, rules)}
+        {series ? trackRow(t("rec.planned"), series, t0, sc.hours, rules) : <p class="mp-label">{t("rec.unavailable")}</p>}{series ? trackRow(t("rec.after", { d: sc.d }), series, t1, sc.hours, rules) : null}
       </section>));
     drawDock(); markMap(sc, chosen, delayed, series);
   };
   const key = [sc.site, sc.start, sc.hours, sc.d, rules.night, rules.blackout].join("|");
+  if (sc.invalid) { paint([]); return; }
   const cached = exitCache.get(key) ?? null;
   paint(cached);
   if (cached) return;
   // Exit search: needs every site's series, so it starts after the panels above are on screen (two frames), downloads the
   // other series at low priority and computes with the unchanged computeExits. A newer draw makes this one stale.
   await afterPaint(null);
-  await Promise.all(doc.sites.map(x => seriesOf(x.id, "low")));
+  await Promise.allSettled(doc.sites.map(x => seriesOf(x.id, "low")));
   if (rev !== drawRev) return;
   const exits = computeExits({ metricsAt, siteId: sc.site, siteIds: doc.sites.map(x => x.id), startMs: t0, hours: sc.hours, delayH: sc.d, rules, searchDays: SEARCH_DAYS });
-  exitCache.set(key, exits);
+  if (loaded.size === doc.sites.length) exitCache.set(key, exits);
   paint(exits);
 }
 function seals(a: Metrics, b: Metrics): ComponentChild {
@@ -233,6 +240,7 @@ function exitText(e: Exit): [string, string] {
   return [t("rec.exit.shorten", { n: fmtNum(e.hours / DAY) }), t("rec.exit.shorten.s")];
 }
 function compareHash(sc: Sc, chosen: Chosen): string {
+  if (sc.invalid) return buildHash({ sc: [sc] });
   const base = { site: sc.site, start: sc.start, hours: sc.hours };
   const alt = chosen ? { site: chosen.siteId, start: new Date(chosen.startMs).toISOString(), hours: chosen.hours } : { site: sc.site, start: new Date(Date.parse(sc.start) + sc.d * HOUR_MS).toISOString(), hours: sc.hours };
   return buildHash({ sc: [base, alt] });
@@ -265,12 +273,12 @@ const route: string[] = []; // read by the terrain on every redraw; filled in pl
 let chips: Chip[] = [];
 let mo = new MutationObserver(() => {});
 // Imperative on purpose: core/terrain.js rebuilds the markers on every redraw, so they are relabelled in place.
-function markMap(sc: Sc, chosen: Chosen, delayed: Metrics, series: SiteSeriesLike) {
+function markMap(sc: Sc, chosen: Chosen, delayed: Metrics, series: SiteSeriesLike | null) {
   const sw = chosen?.kind === "switch";
   route.splice(0, route.length, ...(sw ? [sc.site, (chosen as NonNullable<Chosen>).siteId] : []));
   terrain && terrain.select(sc.site);
   const rules = { night: getState().night };
-  const worst = delayed ? longestRun(flagsOf(series, Date.parse(sc.start) + sc.d * HOUR_MS, sc.hours).sun, false).len : 0;
+  const worst = delayed ? (series ? longestRun(flagsOf(series, Date.parse(sc.start) + sc.d * HOUR_MS, sc.hours).sun, false).len : delayed.dark ?? 0) : 0;
   chips = [];
   if (delayed && worst > rules.night) chips.push({ site: sc.site, cls: "is-red", text: t("rec.nightOf", { v: fmtNum(worst) }) });
   if (sw) chips.push({ site: (chosen as NonNullable<Chosen>).siteId, cls: "is-jade", text: t("rec.chip.exit") });
