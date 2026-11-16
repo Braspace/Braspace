@@ -72,7 +72,13 @@ export class SiteSeries {
     }
     /** Window metrics over [t0, t0 + hours). {status:"NOT_COMPUTED"} if out of range. */
     window(t0, hours) {
-        const i0 = Math.ceil((t0 - this.start) / HOUR_MS);
+        // The stored series has one sample per hour. Ceil() would silently shift an
+        // off-grid start, and a fractional duration can yield percentages above 100%.
+        if (!Number.isFinite(t0) || !Number.isFinite(this.start) || !Number.isSafeInteger(hours) || hours <= 0
+            || (t0 - this.start) % HOUR_MS !== 0) {
+            return { status: "NOT_COMPUTED", reason: "Window requires an hourly-aligned start and a positive whole-hour duration." };
+        }
+        const i0 = (t0 - this.start) / HOUR_MS;
         const i1 = i0 + hours;
         if (i0 < 0 || i1 > this.count)
             return { status: "NOT_COMPUTED", reason: "Requested dates are outside the computed ephemeris window." };

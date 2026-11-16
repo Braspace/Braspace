@@ -14,7 +14,7 @@ export interface StrideMetrics {
   stepH: number; samples: number; sunPct: number; earthPct: number; bothPct: number; longestDarkH: number; longestBlackoutH: number;
 }
 export interface HourRow { offset_h: number; utc: string | null; sun_visible: boolean; earth_visible: boolean; sun_margin_deg: number; earth_margin_deg: number; }
-export interface CompareScenario { site: string; start: string | null; hours: number; }
+export interface CompareScenario { site: string; start: string | null; hours: number; invalid?: boolean; }
 export interface CompareResponse { results?: { data_status?: string; site?: { id?: string } | null }[]; }
 export interface PlanRow {
   id: string; unit: string | null; vals: (number | null)[]; limit: { kind: "max" | "min"; value: number } | null; best: "min" | "max" | null;
@@ -29,6 +29,15 @@ export const PLAN_DEFAULTS: Readonly<PlanRules> = Object.freeze({ ...DEFAULT_RUL
 export const RULE_KEYS: readonly RuleKey[] = Object.freeze(["night", "blackout", "battery", "mast", "slope"] as RuleKey[]);
 const SUN_MODES: readonly SunMode[] = ["center", "limb"];
 const STEPS = [1, 3];
+
+/** Validate the entire form before applying any rule. Fractions are valid limits, not sample durations. */
+export function validateRuleInputs(raw: Record<string, string>): PlanRules | null {
+  const values = RULE_KEYS.map(k => raw[k]?.trim());
+  if (values.some(v => !v || !Number.isFinite(Number(v)) || Number(v) < 0)) return null;
+  const out = Object.fromEntries(RULE_KEYS.map((k, i) => [k, Number(values[i])])) as unknown as PlanRules;
+  if (out.battery > 100 || out.slope > 90 || !SUN_MODES.includes(raw.sunMode as SunMode) || !STEPS.includes(Number(raw.step))) return null;
+  return { ...out, sunMode: raw.sunMode as SunMode, step: Number(raw.step) };
+}
 
 /** Rules from a query string: `rules=a,b,c,d,e` wins, then the single params, then the defaults. */
 export function parseRules(search = ""): PlanRules {
@@ -89,7 +98,10 @@ function windowIndices(series: SiteSeriesLike, t0: number, hours: number, calcSt
   if (!sh || !series?.sunMargin || !series?.earthMargin || !fin(t0) || !fin(hours) || hours <= 0) return null;
   const k = calcStepH / sh, total = hours / sh;
   if (!(Number.isInteger(k) && k >= 1) || !Number.isInteger(total)) return null;
-  const i0 = Math.ceil((t0 - series.start) / (sh * HOUR_MS));
+  // Never silently round a start to a later ephemeris sample.
+  const relative = (t0 - series.start) / (sh * HOUR_MS);
+  if (!Number.isInteger(relative)) return null;
+  const i0 = relative;
   if (i0 < 0 || i0 + total > series.count) return null;
   const idx: number[] = [];
   for (let i = i0; i < i0 + total; i += k) idx.push(i);
@@ -140,7 +152,7 @@ export function compareScenarios({ hash = "", sites, start, hours, windowStart, 
   const siteIds = sites.map(s => s.id), known = (id: string): boolean => siteIds.includes(id);
   const hs = parseHash(hash).sc.filter(s => known(s.site));
   const t0 = start || windowStart, hrs = hours;
-  if (hs.length) return hs.map(s => ({ site: s.site, start: s.start || t0, hours: s.hours || hrs }));
+  if (hs.length) return hs.map(s => ({ ...s, site: s.site, start: s.start || t0, hours: s.hours || hrs }));
   const later = isoOf(Date.parse(t0) + 2 * hrs * HOUR_MS), second = siteIds[1] || siteIds[0];
   return [{ site: siteIds[0], start: t0, hours: hrs }, { site: second, start: t0, hours: hrs }, { site: second, start: later, hours: hrs }].slice(0, Math.min(max, 3));
 }
@@ -148,7 +160,7 @@ export function compareScenarios({ hash = "", sites, start, hours, windowStart, 
 /** Body of POST /api/compare (api/openapi.json CompareRequest). One window; null when it cannot be expressed. */
 export function compareBody({ siteIds, startIso, hours }: { siteIds?: readonly string[] | null; startIso: string; hours: number }): { site_ids: string[]; start_utc: string | null; duration_hours: number } | null {
   const ids = [...new Set(siteIds || [])].slice(0, 3), ms = Date.parse(startIso);
-  if (!ids.length || !Number.isFinite(ms) || !fin(hours) || hours <= 0) return null;
+  if (!ids.length || !Number.isFinite(ms) || ms % HOUR_MS !== 0 || !Number.isSafeInteger(hours) || hours <= 0) return null;
   return { site_ids: ids, start_utc: isoOf(ms), duration_hours: hours };
 }
 

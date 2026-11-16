@@ -133,8 +133,8 @@ test("activity.js i18n: en and pt-BR have the same keys, incl. the access note",
   const keys = s => [...s.matchAll(/"(act\.[A-Za-z0-9]+)":/g)].map(m => m[1]).sort();
   assert.deepEqual(keys(en), keys(pt));
   assert.ok(keys(pt).includes("act.access") && keys(pt).includes("act.qrLabel"));
-  assert.match(pt, /"act\.access": "Alunos entram sem conta · você acompanha as respostas aqui"/);
-  assert.match(en, /"act\.access": "Students join without an account · you follow the answers here"/);
+  assert.match(pt, /não há coleta automática/);
+  assert.match(en, /responses are not collected automatically/);
 });
 
 // Board geometry (V3Atividade, measured by DOM at 1440x900): no context bar, panels anchored at the board's own top.

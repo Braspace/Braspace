@@ -37,6 +37,9 @@ register({
         "cmp.def.txt": "Centre of the Sun or Earth above the local terrain horizon, hourly; night = longest run without Sun; Earth loss = longest run without Earth.",
         "cmp.outside": "Window outside the computed series.", "cmp.prev": "previous scenario", "cmp.next": "next scenario",
         "cmp.battery.nd": "needs the onboard API", "cmp.state": "State", "cmp.sha": "Series SHA-256",
+        "cmp.retry": "Retry missing scenarios", "cmp.partial": "Some scenarios are unavailable. Available scenarios remain evaluable; missing data are N/D.",
+        "cmp.invalid": "Invalid window: use a positive whole number of hours and a start aligned to a UTC hour. Correct the scenario before evaluating it.",
+        "cmp.mapUnavailable": "The terrain map is unavailable. Scenario results remain available; reload to retry the map.",
     },
     "pt-BR": {
         "cmp.ctx": "{n} cenários · {s} locais", "cmp.dates": "{n} datas", "cmp.q": "Qual cenário é melhor?",
@@ -59,6 +62,9 @@ register({
         "cmp.def.txt": "Centro do Sol ou da Terra acima do horizonte local do relevo, hora a hora; noite = maior trecho sem Sol; perda da Terra = maior trecho sem Terra.",
         "cmp.outside": "Janela fora da série calculada.", "cmp.prev": "cenário anterior", "cmp.next": "próximo cenário",
         "cmp.battery.nd": "exige a API de bordo", "cmp.state": "Estado", "cmp.sha": "SHA-256 da série",
+        "cmp.retry": "Tentar cenários indisponíveis novamente", "cmp.partial": "Alguns cenários estão indisponíveis. Os demais continuam avaliáveis; dados ausentes são N/D.",
+        "cmp.invalid": "Janela inválida: use horas inteiras positivas e início alinhado à hora UTC. Corrija o cenário antes de avaliá-lo.",
+        "cmp.mapUnavailable": "O mapa do relevo está indisponível. Os resultados dos cenários continuam disponíveis; recarregue para tentar o mapa novamente.",
     },
 });
 /** Renders a template into detached DOM nodes. Preact is only a template engine here: nothing re-renders them. */
@@ -89,7 +95,7 @@ const t0Default = () => getState().start || doc.window.start_utc;
 function scenarios() {
     const hs = parseHash(location.hash).sc.filter(s => siteOf(s.site));
     if (hs.length)
-        return hs.map(s => ({ site: s.site, start: s.start || t0Default(), hours: s.hours || hoursDefault() }));
+        return hs.map(s => ({ ...s, site: s.site, start: s.start || t0Default(), hours: s.hours || hoursDefault() }));
     const ids = doc.sites.map(s => s.id), hrs = hoursDefault(), a = t0Default();
     const later = new Date(Date.parse(a) + 2 * hrs * HOUR_MS).toISOString();
     const selectedSite = getState().site;
@@ -115,9 +121,11 @@ function paintContext() {
 let ctxSeal = null;
 const save = (list) => { history.replaceState(null, "", location.search + "#" + buildHash({ sc: list })); draw(); };
 async function metricsFor(sc) {
+    if (sc.invalid)
+        return null;
     const startMs = Date.parse(sc.start);
     if (online) {
-        const r = await apiCompareMetrics(sc.site, new Date(startMs).toISOString(), sc.hours);
+        const r = await apiCompareMetrics(sc.site, new Date(startMs).toISOString(), sc.hours).catch(() => ({ metrics: null }));
         if (r.metrics)
             return r.metrics;
     }
@@ -133,10 +141,11 @@ async function draw() {
     if (sel >= list.length)
         sel = 0;
     const st = getState(), rules = { night: st.night, blackout: st.blackout };
-    const seriesP = seriesOf(list[sel].site);
+    const seriesP = list[sel].invalid ? Promise.resolve(null) : seriesOf(list[sel].site);
     seriesP.catch(() => { }); // the chart's series downloads while /readyz answers
     await onlineP;
-    const [ms, series] = await Promise.all([Promise.all(list.map(metricsFor)), seriesP]);
+    const [outcomes, series] = await Promise.all([Promise.allSettled(list.map(metricsFor)), seriesP.catch(() => null)]);
+    const ms = outcomes.map(r => r.status === "fulfilled" ? r.value : null);
     if (rev !== drawRev)
         return; // a newer draw started meanwhile: it paints
     const judged = ms.map(m => judge(m, rules));
@@ -161,6 +170,10 @@ async function draw() {
         editor(list, rules)));
     const card = createLayerCard({ id: "verdict", title: t("cmp.q"), status: statusOf(ms), answer, why: reasons, proof, layer: st.layer, onLayer: (layer) => setState({ layer }) });
     const actions = one(h("div", { class: "mp-actions" },
+        list.some(s => s.invalid) && h("p", { role: "alert" }, t("cmp.invalid")),
+        ms.some(m => !m) && h(Fragment, null,
+            h("p", { role: "status" }, t("cmp.partial")),
+            h("button", { class: "mp-pill", type: "button", onClick: () => draw() }, t("cmp.retry"))),
         h("a", { class: "mp-pill is-primary", href: recoverHref(list) }, t("cmp.delay", { L: L(sel) })),
         h("a", { class: "mp-pill", href: hrefTo("activity.html") + "#" + buildHash({ sc: list }) }, t("cmp.teach")),
         judged[sel].status === "pass" ? h("a", { class: "mp-pill is-sim", href: hrefTo("landing.html", { ...getState(), site: list[sel].site, start: list[sel].start, hours: list[sel].hours }) }, t("cmp.land")) : h("button", { class: "mp-pill", type: "button", onClick: () => setState({ layer: "why" }) }, t("cmp.viewFailures"))));
@@ -177,12 +190,13 @@ async function draw() {
             h("small", null, `${siteOf(sc.site).n} · ${fmtDate(Date.parse(sc.start))}`)),
         badge(judged[i]))))));
     // chart for selected scenario
-    const fl = flagsOf(series, Date.parse(list[sel].start), list[sel].hours);
+    const fl = series ? flagsOf(series, Date.parse(list[sel].start), list[sel].hours) : { sun: [], earth: [] };
     const sunD = dailyFractions(fl.sun.map(v => v)), earthD = dailyFractions(fl.earth.map(v => v));
     const eb = barEl(earthD, "var(--earth)");
     eb.classList.add("is-mirror");
     const chart = one(h("section", { class: "mp-card mp-cmp-time" },
         h("h3", null, t("cmp.chart", { L: L(sel) })),
+        !series && h("p", { role: "status" }, t("cmp.nd")),
         h("div", { class: "mp-day-chart" },
             h("div", { class: "mp-legend" }, [["sun", "cmp.sun"], ["earth", "cmp.earth"]].map(([k, key]) => h("span", null,
                 h("i", { class: "sw " + k }),
@@ -280,16 +294,23 @@ function editor(list, rules) {
             const upd = (e) => {
                 const r = e.currentTarget.parentElement;
                 const s = r.querySelector("select"), d = r.querySelector('input[type="date"]'), hh = r.querySelector('input[type="number"]');
+                const hours = Number(hh.value);
+                if (!hh.value.trim() || !Number.isSafeInteger(hours) || hours <= 0) {
+                    hh.setCustomValidity(t("cmp.invalid"));
+                    hh.reportValidity();
+                    return;
+                }
+                hh.setCustomValidity("");
                 const nl = list.map(x => ({ ...x }));
                 const dv = d.value ? d.value + "T00:00:00Z" : sc.start;
-                nl[i] = { site: s.value, start: dv, hours: Math.max(DAY, Number(hh.value) || sc.hours) };
+                nl[i] = { site: s.value, start: dv, hours };
                 save(nl);
             };
             return (h("div", { class: "mp-edit-row" },
                 h("b", null, LETTERS[i]),
                 h("select", { "aria-label": t("cmp.site"), onChange: upd }, doc.sites.map(x => h("option", { value: x.id, selected: x.id === sc.site }, `${x.n} · ${x.name}`))),
                 h("input", { type: "date", value: sc.start.slice(0, 10), "aria-label": t("cmp.start"), onChange: upd }),
-                h("input", { type: "number", min: String(DAY), step: String(DAY), value: String(sc.hours), "aria-label": t("cmp.hours"), onChange: upd }),
+                h("input", { type: "number", min: "1", step: "1", value: String(sc.hours), "aria-label": t("cmp.hours"), onChange: upd }),
                 list.length > 1 ? h("button", { class: "mp-pill", type: "button", onClick: () => save(list.filter((_, k) => k !== i)) }, t("cmp.remove")) : null));
         }),
         list.length < MAXSC ? h("button", { class: "mp-pill", type: "button", onClick: () => save([...list, { ...list[list.length - 1] }]) }, "+ " + t("cmp.add")) : null,
@@ -324,11 +345,11 @@ terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: scenari
     route: [...new Set(scenarios().map(s => s.site))], onSelect: (id) => { const i = scenarios().findIndex(s => s.site === id); if (i >= 0) {
         sel = i;
         draw();
-    } } });
+    } } }).catch(() => { $("terrain").replaceChildren(one(h("p", { role: "status" }, t("cmp.mapUnavailable")))); return null; });
 new MutationObserver(() => markRoute()).observe($("terrain"), { childList: true, subtree: true });
 markRoute();
 await first;
-terrain.select(scenarios()[sel].site);
+terrain?.select(scenarios()[sel].site);
 markRoute();
 onState(() => draw());
 addEventListener("hashchange", () => draw());

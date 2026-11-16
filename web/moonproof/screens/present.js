@@ -26,12 +26,13 @@ register({
         "present.reveal": "Reveal answer",
         "present.hide": "Hide answer",
         "present.next": "Next question",
-    "present.pick": "Choose", "present.none": "None of these", "present.choose": "Pick a scenario or None, then reveal the answer.",
-    "present.selected": "Your choice: {choice}. Reveal to check.", "present.correct": "Correct!", "present.incorrect": "Not this time.",
-    "present.answer": "Qualifying scenario(s): {choices}.", "present.noPossible": "None of these scenarios meets this question’s rule.",
-    "present.unknown": "There are not enough computed values to determine an answer. Missing data are not marked wrong.",
+        "present.prev": "Previous question", "present.restart": "Restart activity",
+        "present.pick": "Choose", "present.none": "None of these", "present.choose": "Pick a scenario or None, then reveal the answer.",
+        "present.selected": "Your choice: {choice}. Reveal to check.", "present.correct": "Correct!", "present.incorrect": "Not this time.",
+        "present.answer": "Qualifying scenario(s): {choices}.", "present.noPossible": "None of these scenarios meets this question’s rule.",
+        "present.unknown": "There are not enough computed values to determine an answer. Missing data are not marked wrong.",
         "present.unknownChoice": "This scenario has missing measurements, so your choice cannot be graded.",
-    "present.timerPaused": "Timer paused. Press to continue.",
+        "present.timerPaused": "Timer paused. Press to continue.",
         "present.window": "UTC window: {start} · {hours} h",
         "present.windowDefault": "Default window · {hours} h (start not specified)"
     },
@@ -52,12 +53,13 @@ register({
         "present.reveal": "Revelar resposta",
         "present.hide": "Ocultar resposta",
         "present.next": "Próxima pergunta",
-    "present.pick": "Escolher", "present.none": "Nenhum deles", "present.choose": "Escolha um cenário ou Nenhum deles. Depois, revele a resposta.",
-    "present.selected": "Sua escolha: {choice}. Revele para conferir.", "present.correct": "Você acertou!", "present.incorrect": "Não foi dessa vez.",
-    "present.answer": "Cenário(s) que atende(m): {choices}.", "present.noPossible": "Nenhum destes cenários atende à regra desta pergunta.",
-    "present.unknown": "Ainda não há dados suficientes para concluir. Dados ausentes não contam como erro.",
+        "present.prev": "Pergunta anterior", "present.restart": "Reiniciar atividade",
+        "present.pick": "Escolher", "present.none": "Nenhum deles", "present.choose": "Escolha um cenário ou Nenhum deles. Depois, revele a resposta.",
+        "present.selected": "Sua escolha: {choice}. Revele para conferir.", "present.correct": "Você acertou!", "present.incorrect": "Não foi dessa vez.",
+        "present.answer": "Cenário(s) que atende(m): {choices}.", "present.noPossible": "Nenhum destes cenários atende à regra desta pergunta.",
+        "present.unknown": "Ainda não há dados suficientes para concluir. Dados ausentes não contam como erro.",
         "present.unknownChoice": "Faltam medições para este cenário; sua escolha não pode ser avaliada.",
-    "present.timerPaused": "Cronômetro pausado. Pressione para continuar.",
+        "present.timerPaused": "Cronômetro pausado. Pressione para continuar.",
         "present.window": "Janela UTC: {start} · {hours} h",
         "present.windowDefault": "Janela padrão · {hours} h (início não informado)"
     }
@@ -78,7 +80,7 @@ await mountTerrain(document.getElementById("terrain"), {
     sites: scenarios,
     selected: st.site || scenarios[0]?.id
 });
-const metrics = await Promise.all(chosenWindows.map((w) => apiWindowMetrics(doc, w.site, w.start, w.hours || 336).catch(() => unavailableQuizMetric())));
+const metrics = await Promise.all(chosenWindows.map((w) => w.invalid ? unavailableQuizMetric() : apiWindowMetrics(doc, w.site, w.start, w.hours || 336).catch(() => unavailableQuizMetric())));
 let qIndex = 1;
 let revealed = false;
 let chosen = null;
@@ -153,7 +155,10 @@ function draw() {
         const bVal = m.longestBlackoutH.value == null ? t("nd") : `${fmtNum(m.longestBlackoutH.value)} h`;
         const win = classroomWindowLabel(chosenWindows[idx]);
         return (h("article", { class: "mp-glass mp-sc-card" + (chosen === String(s.n) ? " is-chosen" : "") + (revealed && pass === true ? " is-winner" : "") + (revealed && chosen === String(s.n) && pass === false ? " is-fail" : "") },
-            h("button", { type: "button", class: "mp-quiz-pick", "aria-pressed": chosen === String(s.n), onClick: () => { chosen = String(s.n); draw(); } }, t("present.pick"), " ", s.n),
+            h("button", { type: "button", class: "mp-quiz-pick", "aria-pressed": chosen === String(s.n), onClick: () => { chosen = String(s.n); draw(); } },
+                t("present.pick"),
+                " ",
+                s.n),
             h("div", { class: "mp-sc-head" },
                 h("span", { class: "mp-sc-letter" }, s.n),
                 h("span", { class: "mp-sc-title" },
@@ -188,6 +193,14 @@ function draw() {
     btnReveal.textContent = revealed ? t("present.hide") : t("present.reveal");
     btnReveal.onclick = () => { revealed = !revealed; draw(); };
     const btnNext = $("btn-next");
+    const move = (question) => { qIndex = question; revealed = false; chosen = null; draw(); };
+    const btnPrev = $("btn-prev");
+    btnPrev.textContent = t("present.prev");
+    btnPrev.disabled = qIndex === 1;
+    btnPrev.onclick = () => move(Math.max(1, qIndex - 1));
+    const btnRestart = $("btn-restart");
+    btnRestart.textContent = t("present.restart");
+    btnRestart.onclick = () => { secondsLeft = 120; running = true; move(1); };
     btnNext.textContent = t("present.next");
     btnNext.onclick = () => {
         qIndex = qIndex >= 4 ? 1 : qIndex + 1;

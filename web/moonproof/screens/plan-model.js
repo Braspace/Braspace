@@ -8,6 +8,16 @@ export const PLAN_DEFAULTS = Object.freeze({ ...DEFAULT_RULES, mast: 2, slope: 8
 export const RULE_KEYS = Object.freeze(["night", "blackout", "battery", "mast", "slope"]);
 const SUN_MODES = ["center", "limb"];
 const STEPS = [1, 3];
+/** Validate the entire form before applying any rule. Fractions are valid limits, not sample durations. */
+export function validateRuleInputs(raw) {
+    const values = RULE_KEYS.map(k => raw[k]?.trim());
+    if (values.some(v => !v || !Number.isFinite(Number(v)) || Number(v) < 0))
+        return null;
+    const out = Object.fromEntries(RULE_KEYS.map((k, i) => [k, Number(values[i])]));
+    if (out.battery > 100 || out.slope > 90 || !SUN_MODES.includes(raw.sunMode) || !STEPS.includes(Number(raw.step)))
+        return null;
+    return { ...out, sunMode: raw.sunMode, step: Number(raw.step) };
+}
 /** Rules from a query string: `rules=a,b,c,d,e` wins, then the single params, then the defaults. */
 export function parseRules(search = "") {
     const q = new URLSearchParams(search);
@@ -71,7 +81,11 @@ function windowIndices(series, t0, hours, calcStepH) {
     const k = calcStepH / sh, total = hours / sh;
     if (!(Number.isInteger(k) && k >= 1) || !Number.isInteger(total))
         return null;
-    const i0 = Math.ceil((t0 - series.start) / (sh * HOUR_MS));
+    // Never silently round a start to a later ephemeris sample.
+    const relative = (t0 - series.start) / (sh * HOUR_MS);
+    if (!Number.isInteger(relative))
+        return null;
+    const i0 = relative;
     if (i0 < 0 || i0 + total > series.count)
         return null;
     const idx = [];
@@ -142,14 +156,14 @@ export function compareScenarios({ hash = "", sites, start, hours, windowStart, 
     const hs = parseHash(hash).sc.filter(s => known(s.site));
     const t0 = start || windowStart, hrs = hours;
     if (hs.length)
-        return hs.map(s => ({ site: s.site, start: s.start || t0, hours: s.hours || hrs }));
+        return hs.map(s => ({ ...s, site: s.site, start: s.start || t0, hours: s.hours || hrs }));
     const later = isoOf(Date.parse(t0) + 2 * hrs * HOUR_MS), second = siteIds[1] || siteIds[0];
     return [{ site: siteIds[0], start: t0, hours: hrs }, { site: second, start: t0, hours: hrs }, { site: second, start: later, hours: hrs }].slice(0, Math.min(max, 3));
 }
 /** Body of POST /api/compare (api/openapi.json CompareRequest). One window; null when it cannot be expressed. */
 export function compareBody({ siteIds, startIso, hours }) {
     const ids = [...new Set(siteIds || [])].slice(0, 3), ms = Date.parse(startIso);
-    if (!ids.length || !Number.isFinite(ms) || !fin(hours) || hours <= 0)
+    if (!ids.length || !Number.isFinite(ms) || ms % HOUR_MS !== 0 || !Number.isSafeInteger(hours) || hours <= 0)
         return null;
     return { site_ids: ids, start_utc: isoOf(ms), duration_hours: hours };
 }

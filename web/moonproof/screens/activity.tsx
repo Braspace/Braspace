@@ -143,7 +143,7 @@ function shareUrl() {
   u.searchParams.set("allowProof", cfg.allowProof ? "1" : "0");
   u.searchParams.set("allowRules", cfg.allowRules ? "1" : "0");
   u.searchParams.set("allowLab", cfg.allowLab ? "1" : "0");
-  u.hash = buildHash({ sc: chosenWindows.map(w => ({ site: w.site.id, start: w.start, hours: w.hours })) });
+    u.hash = buildHash({ sc: chosenWindows.map(w => ({ ...w, site: w.site.id })) });
   return u.toString();
 }
 

@@ -121,9 +121,9 @@ test("site root opens the three-mode chooser and first-visit tutorial is on that
  assert.doesNotMatch(script,/attempts\+\+ > 65/,"slow API must not suppress first-site welcome");
  assert.doesNotMatch(script,/!document\.documentElement\.classList\.contains\("mp-ready"\)/,"welcome does not need science data");
 });
-test("each screen opens once independently of visits to other screens", async () => {
+test("screen help remains available while site onboarding is shown only at entry", async () => {
  const source = await read("../screens/tour.js");
- assert.match(source, /localStorage\.getItem\(key\) === "done"/);
+ assert.match(source, /hasCompletedSiteWelcome\(localStorage\)/);
  assert.match(source, /localStorage\.setItem\(key, "done"\)/);
  assert.match(source, /function onOpen\(\) \{ open\(false\); \}/);
  for (const mode of Object.keys(TOUR_STEPS)) {

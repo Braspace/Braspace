@@ -66,7 +66,7 @@ test("projector isolates failed API/series requests by scenario, not whole page"
  const ts=readFileSync(new URL("../screens/present.tsx",import.meta.url),"utf8");
  const js=readFileSync(new URL("../screens/present.js",import.meta.url),"utf8");
  for(const src of [ts,js]) {
-   assert.ok(src.includes("chosenWindows.map((w) => apiWindowMetrics(doc, w.site, w.start, w.hours || 336).catch(() => unavailableQuizMetric()))"));
+   assert.ok(src.includes("w.invalid ? unavailableQuizMetric() : apiWindowMetrics(doc, w.site, w.start, w.hours || 336).catch(() => unavailableQuizMetric())"));
    assert.ok(src.includes("markReady();"));
  }
 });
