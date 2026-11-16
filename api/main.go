@@ -220,7 +220,7 @@ func routes(binary string) http.Handler {
 	mission.register(mux)
 	registerLayers(mux, store)
 	registerVectorAPI(mux) // optional, disabled by default; never changes mission physics
-	return mux
+	return withJSONRoutingErrors(mux)
 }
 func main() {
 	if len(os.Args) > 1 {
