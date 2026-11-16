@@ -88,14 +88,15 @@ test("Cockpit tour references actual page controls, not removed/stale selectors"
  assert.match(js,/moon-open/);
 });
 
-test("site root opens the three-mode chooser and first-visit tutorial is on that page",async()=>{
+test("site root enters the canonical cockpit and keeps the auxiliary entry tour available",async()=>{
  const root=await read("../../index.html"),entry=await read("../index.html");
+ const tasks=await read("../tasks.html"),cockpit=await read("../cockpit.html");
  const script=await read("../screens/tour.js");
  assert.match(root,/url=moonproof\//);
- assert.match(entry,/screens\/entry\.js/);
- assert.match(entry,/data-moon-tour="entry"/);
- assert.match(entry,/id="cards" role="list"/);
- assert.doesNotMatch(entry,/screens\/cockpit-entry\.js/);
+ assert.match(entry,/screens\/cockpit-entry\.js/);
+ assert.doesNotMatch(entry,/id="cards" role="list"/);
+ assert.match(tasks,/screens\/entry\.js/);
+ assert.match(cockpit,/data-moon-tour="cockpit"/);
  assert.equal(TOUR_STEPS.entry.length,4);
  for(const step of TOUR_STEPS.entry){
    assert.ok(step.targets.length);
