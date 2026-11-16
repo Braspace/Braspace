@@ -225,8 +225,9 @@ export function mountTour(mode) {
     dialog.classList.remove("mp-tour-animate");
     void dialog.offsetWidth;
     dialog.classList.add("mp-tour-animate");
+    place();
     requestAnimationFrame(place);
-    next.focus();
+    next.focus({ preventScroll: true });
   }
   function open(auto) {
     if (dialog) return;
