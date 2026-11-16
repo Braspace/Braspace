@@ -10,7 +10,10 @@ Toda tela do MoonProof usa a **mesma** cena three.js do Moon HD do Joel (`moon-h
 | Tipo de página | Tag | Comportamento |
 |---|---|---|
 | Fundo decorativo (`index`, `evidence`, `rules`, `debrief`) | `<script type="module" src="../moon-hd/backdrop.js" data-moon-backdrop="pole">` | Lua atrás dos painéis (véu para contraste AA), órbita lenta, arrastar o fundo vazio gira (mouse/caneta), roda/pinça zoom. |
-| Mapa funcional (`mission`, `explore`, `compare`, `plan`, `recover`, `cockpit`, `landing`, `present`, `activity`) | `... data-moon-backdrop="globe" data-moon-lazy` | O relevo LOLA da tela continua sendo o mapa. Só o botão **Explorar a Lua** aparece; three.js e texturas carregam no clique ("Carregando a Lua…", `aria-busy`). |
+| Cockpit principal (`cockpit`) — **candidato P0 #456** | `... data-moon-backdrop="pole"` sem `data-moon-lazy` | Carrega a Lua do Polo Sul de Joel atrás dos nove painéis e usa a Artemis ilustrativa da **mesma cena**. O modo **Só a Lua** apenas abre a visualização imersiva, sem criar outro renderizador. Sem GPU, usa o poster real de Joel, enquanto o cockpit e a API continuam disponíveis. |
+| Mapa funcional (`mission`, `explore`, `compare`, `plan`, `recover`, `landing`, `present`, `activity`) | `... data-moon-backdrop="globe" data-moon-lazy` | O relevo LOLA da tela continua sendo o mapa. Só o botão **Explorar a Lua** aparece; three.js e texturas carregam no clique ("Carregando a Lua…", `aria-busy`). |
+
+**Gate P0 de lançamento (não publicado):** esta configuração do cockpit precisa de teste EXO-X1 com WebGL de hardware real, SwiftShader/no GPU, desempenho em 320/390/768/1024/1440/1920, uma única instância Three.js, capa do poster se a GPU falhar, sincronização dos locais e Artemis, alvos touch e teste de restauração real dos nove painéis (PR #454). Não confundir revisão de fonte com evidência de imagem na produção.
 
 - **Explorar a Lua ↔ Mostrar painéis** (`.moon-ui .moon-open`, Esc volta): Lua em tela cheia por cima dos painéis, `html.moon-explore-on`.
 - **Câmera** (#368): fora do Explorar, vista global afastada (`VIEW_DEFAULTS`: globe 7.5 R, pole 4.4 R). No Explorar, `focusLatLon` orbita o **local** (alvo na superfície, 42° de elevação, do lado do Sol, 0.45 R; mais longe em retrato). Funções puras testadas: `orbitCamera`, `tweenPose`, `nearPlane`, `facesCamera`, `clampRange`, `clampPitch`.

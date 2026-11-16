@@ -378,8 +378,13 @@ const sheet = $("sheet");
 
 // Every caller fires draw() without awaiting it: a failed series fetch (offline, or cancelled by navigation)
 // must not become an unhandled rejection. Show it, and clear the cache key so the next draw retries.
+let drawRevision = 0;
 function draw(): Promise<void> {
-  return drawNow().then(() => { document.querySelector(".mp-ck-loaderr")?.remove(); }, (err: unknown) => {
+  const revision = ++drawRevision;
+  return drawNow().then(() => {
+    if (revision === drawRevision) document.querySelector(".mp-ck-loaderr")?.remove();
+  }, (err: unknown) => {
+    if (revision !== drawRevision) return; // An obsolete request must not erase newer state or display an old error.
     S.siteKey = "";
     let note = document.querySelector<HTMLElement>(".mp-ck-loaderr");
     if (!note) { note = el("p", "mp-ck-loaderr mp-glass"); note.setAttribute("role", "status"); document.body.append(note); }

@@ -29,7 +29,9 @@ test('controller matches current Preact DOM, keeps a single shared Three.js scen
   const css=read('screens/cockpit-panels.css'), html=read('cockpit.html'), js=read('screens/cockpit-panels.js');
   assert.match(css,/data-ck-hidden~="battery"\] #left>mp-node/,'battery is inside DomNode host');
   assert.match(css,/data-ck-hidden~="illumination"\] #left>\.ck-acc-sun/,'Sun card is an accordion');
-  assert.match(html,/data-moon-lazy/,'do not replace the shared GPU scene with duplicate renderer');
+  assert.doesNotMatch(html,/data-moon-lazy/,'shared 3D Moon is available behind panels from page boot');
+  assert.match(html,/data-moon-backdrop="pole"/,'use Joel\'s existing polar 3D camera');
+  assert.match(read('screens/cockpit.tsx'),/mountArtemisCockpit/,'re-use the same Artemis lander, not a second renderer');
   assert.match(html,/\.\.\/moon-hd\/backdrop\.js/);
   assert.doesNotMatch(js,/WebGLRenderer|createCap\(|new THREE\.Scene/,'panel visibility does not instantiate WebGL');
   assert.match(js,/\.moon-ui \.moon-open/,'Moon only requests the same scene as the existing button');
