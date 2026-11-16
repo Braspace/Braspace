@@ -6,13 +6,13 @@ BRASPACE / MoonProof is an educational and engineering prototype for evaluating 
 
 ---
 
-## Three-mode MoonProof entry restored (2026-11-15)
+## Canonical Cockpit — single main entry (2026-11-15 release candidate)
 
-**The homepage is the choice screen:** `/moonproof/` shows three styled, working cards — **Explore the Moon**, **Teach a class**, and **Plan a mission**. Selecting one opens `explore.html`, `activity.html`, or `plan.html` respectively, with selected task and scenario options carried by the Preact entry module. A no-JavaScript fallback renders and links all three cards, so unavailable scripts never leave a blank text-only redirect.
+The current product direction selects **one canonical Cockpit** at `/moonproof/`, routing with the existing same-origin `screens/cockpit-entry.js` adapter to `cockpit.html`. It retains every query parameter and URL fragment with `location.replace` and provides a visible manual Cockpit link when JavaScript is unavailable (no inline scripts, CSP-safe). The shared Joel South Pole 3D Moon, illustrative Artemis lander and nine independently controllable panels remain within this Cockpit; their default always-visible 3D state is tracked in issue #456.
 
-The same chooser remains at `/moonproof/tasks.html`. The full nine-panel Cockpit is still available directly at `/moonproof/cockpit.html` and via navigation in the application; its shared Three.js scene and Artemis demonstration are unchanged. First-time visitors receive an optional four-step chooser tutorial, which they can skip; mode-specific tutorials remain available from **View tutorial**.
+The **Explore / Teach / Plan** chooser, its Preact routes, assets and task links remain available at `/moonproof/tasks.html` — no feature, scientific input or colleague's work has been deleted. The Cockpit has its own accessible first-visit tutorial (PRs #451/#452); auxiliary task-specific tours remain available. This reconciles the contrary three-card homepage merged in #455 according to the product decision in issue #457. Root and index routing, encoded deep links and the no-JS fallback are regression-tested.
 
-**Release status:** source changes need tests and deployment from the exact main SHA before claims about the public Cloudflare Worker. The screenshot of a white entry page concerns the previous JavaScript redirect, which this change removes.
+**Release gate:** source candidate only. Require exact SHA in CI and real EXO-X1 Chromium GPU/no-GPU QA, Go/Rust/Postgres/pgvector integration, Heloísa responsive checks and Cloudflare Worker provenance/rollback before reporting production deployment.
 
 ## Live Demo & API
 
