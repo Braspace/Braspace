@@ -203,6 +203,9 @@ async function compute() {
     const m = await apiWindowMetrics(doc, site, st.start, hours);
     if (!current())
         return false;
+    // Fail explicitly on a missing metrics contract; never fabricate scientific series or dereference null.
+    if (!m || !m.series)
+        throw new Error("MoonProof: stored series metrics unavailable");
     const series = m.series, i0 = Math.ceil((m.t0 - series.start) / HOUR_MS);
     const base = { power: { ...H1_PROFILE }, samples: [], delayH: 0 };
     const win = (off, n) => Array.from({ length: Math.max(0, Math.min(n, series.count - i0 - off)) }, (_, h) => ({ sun_visible: series.sunMargin[i0 + off + h] >= 0, earth_visible: series.earthMargin[i0 + off + h] >= 0 }));
