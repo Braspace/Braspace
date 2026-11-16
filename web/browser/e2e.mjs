@@ -106,7 +106,7 @@ try{
  // Isolate the seven-step tutorial regression from earlier navigation through Explore:
  // simulate a fresh visitor for this test, without affecting real user storage.
  await desktop.evaluate(() => {
-   for (const mode of ["welcome","cockpit","explore","class","present"])
+   for (const mode of ["welcome","entry","cockpit","explore","class","present"])
      localStorage.removeItem("moonproof.tour." + mode + ".v1");
  });
  const onboard=requireBackend?desktop.waitForResponse(r=>/\/api\/onboard\/(site-)?evaluate$/.test(new URL(r.url()).pathname),{timeout:40000}):null;

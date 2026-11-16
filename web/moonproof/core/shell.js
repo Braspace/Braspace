@@ -179,7 +179,15 @@ function helpPill() {
             const credit = document.createElement("p");
             credit.textContent = t("nav.moon3d.credit");
             pop.append(credit);
+            document.dispatchEvent(new CustomEvent("mp-tour-slot", { detail: pop }));
             document.body.append(pop);
+            const tutorial = pop.querySelector(".mp-tour-help");
+            tutorial?.addEventListener("click", () => {
+                pop?.remove();
+                b.setAttribute("aria-expanded", "false");
+                b.focus();
+            }, { capture: true, once: true });
+            tutorial?.focus();
         }
         b.setAttribute("aria-expanded", String(open));
     };

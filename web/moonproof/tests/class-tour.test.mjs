@@ -24,16 +24,29 @@ test("present mode has on-demand, non-interrupting help for the quiz",()=>{
 });
 test("tour supports dismiss, reopen, per-mode storage, animation and reduced motion",async()=>{
  const s=await read("../screens/tour.js"),css=await read("../screens/tour.css");
- for(const feature of ["localStorage.setItem","localStorage.getItem","mp-tour-close","mp-tour-skip","mp-tour-next","mp-tour-prev","aria-modal","Escape","Tab","mp-tour-help","resize","scroll"]) assert.ok(s.includes(feature),feature);
+ for(const feature of ["localStorage.setItem","storage.getItem","mp-tour-close","mp-tour-skip","mp-tour-next","mp-tour-prev","aria-modal","Escape","Tab","mp-tour-help","resize","scroll"]) assert.ok(s.includes(feature),feature);
  assert.match(css,/prefers-reduced-motion:reduce/);
  assert.match(css,/\.mp-tour-spotlight/);
  assert.match(css,/@keyframes mpTourIn/);
 });
-test("Explore and Activity load their own optional shared tutorial",async()=>{
- for(const [file,mode] of [["explore.html","explore"],["activity.html","class"],["present.html","present"]]){
-   const html=await read("../"+file);
-   assert.ok(html.includes('src="screens/tour.js" data-moon-tour="'+mode+'"'));
-   assert.ok(html.includes('href="screens/tour.css"'));
+test("every interactive MoonProof screen loads its contextual tutorial", async () => {
+ const files = ["index", "cockpit", "explore", "activity", "present", "compare", "debrief", "evidence",
+   "landing", "mission", "plan", "recover", "rules", "tasks"];
+ for (const file of files) {
+   const mode = ({ index: "entry", activity: "class" })[file] ?? file;
+   const html = await read("../" + file + ".html");
+   assert.ok(html.includes('src="screens/tour.js" data-moon-tour="' + mode + '"'), file);
+   assert.ok(html.includes('href="screens/tour.css"'), file);
+   assert.ok(TOUR_STEPS[mode].every(step => step.targets.length && step.pt.length === 2 && step.en.length === 2), file);
+ }
+ const viewer = await read("../../moon-hd.html");
+ assert.match(viewer, /src="\.\/moonproof\/screens\/tour\.js" data-moon-tour="moonhd"/);
+ assert.ok(TOUR_STEPS.moonhd.every(step => step.targets.length && step.pt.length === 2 && step.en.length === 2));
+ const css = await read("../screens/tour.css");
+ const buttonStyles = [...css.matchAll(/\.mp-tour-help\s*\{([^}]*)\}/g)];
+ assert.ok(buttonStyles.length);
+ for (const [, declarations] of buttonStyles) {
+   assert.doesNotMatch(declarations, /position\s*:\s*(fixed|absolute|sticky)/);
  }
 });
 test("spotlight skips hidden targets and finds the mobile fallback",()=>{
@@ -64,7 +77,7 @@ test("Cockpit onboarding uses the shared tour and can reopen independently",asyn
  assert.match(html,/src="screens\/tour\.js" data-moon-tour="cockpit"/);
  assert.match(html,/href="screens\/tour\.css"/);
  assert.match(js,/shouldAutoOpenTour\(mode, alreadyWelcomed\)/,"Cockpit auto-onboards on first visit");
- assert.match(js,/help\.addEventListener\("click", \(\) => open\(false\)\)/,"help can always reopen");
+ assert.match(js,/function onOpen\(\) \{ open\(false\); \}/,"help can always reopen");
  for(const step of TOUR_STEPS.cockpit){
    assert.ok(step.targets.length>0);
    for(const lang of ["pt","en"]){
@@ -131,7 +144,7 @@ test("dismiss or finish stores both site-wide and per-mode completion",async()=>
  const js=await read("../screens/tour.js");
  assert.match(js,/localStorage\.setItem\(SITE_WELCOME_KEY, "done"\)/);
  assert.match(js,/localStorage\.setItem\(key, "done"\)/);
- assert.match(js,/help\.addEventListener\("click", \(\) => open\(false\)\)/);
+ assert.match(js,/function onOpen\(\) \{ open\(false\); \}/);
 });
 
 test("shared tutorial Back button has an arrow, a localized label and stays hidden at the start",async()=>{

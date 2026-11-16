@@ -97,10 +97,12 @@ function build() {
   const ttl = el("b", "ttl"); ttl.innerHTML = ico(ICO.module, 18, "currentColor"); ttl.append(t("lab.title"));
   // The educational-simulation chip lives inside the bar on desktop; on a phone it stays a fixed strip (the bar's blur would capture it).
   const chip = innerWidth > 700 ? $("simseal") : (document.body.append($("simseal")), null);
+  const help = round(ico(ICO.help), t("lab.help"), openHelp);
+  help.dataset.mpTourOpener = "";
   $("bar").replaceChildren(back, el("i", "div"), ttl, ...(chip ? [chip] : []), meta, ...(chip ? [] : [sealSim]),
     seg([["guided", "lab.mode.guided"], ["free", "lab.mode.free"]], L.mode, (v: string) => { L.mode = v; build(); update(true); }, t("lab.mode")),
     seg(CAMS, L.cam, (v: string) => setCam(v), t("lab.cam"), ICO.cam),
-    ui.pause, round(ico(ICO.restart), t("lab.restart") + " (R)", start), round(ico(ICO.help), t("lab.help"), openHelp), langBtn());
+    ui.pause, round(ico(ICO.restart), t("lab.restart") + " (R)", start), help, langBtn());
   // strip: phase + alert
   ui.phase = el("div", "lab-chip"); ui.clock = el("span", "mp-coord");
   ui.alert = el("div", "lab-chip lab-alert"); ui.alert.hidden = true; ui.alert.setAttribute("role", "alert");
@@ -169,7 +171,7 @@ function bindThrustTrack(tr: HTMLElement) {
 }
 const KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "ShiftLeft", "ShiftRight", "ControlLeft", "ControlRight", "KeyW", "KeyS", "KeyA", "KeyD", "KeyQ", "KeyE", "KeyZ", "KeyX", "KeyH", "KeyC", "KeyR", "KeyP", "Space"]);
 function onKey(e: KeyboardEvent, down: boolean) {
-  if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName || "") || $<HTMLDialogElement>("help").open) return;
+  if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName || "") || $<HTMLDialogElement>("help").open || document.activeElement?.closest(".mp-tour-dialog")) return;
   if (!KEYS.has(e.code)) return;
   if (e.code === "Space" && document.activeElement?.tagName === "BUTTON") return;
   e.preventDefault();
@@ -351,6 +353,13 @@ function openHelp() {
   for (const [a, b, s] of rows) { const r = el("tr"); const c3 = el("td"); c3.append(sealEl(s)); r.append(el("th", "", t(a)), el("td", "", t(b)), c3); tb.append(r); }
   const close = el("button", "mp-pill is-primary", "OK"); close.type = "button"; close.onclick = () => d.close();
   d.replaceChildren(el("h2", "", t("lab.help.title")), el("p", "", t("lab.help.keys")), el("h3", "", t("lab.help.src")), tb, el("p", "mp-label", t("lab.sealnote")), el("p", "mp-label", online ? "" : t("lab.offline")), close);
+  const opener = document.activeElement;
+  document.dispatchEvent(new CustomEvent("mp-tour-slot", { detail: d }));
+  const tutorial = d.querySelector<HTMLButtonElement>(".mp-tour-help");
+  tutorial?.addEventListener("click", () => {
+      d.close();
+      if (opener instanceof HTMLElement) opener.focus();
+  }, { capture: true, once: true });
   d.showModal();
 }
 

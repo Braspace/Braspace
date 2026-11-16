@@ -78,7 +78,7 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--accent); }
   .top h1 { font-size: 14px; white-space: nowrap; }
   .top p { display: none; }
   .badge { font-size: 9px; padding: 3px 7px; }
-  .views { top: 54px; left: 8px; }
+  .views { top: 54px; left: 8px; right: 8px; }
   .readout { top: 106px; right: 8px; left: 8px; width: auto; padding: 6px 10px; }
   .readout dl { font-size: 12px; gap: 1px 10px; }
   .readout dt { font-size: 11px; }

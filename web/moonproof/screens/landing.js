@@ -109,7 +109,9 @@ function build() {
     ttl.append(t("lab.title"));
     // The educational-simulation chip lives inside the bar on desktop; on a phone it stays a fixed strip (the bar's blur would capture it).
     const chip = innerWidth > 700 ? $("simseal") : (document.body.append($("simseal")), null);
-    $("bar").replaceChildren(back, el("i", "div"), ttl, ...(chip ? [chip] : []), meta, ...(chip ? [] : [sealSim]), seg([["guided", "lab.mode.guided"], ["free", "lab.mode.free"]], L.mode, (v) => { L.mode = v; build(); update(true); }, t("lab.mode")), seg(CAMS, L.cam, (v) => setCam(v), t("lab.cam"), ICO.cam), ui.pause, round(ico(ICO.restart), t("lab.restart") + " (R)", start), round(ico(ICO.help), t("lab.help"), openHelp), langBtn());
+    const help = round(ico(ICO.help), t("lab.help"), openHelp);
+    help.dataset.mpTourOpener = "";
+    $("bar").replaceChildren(back, el("i", "div"), ttl, ...(chip ? [chip] : []), meta, ...(chip ? [] : [sealSim]), seg([["guided", "lab.mode.guided"], ["free", "lab.mode.free"]], L.mode, (v) => { L.mode = v; build(); update(true); }, t("lab.mode")), seg(CAMS, L.cam, (v) => setCam(v), t("lab.cam"), ICO.cam), ui.pause, round(ico(ICO.restart), t("lab.restart") + " (R)", start), help, langBtn());
     // strip: phase + alert
     ui.phase = el("div", "lab-chip");
     ui.clock = el("span", "mp-coord");
@@ -249,7 +251,7 @@ function bindThrustTrack(tr) {
 }
 const KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "ShiftLeft", "ShiftRight", "ControlLeft", "ControlRight", "KeyW", "KeyS", "KeyA", "KeyD", "KeyQ", "KeyE", "KeyZ", "KeyX", "KeyH", "KeyC", "KeyR", "KeyP", "Space"]);
 function onKey(e, down) {
-    if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName || "") || $("help").open)
+    if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName || "") || $("help").open || document.activeElement?.closest(".mp-tour-dialog"))
         return;
     if (!KEYS.has(e.code))
         return;
@@ -579,6 +581,14 @@ function openHelp() {
     close.type = "button";
     close.onclick = () => d.close();
     d.replaceChildren(el("h2", "", t("lab.help.title")), el("p", "", t("lab.help.keys")), el("h3", "", t("lab.help.src")), tb, el("p", "mp-label", t("lab.sealnote")), el("p", "mp-label", online ? "" : t("lab.offline")), close);
+    const opener = document.activeElement;
+    document.dispatchEvent(new CustomEvent("mp-tour-slot", { detail: d }));
+    const tutorial = d.querySelector(".mp-tour-help");
+    tutorial?.addEventListener("click", () => {
+        d.close();
+        if (opener instanceof HTMLElement)
+            opener.focus();
+    }, { capture: true, once: true });
     d.showModal();
 }
 // ---------------------------------------------------------------- boot

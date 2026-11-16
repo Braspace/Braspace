@@ -8,6 +8,8 @@
 <script type="module" src="screens/entry.js"></script>
 <script type="module" src="../moon-hd/backdrop.js" data-moon-backdrop="pole"></script>
 <link rel="stylesheet" href="../moon-hd/preview.css">
+<link rel="stylesheet" href="screens/tour.css">
+<script type="module" src="screens/tour.js" data-moon-tour="tasks"></script>
 </head>
 <body class="mp-entry">
 <div id="terrain" aria-hidden="true"></div>
@@ -17,6 +19,7 @@
 <p class="mp-entry-eyebrow" data-i18n="entry.eyebrow"></p>
 <h1 data-i18n="entry.title"></h1>
 <p class="mp-entry-lead" data-i18n="entry.lead"></p>
+<div data-mp-tour-slot></div>
 <div class="mp-entry-cards" id="cards" role="list"></div>
 <p class="mp-entry-hint" id="hint"></p>
 <p class="mp-label" data-i18n="nav.moon3d.credit"></p>
