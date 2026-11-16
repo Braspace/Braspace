@@ -49,3 +49,18 @@ test("pages mount the right nav item and link the sibling screen", async () => {
   assert.match(await read("screens/compare.tsx"), /screen: "compare"/); assert.match(await read("screens/recover.tsx"), /screen: "recover"/);
   assert.match(await read("screens/compare.tsx"), /recover\.html/); assert.match(await read("screens/recover.tsx"), /compare\.html/);
 });
+
+test("replan explanation covers every rule instead of reporting a false night violation", async () => {
+  for (const file of ["screens/recover.tsx", "screens/recover.js"]) {
+    const src = await read(file);
+    assert.match(src, /ruleHeadlineKind\(jd\)/);
+    for (const key of ["rec.head.break", "rec.head.blackout", "rec.head.both", "rec.head.ok", "rec.head.nd"]) {
+      assert.ok(src.includes(key), file + " lacks " + key);
+    }
+    assert.doesNotMatch(src, /jd\.reasons\.some\(r => r\.key === "night"\) \? t\("rec.head.break"/,
+      "a communications-only failure must not receive a night warning");
+  }
+  const ts = await read("screens/recover.tsx");
+  assert.match(ts, /Visibilidade geométrica não garante contato por rádio/);
+  assert.match(ts, /Geometric visibility does not guarantee radio contact/);
+});
