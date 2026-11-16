@@ -129,7 +129,8 @@ test("one site-wide welcome on first entry, but guide can always be manually reo
  assert.equal(shouldAutoOpenTour("entry",hasCompletedSiteWelcome(mock)),true);
  assert.equal(shouldAutoOpenTour("cockpit",hasCompletedSiteWelcome(mock)),true);
  assert.equal(shouldAutoOpenTour("explore",hasCompletedSiteWelcome(mock)),true);
- assert.equal(shouldAutoOpenTour("present",false),false,"projector never interrupts a lesson");
+ assert.equal(shouldAutoOpenTour("present",false),true);
+ assert.equal(shouldAutoOpenTour("moonhd",false),true);
  storage.set(SITE_WELCOME_KEY,"done");
  for(const mode of ["cockpit","explore","class"])
    assert.equal(shouldAutoOpenTour(mode,hasCompletedSiteWelcome(mock)),false);

@@ -84,7 +84,7 @@ export function tourStorageKey(mode) { return "moonproof.tour." + mode + ".v1"; 
 /** One automatic introduction per browser/site, regardless of which MoonProof screen opens first. */
 export const SITE_WELCOME_KEY = "moonproof.tour.welcome.v1";
 export function shouldAutoOpenTour(mode, alreadyWelcomed) {
-  return mode !== "present" && mode !== "moonhd" && !alreadyWelcomed;
+  return !alreadyWelcomed;
 }
 export function hasCompletedSiteWelcome(storage) {
   return [SITE_WELCOME_KEY, ...Object.keys(TOUR_STEPS).map(tourStorageKey)]
@@ -145,7 +145,8 @@ export function mountTour(mode) {
   function place() {
     if (!dialog || !spotlight) return;
     const vw = window.innerWidth, vh = window.innerHeight;
-    const selected = index < 0 ? null : bestTarget(steps[index], document);
+    let selected = index < 0 ? null : bestTarget(steps[index], document);
+    if (selected && (selected.rect.bottom <= 0 || selected.rect.top >= vh || selected.rect.right <= 0 || selected.rect.left >= vw)) selected = null;
     const card = dialog.getBoundingClientRect();
     if (!selected) {
       spotlight.hidden = true;
@@ -163,7 +164,8 @@ export function mountTour(mode) {
     Object.assign(spotlight.style, { left:left+"px", top:top+"px", width:width+"px", height:height+"px" });
     const x = Math.max(12, Math.min(vw - card.width - 12, r.left + r.width / 2 - card.width / 2));
     const bottom = r.bottom + 18, above = r.top - card.height - 18;
-    const y = bottom + card.height < vh - 12 ? bottom : above > 12 ? above : Math.max(12, (vh - card.height) / 2);
+    const candidate = bottom + card.height < vh - 12 ? bottom : above > 12 ? above : (vh - card.height) / 2;
+    const y = Math.max(12, Math.min(vh - card.height - 12, candidate));
     dialog.style.left = x + "px";
     dialog.style.top = y + "px";
   }
@@ -191,6 +193,12 @@ export function mountTour(mode) {
   }
   function open(auto) {
     if (dialog) return;
+    if (auto) {
+      try {
+        if (hasCompletedSiteWelcome(localStorage)) return;
+        localStorage.setItem(SITE_WELCOME_KEY, "done");
+      } catch {}
+    }
     previousFocus = document.activeElement;
     index = auto ? -1 : 0;
     cover = document.createElement("div");
