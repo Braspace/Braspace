@@ -16,7 +16,7 @@ import { sealEl, createLayerCard } from "../core/layers.js";
 import { register, t, fmtNum, lang } from "../core/i18n.js";
 import { getState, setState, onState, hrefTo } from "../core/state.js";
 import type { Layer } from "../core/state.js";
-import { judge, slack, computeExits, longestRun, parseHash, buildHash } from "./scenario-calc.js";
+import { judge, slack, computeExits, longestRun, parseHash, buildHash, ruleHeadlineKind } from "./scenario-calc.js";
 import type { Exit, LimitRules } from "./scenario-calc.js";
 import { staticMetrics, flagsOf, apiDelayMetrics, HOUR_MS } from "./scenario-data.js";
 import type { ScenarioMetrics, Nearby } from "./scenario-data.js";
@@ -30,7 +30,7 @@ register({
     "rec.step2": "Step 2 · what changed", "rec.night": "Longest night", "rec.slack": "Margin to the rule", "rec.earth": "Earth visible", "rec.loss": "Longest Earth loss",
     "rec.step3": "Step 3 · choose an option", "rec.exit.wait": "Wait until {d}", "rec.exit.wait.s": "same site · window moves", "rec.exit.switch": "Land at {name}", "rec.exit.switch.s": "same date · other site",
     "rec.exit.shorten": "Mission of {n} days", "rec.exit.shorten.s": "same site · shorter window", "rec.slackWord": "margin", "rec.searching": "Searching exits…", "rec.none": "No option meets every rule in the search done. Nothing is shown without a calculation.", "rec.nearby.title": "Live API · nearby catalog sites at the delayed start (PRE)", "rec.nearby.ok": "meets the rules", "rec.nearby.no": "breaks a rule", "rec.nearby.nd": "no data ({r})", "rec.coverage": "Searched: waits up to +{d} days, the other {n} catalog sites at the same start, shorter windows. Options come from the stored hourly series (web/data), even when the delay itself came from the API.",
-    "rec.step4": "Step 4 · compare and decide", "rec.step4.short": "Compare", "rec.head.break": "The delay makes the longest night {v} h, above the assumed limit of {lim} h.", "rec.head.ok": "With this delay every rule is still met.", "rec.head.nd": "No data for this delay.",
+    "rec.step4": "Step 4 · compare and decide", "rec.step4.short": "Compare", "rec.head.break": "The delay makes the longest night {v} h, above the assumed limit of {lim} h.", "rec.head.ok": "With this delay every rule is still met.", "rec.head.nd": "No data for this delay.", "rec.head.blackout": "Earth is out of sight for {v} consecutive hours, exceeding the assumed {lim} h limit. Geometric visibility does not guarantee radio contact.", "rec.head.both": "Both assumed limits are exceeded: darkness {dark} h (limit {darkLim} h); Earth out of sight {earth} h (limit {earthLim} h).",
     "rec.timeline": "Sun over the window · red = rule-breaking night", "rec.planned": "Planned", "rec.after": "+{d} h", "rec.nightOf": "night of {v} h", "rec.exitLine": "Exit {L} · {what}",
     "rec.src.api": "Live API (delay scenario)", "rec.src.static": "stored hourly series (web/data)", "rec.src": "Source", "rec.rules": "Rules", "rec.assumed": "assumed limit",
     "rec.def": "Margin", "rec.def.txt": "Hours left to the tighter rule (night or Earth loss); negative = violated. Not the onboard battery margin.",
@@ -43,7 +43,7 @@ register({
     "rec.step2": "Passo 2 · o que mudou", "rec.night": "Maior noite", "rec.slack": "Folga até a regra", "rec.earth": "Terra visível", "rec.loss": "Maior perda da Terra",
     "rec.step3": "Passo 3 · escolha uma saída", "rec.exit.wait": "Esperar até {d}", "rec.exit.wait.s": "mesmo local · a janela anda", "rec.exit.switch": "Pousar em {name}", "rec.exit.switch.s": "mesma data · outro local",
     "rec.exit.shorten": "Missão de {n} dias", "rec.exit.shorten.s": "mesmo local · janela menor", "rec.slackWord": "folga", "rec.searching": "Buscando saídas…", "rec.none": "Nenhuma saída atende a todas as regras na busca feita. Sem cálculo, nada aparece.", "rec.nearby.title": "API ao vivo · locais vizinhos do catálogo no início atrasado (PRE)", "rec.nearby.ok": "atende às regras", "rec.nearby.no": "quebra uma regra", "rec.nearby.nd": "sem dado ({r})", "rec.coverage": "Buscado: esperar até +{d} dias, os outros {n} locais do catálogo no mesmo início e janelas menores. As saídas vêm das séries horárias gravadas (web/data), mesmo quando o atraso veio da API.",
-    "rec.step4": "Passo 4 · comparar e decidir", "rec.step4.short": "Comparar", "rec.head.break": "O atraso leva a maior noite a {v} h, acima do limite assumido de {lim} h.", "rec.head.ok": "Com este atraso todas as regras ainda valem.", "rec.head.nd": "Sem dado para este atraso.",
+    "rec.step4": "Passo 4 · comparar e decidir", "rec.step4.short": "Comparar", "rec.head.break": "O atraso leva a maior noite a {v} h, acima do limite assumido de {lim} h.", "rec.head.ok": "Com este atraso todas as regras ainda valem.", "rec.head.nd": "Sem dado para este atraso.", "rec.head.blackout": "A Terra fica fora de vista por {v} horas consecutivas, acima do limite assumido de {lim} h. Visibilidade geométrica não garante contato por rádio.", "rec.head.both": "Os dois limites assumidos são excedidos: noite de {dark} h (limite {darkLim} h); Terra fora de vista por {earth} h (limite {earthLim} h).",
     "rec.timeline": "Sol na janela · vermelho = noite que quebra a regra", "rec.planned": "Planejado", "rec.after": "+{d} h", "rec.nightOf": "noite de {v} h", "rec.exitLine": "Saída {L} · {what}",
     "rec.src.api": "API ao vivo (cenário de atraso)", "rec.src.static": "série horária gravada (web/data)", "rec.src": "Fonte", "rec.rules": "Regras", "rec.assumed": "limite assumido",
     "rec.def": "Folga", "rec.def.txt": "Horas que sobram até a regra mais apertada (noite ou perda da Terra); negativa = violada. Não é a folga da bateria de bordo.",
@@ -163,7 +163,12 @@ async function draw() {
     document.querySelector(".mp-context")?.querySelectorAll(".mp-alert").forEach(a => a.remove()); document.querySelector(".mp-context")?.prepend(alert);
 
     // Step 3 (right)
-    const head = jd.status === "nd" ? t("rec.head.nd") : jd.reasons.some(r => r.key === "night") ? t("rec.head.break", { v: fmtNum((delayed as ScenarioMetrics).dark), lim: fmtNum(rules.night) }) : jd.status === "pass" ? t("rec.head.ok") : t("rec.head.break", { v: fmtNum((delayed as ScenarioMetrics).dark), lim: fmtNum(rules.night) });
+    const kind = ruleHeadlineKind(jd);
+    const head = kind === "nd" ? t("rec.head.nd")
+      : kind === "pass" ? t("rec.head.ok")
+      : kind === "night" ? t("rec.head.break", { v: fmtNum((delayed as ScenarioMetrics).dark), lim: fmtNum(rules.night) })
+      : kind === "blackout" ? t("rec.head.blackout", { v: fmtNum((delayed as ScenarioMetrics).blackout), lim: fmtNum(rules.blackout) })
+      : t("rec.head.both", { dark: fmtNum((delayed as ScenarioMetrics).dark), darkLim: fmtNum(rules.night), earth: fmtNum((delayed as ScenarioMetrics).blackout), earthLim: fmtNum(rules.blackout) });
     const compareLink = hrefTo("compare.html") + "#" + compareHash(sc, chosen);
     // AUD-12/13: say what was actually searched and where the options come from.
     // AUD-13: API nearby sites are a separate block with their own source; never ranked with the static exits.
