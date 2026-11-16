@@ -189,6 +189,8 @@ function paintPreviewTerrain(frame: HTMLElement) {
 }
 
 function draw() {
+  // The Class Kit reuses Compare navigation, but keeps its own localized tab title.
+  document.title = "MoonProof · " + t("act.kit");
   const focusKey = (document.activeElement as HTMLElement | null)?.dataset?.focus;
   const startDate = (getState().start || "2027-03-14T06:00:00Z").slice(0, 10);
   const steps: [number, string, string][] = [
