@@ -14,10 +14,10 @@ const read=name=>readFile(path.join(web,name),"utf8");
 const {mountMoonBackdrop,pickAssets,probeWebGL,backdropTime,shouldAnimate,normalizeOptions,cameraPosition,MAX_PIXEL_RATIO,FRAME_MS,isSoftwareRenderer,slowStreak,SLOW_FRAME_MS,SLOW_FRAMES_TO_STOP,VIEW_DEFAULTS,clampDistance,clampLat,MIN_DISTANCE,MAX_DISTANCE,isBackgroundTarget}=backdrop;
 
 // Pages whose background is decorative get the Moon; pages whose LOLA relief is the functional map never do.
-const WITH={"moonproof/index.html":"../moon-hd/backdrop.js","moonproof/tasks.html":"../moon-hd/backdrop.js",
+const WITH={"moonproof/index.html":"../moon-hd/backdrop.js","moonproof/tasks.html":"../moon-hd/backdrop.js","moonproof/cockpit.html":"../moon-hd/backdrop.js",
  "moonproof/rules.html":"../moon-hd/backdrop.js","moonproof/evidence.html":"../moon-hd/backdrop.js","moonproof/debrief.html":"../moon-hd/backdrop.js"};
 // MoonProof map screens keep their functional LOLA relief and get the Moon only on demand ("Explorar a Lua").
-const LAZY=["moonproof/mission.html","moonproof/explore.html","moonproof/compare.html","moonproof/recover.html","moonproof/cockpit.html","moonproof/landing.html",
+const LAZY=["moonproof/mission.html","moonproof/explore.html","moonproof/compare.html","moonproof/recover.html","moonproof/landing.html",
  "moonproof/plan.html","moonproof/present.html","moonproof/activity.html"];
 const WITHOUT=["moon-hd.html"];
 
@@ -224,6 +224,10 @@ test("pages with a decorative background mount the backdrop; functional-map scre
   assert.ok(!/style=/.test(html),page+": no inline style attribute");
   assert.ok(!/<script(?![^>]*src=)/.test(html),page+": no inline script");
  }
+ const cockpit=await read("moonproof/cockpit.html");
+ assert.match(cockpit,/data-moon-backdrop="pole"/,"default Moon uses Joel's south-polar camera");
+ assert.doesNotMatch(cockpit,/data-moon-lazy/,"Cockpit must expose the shared 3D Moon behind its nine panel groups");
+ assert.equal((cockpit.match(/moon-hd\\/backdrop\\.js/g)||[]).length,1,"Cockpit uses one shared Moon renderer");
  for(const page of WITHOUT)assert.ok(!(await read(page)).includes("backdrop.js"),page+" must keep its own background");
  for(const page of LAZY){const html=await read(page);assert.match(html,/<script type="module" src="\.\.\/moon-hd\/backdrop\.js" data-moon-backdrop="globe" data-moon-lazy><\/script>/,page+": Moon on demand only");}
  for(const name of await readdir(path.join(web,"moonproof","screens")))if(name.endsWith(".js"))assert.ok(!(await read("moonproof/screens/"+name)).includes("backdrop.js"),name);
