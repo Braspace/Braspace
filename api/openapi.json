@@ -1673,8 +1673,9 @@
               "INVALID_VECTOR",
               "INVALID_VISIBILITY_INPUT",
             "INVALID_INPUT",
-          "API_ROUTE_NOT_FOUND",
-          "METHOD_NOT_ALLOWED"
+            "INVALID_NEARBY_DELAY",
+            "API_ROUTE_NOT_FOUND",
+            "METHOD_NOT_ALLOWED"
             ]
           },
           "state": {
@@ -2414,6 +2415,12 @@
           },
           "constraints": {
             "$ref": "#/components/schemas/Constraints"
+          },
+          "nearby_delay_hours": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 720,
+            "description": "Shift applied only to nearby_site options. Omitted means 0 (original start, backward compatible). When nonzero, it must equal one of delays_hours. For comparability with a delayed option, set this to that option\u0027s delay; nearby_site options echo delay_hours and start_utc. Only one nearby delay is evaluated per request."
           },
           "include_nearby": {
             "type": "boolean",
