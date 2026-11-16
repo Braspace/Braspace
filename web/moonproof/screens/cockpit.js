@@ -434,8 +434,15 @@ const left = $("left"), right = $("right");
 const sheet = $("sheet");
 // Every caller fires draw() without awaiting it: a failed series fetch (offline, or cancelled by navigation)
 // must not become an unhandled rejection. Show it, and clear the cache key so the next draw retries.
+let drawRevision = 0;
 function draw() {
-    return drawNow().then(() => { document.querySelector(".mp-ck-loaderr")?.remove(); }, (err) => {
+    const revision = ++drawRevision;
+    return drawNow().then(() => {
+        if (revision === drawRevision)
+            document.querySelector(".mp-ck-loaderr")?.remove();
+    }, (err) => {
+        if (revision !== drawRevision)
+            return; // An obsolete request must not erase newer state or display an old error.
         S.siteKey = "";
         let note = document.querySelector(".mp-ck-loaderr");
         if (!note) {
