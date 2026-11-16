@@ -68,7 +68,7 @@ export const dict: Texts = {
     "entry.plan.title": "Planejar uma missão", "entry.plan.who": "Planejadores e pesquisadores",
     "entry.plan.b1": "Regras editáveis e comparação de cenários", "entry.plan.b2": "Tabelas com unidade e incerteza", "entry.plan.b3": "Exportar CSV, JSON e link reproduzível",
     "entry.destination.explore": "Começar a explorar os locais reais", "entry.destination.class": "Começar pelo Kit Aula · apresentação disponível", "entry.destination.plan": "Abrir regras editáveis de planejamento", "entry.hint": "Para trocar de tarefa, volte pelo logo do MoonProof ou use os links de navegação.",
-    "mission.title": "Mission Control", "mission.sunVisible": "Sol visível", "mission.nights": "maior noite",
+    "mission.title": "Controle da missão", "mission.sunVisible": "Sol visível", "mission.nights": "maior noite",
     "mission.blackout": "sem Terra", "mission.earth": "Terra", "mission.maxSun": "Sol máx.",
     "mission.card.sun": "Sol na janela",
     "mission.answer.sun": "O centro do Sol fica acima do horizonte local {pct} da janela de {hours} h.",

@@ -59,3 +59,9 @@ test("Evidências separa locais reais de sintéticos e não corta a linha da API
   assert.match(e, /series_science_statuses\?\.SYNTHETIC/);
   assert.doesNotMatch(e, /\(\$\{t\("evidence\.api_state"\)\}\)/);
 });
+
+test("pt-BR: título da tela Missão traduzido (era 'Mission Control')", async () => {
+  const { dict } = await import("../core/i18n.js");
+  assert.equal(dict["pt-BR"]["mission.title"], "Controle da missão");
+  assert.equal(dict.en["mission.title"], "Mission Control");
+});
