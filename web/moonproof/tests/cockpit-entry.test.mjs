@@ -10,6 +10,9 @@ test("canonical MoonProof entry uses the same-origin cockpit adapter, not three-
   assert.match(html, /<script type="module" src="screens\/cockpit-entry\.js"><\/script>/);
   assert.match(html, /id="cockpit-entry" href="\.\/cockpit\.html"/);
   assert.match(html, /href="\.\/tasks\.html"/);
+  assert.match(html, /href="core\/tokens\.css"/);
+  assert.match(html, /href="screens\/cockpit-entry\.css"/);
+  assert.match(html, /class="mp-cockpit-entry"/);
   assert.doesNotMatch(html, /id="cards"|screens\/entry\.js|http-equiv="refresh"/);
   assert.doesNotMatch(html, /<script(?![^>]*src=)/i, "CSP: no inline JS");
   assert.doesNotMatch(html, /<[^>]+style=/i, "CSP: no inline styles");
@@ -17,7 +20,7 @@ test("canonical MoonProof entry uses the same-origin cockpit adapter, not three-
 test("no-JavaScript fallback remains accessible and links to Cockpit and archived tools", async () => {
   const html = await read("../index.html");
   assert.match(html, /MoonProof · Cockpit/);
-  assert.match(html, /<a id="cockpit-entry"[^>]+>Abrir cockpit/);
+  assert.match(html, /<a[^>]*id="cockpit-entry"[^>]*>Abrir cockpit/);
   assert.match(html, /Outras ferramentas: Explorar, Aula e Planejar/);
 });
 test("three existing task flows are retained at the auxiliary tasks.html URL", async () => {
@@ -45,4 +48,13 @@ test("entry adjusts no more than one history item and maintains accessible fallb
   openCockpit(location, fallback);
   assert.deepEqual(calls, ["https://moon.test/moonproof/cockpit.html?lang=en&site=nobile-rim-1"]);
   assert.equal(fallback.href, calls[0]);
+});
+
+test("no-JS fallback is dark, compact, responsive, keyboard-visible and uses design tokens", async () => {
+  const css = await read("../screens/cockpit-entry.css");
+  assert.match(css,/var\(--glass\)/);
+  assert.match(css,/var\(--jade\)/);
+  assert.match(css,/min-height:var\(--touch\)/);
+  assert.match(css,/@media\(max-width:390px\)/);
+  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
 });
