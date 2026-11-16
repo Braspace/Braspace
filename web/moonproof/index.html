@@ -4,13 +4,17 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MoonProof · Cockpit</title>
 <meta name="description" content="MoonProof lunar south-pole cockpit: one shared 3D Moon and Artemis demonstration, nine independent panels and preliminary mission simulation.">
+<link rel="stylesheet" href="core/tokens.css"><link rel="stylesheet" href="screens/cockpit-entry.css">
 <script type="module" src="screens/cockpit-entry.js"></script>
 </head>
-<body>
-<main>
-<h1>MoonProof · Cockpit</h1>
-<p><a id="cockpit-entry" href="./cockpit.html">Abrir cockpit · Open cockpit</a></p>
-<p><a href="./tasks.html">Outras ferramentas: Explorar, Aula e Planejar · Explore, Teach and Plan</a></p>
+<body class="mp-cockpit-entry">
+<main class="mp-entry-fallback" aria-labelledby="entry-title">
+<p class="mp-entry-eyebrow">BRASPACE · MOONPROOF</p>
+<h1 id="entry-title">MoonProof · Cockpit</h1>
+<p class="mp-entry-lead">Polo Sul lunar · Visualização e simulação educacional</p>
+<p><a class="mp-entry-primary" id="cockpit-entry" href="./cockpit.html">Abrir cockpit · Open cockpit</a></p>
+<p><a class="mp-entry-secondary" href="./tasks.html">Explorar, Aula e Planejar · Explore, Teach and Plan</a></p>
+<p class="mp-entry-note">Dados preliminares · Modelo Artemis ilustrativo</p>
 </main>
 </body>
 </html>
