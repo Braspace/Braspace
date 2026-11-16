@@ -22,10 +22,14 @@
 @media(max-width:700px){.mp-tour-help{top:80px;right:10px;padding:8px 12px;font-size:12px}.mp-tour-dialog{padding:22px 18px 17px;border-radius:21px}.mp-tour-dialog h2{font-size:21px}.mp-tour-copy{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.mp-tour-dialog.mp-tour-animate{animation:none}.mp-tour-spotlight{transition:none}}
 
-/* The shared Moon overlay and its exit button use z-index 2147483000/3001.
-   Keep View tutorial clickable in immersive mode; raise the *whole* guided overlay
-   above the scene only while exploring, without blocking 3D interactions otherwise. */
+/* Shared 3D canvas and Moon controls are at 2147483000/3001.
+   The contextual help button now lives inside the navigation's stacking context
+   (PR #462); lifting the child alone cannot escape its low-z-index ancestor.
+   Raise the compact top bar and the help popup only in immersive Moon mode.
+   The tour's modal/spotlight still outrank that popup and the 3D scene. */
+html.moon-explore-on .mp-top{z-index:2147483003}
+html.moon-explore-on .mp-help-pop{z-index:2147483004}
 html.moon-explore-on .mp-tour-help{z-index:2147483003}
-html.moon-explore-on .mp-tour-cover{z-index:2147483004}
-html.moon-explore-on .mp-tour-spotlight{z-index:2147483005}
-html.moon-explore-on .mp-tour-dialog{z-index:2147483006}
+html.moon-explore-on .mp-tour-cover{z-index:2147483005}
+html.moon-explore-on .mp-tour-spotlight{z-index:2147483006}
+html.moon-explore-on .mp-tour-dialog{z-index:2147483007}
