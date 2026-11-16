@@ -22,6 +22,14 @@ export function judge(m: DarkMetrics | null | undefined, rules: LimitRules): Jud
   if (m.blackout > rules.blackout) reasons.push({ key: "blackout", value: m.blackout, limit: rules.blackout });
   return { status: reasons.length ? "fail" : "pass", reasons };
 }
+/** The precise violated constraint(s) for a delayed window — never infer a night failure from a comm gap. */
+export function ruleHeadlineKind(j: Judged): "nd" | "pass" | "night" | "blackout" | "both" {
+  if (j.status === "nd") return "nd";
+  if (j.status === "pass") return "pass";
+  const night = j.reasons.some(r => r.key === "night");
+  const blackout = j.reasons.some(r => r.key === "blackout");
+  return night && blackout ? "both" : night ? "night" : blackout ? "blackout" : "nd";
+}
 /** Hours of margin to the tighter rule (negative = violated). null without data. */
 export function slack(m: DarkMetrics | null | undefined, rules: LimitRules): number | null {
   if (!m || !num(m.dark) || !num(m.blackout)) return null;
