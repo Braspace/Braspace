@@ -81,9 +81,17 @@ export function apiCompareMetrics(siteId, startIso, hours) {
 /** POST /api/scenarios/delay. {online, base, delayed} (each null without numbers). */
 export function apiDelayMetrics({ siteId, startIso, hours, delayH, rules }) {
     return once(`d|${siteId}|${startIso}|${hours}|${delayH}|${rules.night}|${rules.blackout}`, async () => {
-        const r = await api("/api/scenarios/delay", { method: "POST", body: { site_id: siteId, start_utc: startIso, duration_hours: hours,
-                delays_hours: [delayH], nearby_delay_hours: delayH, include_nearby: true, max_nearby: 3,
-                constraints: { max_continuous_dark_hours: rules.night, max_continuous_comm_gap_hours: rules.blackout } } });
+        const body = { site_id: siteId, start_utc: startIso, duration_hours: hours,
+            delays_hours: [delayH], nearby_delay_hours: delayH, include_nearby: true, max_nearby: 3,
+            constraints: { max_continuous_dark_hours: rules.night, max_continuous_comm_gap_hours: rules.blackout } };
+        let r = await api("/api/scenarios/delay", { method: "POST", body });
+        // Older API builds reject the unknown nearby_delay_hours field (400). Retry without it: baseline/delayed
+        // numbers stay available and nearbyAtDelay drops the baseline-time neighbours instead of mislabelling them.
+        if (!r.ok && !r.offline && r.error === "HTTP 400") {
+            const { nearby_delay_hours: _omit, ...legacy } = body;
+            void _omit;
+            r = await api("/api/scenarios/delay", { method: "POST", body: legacy });
+        }
         if (!r.ok)
             return { online: !r.offline, base: null, delayed: null, nearby: [] };
         const pick = (o) => (o && o.data_status === "AVAILABLE" && o.metrics ? mapApiMetrics(o.metrics, o.science_status, "POST /api/scenarios/delay") : null);

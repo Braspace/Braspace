@@ -47,3 +47,12 @@ test("MoonProof explicitly requests one nearby delay and does not treat a stale 
   assert.match(ts, /nearby_delay_hours:\s*delayH/);
   assert.match(ts, /nearbyAtDelay\(opts, startIso, delayH\)/);
 });
+
+test("an older API that rejects nearby_delay_hours (400) is retried without it, not shown as offline", async () => {
+  for (const p of ["../screens/scenario-data.ts", "../screens/scenario-data.js"]) {
+    const src = await readFile(new URL(p, import.meta.url), "utf8");
+    assert.match(src, /r\.error === "HTTP 400"/);
+    assert.match(src, /nearby_delay_hours: _omit, \.\.\.legacy/);
+    assert.match(src, /body: legacy/);
+  }
+});
