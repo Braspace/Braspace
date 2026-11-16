@@ -51,6 +51,18 @@ try{
  await welcome.waitFor({state:"visible",timeout:15000});
  assert(/quick tour|conhecer esta tela/i.test(await desktop.locator("#mp-tour-title").innerText()),
    "first visit offers tutorial on the actual three-mode entry");
+ const tourBack=desktop.locator("#mp-tour-prev");
+ assert(await tourBack.isHidden(),"Back is hidden on the welcome screen");
+ await desktop.locator("#mp-tour-next").click(); // first step
+ assert(await tourBack.isHidden(),"Back is hidden on step one");
+ await desktop.locator("#mp-tour-next").click(); // second step
+ await tourBack.waitFor({state:"visible"});
+ assert(/^←\s+(?:Voltar|Back)$/.test((await tourBack.innerText()).trim()),
+   "Back uses a visible arrow and localized text rather than an empty pill");
+ assert(["Voltar","Back"].includes(await tourBack.getAttribute("aria-label")),
+   "Back is accessible in the current language");
+ await tourBack.click();
+ assert(await tourBack.isHidden(),"Back returns to hidden on the first step");
  await desktop.locator("#mp-tour-skip").click();
  await welcome.waitFor({state:"hidden"});
  await desktop.screenshot({path:path.join(out,"moonproof-entry.png")});

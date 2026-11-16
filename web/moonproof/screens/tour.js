@@ -133,6 +133,8 @@ export function mountTour(mode) {
     const progress = dialog.querySelector("#mp-tour-progress");
     progress.textContent = isWelcome ? "" : w.progress + " " + (index + 1) + " " + w.of + " " + steps.length;
     const prev = dialog.querySelector("#mp-tour-prev");
+    prev.textContent = "← " + w.prev;
+    prev.setAttribute("aria-label", w.prev);
     prev.hidden = index <= 0;
     const next = dialog.querySelector("#mp-tour-next");
     next.textContent = isWelcome ? w.start : index === steps.length - 1 ? w.done : w.next;
