@@ -14,6 +14,16 @@ export function judge(m, rules) {
         reasons.push({ key: "blackout", value: m.blackout, limit: rules.blackout });
     return { status: reasons.length ? "fail" : "pass", reasons };
 }
+/** The precise violated constraint(s) for a delayed window — never infer a night failure from a comm gap. */
+export function ruleHeadlineKind(j) {
+    if (j.status === "nd")
+        return "nd";
+    if (j.status === "pass")
+        return "pass";
+    const night = j.reasons.some(r => r.key === "night");
+    const blackout = j.reasons.some(r => r.key === "blackout");
+    return night && blackout ? "both" : night ? "night" : blackout ? "blackout" : "nd";
+}
 /** Hours of margin to the tighter rule (negative = violated). null without data. */
 export function slack(m, rules) {
     if (!m || !num(m.dark) || !num(m.blackout))
