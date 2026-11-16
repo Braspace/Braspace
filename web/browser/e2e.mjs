@@ -1,10 +1,8 @@
-// Browser QA for the only product surface, MoonProof (web/moonproof/, Preact TSX) and the Three.js
-// viewer (moon-hd.html), against the real Go API + Rust engine when BRASPACE_REQUIRE_BACKEND=1.
+// Browser QA: actual Chromium navigation, asset loading, fallback and mobile.
 // Run with: npm --prefix web install --no-save playwright@1.56.1
 //           npx --prefix web playwright install chromium
 //           node web/browser/e2e.mjs
 import {chromium} from "playwright";
-import {verifyCockpitPanels} from "./cockpit-panels.e2e.mjs";
 import {spawn} from "node:child_process";
 import {mkdir} from "node:fs/promises";
 import path from "node:path";
@@ -14,141 +12,78 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"../..");
 const port=Number(process.env.BRASPACE_BROWSER_PORT||"5377");
 const base="http://127.0.0.1:"+port;
 const out=path.resolve(process.env.BRASPACE_BROWSER_ARTIFACTS||"/tmp/braspace-browser-artifacts");
-const requireBackend=process.env.BRASPACE_REQUIRE_BACKEND==="1";
 const child=spawn(process.execPath,["web/dev-server.mjs"],{cwd:root,env:{...process.env,BRASPACE_WEB_PORT:String(port)},stdio:"pipe"});
 let diagnostics="";
 for(const stream of [child.stdout,child.stderr])stream.on("data",chunk=>{diagnostics+=String(chunk).slice(0,900);});
 let browser;
 const assert=(condition,message)=>{if(!condition)throw new Error(message)};
 async function ready(){
- for(let i=0;i<80;i++){try{const r=await fetch(base+"/moonproof/",{signal:AbortSignal.timeout(500)});if(r.ok)return;}catch{}
+ for(let i=0;i<80;i++){try{const r=await fetch(base+"/lab.html",{signal:AbortSignal.timeout(500)});if(r.ok)return;}catch{}
   await new Promise(r=>setTimeout(r,250));
  }
  throw new Error("web unavailable: "+diagnostics);
 }
 const errors=[];
-async function open(page,url,ready){
- const r=await page.goto(base+url,{waitUntil:"domcontentloaded",timeout:30000});
- assert(r?.status()===200,url+" HTTP "+r?.status());
- await page.locator(ready).filter({visible:true}).first().waitFor({state:"visible",timeout:35000});
-}
-const overflow=page=>page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
 try{
  await mkdir(out,{recursive:true});await ready();
- browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||undefined,args:["--use-angle=swiftshader","--enable-webgl","--enable-unsafe-swiftshader"]});
+ browser=await chromium.launch({headless:true,args:["--use-angle=swiftshader","--enable-webgl"]});
  const desktop=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
- desktop.on("pageerror",error=>errors.push("desktop "+desktop.url()+": "+error.stack));
-
- // / -> /moonproof/ -> three-mode selector; no JS-only redirect or white fallback.
- const home=await desktop.goto(base+"/",{waitUntil:"load",timeout:30000});
- assert(home?.status()===200,"root HTTP status");
- await desktop.waitForURL(u=>/\/moonproof\/(?:index\.html)?$/.test(u.pathname),{timeout:15000});
- const entryCards=desktop.locator("#cards .mp-task");
- await entryCards.first().waitFor({state:"visible",timeout:20000});
- assert(await entryCards.count()===3,"home must show Explore, Teach and Plan");
- // Welcome automatically appears on the chooser, before selecting a mode.
- const welcome=desktop.locator(".mp-tour-dialog");
- await welcome.waitFor({state:"visible",timeout:15000});
- assert(/quick tour|conhecer esta tela/i.test(await desktop.locator("#mp-tour-title").innerText()),
-   "first visit offers tutorial on the actual three-mode entry");
- const tourBack=desktop.locator("#mp-tour-prev");
- assert(await tourBack.isHidden(),"Back is hidden on the welcome screen");
- await desktop.locator("#mp-tour-next").click(); // first step
- assert(await tourBack.isHidden(),"Back is hidden on step one");
- await desktop.locator("#mp-tour-next").click(); // second step
- await tourBack.waitFor({state:"visible"});
- assert(/^←\s+(?:Voltar|Back)$/.test((await tourBack.innerText()).trim()),
-   "Back uses a visible arrow and localized text rather than an empty pill");
- assert(["Voltar","Back"].includes(await tourBack.getAttribute("aria-label")),
-   "Back is accessible in the current language");
- await tourBack.click();
- assert(await tourBack.isHidden(),"Back returns to hidden on the first step");
- await desktop.locator("#mp-tour-skip").click();
- await welcome.waitFor({state:"hidden"});
- // Other screen tutorials are covered separately; keep navigation checks unobstructed.
- await desktop.evaluate(() => {
-   for (const mode of ["tasks","explore","class","present","compare","debrief","evidence","landing","mission","plan","recover","rules","moonhd"])
-     localStorage.setItem("moonproof.tour." + mode + ".v1", "done");
- });
- await desktop.screenshot({path:path.join(out,"moonproof-entry.png")});
- // All three cards must navigate to their own real screen, not to Cockpit.
- for(const [task,page,layer] of [["explore","explore.html","answer"],["class","activity.html","why"],["plan","plan.html","proof"]]){
-   await desktop.goto(base+"/moonproof/",{waitUntil:"domcontentloaded",timeout:30000});
-   const link=desktop.locator(`#cards .mp-task[data-task="${task}"]`);
-   await link.waitFor({state:"visible",timeout:15000});
-   await link.click();
-   await desktop.waitForURL(u=>u.pathname.endsWith("/moonproof/"+page)
-     && u.searchParams.get("task")===task && u.searchParams.get("layer")===layer,{timeout:15000});
+ desktop.on("pageerror",error=>errors.push("desktop: "+error.message));
+ const r=await desktop.goto(base+"/lab.html",{waitUntil:"domcontentloaded",timeout:30000});
+ assert(r?.status()===200,"desktop lab page failed");
+ assert((await desktop.locator("body").innerText()).includes("PRELIMINARY"),"missing scientific disclaimer");
+ await desktop.locator("#api-feedback").waitFor({state:"visible",timeout:30000});
+ await desktop.waitForFunction(()=>{const status=document.querySelector("#api-feedback")?.textContent||"";return !status.includes("not yet checked")&&!status.includes("checking…");},null,{timeout:30000});
+ if(process.env.BRASPACE_REQUIRE_BACKEND==="1"){
+  const status=await desktop.locator("#api-feedback").innerText();
+  assert(status.includes("Go/Rust engine ready"),"browser did not confirm connected Go/Rust backend: "+status);
  }
- // The selector preserves scenario and language when opened with a deep link.
- await desktop.goto(base+"/moonproof/?site=malapert-massif&lang=pt-BR&battery=31#scene",{waitUntil:"domcontentloaded",timeout:30000});
- await desktop.waitForURL(u=>/\/moonproof\/(?:index\.html)?$/.test(u.pathname)
-   && u.searchParams.get("site")==="malapert-massif" && u.hash==="#scene",{timeout:15000});
- await desktop.waitForFunction(()=>document.querySelector('#cards .mp-task[data-task="plan"]')?.getAttribute('href')?.includes('site=malapert-massif'),null,{timeout:15000});
- const planURL=new URL(await desktop.locator('#cards .mp-task[data-task="plan"]').getAttribute("href"),base+"/moonproof/");
- assert(planURL.pathname.endsWith("/moonproof/plan.html"),"Plan card destination");
- for(const [key,value] of [["site","malapert-massif"],["lang","pt-BR"],["battery","31"],["task","plan"],["layer","proof"]])
-   assert(planURL.searchParams.get(key)===value,"Plan link carries "+key);
- // The former tasks.html remains an equivalent optional entry, not a dead page.
- await open(desktop,"/moonproof/tasks.html","#cards .mp-task");
-
- // Mission: every catalogue site is a marker on the shared map.
- await open(desktop,"/moonproof/mission.html","#dock .mp-marker, .mp-marker");
- assert(await desktop.locator(".mp-marker").count()>=5,"mission markers");
- assert(["moonhd","lola-2d"].includes(await desktop.locator(".mp-terrain").getAttribute("data-relief")),"mission relief state");
- await desktop.screenshot({path:path.join(out,"moonproof-mission.png")});
-
- // Explore's first-run coach would block unrelated pointer QA. The Cockpit
- // tutorial is tested separately below on its own fresh completion key.
- await desktop.evaluate(() => localStorage.setItem("moonproof.tour.explore.v1", "done"));
- // Explore: one analysis layer at a time (radio group).
- await open(desktop,"/moonproof/explore.html","#left [role=radio][data-layer]");
- await desktop.locator('#left [role=radio][data-layer="slope"]').click();
- // The layer redraw is async (state → render); under SwiftShader WebGL it lands a few frames later. Wait for it.
- assert(await desktop.waitForFunction(()=>document.querySelector('#left [role=radio][data-layer="slope"]')?.getAttribute("aria-checked")==="true",null,{timeout:10000}).then(()=>true,()=>false),"explore layer switch");
-
- // Cockpit: the onboard computer runs on the Go API (site-evaluate, falling back to evaluate).
- // Isolate the seven-step tutorial regression from earlier navigation through Explore:
- // simulate a fresh visitor for this test, without affecting real user storage.
- await desktop.evaluate(() => {
-   for (const mode of ["welcome","entry","cockpit","explore","class","present"])
-     localStorage.removeItem("moonproof.tour." + mode + ".v1");
- });
- const onboard=requireBackend?desktop.waitForResponse(r=>/\/api\/onboard\/(site-)?evaluate$/.test(new URL(r.url()).pathname),{timeout:40000}):null;
- await open(desktop,"/moonproof/cockpit.html","#player");
- if(onboard){const r=await onboard;assert(r.status()===200||r.status()===422,"onboard API status "+r.status());}
- assert(await desktop.locator('a[href*="onboard/"]').count()===0,"cockpit must not link the archived onboard panel");
- await verifyCockpitPanels(desktop);
- await desktop.screenshot({path:path.join(out,"moonproof-cockpit.png")});
-
- for(const [page,sel] of [["compare","#left"],["recover","#right"],["evidence","#sources"],["plan","#plan-table"],["rules","#rules-core"],["present","#present-question"],["activity","#act-steps"],["debrief","#actions a, .deb-none"]])
-  await open(desktop,"/moonproof/"+page+".html",sel);
-
- // Landing Lab: Three.js scene over the LOLA site tile and the educational 3DOF simulator.
- await open(desktop,"/moonproof/landing.html","#bar");
- assert(await desktop.locator("canvas").count()>=1,"landing canvas");
- await desktop.screenshot({path:path.join(out,"moonproof-landing.png")});
-
- // Three.js Moon HD viewer: either the live scene or the canonical poster fallback.
- await desktop.goto(base+"/moon-hd.html?view=pole",{waitUntil:"domcontentloaded",timeout:30000});
- await desktop.waitForFunction(()=>{const l=document.querySelector("#loading");return !l||l.hidden||l.classList.contains("done")||l.classList.contains("error")||getComputedStyle(l).display==="none";},null,{timeout:60000});
-
- // Archived surfaces are gone.
- for(const p of ["/classic.html","/lab.html","/studio/","/onboard/cockpit.html","/dashboard/","/polar-map-demo.html"])
-  assert((await fetch(base+p)).status===404,p+" should be archived (404)");
-
- // Close the desktop tab first: a software-WebGL viewer left running shares Chromium's GPU process with the next tab.
- await desktop.close();
- // Phone: no horizontal scroll on the main screens.
- const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
- mobile.on("pageerror",error=>errors.push("mobile "+mobile.url()+": "+error.stack));
- for(const [page,sel] of [["mission","#dock .mp-marker, .mp-marker"],["explore","#sheet, #left [role=radio][data-layer]"],["cockpit","#player"],["activity","#act-steps"],["landing","#bar"]]){
-  await open(mobile,"/moonproof/"+page+".html",sel);
-  const o=await overflow(mobile);assert(o<=1,"mobile "+page+" horizontal overflow "+o);
+ if(process.env.BRASPACE_REQUIRE_BACKEND==="1"){
+  await desktop.locator("#api-simulate").click();
+  await desktop.waitForFunction(()=>document.querySelector("#api-sim-result")?.textContent?.includes("UNVERIFIED_INPUTS"),null,{timeout:30000});
+  assert((await desktop.locator("#api-sim-result").innerText()).includes("TRAINING ONLY"),"Go onboard incorrectly treated as science");
  }
- await mobile.screenshot({path:path.join(out,"moonproof-landing-mobile.png")});
+ await desktop.locator("#tabs button[data-view='compare']").click();
+ await desktop.locator("#tabs button[data-view='recover']").click();
+ await desktop.locator("#tabs button[data-view='evidence']").click();
+ assert((await desktop.locator("#panel-body").innerText()).length>60,"evidence panel is empty");
+ await desktop.screenshot({path:path.join(out,"polar-lab-desktop.png"),fullPage:true});
+ await desktop.getByRole("link",{name:"Mission computer"}).click();
+ assert(desktop.url().endsWith("/index.html"),"classic UI navigation failed");
+ assert((await desktop.locator("body").innerText()).includes("UNVERIFIED INPUTS"),"classic scientific disclaimer absent");
+ await desktop.screenshot({path:path.join(out,"moonproof-classic-desktop.png"),fullPage:true});
+ const onboardResponse=await desktop.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});
+ assert(onboardResponse?.status()===200,"onboard cockpit HTTP");
+ const tabs=desktop.locator("nav.tabs button[data-tab]");
+ assert(await tabs.count()===13,"onboard cockpit missing required tabs");
+ assert((await desktop.locator("body").innerText()).includes("Não validado"),"onboard synthetic disclaimer missing");
+ await desktop.locator("nav.tabs button[data-tab='energia']").click();
+ await desktop.locator("nav.tabs button[data-tab='replan']").click();
+ const replanText=await desktop.locator("#views").innerText();
+ assert(replanText.length>80,"onboard replan panel empty: "+JSON.stringify(replanText.slice(0,500))+"; page errors: "+errors.join(" | "));
+ await desktop.screenshot({path:path.join(out,"onboard-cockpit-desktop.png"),fullPage:true});
+ const trainingResponse=await desktop.goto(base+"/onboard/index.html",{waitUntil:"domcontentloaded",timeout:30000});
+ assert(trainingResponse?.status()===200,"onboard training form HTTP");
+ await desktop.locator("#run").click();
+ await desktop.locator("#results-card").waitFor({state:"visible",timeout:30000});
+ assert((await desktop.locator("body").innerText()).includes("UNVERIFIED_INPUTS"),"onboard training lost disclaimer");
+ await desktop.screenshot({path:path.join(out,"onboard-training-desktop.png"),fullPage:true});
 
+ const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+ mobile.on("pageerror",error=>errors.push("mobile: "+error.message));
+ const mobileResponse=await mobile.goto(base+"/lab.html",{waitUntil:"domcontentloaded",timeout:30000});
+ assert(mobileResponse?.status()===200,"mobile lab status");
+ await mobile.locator("#tabs button[data-view='evidence']").click();
+ assert((await mobile.locator("#panel-body").innerText()).length>60,"mobile evidence empty");
+ await mobile.screenshot({path:path.join(out,"polar-lab-mobile.png"),fullPage:true});
+ const overflow=await mobile.evaluate(()=>({width:document.documentElement.scrollWidth,viewport:innerWidth}));
+ assert(overflow.width<=overflow.viewport+4,"mobile horizontal overflow: "+JSON.stringify(overflow));
+ const mobileCockpit=await mobile.goto(base+"/onboard/cockpit.html",{waitUntil:"domcontentloaded",timeout:30000});
+ assert(mobileCockpit?.status()===200,"mobile cockpit HTTP status");
+ await mobile.locator("nav.tabs button[data-tab='status']").click();
+ assert((await mobile.locator("#views").innerText()).length>80,"mobile cockpit status empty");
+ await mobile.screenshot({path:path.join(out,"onboard-cockpit-mobile.png"),fullPage:true});
  assert(errors.length===0,"browser JS errors: "+errors.join(" | "));
- console.log("PASS Chromium MoonProof desktop+mobile, Go API onboard call"+(requireBackend?"":" (backend not required)")+", Three.js landing/viewer, archived routes 404",out);
+ console.log("PASS Chromium Polar Lab desktop+mobile navigation, disclaimers, evidence and screenshots",out);
 }catch(e){console.error("FAIL Chromium QA",e?.stack||e);console.error(diagnostics);process.exitCode=1;}
 finally{if(browser)await browser.close();child.kill("SIGTERM");}
