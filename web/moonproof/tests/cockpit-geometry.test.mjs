@@ -32,7 +32,8 @@ test("battery ring is a real 152 px disc and the satellites follow the board ord
   has(/\.mp-ck-left \.mp-stat\{width:152px;height:152px/, "ring box");
   const sats = js.match(/satellites: \[([\s\S]*?)\] \}\);/)[1];
   const order = [...sats.matchAll(/label: t\("cockpit\.(\w+)"\)/g)].map(m => m[1]);
-  assert.deepEqual(order, ["next_night", "endurance", "margin", "floor"]);
+  // LUA3D L2: the margin satellite is labelled "folga da bateria" (battery margin), not Compare's rule margin.
+  assert.deepEqual(order, ["next_night", "endurance", "battery_margin", "floor"]);
 });
 
 test("phone keeps its own layout: the timeline wrapper vanishes below 701 px; no link to the archived onboard panel", () => {

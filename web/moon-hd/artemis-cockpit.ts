@@ -12,6 +12,9 @@ export interface MoonBackdropApi {
   requestDraw(): void; toScene(lat: number, lon: number, r?: number): Three;
   focusLatLon(lat: number, lon: number, dist?: number): void; selectSite(id: string): void; explore(onOff: boolean): void;
   onFrame(cb: (dt: number, now: number) => void): () => void;
+  /** Cockpit framing (LUA3D L2, optional on older backdrops): orbit the lander, zoom, recentre, lander screen point. */
+  cockpitView?(lat: number, lon: number, r?: number): void; zoom?(factor: number): void; recenter?(): void;
+  setFocusOffset?(dx: number, dy: number): void; readonly range?: number;
   readonly pins: { id: string; name: string; lat: number; lon: number }[]; readonly selectedId: string;
 }
 export interface ArtemisTexts { note: string; tag: string; }
@@ -24,6 +27,8 @@ export const COCKPIT_SPAN = 0.04;
 /** Camera distance from the site (Moon radii) when explore opens. The backdrop orbits around the site itself,
  * tilted above its horizon from the sunlit side, so the lander is seen in perspective over the relief. */
 export const FOCUS_DISTANCE = 0.4;
+/** Radius of the reference sphere at the middle of the hover (hoverPose low 1.03 / high 1.06): the cockpit camera's target. */
+export const HOVER_MID_R = 1.045;
 
 const DEFAULT_TEXTS = (): ArtemisTexts => {
   const pt = (document.documentElement.lang || navigator.language || "").toLowerCase().startsWith("pt");
@@ -103,6 +108,8 @@ export function mountArtemisCockpit(options: ArtemisCockpitOptions = {}) {
       a.scene.add(g, lights);
       undo.push(() => { lander?.dispose(); a.scene.remove(lights); lineGeo.dispose(); tether.material.dispose(); ring.geometry.dispose(); ring.material.dispose(); });
       orient(); still();
+      // Cockpit framing (owner, 16/11): the Moon below, the lander at the centre of the free area of the screen.
+      a.cockpitView?.(site.lat, site.lon, HOVER_MID_R);
 
       note = document.createElement("p"); note.className = "artemis-note"; note.setAttribute("role", "note");
       tag = document.createElement("span"); tag.className = "artemis-tag is-off"; tag.setAttribute("aria-hidden", "true");
@@ -140,6 +147,7 @@ export function mountArtemisCockpit(options: ArtemisCockpitOptions = {}) {
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
     site = { lat, lon }; orient(); still();
     if (refocus && root.classList.contains("moon-explore-on")) focus();
+    else api?.cockpitView?.(lat, lon, HOVER_MID_R);
   }
   function dispose() { if (dead) return; dead = true; for (const f of undo.splice(0).reverse()) { try { f(); } catch { /* already gone */ } } lander = null; api = null; }
   return { setSite, dispose, relabel: () => relabelNow(), get lander() { return lander; } };

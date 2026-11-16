@@ -6,6 +6,8 @@ export const COCKPIT_SPAN = 0.04;
 /** Camera distance from the site (Moon radii) when explore opens. The backdrop orbits around the site itself,
  * tilted above its horizon from the sunlit side, so the lander is seen in perspective over the relief. */
 export const FOCUS_DISTANCE = 0.4;
+/** Radius of the reference sphere at the middle of the hover (hoverPose low 1.03 / high 1.06): the cockpit camera's target. */
+export const HOVER_MID_R = 1.045;
 const DEFAULT_TEXTS = () => {
     const pt = (document.documentElement.lang || navigator.language || "").toLowerCase().startsWith("pt");
     return pt ? { note: "Ilustrativo — lander hipotético, não é telemetria", tag: "Lander (ilustrativo)" }
@@ -98,6 +100,8 @@ export function mountArtemisCockpit(options = {}) {
             undo.push(() => { lander?.dispose(); a.scene.remove(lights); lineGeo.dispose(); tether.material.dispose(); ring.geometry.dispose(); ring.material.dispose(); });
             orient();
             still();
+            // Cockpit framing (owner, 16/11): the Moon below, the lander at the centre of the free area of the screen.
+            a.cockpitView?.(site.lat, site.lon, HOVER_MID_R);
             note = document.createElement("p");
             note.className = "artemis-note";
             note.setAttribute("role", "note");
@@ -165,6 +169,8 @@ export function mountArtemisCockpit(options = {}) {
         still();
         if (refocus && root.classList.contains("moon-explore-on"))
             focus();
+        else
+            api?.cockpitView?.(lat, lon, HOVER_MID_R);
     }
     function dispose() { if (dead)
         return; dead = true; for (const f of undo.splice(0).reverse()) {

@@ -55,8 +55,11 @@ let online: boolean | null = null, mounted = false;
 const onlineP = apiOnline();
 await afterPaint(document.querySelector(".mp-ctx-text"));
 loadSeries(siteNow()).catch(() => {}); // the hourly series of the chosen site downloads alongside the map files
+// LUA3D L2 (inconsistency 4): the 2D map's crater names were placed avoiding only the site markers (core/terrain.ts
+// draw(), the `marks` list), so behind the translucent glass panels they showed through ("Mons Malapert" over "Sol
+// visível"). The Cockpit's map is now the 3D Moon; the 2D map stays only as the no-backdrop fallback, without labels.
 const terrain = await mountTerrain($("terrain"), { sites: doc.sites, selected: getState().site, onSelect: (id: string) => setState({ site: id }),
-  progressive: true, onDraw: () => { if (mounted) placeBodies(); } });
+  labels: false, progressive: true, onDraw: () => { if (mounted) placeBodies(); } });
 
 /** The shared Artemis-style lander (Three.js) over this site on the shared 3D Moon, loaded on demand by the page's Moon
  * script. Renders nothing in the panel: it lives in the backdrop scene; the component owns its lifetime. */
@@ -109,7 +112,74 @@ function frame() {
   // phone framing: core/terrain.js already centres the site in the free area between the context bar and the sheet
   placeBodies();
 }
+// ---- LUA3D L2: the Moon below, the lander at the centre of the free area, zoom +/- ----
+type CockpitMoon = { zoom?(f: number): void; recenter?(): void; setFocusOffset?(dx: number, dy: number): void };
+const moonApi = () => (window as unknown as { moonBackdrop?: CockpitMoon }).moonBackdrop || null;
+const moonOn = () => document.documentElement.classList.contains("moon-backdrop-on");
+/** Box of a visible element, or null (folded/hidden panels do not count). */
+function boxOf(sel: string): DOMRect | null {
+  const e = document.querySelector(sel) as HTMLElement | null; if (!e) return null;
+  const cs = getComputedStyle(e); if (cs.display === "none" || cs.visibility === "hidden") return null;
+  const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0 && b.right > 0 && b.left < innerWidth ? b : null;
+}
+/** Screen point of the lander: centre of the area left free by the top bars, the side panels and the timeline/sheet. */
+export function focusPoint(): [number, number] {
+  const top = Math.max(0, ...[".mp-top", ".mp-context", "#ck-panel-controls"].map(q => boxOf(q)?.bottom || 0));
+  if (narrow()) { // phone: the zoom row sits right above the sheet; the lander between the top bars and that row
+    const sheetTop = boxOf(".mp-sheet")?.top || boxOf(".mp-player")?.top || innerHeight;
+    zoomHost.style.top = Math.round(sheetTop - 54) + "px";
+    const bottom = sheetTop - 58; return [innerWidth / 2, Math.round(top + Math.max(0, bottom - top) * 0.5)]; }
+  zoomHost.style.top = "";
+  const L = Math.max(0, boxOf(".mp-ck-left")?.right || 0), R = Math.min(innerWidth, boxOf(".mp-ck-right")?.left || innerWidth);
+  const bottom = Math.min(boxOf(".mp-player")?.top || innerHeight, boxOf("#ck-zoom")?.top || innerHeight);
+  return [Math.round((L + R) / 2), Math.round(top + (bottom - top) * 0.5)];
+}
+let lastFocus = "";
+function syncFocus(): [number, number] {
+  const [x, y] = focusPoint(), key = `${x},${y},${innerWidth},${innerHeight}`;
+  if (key !== lastFocus) { lastFocus = key; moonApi()?.setFocusOffset?.(x - innerWidth / 2, y - innerHeight / 2);
+    const r = document.documentElement.style; r.setProperty("--ck-fx", x + "px"); r.setProperty("--ck-fy", y + "px"); }
+  return [x, y];
+}
+addEventListener("moon-backdrop:ready", () => { lastFocus = ""; setTimeout(() => { lastFocus = ""; placeBodies(); }, 0); });
+// Choosing a site on the 3D Moon (explore mode, or a ship marker) is the same selection as the old map pin: same ?site=.
+addEventListener("moon:site-selected", (e: Event) => { const id = (e as CustomEvent).detail?.id;
+  if (typeof id === "string" && id !== getState().site && doc.sites.some(x => x.id === id)) setState({ site: id }); });
+/** Poster (no hardware WebGL): the lander drawn as an illustrative SVG at the same point; zoom by CSS. */
+let posterZoom = 1;
+const POSTER_ZOOM = { min: 1, max: 2.4 };
+function zoomMoon(k: number) {
+  const a = moonApi();
+  if (a?.zoom) { if (k) a.zoom(k); else a.recenter?.(); return; }
+  posterZoom = k ? Math.min(POSTER_ZOOM.max, Math.max(POSTER_ZOOM.min, posterZoom / k)) : 1;
+  document.documentElement.style.setProperty("--ck-poster-zoom", posterZoom.toFixed(3));
+}
+function ZoomBar() {
+  return <div class="ck-zoom-in" role="group" aria-label={t("cockpit.zoom_group")}>
+    <button type="button" class="mp-pill ck-zoom-btn" data-zoom="out" aria-label={t("cockpit.zoom_out")} title={t("cockpit.zoom_out")} onClick={() => zoomMoon(1.25)}>−</button>
+    <button type="button" class="mp-pill ck-zoom-btn ck-zoom-center" data-zoom="center" aria-label={t("cockpit.zoom_center")} title={t("cockpit.zoom_center")} onClick={() => zoomMoon(0)}>◎</button>
+    <button type="button" class="mp-pill ck-zoom-btn" data-zoom="in" aria-label={t("cockpit.zoom_in")} title={t("cockpit.zoom_in")} onClick={() => zoomMoon(0.8)}>+</button>
+  </div>;
+}
+const zoomHost = el("div", "ck-zoom"); zoomHost.id = "ck-zoom"; document.body.append(zoomHost);
+const posterLander = el("div", "ck-lander-poster"); posterLander.setAttribute("aria-hidden", "true");
+posterLander.innerHTML = `<svg viewBox="0 0 120 120" width="120" height="120"><g fill="none" stroke-linecap="round" stroke-linejoin="round">` +
+  `<path d="M38 70 L18 100 M82 70 L102 100 M48 74 L40 104 M72 74 L80 104" stroke="#c9ced6" stroke-width="4"/>` +
+  `<path d="M12 101h14M94 101h14M34 105h12M74 105h12" stroke="#c9ced6" stroke-width="4"/>` +
+  `<rect x="32" y="52" width="56" height="24" rx="4" fill="#d2a63c" stroke="#7a5c12" stroke-width="2"/>` +
+  `<path d="M42 52 L46 26 H74 L78 52 Z" fill="#e9ecef" stroke="#8a929c" stroke-width="2"/>` +
+  `<rect x="52" y="32" width="16" height="9" rx="2" fill="#0b1220" stroke="#2ec4a0" stroke-width="1.5"/>` +
+  `<path d="M60 26 V14 M54 14 h12" stroke="#dfe3e8" stroke-width="3"/>` +
+  `<path d="M52 76 L56 86 H64 L68 76" fill="#2b3038" stroke="#8a929c" stroke-width="2"/></g></svg><span></span>`;
+document.body.append(posterLander);
+/** Phone: the report pill moves to the end of the bottom sheet (it used to float over the lander); back on wider screens. */
+function placeReport() {
+  const links = document.querySelector(".mp-links"), sh = document.getElementById("sheet"); if (!links || !sh) return;
+  if (narrow()) { if (links.parentElement !== sh) sh.append(links); } else if (links.parentElement === sh) document.body.insertBefore(links, document.getElementById("player"));
+}
+placeReport(); addEventListener("resize", placeReport);
 function markerCentre(): [number, number] | null {
+  if (moonOn()) return syncFocus(); // the 3D Moon (or its poster) is the map: the lander is the anchor
   const b = document.querySelector(`.mp-marker[data-site="${CSS.escape(getState().site as string)}"]`); if (!b) return null;
   const r = b.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2];
 }
@@ -119,7 +189,7 @@ function placeBodies() {
   const c = markerCentre(); if (!c || !bodies) return;
   const k = narrow() ? 0.5 : 1; const sun: number[] = [c[0] - 150 * k, c[1] - 150 * k], earth: number[] = [c[0] + 150 * k, c[1] - 170 * k];
   // Keep the Sun/Earth icon and its label below the top bar and context bar (they used to slide under them).
-  const minY = Math.max(...[".mp-top", ".mp-context"].map(s => document.querySelector(s)?.getBoundingClientRect().bottom || 0)) + 22;
+  const minY = Math.max(...[".mp-top", ".mp-context", "#ck-panel-controls"].map(s => document.querySelector(s)?.getBoundingClientRect().bottom || 0)) + 22;
   sun[1] = Math.max(sun[1], minY); earth[1] = Math.max(earth[1], minY);
   // Phone: icon + label (about 60 px) must also stay above the sheet, or the label is cut by it.
   const sheetTop = document.querySelector(".mp-sheet")?.getBoundingClientRect().top;
@@ -217,7 +287,7 @@ let rulesOpen = foldOpen(foldStore, "rules-more");
 
 type Next = { visible?: boolean; inHours?: number | null; lastsHours?: number | null } | null | undefined;
 function Vis({ body, next, elev }: { body: "sun" | "earth"; next: Next; elev: number | null }) {
-  return <div class="mp-vis" data-body={body} data-vis={next?.visible ? "yes" : "no"}>
+  return <div class="mp-vis" data-body={body} data-vis={next?.visible ? "yes" : "no"} title={t("cockpit.vis_margin_hint")}>
     <span><span class="dot"></span>{t(body === "sun" ? "cockpit.sun_visible" : "cockpit.earth_visible")}</span>
     <b>{elev == null ? t("nd") : t(next?.visible ? "cockpit.yes_angle" : "cockpit.sun_no", { n: fmtNum(elev, 1) })}</b>
   </div>;
@@ -236,19 +306,21 @@ function SunDays({ days, today, nightLine }: { days: (number | null)[]; today: n
 type RuleRow = ReturnType<typeof evaluateRules>[number];
 function RulesCard({ list, lim }: { list: RuleRow[]; lim: Record<string, number> }) {
   const met = rulesMet(list);
+  // first 3 rules in view; the others open in place behind "+N rules" (the "x of y met" count above always covers all of them)
+  const { head, more } = splitRules(list);
   const row = (r: RuleRow) => <div class="mp-rule" data-status={r.status} data-rule={r.id}>
     <span>{t("cockpit.rule." + r.id, { n: lim[r.id] ?? "" })}<small>{r.id !== "cold" ? `${t("cockpit.assumed")} · ${r.seal}` : t("cockpit.cold_nd")}</small></span>
     <span class="st">{t(r.status === "pass" ? "cockpit.pass" : r.status === "risk" ? "cockpit.risk" : "cockpit.nodata")}</span>
   </div>;
-  // first 3 rules in view; the others open in place behind "+N rules" (the "x of y met" count above always covers all of them)
-  const { head, more } = splitRules(list);
   return <article class="mp-card mp-rules">
     <div class="mp-head"><h3>{t("cockpit.rules")}</h3><span class="mp-count">{t("cockpit.rules_met", { n: met.ok, m: met.of })}</span></div>
+    {/* LUA3D L2 (inconsistency 2): "1 de 6 ok" over a list of 3 read as a wrong count; the other 3 are folded. Say so. */}
+    <p class="mp-label ck-rules-split">{t("cockpit.rules_split", { r: list.filter(r => r.status === "risk").length, d: list.filter(r => r.status === "nodata").length, v: head.length, m: met.of })}</p>
     {head.map(row)}
     <div class="mp-rules-more" id="rules-more" hidden={!rulesOpen}>{more.map(row)}</div>
     <button type="button" class="mp-link ck-rules-toggle" aria-controls="rules-more" aria-expanded={rulesOpen} hidden={!more.length}
       onClick={() => { rulesOpen = !rulesOpen; foldSave(foldStore, "rules-more", rulesOpen); draw(); }}>
-      {t(rulesOpen ? "cockpit.rules_less" : "cockpit.rules_more", { n: more.length })}</button>
+      {t(rulesOpen ? "cockpit.rules_less" : "cockpit.rules_more", { n: more.length, m: list.length })}</button>
     <a class="mp-link" href={hrefTo("evidence.html")}>{t("cockpit.where_rules")}</a>
   </article>;
 }
@@ -408,8 +480,13 @@ async function drawNow() {
   // left panel: battery ring, Sun/Earth now, 3D Moon, daily sunlight card, and the Three.js lander
   const stat = statCircle({ value: charge == null ? t("nd") : fmtNum(100 * charge / cap) + "%", label: t("cockpit.battery"), seal: charge == null ? "N/D" : seal,
     satellites: [{ value: hh(nightH), label: t("cockpit.next_night") }, { value: hh(auto), label: t("cockpit.endurance") },
-      { value: hh(margin, 0, true), label: t("cockpit.margin") }, { value: fmtNum(st.battery) + "%", label: t("cockpit.floor") }] });
-  const sunEl = Number.isFinite(series.s.sunEl[i]) ? series.s.sunEl[i] : null, earthEl = Number.isFinite(series.s.earthEl[i]) ? series.s.earthEl[i] : null;
+      { value: hh(margin, 0, true), label: t("cockpit.battery_margin") }, { value: fmtNum(st.battery) + "%", label: t("cockpit.floor") }] });
+  // LUA3D L2 (inconsistency 1): this used series.s.sunEl / series.s.earthEl, the elevation above the flat astronomical
+  // horizon (Mons Mouton D0 00:00: Sun −2.04°, Earth −1.97° → both "−2,0°"), while yes/no comes from the margin over the
+  // LOLA relief horizon (sunMargin/earthMargin) and Explorar shows that margin (Sun −4.6°, Earth −0.6°). Show the margin.
+  // LUA3D L2 (inconsistency 3): the ring's "folga" is autonomy − next night (battery), not Compare's margin to the rule.
+  stat.title = t("cockpit.battery_margin_hint");
+  const sunEl = Number.isFinite(series.sunMargin[i]) ? series.sunMargin[i] : null, earthEl = Number.isFinite(series.earthMargin[i]) ? series.earthMargin[i] : null;
   const earthSeen = L.f.fault?.noEarth ? { ...earthNext, visible: false } : earthNext;
   const days = dailyFractions(series.sunMargin, L.i0, H), today = Math.floor(th / 24);
   const nightLine = nightH == null ? t("nd") : t("cockpit.next_night_line", { t: sunNext!.visible ? fmtDuration(sunNext!.inHours as number) : t("nd"), n: fmtNum(nightH) });
@@ -464,6 +541,8 @@ async function drawNow() {
   // Printable site report from the onboard computer API (was only in the legacy onboard panel).
   const rep = $<HTMLButtonElement>("report"); rep.textContent = t("cockpit.report"); rep.disabled = !S.reportReq; rep.title = S.reportReq ? t("cockpit.report.hint") : t("cockpit.report.offline");
   $("handle").setAttribute("aria-label", t("cockpit.sheet"));
+  render(<ZoomBar />, zoomHost);
+  (posterLander.querySelector("span") as HTMLElement).textContent = t("cockpit.artemis_tag");
 }
 
 // player

@@ -110,6 +110,10 @@ export const MIN_RANGE = 0.06, MAX_RANGE = 2.5, MIN_PITCH = 8, MAX_PITCH = 85;
 export const FOCUS_RANGE = 0.45, FOCUS_PITCH = 42;
 /** Camera azimuth = the Sun's azimuth at the site plus this (rad): from the lit side, light raking across the relief. */
 export const FOCUS_SUN_OFFSET = 50 * Math.PI / 180;
+/** Cockpit framing (LUA3D L2): the camera orbits the lander itself, low over the local horizon, so the polar relief
+ * fills the lower part of the screen and the lander sits at the chosen screen point. Range limits = zoom +/- limits. */
+export const COCKPIT_RANGE = 0.42, COCKPIT_PITCH = 14, COCKPIT_MIN_RANGE = 0.1, COCKPIT_MAX_RANGE = 1.2;
+export const clampCockpitRange = (r) => Math.min(COCKPIT_MAX_RANGE, Math.max(COCKPIT_MIN_RANGE, Number.isFinite(r) ? r : COCKPIT_RANGE));
 const DEG = Math.PI / 180;
 const fin = (v, d) => (typeof v === "number" && Number.isFinite(v) ? v : d);
 const sane = (v) => [fin(v?.[0], 0), fin(v?.[1], 0), fin(v?.[2], 0)];
@@ -281,6 +285,18 @@ export async function mountMoonBackdrop(options) {
         // Explore: orbit around a point of the surface (target); target at the origin = the global view above.
         let target = [0, 0, 0], yaw = 0, pitch = FOCUS_PITCH, range = FOCUS_RANGE;
         const isLocal = () => !(Math.hypot(...target) < 1e-9);
+        // Cockpit mode (cockpitView): behind the panels the camera orbits the lander instead of the global view.
+        let cockpit = null;
+        // Screen point (CSS px offset from the centre) where the orbit target is drawn (camera.setViewOffset).
+        let focusOffset = [0, 0];
+        const applyOffset = () => {
+            const w = innerWidth, h = innerHeight, [dx, dy] = focusOffset;
+            if (dx || dy)
+                camera.setViewOffset(w, h, -dx, -dy, w, h);
+            else
+                camera.clearViewOffset();
+            camera.updateProjectionMatrix();
+        };
         const currentPose = () => isLocal()
             ? { position: orbitCamera(target, yaw, pitch, range), target: [...target], up: orbitFrame(target).up }
             : { position: cameraPosition(view, angle, lat, distance), target: [0, 0, 0], up: [0, 1, 0] };
@@ -372,9 +388,28 @@ export async function mountMoonBackdrop(options) {
          * point, tilted FOCUS_PITCH above its horizon, from the sunlit side. Behind the panels: the global view
          * turned toward the site (centre distance 1 + dist), as before.
          */
+        const cockpitPose = (la, lo, r, keepRange) => {
+            const t = toScene(la, lo, r).toArray(), sunYaw = yawToward(t, moon.lightDir.toArray());
+            // portrait phones: the free area above the bottom sheet is short, so start farther from the lander
+            const nextRange = keepRange && isLocal() ? clampCockpitRange(range) : clampCockpitRange(COCKPIT_RANGE * (innerWidth < innerHeight ? 2.2 : 1));
+            flyTo(() => { target = t; yaw = sunYaw + FOCUS_SUN_OFFSET; pitch = COCKPIT_PITCH; range = nextRange; });
+        };
+        /** Cockpit: orbit the lander at (lat, lon, r = radius of the hovering lander), low pitch: Moon below, lander centred. */
+        const cockpitView = (la, lo, r = 1.045) => {
+            if (!Number.isFinite(la) || !Number.isFinite(lo))
+                return;
+            cockpit = { lat: la, lon: lo, r: Number.isFinite(r) ? r : 1.045 };
+            if (!exploring)
+                cockpitPose(la, lo, cockpit.r, false);
+        };
         const focusLatLon = (la, lo, dist) => {
             if (!Number.isFinite(la) || !Number.isFinite(lo))
                 return;
+            if (cockpit && !exploring) {
+                cockpit = { ...cockpit, lat: la, lon: lo };
+                cockpitPose(la, lo, cockpit.r, true);
+                return;
+            }
             const d = toScene(la, lo);
             if (exploring) {
                 const t = d.toArray(), sunYaw = yawToward(t, moon.lightDir.toArray());
@@ -509,7 +544,7 @@ export async function mountMoonBackdrop(options) {
             renderer.setPixelRatio(Math.min(devicePixelRatio || 1, MAX_PIXEL_RATIO));
             renderer.setSize(innerWidth, innerHeight, false);
             camera.aspect = innerWidth / innerHeight;
-            camera.updateProjectionMatrix();
+            applyOffset();
             draw(); // also the single frame of prefers-reduced-motion
         };
         on(window, "resize", resize);
@@ -538,12 +573,16 @@ export async function mountMoonBackdrop(options) {
         const zoomBy = (factor) => {
             settle();
             if (isLocal())
-                range = clampRange(range * factor);
+                range = cockpit && !exploring ? clampCockpitRange(range * factor) : clampRange(range * factor);
             else
                 distance = clampDistance(distance * factor);
             touched();
         };
-        const reset = () => { if (isLocal() || tween)
+        const reset = () => { if (cockpit && !exploring) {
+            cockpitPose(cockpit.lat, cockpit.lon, cockpit.r, false);
+            touched();
+            return;
+        } if (isLocal() || tween)
             goGlobal(false);
         else {
             angle = home.angle;
@@ -668,7 +707,9 @@ export async function mountMoonBackdrop(options) {
                     focusLatLon(-88.6, 20);
             }
             // Back behind the panels: the far global view and its slow orbit.
-            if (!onOff && (isLocal() || tween))
+            if (!onOff && cockpit)
+                cockpitPose(cockpit.lat, cockpit.lon, cockpit.r, false);
+            else if (!onOff && (isLocal() || tween))
                 goGlobal(true);
             touched();
             kick();
@@ -718,6 +759,10 @@ export async function mountMoonBackdrop(options) {
         const api = {
             THREE, scene, camera, moon, renderer,
             requestDraw, toScene, focusLatLon, selectSite, explore: setExplore,
+            // Cockpit (LUA3D L2): orbit the lander, zoom +/- with limits, recentre, and the screen point of the lander.
+            cockpitView, zoom: (factor) => zoomBy(factor), recenter: reset,
+            setFocusOffset(dx, dy) { focusOffset = [Number.isFinite(dx) ? dx : 0, Number.isFinite(dy) ? dy : 0]; applyOffset(); requestDraw(); },
+            get range() { return range; },
             onFrame(cb) { frameCallbacks.add(cb); kick(); return () => frameCallbacks.delete(cb); },
             get pins() { return pins.map(({ id, name, lat, lon }) => ({ id, name, lat, lon })); },
             get selectedId() { return selectedId; },
