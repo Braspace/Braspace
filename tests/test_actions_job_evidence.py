@@ -51,5 +51,33 @@ class ActionsJobEvidenceTests(unittest.TestCase):
             classify({"total_count": True, "jobs": [job()]})
 
 
+    def test_empty_job_response_fails_closed(self):
+        self.assertIn("NO_JOBS", classify({"total_count": 0, "jobs": []}))
+
+    def test_null_steps_are_not_evidence_of_execution(self):
+        candidate = job()
+        candidate["steps"] = None
+        self.assertIn("JOB_1_NO_STEP_EVIDENCE",
+                      classify({"total_count": 1, "jobs": [candidate]}))
+
+    def test_in_progress_step_blocks_success(self):
+        candidate = job(steps=[{"status": "in_progress", "conclusion": "success"}])
+        self.assertIn("JOB_1_STEP_NOT_SUCCESS",
+                      classify({"total_count": 1, "jobs": [candidate]}))
+
+    def test_invalid_pagination_and_job_types_are_rejected(self):
+        invalid = [
+            [],
+            {"total_count": -1, "jobs": []},
+            {"total_count": 1, "jobs": "not-an-array"},
+            {"total_count": 1, "jobs": [None]},
+            {"total_count": 1, "jobs": [job(job_id=True)]},
+        ]
+        for payload in invalid:
+            with self.subTest(payload=payload):
+                with self.assertRaises(ValueError):
+                    classify(payload)
+
+
 if __name__ == "__main__":
     unittest.main()
