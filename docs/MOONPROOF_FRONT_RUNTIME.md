@@ -66,3 +66,11 @@ Headless cai em SwiftShader e o backdrop se recusa (de propósito). Para ver a L
 ## 6. Histórico (PRs)
 
 #312/#315 proxy same-origin · #319→#340 Lua interativa, pins, densidade, poster · #337 painéis recolhíveis · #348/#355/#359/#360 QA de produção · #349 nave Artemis · #362 declutter do cockpit · #368 câmera em órbita · #375 rótulos · #376 cap no celular · #377 rótulo de fonte · #379 carregando/sem rótulo da nave.
+
+## 2026-11-16 — P0 canonical entry reconciliation (source-only)
+
+- Base main SHA: `5ad8313f9bc25f232d75d1362227d436eed2cbf9` (GitHub compare main...SHA identical at audit).
+- Isolated branch: `agent/cockpit-entry-reconcile-20261116-0253`.
+- Reused existing `screens/cockpit-entry.js` adapter; index now points at Cockpit, with manual no-JS link and Heloísa token/component styles. The full chooser remains `tasks.html`; cockpit tutorial remains in `cockpit.html`. No change to Three.js scene, Artemis, science, backend or data.
+- Source-only, **UNVERIFIED**: exact-SHA CI, Node/TypeScript, real Chromium pointer/keyboard/GPU/noGPU 320/390/768/1024/1440/1920, Go/Rust/PG/pgvector, Worker rollout and rollback. No merge or deploy authorized.
+- Next gates: verify entry query/hash and history, no-JS fallback, tours, poster fallback, shared renderer and restore pointer per #454, #456, #457. Preserve PRELIMINARY/SYNTHETIC scientific status.
