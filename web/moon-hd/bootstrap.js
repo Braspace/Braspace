@@ -42,11 +42,13 @@ if (typeof document !== 'undefined') {
     link.textContent = 'Abrir mapa do Polo Sul';
   }
   retry.addEventListener('click', () => location.reload());
+  let fallbackApplied = false;
   const observer = new MutationObserver(() => {
     if (box.classList.contains('done')) {
       setViewControls(viewControls, requested);
       observer.disconnect();
-    } else if (box.classList.contains('error')) {
+    } else if (box.classList.contains('error') && !fallbackApplied) {
+      fallbackApplied = true;
       showFallback(box, lang);
       setViewControls(viewControls, requested, true);
       // Keep observing: a slow renderer may complete after the watchdog fires.
