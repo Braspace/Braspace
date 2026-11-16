@@ -62,7 +62,7 @@ export const dict: Texts = {
     "entry.title": "O que você quer fazer hoje?",
     "entry.lead": "Escolha uma tarefa para abrir sua ferramenta. Todas compartilham as mesmas fontes científicas e o contexto da missão.",
     "entry.explore.title": "Explorar a Lua", "entry.explore.who": "Curiosos, estudantes, visitantes",
-    "entry.explore.b1": "Respostas diretas, sem jargão", "entry.explore.b2": "Explore Sol, Terra e relevo", "entry.explore.b3": "Landing Lab para testar um pouso",
+    "entry.explore.b1": "Respostas diretas, sem jargão", "entry.explore.b2": "Explore Sol, Terra e relevo", "entry.explore.b3": "Laboratório de pouso para testar um pouso",
     "entry.class.title": "Dar uma aula", "entry.class.who": "Professores e educadores",
     "entry.class.b1": "Apresentar no projetor, uma pergunta por vez", "entry.class.b2": "Montar atividade com link ou QR", "entry.class.b3": "Notas do professor e missões guiadas",
     "entry.plan.title": "Planejar uma missão", "entry.plan.who": "Planejadores e pesquisadores",

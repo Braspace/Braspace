@@ -98,11 +98,11 @@ async function draw() {
   );
   const pp = meta?.provenance;
   const win = doc.window as { start_utc: string; hours: number; step_minutes: number };
-  const passportRows: [string, ComponentChildren][] = [[t("evidence.scenario"), `${site.n} · ${site.name}`], [t("evidence.passport_sites"), fmtNum(doc.sites.length)],
+  const passportRows: [string, ComponentChildren][] = [[t("evidence.scenario"), `${site.n} · ${site.name}`], [t("evidence.passport_sites"), t("evidence.passport_sites_val", { n: fmtNum(doc.sites.length) })],
     [t("evidence.window"), doc.window ? `${win.start_utc} · ${fmtNum(win.hours)} h · ${fmtNum(win.step_minutes)} min` : null],
     [t("evidence.series_sha"), mono(meta?.series?.sha256)], [t("evidence.status"), `${doc.status} · ${t("seal." + sealFor(doc.status))}`],
     [t("evidence.version", { v: "" }).trim(), version ? `${version.value} (${version.source})` : t("evidence.no_version")],
-    [t("evidence.api"), online ? `${t("evidence.api_online")} · ${(ready.ok ? ready.status : null) ?? t("nd")} (${t("evidence.api_state")})` : t("evidence.api_offline")],
+    [t("evidence.api"), online ? <>{`${t("evidence.api_online")} · ${(ready.ok ? ready.status : null) ?? t("nd")}`}<br /><small class="mp-label">{t("evidence.api_state")}</small></> : t("evidence.api_offline")],
     [t("evidence.proof_ephemeris"), pp?.ephemeris ?? null], [t("evidence.proof_horizon"), pp?.ray_parameters ? t("evidence.horizon_src", { h: fmtNum(hMast, 0), d: fmtNum((pp.ray_parameters as { max_distance_m: number }).max_distance_m / 1000) }) : null]];
   const regNote = t("evidence.registry_note", { n: REGISTRY.assets.length, d: REGISTRY.reviewed_at });
   const regTable = kv(REGISTRY.assets.map((a: { asset_id: string; redistribution_status: string; scientific_role: string }) => [a.asset_id, `${a.redistribution_status} · ${a.scientific_role}`]));
@@ -131,6 +131,10 @@ async function draw() {
     if (!online) return <div class="mp-sync"><h3>{t("evidence.sync")}</h3><p class="mp-label">{t("evidence.sync.off")}</p></div>;
     const apiList = apiSites.ok ? (apiSites.data as { sites?: unknown }).sites : undefined;
     const n = Array.isArray(apiList) ? apiList.length : null, hl = (health.ok ? health.data : {}) as { series_science_statuses?: Record<string, number>; sites_with_series?: number };
+    // QA LUA3D L4: "Sites in the data 14" next to "Catalog sites on the API: 16" read as a mismatch. The API also serves
+    // 2 SYNTHETIC test sites; say how many are real and how many synthetic (synthetic never counts as real data).
+    const syn = hl.series_science_statuses?.SYNTHETIC ?? null;
+    const sitesTxt = n == null ? t("nd") : syn == null ? String(n) : t("evidence.sync.sites_split", { n, real: n - syn, syn });
     const stt = hl.series_science_statuses ? Object.entries(hl.series_science_statuses).map(([k, v]) => `${v} ${k}`).join(" · ") : t("nd");
     const vd = (vector.ok ? vector.data : null) as { enabled?: boolean; available?: boolean; model_id?: string; purpose?: string } | null;
     const vec = vector.ok ? (vd?.enabled && vd?.available ? t("evidence.sync.vecOn") : t("evidence.sync.vecOff")) : t("evidence.sync.vecNa");
@@ -155,7 +159,7 @@ async function draw() {
     const inp: { current: HTMLInputElement | null } = { current: null };
     return (
       <div class="mp-sync"><h3>{t("evidence.sync")}</h3>
-        {([["evidence.sync.sites", n == null ? t("nd") : String(n)], ["evidence.sync.series", `${hl.sites_with_series ?? t("nd")} (${stt})`], ["evidence.sync.local", String(doc.sites.length)], ["evidence.sync.vector", vec]] as [string, string][])
+        {([["evidence.sync.sites", sitesTxt], ["evidence.sync.series", `${hl.sites_with_series ?? t("nd")} (${stt})`], ["evidence.sync.local", String(doc.sites.length)], ["evidence.sync.vector", vec]] as [string, string][])
           .map(([k, v]) => <p class="mp-label"><b>{t(k) + ": "}</b>{v}</p>)}
         {vector.ok && vd?.enabled && vd?.available && <>
           <form class="mp-vec-form" onSubmit={onSubmit}>

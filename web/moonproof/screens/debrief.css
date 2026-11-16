@@ -73,3 +73,11 @@
 .deb-actions .mp-pill:last-child{max-width:min(520px,44vw)}
 /* UX audit: at phone width the "no attempt yet" card sat over the empty right column/sheet; that column hides while it shows. */
 @media (max-width:700px){body:has(.deb-none) .deb-right,body:has(.deb-none) .mp-sheet,body:has(.deb-none) [data-mp-sheet]{display:none}}
+/* QA LUA3D L4: on phones the context bar (title • attempt • site • date) shrank to "L… • s • 1·… • 2…". Drop the title
+   (the bottom nav already says where you are) and let the scenario wrap onto two lines. */
+@media (max-width:700px){
+  .deb .mp-context{flex-wrap:wrap;white-space:normal;row-gap:2px;column-gap:8px;border-radius:20px;padding:6px 8px 6px 14px;font-size:12px;line-height:16px}
+  .deb .mp-context>b,.deb .mp-context>b+.deb-dot{display:none}
+  .deb .mp-context>span{flex:0 1 auto;min-width:0}
+  .deb .mp-context .deb-change{height:28px;padding:0 10px}
+}

@@ -215,3 +215,11 @@
 @media (min-width:701px) and (max-width:1180px){.lab-thr{width:240px}.lab-fuel{width:170px}}
 /* Tablet (701–1100 px): the 250 px right margin pushed Retomar/Reiniciar/Ajuda/EN past the screen (QA 768). */
 @media (min-width:701px) and (max-width:1100px){.lab-bar{margin-right:0;gap:6px;flex-wrap:wrap;border-radius:22px;row-gap:6px;height:auto;min-height:48px}.lab-bar .meta,.lab-bar .ttl{display:none}}
+
+/* QA LUA3D L4: on phones/tablets the round "Explorar a Lua" button (moon-hd/backdrop.css: right edge, vertically centred)
+   sat on the vertical-speed tape (ticks −20/−25). On this screen only, park it above the bottom cards, clear of the tapes. */
+@media (max-width:1023px){ html:not(.moon-explore-on) .moon-ui:not(.is-explore){top:auto;transform:none;bottom:calc(var(--lab-moon-ui-bottom,360px) + env(safe-area-inset-bottom))} }
+/* Desktop: the unit under the vertical-speed tape ("m/s · limite do cenário") ran past the right edge of the window. */
+@media (min-width:1024px){ .lab-vz .unit{text-align:right;right:0;left:auto;white-space:normal;width:150px} }
+/* QA LUA3D L4: on phones "V. horizontal SIM 8,6 m/s" ran left over the touch arrows; stack it under the tape instead. */
+@media (max-width:1023px){ .lab-hz{display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}.lab-hz .ov{white-space:normal;text-align:right;max-width:64px;line-height:1.25} }

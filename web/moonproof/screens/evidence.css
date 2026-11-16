@@ -113,3 +113,10 @@
 /* iPhone (Safari, 14/11): the PRE seal stretched across the card; the tabs touched the context bar. */
 .mp-two .mp-seal{justify-self:start;align-self:start;width:auto}
 @media (max-width:700px){.mp-ev{top:188px}}
+
+/* QA LUA3D L4: the last passport row ("API no ar · UNVERIFIED_INPUTS (estado científico…") sat cut at the card edge with no
+   scroll cue. Room at the end of the scroll and a visible scrollbar on desktop. */
+@media (min-width:701px){ .mp-ev-main{padding-bottom:34px;scrollbar-width:auto;scrollbar-color:rgba(255,255,255,.35) transparent} }
+/* QA LUA3D L4: the floating "Explorar a Lua" pill (moon-hd/backdrop.css, bottom-right from 1024 px) covered the "Quanto confiar"
+   card. Keep the right column clear of it while the pill is shown (not in explore mode). */
+@media (min-width:1024px){ html:has(.moon-ui:not(.is-explore)) .mp-ev-right{padding-bottom:64px} }

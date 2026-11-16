@@ -23,6 +23,42 @@ export function brakeHeight(v, { vehicle = DEFAULT_VEHICLE, mass, g, margin = AS
         return v > vt ? null : 0;
     return margin * (v * v - vt * vt) / (2 * net);
 }
+/** Scenario instant used by the Landing Lab (and shown by the Debrief): the ?start= of the URL, else the first hour of the
+ * stored series with the Sun above the local horizon, else the series start. Milliseconds since epoch. */
+export function scenarioStartMs(series, start) {
+    const fromUrl = start ? Date.parse(start) : NaN;
+    if (Number.isFinite(fromUrl))
+        return fromUrl;
+    if (!series || !Number.isFinite(series.start))
+        return null;
+    const m = series.sunMargin ? Array.from(series.sunMargin) : [];
+    const i = m.findIndex(v => v >= 0);
+    return i >= 0 ? series.start + i * 3600 * 1000 : series.start;
+}
+/** "2025-01-03 14:00 UTC" from an ISO instant (UTC, same text in both languages); null when not a date. */
+export function utcLabel(ms) {
+    if (ms == null || !Number.isFinite(ms))
+        return null;
+    const iso = new Date(ms).toISOString();
+    return iso.slice(0, 10) + " " + iso.slice(11, 16) + " UTC";
+}
+/** Tape tick values from hi down to lo on round multiples of one "nice" step (1, 2, 2.5 or 5 × 10^k), at most maxIntervals + 2
+ * intervals. Ends are included only when they fall on the step, so the labels are evenly spaced (e.g. 5, 0, −5 … −25). */
+export function tapeTicks(lo, hi, maxIntervals = 5) {
+    if (!(Number.isFinite(lo) && Number.isFinite(hi)) || hi <= lo)
+        return [];
+    const raw = (hi - lo) / Math.max(1, maxIntervals), p = Math.pow(10, Math.floor(Math.log10(raw)));
+    let step = 10 * p;
+    for (const m of [1, 2, 2.5, 5, 10])
+        if ((hi - lo) / (m * p) <= maxIntervals + 2) {
+            step = m * p;
+            break;
+        }
+    const out = [];
+    for (let v = Math.floor(hi / step + 1e-9) * step; v >= lo - 1e-9; v -= step)
+        out.push(Math.round(v * 1e6) / 1e6 || 0);
+    return out;
+}
 /** Guided step 1..4 from altitude; never goes back. */
 export function guidedStep(altAGL, startAlt, brakeH, prev = 1) {
     let s = 1;

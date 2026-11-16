@@ -14,7 +14,7 @@ import { sealEl } from "../core/layers.js";
 import { register, t, fmtNum, lang, setLang } from "../core/i18n.js";
 import { getState, setState, hrefTo } from "../core/state.js";
 import { TEXTS } from "./landing-texts.js";
-import { ASSUMED, GUIDE, localGravity, brakeHeight, guidedStep, alertFor, recommendedThrottle, fuelSeconds, fuelFrac, buildAttempt, saveAttempt, loadAttempts } from "./landing-model.js";
+import { tapeTicks, scenarioStartMs, ASSUMED, GUIDE, localGravity, brakeHeight, guidedStep, alertFor, recommendedThrottle, fuelSeconds, fuelFrac, buildAttempt, saveAttempt, loadAttempts } from "./landing-model.js";
 register(TEXTS);
 // Initial conditions: the same scenario web/lab/app.js (startLanding) flies, so both labs agree.
 const SCENARIO = Object.freeze({ x: -420, y: -300, aboveGround: 1000, vel: [7, 5, -18], margin: 200 });
@@ -124,9 +124,10 @@ function build() {
     tape("vz", t("lab.vz"), t("lab.vz.unit"));
     ui.vh = el("div", "lab-hz");
     ui.vhL = el("span", "ov", t("lab.vh"));
+    ui.vhL.append(" ", sealEl("SIM"));
     ui.vhV = el("span", "mono");
     ui.vh.append(ui.vhL, ui.vhV);
-    $("vz").append(ui.vh);
+    $("vz").append(ui.vh); // simulated value: SIM seal like the other flight numbers
     // bottom cards
     const card = (cls = "") => el("div", "mp-glass " + cls);
     const terr = card("lab-terrain");
@@ -213,17 +214,28 @@ function drawTicks() {
         n.remove();
     for (const n of [...ui.vzRail.querySelectorAll(".tick")])
         n.remove();
-    for (let i = 0; i <= TAPE.ticks; i++) {
-        const v = ui.altMax * (1 - i / TAPE.ticks);
+    // Ticks on round values with an even step (QA LUA3D L4: the vertical-speed tape read 5, −1, −7, −13, −19, −25).
+    for (const v of tapeTicks(0, ui.altMax, TAPE.ticks)) {
         const k = el("span", "tick", fmt(v));
-        k.style.top = tapePos(i / TAPE.ticks);
+        k.dataset.v = String(v);
+        k.style.top = pctPos(v, ui.altMax, 0);
         ui.altRail.append(k);
     }
-    for (let i = 0; i <= TAPE.ticks; i++) {
-        const v = ui.vzMax + (ui.vzMin - ui.vzMax) * i / TAPE.ticks;
+    for (const v of tapeTicks(ui.vzMin, ui.vzMax, TAPE.ticks)) {
         const k = el("span", "tick", fmt(v));
-        k.style.top = tapePos(i / TAPE.ticks);
+        k.dataset.v = String(v);
+        k.style.top = pctPos(v, ui.vzMax, ui.vzMin);
         ui.vzRail.append(k);
+    }
+}
+/** Hides the tick labels under the moving marker, so "998" never sits on top of "1000". */
+function hideTicksUnder(rail, mark, hi, lo, v) {
+    const h = rail.clientHeight, mh = mark.offsetHeight || 24;
+    if (!h || !(hi > lo))
+        return;
+    for (const k of rail.querySelectorAll(".tick")) {
+        const d = Math.abs((Number(k.dataset.v) - v) / (hi - lo)) * h;
+        k.style.visibility = d < mh / 2 + 6 ? "hidden" : "";
     }
 }
 // Position on a tape: --tp is the inset (0 on a phone, half a marker on desktop) so the end ticks and the marker stay inside the card.
@@ -304,13 +316,7 @@ async function load() {
         L.error = String(e.message || e);
         return false;
     }
-    const st = getState();
-    let t0 = st.start ? Date.parse(st.start) : L.series.start;
-    if (!st.start) {
-        const i = Array.from(L.series.sunMargin).findIndex((m) => m >= 0);
-        if (i >= 0)
-            t0 = L.series.start + i * 3600 * 1000;
-    } // first hour with the Sun above the local horizon
+    const t0 = scenarioStartMs(L.series, getState().start) ?? L.series.start; // ?start= or the first hour with the Sun above the local horizon
     L.simTime = t0;
     L.sky = L.series.at(t0);
     L.terrSeal = sealFor(doc.status);
@@ -421,10 +427,12 @@ function update(force) {
     const a = tm.altitudeAGL;
     ui.altMark.textContent = fmt(a);
     ui.altMark.style.top = pctPos(a, ui.altMax, 0);
+    hideTicksUnder(ui.altRail, ui.altMark, ui.altMax, 0, a);
     const vz = tm.vz;
     ui.vzMark.textContent = fmt(vz, 1);
     ui.vzMark.style.top = pctPos(vz, ui.vzMax, ui.vzMin);
     ui.vzMark.dataset.level = al.level === "ok" ? "" : al.level;
+    hideTicksUnder(ui.vzRail, ui.vzMark, ui.vzMax, ui.vzMin, vz);
     ui.vhV.textContent = `${fmt(tm.hSpeed, 1)} ${t("lab.vh.unit")}`;
     // thrust / fuel
     ui.thrV.textContent = fmt(L.throttleCmd * 100) + "%";

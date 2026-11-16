@@ -2,8 +2,8 @@
 // (landing_lab.*, debrief.*) and docs/design/designer/{F,G}. Placeholders {x} are filled from data, never typed here.
 export const TEXTS = {
     "pt-BR": {
-        "lab.back": "Voltar", "lab.title": "Landing Lab", "lab.sim": "SIMULAÇÃO EDUCATIVA",
-        "lab.mode": "Modo", "lab.mode.guided": "Guided", "lab.mode.free": "Free",
+        "lab.back": "Voltar", "lab.title": "Laboratório de pouso", "lab.sim": "SIMULAÇÃO EDUCATIVA",
+        "lab.mode": "Modo", "lab.mode.guided": "Guiado", "lab.mode.free": "Livre",
         "lab.cam": "Câmera", "lab.cam.chase": "Perseguição", "lab.cam.descent": "Descida", "lab.cam.profile": "Perfil",
         "lab.pause": "Pausar", "lab.resume": "Retomar", "lab.restart": "Reiniciar", "lab.help": "Ajuda",
         "lab.site": "Local", "lab.phase": "Fase", "lab.phase.0": "Descida livre", "lab.phase.1": "Aproximação", "lab.phase.2": "Frenagem", "lab.phase.3": "Descida final",
@@ -16,7 +16,7 @@ export const TEXTS = {
         "lab.hazard": "Perigo de pedras", "lab.hazard.nd": "sem dado (pedras < 20 m não aparecem)", "lab.fromCenter": "{n} m do centro",
         "lab.tilt": "Inclinação", "lab.thrust": "Empuxo", "lab.thrust.hint": "↑ ↓ ou W S · arraste no toque", "lab.thrust.band": "faixa recomendada",
         "lab.fuel": "Combustível", "lab.fuel.time": "≈ {t} s no empuxo atual",
-        "lab.guided.step": "GUIDED · PASSO {n} DE {m}", "lab.guided.pause": "A simulação pausa no próximo passo", "lab.guided.continue": "Continuar",
+        "lab.guided.step": "GUIADO · PASSO {n} DE {m}", "lab.guided.pause": "A simulação pausa no próximo passo", "lab.guided.continue": "Continuar",
         "lab.s1.t": "Observe as fitas.", "lab.s1.b": "Altitude à esquerda, velocidade vertical à direita. Ainda dá tempo de mirar.",
         "lab.s2.t": "Mire a zona-alvo.", "lab.s2.b": "Incline com A D (leste–oeste) e Q E (norte–sul). Solto, o assistente amortece o desvio lateral.",
         "lab.s3.t": "Freie antes dos {h} m.", "lab.s3.b": "Leve o empuxo para a faixa marcada até a velocidade vertical ficar perto de −{v} m/s. Cada segundo conta.",
@@ -36,7 +36,7 @@ export const TEXTS = {
         "lab.src.terrain": "web/data/ · local_tile (LOLA 80 m) via web/lab/terrain.js", "lab.src.sky": "web/data/sites/<id> · série horária + horizonte",
         "lab.src.zone": "raio do anel da cena (web/lab/scene.js)", "lab.src.hazard": "sem fonte",
         "lab.el.flight": "Posição, altitude, V. vertical, V. horizontal, empuxo, combustível", "lab.el.slope": "Inclinação do solo", "lab.el.sun": "Iluminação e Terra à vista", "lab.el.zone": "Zona-alvo", "lab.el.hazard": "Perigo de pedras < 20 m",
-        "deb.title": "Debrief do pouso", "deb.context": "Landing Lab · Debrief", "deb.attempt": "tentativa {n}", "deb.change": "Alterar",
+        "deb.title": "Análise do pouso", "deb.context": "Laboratório de pouso · Análise", "deb.attempt": "tentativa {n}", "deb.noattempt": "sem tentativa", "deb.change": "Alterar",
         "deb.how": "Como foi o pouso?",
         "deb.v.safe": "Pousou dentro das regras.", "deb.v.lowfuel": "Pousou, mas com pouco combustível.", "deb.v.warn": "Pousou, mas fora de alguma regra.", "deb.v.partial": "Toque mecânico ok; Sol, Terra ou contato sem dado (não avaliado).",
         "deb.v.hard": "Pouso duro: acima do limite de toque.", "deb.v.crash": "Falha: o módulo se destruiu no toque.", "deb.v.out": "Falha: o módulo saiu da área modelada.",
@@ -98,7 +98,7 @@ export const TEXTS = {
         "lab.src.terrain": "web/data/ · local_tile (LOLA 80 m) via web/lab/terrain.js", "lab.src.sky": "web/data/sites/<id> · hourly series + horizon",
         "lab.src.zone": "scene ring radius (web/lab/scene.js)", "lab.src.hazard": "no source",
         "lab.el.flight": "Position, altitude, vertical speed, horizontal speed, thrust, fuel", "lab.el.slope": "Ground slope", "lab.el.sun": "Illumination and Earth in view", "lab.el.zone": "Target zone", "lab.el.hazard": "Boulder hazard < 20 m",
-        "deb.title": "Landing debrief", "deb.context": "Landing Lab · Debrief", "deb.attempt": "attempt {n}", "deb.change": "Change",
+        "deb.title": "Landing debrief", "deb.context": "Landing Lab · Debrief", "deb.attempt": "attempt {n}", "deb.noattempt": "no attempt", "deb.change": "Change",
         "deb.how": "How was the landing?",
         "deb.v.safe": "Landed within the rules.", "deb.v.lowfuel": "Landed, but low on fuel.", "deb.v.warn": "Landed, but outside a rule.", "deb.v.partial": "Touchdown ok mechanically; Sun, Earth or contact has no data (not assessed).",
         "deb.v.hard": "Hard landing: above the touchdown limit.", "deb.v.crash": "Failure: the lander was destroyed on contact.", "deb.v.out": "Failure: the lander left the modeled area.",
