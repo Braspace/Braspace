@@ -169,3 +169,6 @@ From [`docs/TEAM_ROLES_AND_HANDOFFS_2026.md`](docs/TEAM_ROLES_AND_HANDOFFS_2026.
 - **pgvector:** metadata retrieval only. 10 legacy rows without an ingest manifest are quarantined (`legacy_unverified`) and are not served.
 - **Deploys:** backend deploys use `deploy/harness/swap-api.sh` (#389), a start-first swap that routes only to the healthy new replica: 1 failed request in about 570, down from 43 failures in 5.4 s with a plain `compose up`.
 
+
+
+> **MoonProof canonical-entry QA (2026-11-16, draft only):** Isolated follow-up branch `agent/cockpit-entry-tests-20261116-0806` updates two stale Node assertions to require the cockpit entry at `/moonproof/` and the preserved three-mode chooser/tutorial at `/moonproof/tasks.html`. Based on draft PR #498 SHA `199fde9a`; no EXO-X1, Chromium GPU/noGPU, full CI, merge, Worker deploy or rollback verification claimed. See `docs/MOONPROOF_FRONT_RUNTIME.md`.
