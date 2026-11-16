@@ -33,3 +33,13 @@
 .mp-entry #terrain{z-index:0}
 .mp-entry #terrain::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(5,6,8,.7),rgba(5,6,8,0) 30%,rgba(5,6,8,0) 70%,rgba(5,6,8,.7)),linear-gradient(180deg,rgba(5,6,8,.55),rgba(5,6,8,0) 18%,rgba(5,6,8,0) 80%,rgba(5,6,8,.6)),radial-gradient(ellipse at 50% 55%,rgba(5,6,8,.2),rgba(5,6,8,.75))}
 .mp-entry-top,.mp-entry main{position:relative;z-index:1}
+
+/* Mobile entry header: keep brand, locale and Skip within the 320px viewport.
+   This also applies to the auxiliary tasks.html chooser when Cockpit is the home. */
+@media (max-width:480px){
+  .mp-entry-top{gap:8px}
+  .mp-entry-top .mp-brand{font-size:16px;min-width:0}
+  .mp-entry-actions{gap:5px;min-width:0}
+  .mp-entry-actions #lang{padding-inline:8px}
+  .mp-entry-skip{min-width:44px;justify-content:center;padding-inline:0}
+}

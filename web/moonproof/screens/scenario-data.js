@@ -4,6 +4,17 @@
 import { loadSeries, sealFor, api } from "../core/data.js";
 import { HOUR_MS } from "../../lab/data.js";
 export { HOUR_MS };
+/** Never mix baseline or off-date API neighbors into a delayed landing decision. */
+export function nearbyAtDelay(opts, startIso, delayH) {
+    const startMs = Date.parse(startIso) + delayH * HOUR_MS;
+    if (!Number.isFinite(startMs))
+        return [];
+    return opts.filter(o => o.kind === "nearby_site" && o.delay_hours === delayH &&
+        typeof o.start_utc === "string" && Date.parse(o.start_utc) === startMs)
+        .map(o => ({ siteId: o.site_id, startUtc: o.start_utc, km: o.distance_km ?? null,
+        available: o.data_status === "AVAILABLE", admissible: o.data_status === "AVAILABLE" ? !!o.admissible : null,
+        reason: o.reason || o.data_status, status: o.science_status || null }));
+}
 export async function loadAll(doc) {
     const m = new Map();
     await Promise.all(doc.sites.map(async (s) => m.set(s.id, await loadSeries(s))));
@@ -19,7 +30,10 @@ export function staticMetrics(series, startMs, hours, status, siteId = "") {
 }
 /** Hourly booleans (Sun / Earth above the local horizon) for the window. */
 export function flagsOf(series, startMs, hours) {
-    const i0 = Math.ceil((startMs - series.start) / HOUR_MS), sun = [], earth = [];
+    const relative = (startMs - series.start) / HOUR_MS;
+    if (!Number.isInteger(relative) || !Number.isSafeInteger(hours) || hours <= 0)
+        return { sun: [], earth: [] };
+    const i0 = relative, sun = [], earth = [];
     for (let h = 0; h < hours; h++) {
         const i = i0 + h;
         if (i < 0 || i >= series.count) {
@@ -68,15 +82,14 @@ export function apiCompareMetrics(siteId, startIso, hours) {
 export function apiDelayMetrics({ siteId, startIso, hours, delayH, rules }) {
     return once(`d|${siteId}|${startIso}|${hours}|${delayH}|${rules.night}|${rules.blackout}`, async () => {
         const r = await api("/api/scenarios/delay", { method: "POST", body: { site_id: siteId, start_utc: startIso, duration_hours: hours,
-                delays_hours: [delayH], include_nearby: true, max_nearby: 3,
+                delays_hours: [delayH], nearby_delay_hours: delayH, include_nearby: true, max_nearby: 3,
                 constraints: { max_continuous_dark_hours: rules.night, max_continuous_comm_gap_hours: rules.blackout } } });
         if (!r.ok)
             return { online: !r.offline, base: null, delayed: null, nearby: [] };
         const pick = (o) => (o && o.data_status === "AVAILABLE" && o.metrics ? mapApiMetrics(o.metrics, o.science_status, "POST /api/scenarios/delay") : null);
         const opts = r.data?.options || [];
-        // Nearby catalog sites the API evaluated at the delayed start (from the Polar Lab / onboard replan, now in v3).
-        const nearby = opts.filter(o => o.kind === "nearby_site").map(o => ({ siteId: o.site_id, km: o.distance_km ?? null,
-            available: o.data_status === "AVAILABLE", admissible: o.data_status === "AVAILABLE" ? !!o.admissible : null, reason: o.reason || o.data_status, status: o.science_status || null }));
+        // Only neighbours evaluated at exactly the delayed UTC start; stale/baseline options are dropped, never relabelled.
+        const nearby = nearbyAtDelay(opts, startIso, delayH);
         return { online: true, base: pick(opts.find(o => o.kind === "baseline")), delayed: pick(opts.find(o => o.kind === "delay" && o.delay_hours === delayH)), nearby };
     });
 }

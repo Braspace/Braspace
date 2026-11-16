@@ -136,7 +136,7 @@ function shareUrl() {
     u.searchParams.set("allowProof", cfg.allowProof ? "1" : "0");
     u.searchParams.set("allowRules", cfg.allowRules ? "1" : "0");
     u.searchParams.set("allowLab", cfg.allowLab ? "1" : "0");
-    u.hash = buildHash({ sc: chosenWindows.map(w => ({ site: w.site.id, start: w.start, hours: w.hours })) });
+    u.hash = buildHash({ sc: chosenWindows.map(w => ({ ...w, site: w.site.id })) });
     return u.toString();
 }
 /** Hillshade of the real LOLA grid fitted to the scenarios, drawn once per size; markers use the same transform. */
@@ -196,6 +196,8 @@ function paintPreviewTerrain(frame) {
     }));
 }
 function draw() {
+    // The Class Kit reuses Compare navigation, but keeps its own localized tab title.
+    document.title = "MoonProof · " + t("act.kit");
     const focusKey = document.activeElement?.dataset?.focus;
     const startDate = (getState().start || "2027-03-14T06:00:00Z").slice(0, 10);
     const steps = [
@@ -209,7 +211,7 @@ function draw() {
         h("div", null,
             h("span", { class: "mp-act-kicker" }, t("act.kit")),
             h("h1", { class: "mp-act-h1" }, t("act.title"))),
-        steps.map(([n, title, sub]) => (h("button", { class: `mp-step-item ${n < cfg.step ? "is-done" : n === cfg.step ? "is-active" : ""}`, "data-step": n, "data-focus": `step${n}`, type: "button", "aria-current": n === cfg.step ? "step" : undefined, onClick: () => { cfg.step = n; draw(); setTimeout(() => document.getElementById(({ 1: "act-preview", 2: "act-controls", 3: "btn-present", 4: "act-share" })[n])?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 0); } },
+        steps.map(([n, title, sub]) => (h("button", { class: `mp-step-item ${n < cfg.step ? "is-done" : n === cfg.step ? "is-active" : ""}`, "data-step": n, "data-focus": `step${n}`, type: "button", "aria-current": n === cfg.step ? "step" : undefined, onClick: () => { cfg.step = n; draw(); setTimeout(() => document.getElementById({ 1: "act-preview", 2: "act-controls", 3: "btn-present", 4: "act-share" }[n])?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 0); } },
             h("span", { class: "mp-step-num" }, n < cfg.step ? "✓" : n),
             h("span", { class: "mp-step-txt" },
                 h("strong", null, title),

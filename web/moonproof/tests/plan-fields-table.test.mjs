@@ -52,9 +52,9 @@ test("table: right-aligned numbers, A/B/C headers, violation in #FF7A80 with fal
   assert.doesNotMatch(css, /var\(--(?:bad|text-dim|pill-white|jade-ink)\)/);
 });
 
-test("export buttons are white 38 px pills; version row falls back to N/D", () => {
+test("export buttons are white 44 px pills (WCAG hit area, #469); version row falls back to N/D", () => {
   const r = rule(".mp-btn-white");
-  assert.match(r, /height: 38px/); assert.match(r, /border-radius: var\(--r-pill\)/); assert.match(r, /var\(--pill-white, var\(--pill\)\)/);
+  assert.match(r, /height: 44px/); assert.match(r, /border-radius: var\(--r-pill\)/); assert.match(r, /var\(--pill-white, var\(--pill\)\)/);
   assert.match(js, /plan\.version/); assert.match(js, /sealEl\("N\/D"\)/);
 });
 

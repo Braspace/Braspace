@@ -22,3 +22,14 @@
 @media(max-width:700px){.mp-tour-dialog{padding:22px 18px 17px;border-radius:21px}.mp-tour-dialog h2{font-size:21px}.mp-tour-copy{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.mp-tour-dialog.mp-tour-animate{animation:none}.mp-tour-spotlight{transition:none}}
 .mp-help-pop:has(.mp-tour-help){box-sizing:border-box;max-width:calc(100vw - 2 * var(--margin));max-height:calc(100dvh - var(--margin) - var(--touch) - 16px);overflow:auto}
+
+/* The shared immersive Moon canvas and exit control occupy 2147483000/3001.
+   Since contextual tutorials now live in the shell Help popover (#462), lifting
+   only .mp-tour-help would NOT escape the nav's stacking context. Lift its
+   ancestor and popover while immersive, with the guided dialog above both.
+   Normal map, globe gestures and non-immersive z-order stay unchanged. */
+html.moon-explore-on .mp-top{z-index:2147483003}
+html.moon-explore-on .mp-help-pop{z-index:2147483004}
+html.moon-explore-on .mp-tour-cover{z-index:2147483005}
+html.moon-explore-on .mp-tour-spotlight{z-index:2147483006}
+html.moon-explore-on .mp-tour-dialog{z-index:2147483007}

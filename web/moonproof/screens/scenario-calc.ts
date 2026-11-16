@@ -12,7 +12,7 @@ export interface Reason { key: "night" | "blackout"; value: number; limit: numbe
 export interface Judged { status: "nd" | "pass" | "fail"; reasons: Reason[]; }
 export interface Verdict { kind: "nodata" | "none" | "single" | "multi"; winners: number[]; best: number | null; }
 export interface Exit { kind: "wait" | "switch" | "shorten"; siteId: string; startMs: number; hours: number; m: ExitMetrics; slack: number | null; }
-export interface ScenarioRef { site: string; start?: string | null; hours?: number | null; }
+export interface ScenarioRef { site: string; start?: string | null; hours?: number | null; invalid?: boolean; rawStart?: string; rawHours?: string; }
 
 /** m = {dark, blackout} hours; rules = {night, blackout} assumed limits. status "nd" when a needed value is missing. */
 export function judge(m: DarkMetrics | null | undefined, rules: LimitRules): Judged {
@@ -21,6 +21,14 @@ export function judge(m: DarkMetrics | null | undefined, rules: LimitRules): Jud
   if (m.dark > rules.night) reasons.push({ key: "night", value: m.dark, limit: rules.night });
   if (m.blackout > rules.blackout) reasons.push({ key: "blackout", value: m.blackout, limit: rules.blackout });
   return { status: reasons.length ? "fail" : "pass", reasons };
+}
+/** The precise violated constraint(s) for a delayed window — never infer a night failure from a comm gap. */
+export function ruleHeadlineKind(j: Judged): "nd" | "pass" | "night" | "blackout" | "both" {
+  if (j.status === "nd") return "nd";
+  if (j.status === "pass") return "pass";
+  const night = j.reasons.some(r => r.key === "night");
+  const blackout = j.reasons.some(r => r.key === "blackout");
+  return night && blackout ? "both" : night ? "night" : blackout ? "blackout" : "nd";
 }
 /** Hours of margin to the tighter rule (negative = violated). null without data. */
 export function slack(m: DarkMetrics | null | undefined, rules: LimitRules): number | null {
@@ -88,18 +96,22 @@ export function computeExits({ metricsAt, siteId, siteIds, startMs, hours, delay
   return out.filter((e): e is Exit & { slack: number } => e.slack != null).sort((a, b) => b.slack - a.slack);
 }
 /** Scenario list in the URL hash: `#sc=site~startIso~hours,…` (hours optional); delay `d`, exit `x`. */
-export function parseHash(h?: string | null): { sc: { site: string; start: string | null; hours: number | null }[]; d: number | null; x: string | null } {
+export function parseHash(h?: string | null): { sc: (ScenarioRef & { start: string | null; hours: number | null })[]; d: number | null; x: string | null } {
   const q = new URLSearchParams(String(h || "").replace(/^#/, ""));
   const sc = (q.get("sc") || "").split(",").filter(Boolean).slice(0, 3).map(p => {
     const [site, start, hours] = p.split("~"); const hv = Number(hours);
-    return { site, start: start && !Number.isNaN(Date.parse(start)) ? start : null, hours: Number.isFinite(hv) && hv > 0 ? hv : null };
+    const ms = start ? Date.parse(start) : NaN;
+    const invalid = !!start && (!Number.isFinite(ms) || ms % HOUR_MS !== 0)
+      || !!hours && (!Number.isSafeInteger(hv) || hv <= 0);
+    return { site, start: Number.isFinite(ms) && ms % HOUR_MS === 0 ? start : null,
+      hours: Number.isSafeInteger(hv) && hv > 0 ? hv : null, ...(invalid ? { invalid: true, rawStart: start, rawHours: hours } : {}) };
   }).filter(s => s.site);
   const d = Number(q.get("d"));
   return { sc, d: Number.isFinite(d) && d > 0 ? d : null, x: q.get("x") || null };
 }
 export function buildHash({ sc = [], d = null, x = null }: { sc?: ScenarioRef[]; d?: number | null; x?: string | null }): string {
   const q = new URLSearchParams();
-  if (sc.length) q.set("sc", sc.map(s => [s.site, s.start || "", s.hours || ""].join("~")).join(","));
+  if (sc.length) q.set("sc", sc.map(s => [s.site, s.invalid ? s.rawStart || "" : s.start || "", s.invalid ? s.rawHours || "" : s.hours || ""].join("~")).join(","));
   if (d != null) q.set("d", String(d));
   if (x) q.set("x", x);
   return q.toString();

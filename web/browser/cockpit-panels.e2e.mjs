@@ -5,14 +5,15 @@ import assert from "node:assert/strict";
 export const PANEL_IDS = ["battery", "visibility", "illumination", "rules", "alerts", "faults", "crew", "timeline", "report"];
 
 export async function verifyCockpitPanels(page) {
-  // The Cockpit is now the canonical landing: verify the guide actually appears,
-  // can be dismissed and reopened, then leave the page interactive for panel QA.
+  // The site welcome belongs to the three-mode chooser. The Cockpit guide is opt-in.
   const help = page.locator(".mp-tour-help");
   const helpMenu = page.locator(".mp-help");
   const guide = page.locator(".mp-tour-dialog");
+  assert.equal(await guide.isVisible(), false, "contextual guide does not interrupt the cockpit");
+  await helpMenu.click();
+  await help.click();
   await guide.waitFor({ state: "visible", timeout: 15000 });
-  assert.equal(await guide.getAttribute("aria-modal"), "true", "first visit offers an accessible guide");
-  await page.locator("#mp-tour-next").click();
+  assert.equal(await guide.getAttribute("aria-modal"), "true", "requested guide is accessible");
   assert.match(await page.locator("#mp-tour-progress").innerText(), /1\s+(?:of|de)\s+7/);
   await page.locator("#mp-tour-skip").click();
   await guide.waitFor({ state: "hidden" });
@@ -76,12 +77,19 @@ export async function verifyCockpitPanels(page) {
   await moonOnly.click();
   await page.waitForFunction(ids => ids.every(id => document.body.dataset.ckHidden?.split(/\s+/).includes(id)), PANEL_IDS);
   assert.equal(await moonOnly.getAttribute("aria-pressed"), "true", "Moon only is active");
-  // The Moon overlay may sit above the controls in real WebGL. Exit it via its own button.
+  // On a GPU the shared 3D canvas covers the viewport. Restore MUST stay pointer-reachable
+  // over that canvas; do not mask a z-index failure with DOM evaluate() or Moon's own exit.
+  await page.waitForFunction(() => document.documentElement.classList.contains("moon-explore-on"),
+    null, { timeout: 5000 }).catch(() => {}); // no-WebGL fallback remains testable
   if (await page.evaluate(() => document.documentElement.classList.contains("moon-explore-on"))) {
-    await page.locator(".moon-ui.is-explore .moon-open").click();
+    const canHitRestore = await moonOnly.evaluate(button => {
+      const rect = button.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return !!hit && (hit === button || button.contains(hit));
+    });
+    assert.ok(canHitRestore, "Restore panels button must receive pointer events above the interactive 3D Moon");
   }
-  // Test restored state independently of overlay visibility (the actual pointer exit above was attempted).
-  await page.evaluate(() => document.querySelector("#ck-panel-controls button.ck-panel-focus")?.click());
+  await moonOnly.click({ timeout: 15000 });
   await page.waitForFunction(() => !document.body.dataset.ckHidden?.trim());
   assert.equal(await moonOnly.getAttribute("aria-pressed"), "false", "restored previous nine-panel state");
   console.log("PASS nine independent MoonProof cockpit panel pointer toggles, CSS visibility and Moon-only restore");

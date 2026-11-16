@@ -69,7 +69,17 @@ curl -s localhost:8080/api/scenarios/delay -H 'Content-Type: application/json' -
 ```
 
 Evaluates the baseline, each delay, and up to `max_nearby` nearest sites that have
-data. Each option lists every declared constraint with `limit`, `value`,
+data. **Nearby sites default to the original start** (`nearby_delay_hours` omitted or
+`0`) for backward compatibility. To compare them with a delayed landing, explicitly
+set `nearby_delay_hours` to **one** of the values in `delays_hours` (for example,
+`48` alongside `"delays_hours":[48]`). The API then evaluates every nearby site at
+`start_utc + nearby_delay_hours`, for the same `duration_hours` and declared rules.
+Each `nearby_site` option echoes its actual `start_utc` and `delay_hours`; multi-delay
+requests evaluate neighboring sites for only the explicitly selected delay, not
+silently for all delays. Invalid delay selection returns `422 INVALID_NEARBY_DELAY`.
+The MoonProof Replanejar client selects the visible delay and filters API results
+by **both** delay and UTC start, so an older API cannot be mislabeled as delayed.
+Each option lists every declared constraint with `limit`, `value`,
 `baseline_value`, `unit` and `margin` (negative = breached by that amount).
 `outcome.status` is `BASELINE_ADMISSIBLE`, `ALTERNATIVE_FOUND` or
 `NO_ADMISSIBLE_ALTERNATIVE`; in the last case nothing is proposed.

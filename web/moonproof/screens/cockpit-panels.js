@@ -102,7 +102,8 @@ export function mountCockpitPanels(host) {
     const paint = () => {
         sync();
         const l = language(), pt = l === "pt-BR", clear = hidden.size === PANEL_IDS.length;
-        const change = (id) => { const wasMoonOnly = hidden.size === PANEL_IDS.length; ++moonRequestRevision; hidden = togglePanel(hidden, id); if (wasMoonOnly) restoreMoon(); paint(); };
+        const change = (id) => { const wasMoonOnly = hidden.size === PANEL_IDS.length; ++moonRequestRevision; hidden = togglePanel(hidden, id); if (wasMoonOnly)
+            restoreMoon(); paint(); };
         render(h("div", { class: "ck-panel-toolbar", role: "group", "aria-label": pt ? "Visibilidade dos painéis do cockpit" : "Cockpit panel visibility" },
             h("button", { type: "button", class: "mp-pill ck-panel-focus", "aria-pressed": clear, onClick: () => { const request = ++moonRequestRevision; if (clear) {
                     hidden = new Set(previous);

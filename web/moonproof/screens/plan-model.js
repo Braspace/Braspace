@@ -8,6 +8,16 @@ export const PLAN_DEFAULTS = Object.freeze({ ...DEFAULT_RULES, mast: 2, slope: 8
 export const RULE_KEYS = Object.freeze(["night", "blackout", "battery", "mast", "slope"]);
 const SUN_MODES = ["center", "limb"];
 const STEPS = [1, 3];
+/** Validate the entire form before applying any rule. Fractions are valid limits, not sample durations. */
+export function validateRuleInputs(raw) {
+    const values = RULE_KEYS.map(k => raw[k]?.trim());
+    if (values.some(v => !v || !Number.isFinite(Number(v)) || Number(v) < 0))
+        return null;
+    const out = Object.fromEntries(RULE_KEYS.map((k, i) => [k, Number(values[i])]));
+    if (out.battery > 100 || out.slope > 90 || !SUN_MODES.includes(raw.sunMode) || !STEPS.includes(Number(raw.step)))
+        return null;
+    return { ...out, sunMode: raw.sunMode, step: Number(raw.step) };
+}
 /** Rules from a query string: `rules=a,b,c,d,e` wins, then the single params, then the defaults. */
 export function parseRules(search = "") {
     const q = new URLSearchParams(search);
@@ -71,7 +81,11 @@ function windowIndices(series, t0, hours, calcStepH) {
     const k = calcStepH / sh, total = hours / sh;
     if (!(Number.isInteger(k) && k >= 1) || !Number.isInteger(total))
         return null;
-    const i0 = Math.ceil((t0 - series.start) / (sh * HOUR_MS));
+    // Never silently round a start to a later ephemeris sample.
+    const relative = (t0 - series.start) / (sh * HOUR_MS);
+    if (!Number.isInteger(relative))
+        return null;
+    const i0 = relative;
     if (i0 < 0 || i0 + total > series.count)
         return null;
     const idx = [];
@@ -142,14 +156,14 @@ export function compareScenarios({ hash = "", sites, start, hours, windowStart, 
     const hs = parseHash(hash).sc.filter(s => known(s.site));
     const t0 = start || windowStart, hrs = hours;
     if (hs.length)
-        return hs.map(s => ({ site: s.site, start: s.start || t0, hours: s.hours || hrs }));
+        return hs.map(s => ({ ...s, site: s.site, start: s.start || t0, hours: s.hours || hrs }));
     const later = isoOf(Date.parse(t0) + 2 * hrs * HOUR_MS), second = siteIds[1] || siteIds[0];
     return [{ site: siteIds[0], start: t0, hours: hrs }, { site: second, start: t0, hours: hrs }, { site: second, start: later, hours: hrs }].slice(0, Math.min(max, 3));
 }
 /** Body of POST /api/compare (api/openapi.json CompareRequest). One window; null when it cannot be expressed. */
 export function compareBody({ siteIds, startIso, hours }) {
     const ids = [...new Set(siteIds || [])].slice(0, 3), ms = Date.parse(startIso);
-    if (!ids.length || !Number.isFinite(ms) || !fin(hours) || hours <= 0)
+    if (!ids.length || !Number.isFinite(ms) || ms % HOUR_MS !== 0 || !Number.isSafeInteger(hours) || hours <= 0)
         return null;
     return { site_ids: ids, start_utc: isoOf(ms), duration_hours: hours };
 }
@@ -243,8 +257,8 @@ export function passportHtml({ lang, L, version, link, generatedAt, origin, rule
 <style>body{font:13px/1.45 system-ui,sans-serif;margin:24px;color:#111}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:18px 0 6px}
 table{border-collapse:collapse;width:100%}th,td{border:1px solid #999;padding:4px 7px;text-align:right;vertical-align:top}th:first-child,td:first-child,th[scope=row]{text-align:left}
 small{display:block;font-weight:400;color:#444}dl{display:grid;grid-template-columns:max-content 1fr;gap:2px 14px;margin:0}dt{color:#444}dd{margin:0;word-break:break-all}
-ul{margin:4px 0 0 18px;padding:0}button{font:inherit;padding:6px 14px;margin:10px 0}@media print{button{display:none}body{margin:12mm}}</style></head><body>
-<h1>${esc(L.title)}</h1><p>${esc(L.how)}</p><button type="button" onclick="print()">${esc(L.print)}</button>
+ul{margin:4px 0 0 18px;padding:0}.seal{display:inline-block;border:2px solid #b00;color:#b00;font-weight:700;padding:3px 8px;margin:0 0 8px;letter-spacing:.02em}button{font:inherit;padding:6px 14px;margin:10px 0}@media print{button{display:none}body{margin:12mm}}</style></head><body>
+<p class="seal" role="note">${esc(L.seal || "PRELIMINARY")}</p><h1>${esc(L.title)}</h1><p>${esc(L.how)}</p><button type="button" onclick="print()">${esc(L.print)}</button>
 <dl><dt>${esc(L.version)}</dt><dd>${esc(version)}</dd><dt>${esc(L.generated)}</dt><dd>${esc(generatedAt)}</dd><dt>${esc(L.origin)}</dt><dd>${esc(origin)}</dd><dt>${esc(L.link)}</dt><dd>${esc(link)}</dd></dl>
 <h2>${esc(L.rules)}</h2><table><thead><tr><th>${esc(L.colMetric)}</th><th>${esc(L.value)}</th><th>${esc(L.effect)}</th></tr></thead><tbody>${rules.map(r => `<tr><th scope="row">${esc(r.label)}</th><td>${esc(r.value)}</td><td>${esc(r.effect)}</td></tr>`).join("")}</tbody></table>
 <h2>${esc(L.scenarios)}</h2><table><thead><tr><th>${esc(L.colMetric)}</th><th>${esc(L.colUnit)}</th>${columns.map(th).join("")}<th>${esc(L.colRule)}</th><th>${esc(L.colMargin)}</th><th>${esc(L.colUnc)}</th><th>${esc(L.colOrigin)}</th></tr></thead><tbody>${rows.map(tr).join("")}</tbody></table>

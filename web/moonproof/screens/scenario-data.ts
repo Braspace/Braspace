@@ -17,9 +17,20 @@ interface ApiMetricsBlock {
   earth_visible_fraction?: unknown; simultaneous_fraction?: unknown;
 }
 interface CompareResponse { results?: { data_status?: string; science_status?: string; evaluation?: { metrics?: ApiMetricsBlock }; site?: { series_sha256?: string } }[]; }
-interface DelayOption { kind?: string; site_id?: string; distance_km?: number; data_status?: string; admissible?: boolean; reason?: string; science_status?: string; delay_hours?: number; metrics?: ApiMetricsBlock }
+interface DelayOption { kind?: string; site_id?: string; distance_km?: number; data_status?: string; admissible?: boolean; reason?: string; science_status?: string; delay_hours?: number; start_utc?: string; metrics?: ApiMetricsBlock }
 interface DelayResponse { options?: DelayOption[]; }
-export interface Nearby { siteId: string | undefined; km: number | null; available: boolean; admissible: boolean | null; reason: string | undefined; status: string | null; }
+export interface Nearby { siteId: string | undefined; startUtc: string | null; km: number | null; available: boolean; admissible: boolean | null; reason: string | undefined; status: string | null; }
+
+/** Never mix baseline or off-date API neighbors into a delayed landing decision. */
+export function nearbyAtDelay(opts: DelayOption[], startIso: string, delayH: number): Nearby[] {
+  const startMs = Date.parse(startIso) + delayH * HOUR_MS;
+  if (!Number.isFinite(startMs)) return [];
+  return opts.filter(o => o.kind === "nearby_site" && o.delay_hours === delayH &&
+    typeof o.start_utc === "string" && Date.parse(o.start_utc) === startMs)
+    .map(o => ({ siteId: o.site_id, startUtc: o.start_utc as string, km: o.distance_km ?? null,
+      available: o.data_status === "AVAILABLE", admissible: o.data_status === "AVAILABLE" ? !!o.admissible : null,
+      reason: o.reason || o.data_status, status: o.science_status || null }));
+}
 
 export async function loadAll(doc: Pick<SitesDoc, "sites">): Promise<Map<string, SiteSeriesLike>> {
   const m = new Map<string, SiteSeriesLike>();
@@ -37,7 +48,9 @@ export function staticMetrics(series: SiteSeriesLike, startMs: number, hours: nu
 
 /** Hourly booleans (Sun / Earth above the local horizon) for the window. */
 export function flagsOf(series: SiteSeriesLike, startMs: number, hours: number): { sun: (boolean | null)[]; earth: (boolean | null)[] } {
-  const i0 = Math.ceil((startMs - series.start) / HOUR_MS), sun: (boolean | null)[] = [], earth: (boolean | null)[] = [];
+  const relative = (startMs - series.start) / HOUR_MS;
+  if (!Number.isInteger(relative) || !Number.isSafeInteger(hours) || hours <= 0) return { sun: [], earth: [] };
+  const i0 = relative, sun: (boolean | null)[] = [], earth: (boolean | null)[] = [];
   for (let h = 0; h < hours; h++) {
     const i = i0 + h;
     if (i < 0 || i >= series.count) { sun.push(null); earth.push(null); continue; }
@@ -81,14 +94,13 @@ export function apiCompareMetrics(siteId: string, startIso: string, hours: numbe
 export function apiDelayMetrics({ siteId, startIso, hours, delayH, rules }: { siteId: string; startIso: string; hours: number; delayH: number; rules: { night: number; blackout: number } }): Promise<{ online: boolean; base: ScenarioMetrics | null; delayed: ScenarioMetrics | null; nearby: Nearby[] }> {
   return once(`d|${siteId}|${startIso}|${hours}|${delayH}|${rules.night}|${rules.blackout}`, async () => {
     const r = await api<DelayResponse>("/api/scenarios/delay", { method: "POST", body: { site_id: siteId, start_utc: startIso, duration_hours: hours,
-      delays_hours: [delayH], include_nearby: true, max_nearby: 3,
+      delays_hours: [delayH], nearby_delay_hours: delayH, include_nearby: true, max_nearby: 3,
       constraints: { max_continuous_dark_hours: rules.night, max_continuous_comm_gap_hours: rules.blackout } } });
     if (!r.ok) return { online: !r.offline, base: null, delayed: null, nearby: [] };
     const pick = (o: DelayOption | undefined) => (o && o.data_status === "AVAILABLE" && o.metrics ? mapApiMetrics(o.metrics, o.science_status, "POST /api/scenarios/delay") : null);
     const opts = r.data?.options || [];
-    // Nearby catalog sites the API evaluated at the delayed start (from the Polar Lab / onboard replan, now in v3).
-    const nearby: Nearby[] = opts.filter(o => o.kind === "nearby_site").map(o => ({ siteId: o.site_id, km: o.distance_km ?? null,
-      available: o.data_status === "AVAILABLE", admissible: o.data_status === "AVAILABLE" ? !!o.admissible : null, reason: o.reason || o.data_status, status: o.science_status || null }));
+    // Only neighbours evaluated at exactly the delayed UTC start; stale/baseline options are dropped, never relabelled.
+    const nearby = nearbyAtDelay(opts, startIso, delayH);
     return { online: true, base: pick(opts.find(o => o.kind === "baseline")), delayed: pick(opts.find(o => o.kind === "delay" && o.delay_hours === delayH)), nearby };
   });
 }

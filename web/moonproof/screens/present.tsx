@@ -27,6 +27,7 @@ register({
     "present.reveal": "Reveal answer",
     "present.hide": "Hide answer",
     "present.next": "Next question",
+    "present.prev": "Previous question", "present.restart": "Restart activity",
     "present.pick": "Choose", "present.none": "None of these", "present.choose": "Pick a scenario or None, then reveal the answer.",
     "present.selected": "Your choice: {choice}. Reveal to check.", "present.correct": "Correct!", "present.incorrect": "Not this time.",
     "present.answer": "Qualifying scenario(s): {choices}.", "present.noPossible": "None of these scenarios meets this question’s rule.",
@@ -53,6 +54,7 @@ register({
     "present.reveal": "Revelar resposta",
     "present.hide": "Ocultar resposta",
     "present.next": "Próxima pergunta",
+    "present.prev": "Pergunta anterior", "present.restart": "Reiniciar atividade",
     "present.pick": "Escolher", "present.none": "Nenhum deles", "present.choose": "Escolha um cenário ou Nenhum deles. Depois, revele a resposta.",
     "present.selected": "Sua escolha: {choice}. Revele para conferir.", "present.correct": "Você acertou!", "present.incorrect": "Não foi dessa vez.",
     "present.answer": "Cenário(s) que atende(m): {choices}.", "present.noPossible": "Nenhum destes cenários atende à regra desta pergunta.",
@@ -83,7 +85,7 @@ await mountTerrain(document.getElementById("terrain")!, {
   selected: st.site || scenarios[0]?.id
 });
 
-const metrics = await Promise.all(chosenWindows.map((w) => apiWindowMetrics(doc, w.site, w.start, w.hours || 336).catch(() => unavailableQuizMetric())));
+const metrics = await Promise.all(chosenWindows.map((w) => w.invalid ? unavailableQuizMetric() : apiWindowMetrics(doc, w.site, w.start, w.hours || 336).catch(() => unavailableQuizMetric())));
 type Metrics = (typeof metrics)[number];
 
 let qIndex = 1;
@@ -179,6 +181,13 @@ function draw() {
   btnReveal.onclick = () => { revealed = !revealed; draw(); };
 
   const btnNext = $("btn-next");
+  const move = (question: number) => { qIndex = question; revealed = false; chosen = null; draw(); };
+  const btnPrev = $("btn-prev") as HTMLButtonElement;
+  btnPrev.textContent = t("present.prev"); btnPrev.disabled = qIndex === 1;
+  btnPrev.onclick = () => move(Math.max(1, qIndex - 1));
+  const btnRestart = $("btn-restart");
+  btnRestart.textContent = t("present.restart");
+  btnRestart.onclick = () => { secondsLeft = 120; running = true; move(1); };
   btnNext.textContent = t("present.next");
   btnNext.onclick = () => {
     qIndex = qIndex >= 4 ? 1 : qIndex + 1;

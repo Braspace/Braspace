@@ -373,14 +373,15 @@ func (m *missionAPI) compare(w http.ResponseWriter, r *http.Request) {
 }
 
 type delayScenarioRequest struct {
-	SiteID          string             `json:"site_id"`
-	StartUTC        string             `json:"start_utc"`
-	DurationHours   float64            `json:"duration_hours"`
-	DelaysHours     []float64          `json:"delays_hours"`
-	ObserverHeightM *float64           `json:"observer_height_m,omitempty"`
-	Constraints     missionConstraints `json:"constraints"`
-	IncludeNearby   *bool              `json:"include_nearby,omitempty"`
-	MaxNearby       int                `json:"max_nearby"`
+	SiteID           string             `json:"site_id"`
+	StartUTC         string             `json:"start_utc"`
+	DurationHours    float64            `json:"duration_hours"`
+	DelaysHours      []float64          `json:"delays_hours"`
+	NearbyDelayHours *float64           `json:"nearby_delay_hours,omitempty"`
+	ObserverHeightM  *float64           `json:"observer_height_m,omitempty"`
+	Constraints      missionConstraints `json:"constraints"`
+	IncludeNearby    *bool              `json:"include_nearby,omitempty"`
+	MaxNearby        int                `json:"max_nearby"`
 	// Optional resource models (#69): crew consumables, and the onboard
 	// energy/comms simulator from #70 applied to each option.
 	Crew                 *crewSpec      `json:"crew,omitempty"`
@@ -512,6 +513,12 @@ func (m *missionAPI) delayScenario(w http.ResponseWriter, r *http.Request) {
 		}
 		options = append(options, o)
 	}
+	// Preserve the v1 baseline contract for callers that omit nearby_delay_hours.
+	// Replanning clients select one of their requested delays explicitly instead.
+	nearbyDelay := 0.0
+	if req.NearbyDelayHours != nil {
+		nearbyDelay = *req.NearbyDelayHours
+	}
 	considered := []nearbySite{}
 	if *req.IncludeNearby {
 		considered = m.store.nearby(s.ID, req.MaxNearby+3, false)
@@ -522,7 +529,7 @@ func (m *missionAPI) delayScenario(w http.ResponseWriter, r *http.Request) {
 			}
 			used++
 			target, _ := m.store.site(n.ID)
-			o, err := option("nearby_site", target, 0, n.DistanceKm, base.Metrics)
+			o, err := option("nearby_site", target, nearbyDelay, n.DistanceKm, base.Metrics)
 			if err != nil {
 				writeError(w, err)
 				return
@@ -596,6 +603,24 @@ func normalizeScenario(req *delayScenarioRequest) error {
 	for i := 1; i < len(req.DelaysHours); i++ {
 		if req.DelaysHours[i] == req.DelaysHours[i-1] {
 			return errf(http.StatusUnprocessableEntity, "INVALID_DELAYS", "delays must be unique")
+		}
+	}
+	if req.NearbyDelayHours != nil {
+		d := *req.NearbyDelayHours
+		if !finite(d) || d < 0 || d > maxDelayHours {
+			return errf(http.StatusUnprocessableEntity, "INVALID_NEARBY_DELAY", "nearby_delay_hours must be in [0, %d]", maxDelayHours)
+		}
+		if d != 0 {
+			matched := false
+			for _, allowed := range req.DelaysHours {
+				if d == allowed {
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				return errf(http.StatusUnprocessableEntity, "INVALID_NEARBY_DELAY", "nearby_delay_hours must be 0 or a value in delays_hours")
+			}
 		}
 	}
 	if req.IncludeNearby == nil {

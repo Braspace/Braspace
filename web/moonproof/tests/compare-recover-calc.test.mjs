@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { judge, slack, verdictOf, computeExits, longestRun, dailyFractions, parseHash, buildHash } from "../screens/scenario-calc.js";
+import { judge, slack, verdictOf, computeExits, longestRun, dailyFractions, parseHash, buildHash, ruleHeadlineKind } from "../screens/scenario-calc.js";
 const R = { night: 60, blackout: 72 };
 
 test("judge: rule breaks are reported with the reason, never fixed text", () => {
@@ -41,4 +41,19 @@ test("hash round trip", () => {
   const h = buildHash({ sc: [{ site: "x", start: "2026-01-01T00:00:00Z", hours: 336 }], d: 48, x: "wait" });
   const p = parseHash("#" + h); assert.equal(p.sc[0].site, "x"); assert.equal(p.d, 48); assert.equal(p.x, "wait");
   assert.equal(parseHash("#sc=a,b,c,d,e").sc.length, 3);
+});
+
+test("replan headline reason is exact for night, blackout, both, no data and pass", () => {
+  const cases = [
+    [{ dark: 20, blackout: 100 }, "blackout"],
+    [{ dark: 100, blackout: 20 }, "night"],
+    [{ dark: 100, blackout: 100 }, "both"],
+    [{ dark: 20, blackout: 20 }, "pass"],
+    [{ dark: null, blackout: 20 }, "nd"],
+  ];
+  for (const [metrics, expected] of cases) {
+    const judged = judge(metrics, R);
+    assert.equal(ruleHeadlineKind(judged), expected, JSON.stringify(metrics));
+  }
+  assert.equal(ruleHeadlineKind(judge({ dark: 60, blackout: 72 }, R)), "pass", "boundary is allowed");
 });

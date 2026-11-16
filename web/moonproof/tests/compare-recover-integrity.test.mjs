@@ -49,3 +49,47 @@ test("pages mount the right nav item and link the sibling screen", async () => {
   assert.match(await read("screens/compare.tsx"), /screen: "compare"/); assert.match(await read("screens/recover.tsx"), /screen: "recover"/);
   assert.match(await read("screens/compare.tsx"), /recover\.html/); assert.match(await read("screens/recover.tsx"), /compare\.html/);
 });
+
+test("replan explanation covers every rule instead of reporting a false night violation", async () => {
+  for (const file of ["screens/recover.tsx", "screens/recover.js"]) {
+    const src = await read(file);
+    assert.match(src, /ruleHeadlineKind\(jd\)/);
+    for (const key of ["rec.head.break", "rec.head.blackout", "rec.head.both", "rec.head.ok", "rec.head.nd"]) {
+      assert.ok(src.includes(key), file + " lacks " + key);
+    }
+    assert.doesNotMatch(src, /jd\.reasons\.some\(r => r\.key === "night"\) \? t\("rec.head.break"/,
+      "a communications-only failure must not receive a night warning");
+  }
+  const ts = await read("screens/recover.tsx");
+  assert.match(ts, /Visibilidade geométrica não garante contato por rádio/);
+  assert.match(ts, /Geometric visibility does not guarantee radio contact/);
+});
+
+test("nearby API candidates display their own UTC evaluation time, not the delayed time by assumption", async () => {
+  for (const path of ["screens/recover.tsx", "screens/recover.js"]) {
+    const src = await read(path);
+    assert.match(src, /rec\.nearby\.window/);
+    assert.match(src, /nearbyUTC\(nb\.startUtc\)/);
+  }
+  for (const path of ["screens/scenario-data.ts", "screens/scenario-data.js"]) {
+    const src = await read(path);
+    assert.match(src, /startUtc: o\.start_utc/);
+    assert.match(src, /Date\.parse\(o\.start_utc\)/);
+    // The "delayed start" label is only honest because neighbours off the exact delayed UTC start are dropped (#474).
+    assert.match(src, /o\.delay_hours === delayH/);
+    assert.match(src, /nearby_delay_hours: delayH/);
+  }
+});
+
+test("a missing site series or API response cannot blank the entire Replanejar screen", async () => {
+  for (const path of ["screens/recover.tsx", "screens/recover.js"]) {
+    const src = await read(path);
+    assert.match(src, /if \(!series\)\s+return null/, "never dereference unavailable site data");
+    assert.match(src, /seriesOf\(sc\.site\)\.catch\(\(\).*?null\)/, "selected site can fail independently");
+    assert.match(src, /Promise\.allSettled\(doc\.sites\.map/, "a single missing neighbor must not abort all alternatives");
+    assert.match(src, /apiDelayMetrics\(\{[\s\S]*?\}\)\.catch\(\(\) => \(\{ base: null/, "API errors have N/D fallback");
+    assert.match(src, /loaded\.size === doc\.sites\.length/, "do not cache an incomplete search as final");
+    assert.match(src, /rec\.coverage\.partial/, "partial coverage is explained to the user");
+    assert.match(src, /rec\.unavailable/, "timeline shows unavailable rather than inventing hours");
+  }
+});

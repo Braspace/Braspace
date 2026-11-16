@@ -118,10 +118,10 @@ const WORDS = {
   en: { help:"View tutorial", welcome:"Want a quick tour?", welcomeBody:"A short walkthrough shows what each area does and where to start. You can close it any time.", start:"Start", skip:"Skip tutorial", close:"Close tutorial", next:"Next", prev:"Back", done:"Start using", progress:"Step", of:"of" }
 };
 export function tourStorageKey(mode) { return "moonproof.tour." + mode + ".v1"; }
-/** Previous releases recorded a site-wide welcome; each screen now has its own key. */
+/** The site welcome is automatic once. Contextual screen tours remain available on request. */
 export const SITE_WELCOME_KEY = "moonproof.tour.welcome.v1";
 export function shouldAutoOpenTour(mode, alreadyWelcomed) {
-  return !alreadyWelcomed;
+  return mode === "entry" && !alreadyWelcomed;
 }
 export function hasCompletedSiteWelcome(storage) {
   return [SITE_WELCOME_KEY, ...Object.keys(TOUR_STEPS).map(tourStorageKey)]
@@ -143,9 +143,9 @@ export function mountTour(mode) {
   const steps = TOUR_STEPS[mode];
   const key = tourStorageKey(mode);
   let index = -1, dialog = null, cover = null, spotlight = null, previousFocus = null;
-  // A previous visit to another screen does not suppress this screen’s tutorial.
+  // Do not interrupt an activity or presentation when navigating between screens.
   let alreadyWelcomed = false;
-  try { alreadyWelcomed = localStorage.getItem(key) === "done"; } catch {}
+  try { alreadyWelcomed = hasCompletedSiteWelcome(localStorage); } catch {}
   const lang = () => document.documentElement.lang.toLowerCase().startsWith("pt") ? "pt" : "en";
   const words = () => WORDS[lang()];
   const directButtons = [...document.querySelectorAll("[data-mp-tour-slot]")].map(slot => {
