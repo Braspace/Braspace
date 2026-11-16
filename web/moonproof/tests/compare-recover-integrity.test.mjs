@@ -70,13 +70,14 @@ test("nearby API candidates display their own UTC evaluation time, not the delay
     const src = await read(path);
     assert.match(src, /rec\.nearby\.window/);
     assert.match(src, /nearbyUTC\(nb\.startUtc\)/);
-    assert.doesNotMatch(src, /nearby catalog sites at the delayed start/);
-    assert.doesNotMatch(src, /locais vizinhos do catálogo no início atrasado/);
   }
   for (const path of ["screens/scenario-data.ts", "screens/scenario-data.js"]) {
     const src = await read(path);
     assert.match(src, /startUtc: o\.start_utc/);
     assert.match(src, /Date\.parse\(o\.start_utc\)/);
+    // The "delayed start" label is only honest because neighbours off the exact delayed UTC start are dropped (#474).
+    assert.match(src, /o\.delay_hours === delayH/);
+    assert.match(src, /nearby_delay_hours: delayH/);
   }
 });
 

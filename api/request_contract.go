@@ -21,7 +21,7 @@ func (r *delayScenarioRequest) UnmarshalJSON(raw []byte) error {
 	type wire delayScenarioRequest
 	// delays_hours:null has a documented default; other explicitly provided
 	// assumptions cannot disappear when null is supplied.
-	return jsoncontract.Object(raw, (*wire)(r), nil, []string{"power", "crew", "max_comm_blackout_hours", "constraints", "observer_height_m", "include_nearby", "max_nearby"})
+	return jsoncontract.Object(raw, (*wire)(r), nil, []string{"power", "crew", "max_comm_blackout_hours", "constraints", "observer_height_m", "include_nearby", "max_nearby", "nearby_delay_hours"})
 }
 
 func (c *missionConstraints) UnmarshalJSON(raw []byte) error {
