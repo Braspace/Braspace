@@ -8,6 +8,11 @@ import {chromium} from "playwright";
 
 export const PAGES = ["", "mission", "explore", "compare", "plan", "recover", "cockpit", "evidence", "rules", "debrief", "present", "landing", "activity"];
 export const SIZES = [[1440, 900, false], [390, 844, true]];
+// Reused navigation must not overwrite the Class Kit and Rules document titles.
+const EXPECTED_TITLES = {
+  activity: /^MoonProof · (?:Class Kit|Kit Aula)$/,
+  rules: /^MoonProof · (?:Rules|Regras)$/,
+};
 
 const base = (process.argv[2] || process.env.BRASPACE_PAGES_URL || "http://127.0.0.1:5173").replace(/\/+$/, "");
 const browser = await chromium.launch({headless: true, executablePath: process.env.CHROME_PATH || undefined});
@@ -22,6 +27,9 @@ try {
     // A 404 page has no JS to throw: count it as a failure, or the sweep would pass without testing the screen.
     if (!resp || resp.status() !== 200) server.push(`${resp ? resp.status() : "no response"} /moonproof/${page} (document)`);
     await p.waitForTimeout(3000);
+    const expectedTitle = EXPECTED_TITLES[page];
+    if (expectedTitle && !expectedTitle.test(await p.title()))
+      errors.push(`Unexpected document title on ${page}: ${await p.title()}`);
     loads++;
     if (errors.length || server.length) { failed++; console.log(`FAIL ${width}px /moonproof/${page}`, JSON.stringify({errors, server})); }
     await p.close();

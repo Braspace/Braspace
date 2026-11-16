@@ -13,6 +13,7 @@ register({
   en: {
     "rules.eyebrow": "moonproof · architecture v3",
     "rules.title": "One core, three layers, two kits.",
+    "rules.tabTitle": "Rules",
     "rules.lead": "Instead of three modes that change the whole screen, each card opens in depth. Teachers and planners get kits on top of the same core.",
     "rules.core.h": "The core · what always shows",
     "rules.core.map.t": "Map and numbered sites",
@@ -71,6 +72,7 @@ register({
   "pt-BR": {
     "rules.eyebrow": "moonproof · arquitetura v3",
     "rules.title": "Um núcleo, três camadas, dois kits.",
+    "rules.tabTitle": "Regras",
     "rules.lead": "Em vez de três modos que mudam a tela inteira, cada cartão se abre em profundidade. Educadores e planejadores ganham kits por cima do mesmo núcleo.",
     "rules.core.h": "O núcleo · o que sempre aparece",
     "rules.core.map.t": "Mapa e locais numerados",
@@ -235,6 +237,8 @@ function SysRules() {
 }
 
 function draw() {
+  // The architecture/rules page keeps its own translated tab title despite Evidence nav reuse.
+  document.title = "MoonProof · " + t("rules.tabTitle");
   render(<CoreTiles />, $("rules-core"));
 
   const ex = $("rules-example");
