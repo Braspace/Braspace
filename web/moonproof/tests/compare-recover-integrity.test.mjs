@@ -64,3 +64,18 @@ test("replan explanation covers every rule instead of reporting a false night vi
   assert.match(ts, /Visibilidade geométrica não garante contato por rádio/);
   assert.match(ts, /Geometric visibility does not guarantee radio contact/);
 });
+
+test("nearby API candidates display their own UTC evaluation time, not the delayed time by assumption", async () => {
+  for (const path of ["screens/recover.tsx", "screens/recover.js"]) {
+    const src = await read(path);
+    assert.match(src, /rec\.nearby\.window/);
+    assert.match(src, /nearbyUTC\(nb\.startUtc\)/);
+    assert.doesNotMatch(src, /nearby catalog sites at the delayed start/);
+    assert.doesNotMatch(src, /locais vizinhos do catálogo no início atrasado/);
+  }
+  for (const path of ["screens/scenario-data.ts", "screens/scenario-data.js"]) {
+    const src = await read(path);
+    assert.match(src, /startUtc: o\.start_utc/);
+    assert.match(src, /Date\.parse\(o\.start_utc\)/);
+  }
+});
