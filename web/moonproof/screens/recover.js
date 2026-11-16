@@ -28,7 +28,7 @@ register({
         "rec.timeline": "Sun over the window · red = rule-breaking night", "rec.planned": "Planned", "rec.after": "+{d} h", "rec.nightOf": "night of {v} h", "rec.exitLine": "Exit {L} · {what}",
         "rec.src.api": "Live API (delay scenario)", "rec.src.static": "stored hourly series (web/data)", "rec.src": "Source", "rec.rules": "Rules", "rec.assumed": "assumed limit",
         "rec.def": "Margin", "rec.def.txt": "Hours left to the tighter rule (night or Earth loss); negative = violated. Not the onboard battery margin.",
-        "rec.outside": "Window outside the computed series.", "rec.site": "Site", "rec.battery": "Battery margin", "rec.battery.nd": "needs the onboard API", "rec.sha": "Series SHA-256",
+        "rec.outside": "Window outside the computed series.", "rec.unavailable": "Hourly series unavailable; the timeline cannot be computed.", "rec.coverage.partial": "Partial search: {done} of {total} catalog sites could be evaluated. Missing sites are not ruled out.", "rec.site": "Site", "rec.battery": "Battery margin", "rec.battery.nd": "needs the onboard API", "rec.sha": "Series SHA-256",
         "rec.delay.aria": "Delay of {n} hours", "rec.day": "D{n}", "rec.chip.exit": "Exit D · switch site",
     },
     "pt-BR": {
@@ -41,7 +41,7 @@ register({
         "rec.timeline": "Sol na janela · vermelho = noite que quebra a regra", "rec.planned": "Planejado", "rec.after": "+{d} h", "rec.nightOf": "noite de {v} h", "rec.exitLine": "Saída {L} · {what}",
         "rec.src.api": "API ao vivo (cenário de atraso)", "rec.src.static": "série horária gravada (web/data)", "rec.src": "Fonte", "rec.rules": "Regras", "rec.assumed": "limite assumido",
         "rec.def": "Folga", "rec.def.txt": "Horas que sobram até a regra mais apertada (noite ou perda da Terra); negativa = violada. Não é a folga da bateria de bordo.",
-        "rec.outside": "Janela fora da série calculada.", "rec.site": "Local", "rec.battery": "Folga da bateria", "rec.battery.nd": "exige a API de bordo", "rec.sha": "SHA-256 da série",
+        "rec.outside": "Janela fora da série calculada.", "rec.unavailable": "Série horária indisponível; não é possível calcular a linha do tempo.", "rec.coverage.partial": "Busca parcial: {done} de {total} locais do catálogo avaliados. Locais sem dados não foram descartados.", "rec.site": "Local", "rec.battery": "Folga da bateria", "rec.battery.nd": "exige a API de bordo", "rec.sha": "SHA-256 da série",
         "rec.delay.aria": "Atraso de {n} horas", "rec.day": "D{n}", "rec.chip.exit": "Saída D · trocar de local",
     },
 });
@@ -113,15 +113,15 @@ function paintContext() {
 }
 let ctxSeal = null, ctxChosen = null;
 const exitCache = new Map(); // one search per site, window, delay and rules
-const metricsAt = (id, startMs, hours) => { const m = staticMetrics(loaded.get(id), startMs, hours, doc.status, id); return m ? { ...m, dark: m.dark, blackout: m.blackout } : null; };
+const metricsAt = (id, startMs, hours) => { const series = loaded.get(id); if (!series) return null; const m = staticMetrics(series, startMs, hours, doc.status, id); return m ? { ...m, dark: m.dark, blackout: m.blackout } : null; };
 async function draw() {
     const rev = ++drawRev;
     const sc = scenario(), st = getState(), rules = { night: st.night, blackout: st.blackout };
     const t0 = Date.parse(sc.start), t1 = t0 + sc.d * HOUR_MS;
-    const [series] = await Promise.all([seriesOf(sc.site), onlineP]); // the chosen site's series downloads while /readyz answers
+    const [series] = await Promise.all([seriesOf(sc.site).catch(() => null), onlineP]); // the chosen site's series downloads while /readyz answers
     let base = metricsAt(sc.site, t0, sc.hours), delayed = metricsAt(sc.site, t1, sc.hours), apiNearby = null;
     if (online) {
-        const r = await apiDelayMetrics({ siteId: sc.site, startIso: new Date(t0).toISOString(), hours: sc.hours, delayH: sc.d, rules });
+        const r = await apiDelayMetrics({ siteId: sc.site, startIso: new Date(t0).toISOString(), hours: sc.hours, delayH: sc.d, rules }).catch(() => ({ base: null, delayed: null, nearby: [] }));
         if (r.base && r.delayed) {
             base = r.base;
             delayed = r.delayed;
@@ -206,7 +206,7 @@ async function draw() {
                     h("span", { class: nb.admissible === true ? "is-ok" : nb.admissible === false ? "is-fail" : undefined }, nb.admissible === true ? t("rec.nearby.ok") : nb.admissible === false ? t("rec.nearby.no") : t("rec.nearby.nd", { r: nb.reason })),
                     h("br", null),
                     h("small", { class: "mp-nearby-time" }, t("rec.nearby.window", { start: nearbyUTC(nb.startUtc) }))))))) : null,
-            h("p", { class: "mp-label mp-coverage" }, t("rec.coverage", { d: fmtNum(SEARCH_DAYS), n: fmtNum(doc.sites.length - 1) }))));
+            h("p", { class: "mp-label mp-coverage" }, t("rec.coverage", { d: fmtNum(SEARCH_DAYS), n: fmtNum(doc.sites.length - 1) }), loaded.size < doc.sites.length ? " " + t("rec.coverage.partial", { done: loaded.size, total: doc.sites.length }) : "")));
         const go = one(h("a", { class: "mp-pill is-primary", href: compareLink, style: { justifyContent: "center" } }, t("rec.step4")));
         const m = delayed || base;
         const src = m
@@ -237,8 +237,8 @@ async function draw() {
         // timeline
         $("time").replaceChildren(one(h("section", { class: "mp-glass mp-scn-time" },
             h("p", { class: "mp-label mp-q" }, t("rec.timeline")),
-            trackRow(t("rec.planned"), series, t0, sc.hours, rules),
-            trackRow(t("rec.after", { d: sc.d }), series, t1, sc.hours, rules))));
+            series ? trackRow(t("rec.planned"), series, t0, sc.hours, rules) : h("p", { class: "mp-label" }, t("rec.unavailable")),
+            series ? trackRow(t("rec.after", { d: sc.d }), series, t1, sc.hours, rules) : null)));
         drawDock();
         markMap(sc, chosen, delayed, series);
     };
@@ -250,11 +250,12 @@ async function draw() {
     // Exit search: needs every site's series, so it starts after the panels above are on screen (two frames), downloads the
     // other series at low priority and computes with the unchanged computeExits. A newer draw makes this one stale.
     await afterPaint(null);
-    await Promise.all(doc.sites.map(x => seriesOf(x.id, "low")));
+    await Promise.allSettled(doc.sites.map(x => seriesOf(x.id, "low")));
     if (rev !== drawRev)
         return;
     const exits = computeExits({ metricsAt, siteId: sc.site, siteIds: doc.sites.map(x => x.id), startMs: t0, hours: sc.hours, delayH: sc.d, rules, searchDays: SEARCH_DAYS });
-    exitCache.set(key, exits);
+    if (loaded.size === doc.sites.length)
+        exitCache.set(key, exits);
     paint(exits);
 }
 function seals(a, b) {
@@ -315,7 +316,7 @@ function markMap(sc, chosen, delayed, series) {
     route.splice(0, route.length, ...(sw ? [sc.site, chosen.siteId] : []));
     terrain && terrain.select(sc.site);
     const rules = { night: getState().night };
-    const worst = delayed ? longestRun(flagsOf(series, Date.parse(sc.start) + sc.d * HOUR_MS, sc.hours).sun, false).len : 0;
+    const worst = delayed ? (series ? longestRun(flagsOf(series, Date.parse(sc.start) + sc.d * HOUR_MS, sc.hours).sun, false).len : delayed.dark ?? 0) : 0;
     chips = [];
     if (delayed && worst > rules.night)
         chips.push({ site: sc.site, cls: "is-red", text: t("rec.nightOf", { v: fmtNum(worst) }) });
