@@ -23,6 +23,22 @@ export async function verifyCockpitPanels(page) {
   await page.locator("#mp-tour-close").click();
   await guide.waitFor({ state: "hidden" });
   assert.equal(await helpMenu.getAttribute("aria-expanded"), "false");
+  // The Cockpit opens Joel's shared South Pole Moon on page load, unlike other lazy map screens.
+  // On a real GPU it exposes one canvas + one Artemis mesh; software WebGL uses Joel's poster.
+  await page.locator(".moon-backdrop.is-on").waitFor({ state: "attached", timeout: 60000 });
+  const moonVisual = await page.evaluate(() => ({
+    instances: document.querySelectorAll(".moon-backdrop.is-on").length,
+    canvases: document.querySelectorAll(".moon-backdrop.is-on canvas").length,
+    poster: !!document.querySelector(".moon-backdrop.is-poster .moon-poster img"),
+  }));
+  assert.equal(moonVisual.instances, 1, "only one Moon backdrop should exist");
+  assert.ok((moonVisual.canvases === 1 && !moonVisual.poster) ||
+            (moonVisual.canvases === 0 && moonVisual.poster),
+    "Moon is one hardware WebGL canvas or Joel's offline-capable poster");
+  if (moonVisual.canvases === 1) {
+    await page.waitForFunction(() => !!window.moonBackdrop &&
+      document.documentElement.classList.contains("artemis-on"), null, { timeout: 30000 });
+  }
   const menu = page.locator("#ck-panel-controls details.ck-panel-menu");
   await page.locator("#left .mp-visrow").waitFor({ state: "visible", timeout: 30000 });
   await menu.locator("summary").click();
