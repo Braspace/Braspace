@@ -227,7 +227,7 @@ test("pages with a decorative background mount the backdrop; functional-map scre
  const cockpit=await read("moonproof/cockpit.html");
  assert.match(cockpit,/data-moon-backdrop="pole"/,"default Moon uses Joel's south-polar camera");
  assert.doesNotMatch(cockpit,/data-moon-lazy/,"Cockpit must expose the shared 3D Moon behind its nine panel groups");
- assert.equal((cockpit.match(/moon-hd\\/backdrop\\.js/g)||[]).length,1,"Cockpit uses one shared Moon renderer");
+ assert.equal((cockpit.match(/moon-hd\/backdrop\.js/g)||[]).length,1,"Cockpit uses one shared Moon renderer");
  for(const page of WITHOUT)assert.ok(!(await read(page)).includes("backdrop.js"),page+" must keep its own background");
  for(const page of LAZY){const html=await read(page);assert.match(html,/<script type="module" src="\.\.\/moon-hd\/backdrop\.js" data-moon-backdrop="globe" data-moon-lazy><\/script>/,page+": Moon on demand only");}
  for(const name of await readdir(path.join(web,"moonproof","screens")))if(name.endsWith(".js"))assert.ok(!(await read("moonproof/screens/"+name)).includes("backdrop.js"),name);
