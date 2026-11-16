@@ -59,7 +59,6 @@ func TestJSONRoutingErrors(t *testing.T) {
 	}
 }
 
- 
 // Exercise the application's actual routes() registration, not only an isolated
 // ServeMux fixture. A regression that removes withJSONRoutingErrors from routes()
 // must fail even when the standalone wrapper tests remain green.
@@ -67,8 +66,8 @@ func TestProductionRouteFallback(t *testing.T) {
 	h := withMiddleware(routes("/nonexistent/engine"))
 	for _, tc := range []struct {
 		method, path string
-		status int
-		code, allow string
+		status       int
+		code, allow  string
 	}{
 		{"GET", "/api/nonexistent", 404, "API_ROUTE_NOT_FOUND", ""},
 		{"PUT", "/api/sites/malapert-massif", 405, "METHOD_NOT_ALLOWED", "GET, HEAD"},
