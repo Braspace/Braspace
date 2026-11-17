@@ -172,3 +172,7 @@ From [`docs/TEAM_ROLES_AND_HANDOFFS_2026.md`](docs/TEAM_ROLES_AND_HANDOFFS_2026.
 
 
 > **MoonProof canonical-entry QA (2026-11-16, draft only):** Isolated follow-up branch `agent/cockpit-entry-tests-20261116-0806` updates two stale Node assertions to require the cockpit entry at `/moonproof/` and the preserved three-mode chooser/tutorial at `/moonproof/tasks.html`. Based on draft PR #498 SHA `199fde9a`; no EXO-X1, Chromium GPU/noGPU, full CI, merge, Worker deploy or rollback verification claimed. See `docs/MOONPROOF_FRONT_RUNTIME.md`.
+
+### MoonProof canonical-entry CI checkpoint (2026-11-17)
+
+Draft stacked PR [#504](https://github.com/Braspace/Braspace/pull/504) targets #500's branch (base `3edb5445034893f264e1771ccaf0368e90b25140`) and reconciles three legacy test contracts without changing application behavior: task-tour location, state initialization for the stateless redirect shell, and preview CSS for actual 3D pages. Head `594d136e2e8641a66ee7e6e67dfd3df2f7adf2b9` was source-reviewed only; no Node/Chromium/EXO-X1 or backend tests were run in this change. **NO-GO** until exact-SHA CI and rollback evidence.

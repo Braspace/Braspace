@@ -23,6 +23,12 @@ test('preview is a checked lightweight WebP, not a fabricated asset',()=>{
 test('every MoonProof page and the 3D viewer link the common preview stylesheet',()=>{
   for (const page of ['moon-hd.html',...readdirSync(new URL('../moonproof/',import.meta.url)).filter(f=>f.endsWith('.html')).map(f=>'moonproof/'+f)]) {
     const html=readFileSync(new URL('../'+page,import.meta.url),'utf8');
+    // The canonical entry is a lightweight navigation shell, not a 3D preview.
+    if (page === 'moonproof/index.html') {
+      assert.match(html,/screens\/cockpit-entry\.js/,page);
+      assert.match(html,/id="cockpit-entry" href="cockpit\.html"/,page);
+      continue;
+    }
     assert.match(html,/moon-hd\/preview\.css/,page);
     if (/moonproof\/(mission|explore|compare|recover|cockpit|landing|plan|present|activity)\.html/.test(page)) assert.match(html,/data-moon-preview="map"/,page);
   }

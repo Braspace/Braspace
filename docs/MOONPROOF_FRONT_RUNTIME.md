@@ -83,3 +83,11 @@ Headless cai em SwiftShader e o backdrop se recusa (de propósito). Para ver a L
 - Changed the two stale assertions: `/moonproof/` now expects the CSP-safe cockpit redirect and accessible manual link; three chooser cards and contextual entry tour are asserted at `tasks.html`. Existing URL/history tests remain intact.
 - This is a source-level correction, not proof of Node/Chromium execution. The last observed #498 CI and pgvector checks failed; Chromium was queued. EXO-X1 GPU/noGPU, six viewports, Go/Rust/Postgres/pgvector, rollout and rollback remain unverified. No merge or deploy authorized.
 - Preserve Heloísa visual tokens, Joel's shared 3D Moon/Artemis, nine panels, and scientific PRELIMINARY/SYNTHETIC labels.
+
+### 2026-11-17 — canonical cockpit CI contracts, draft #504
+
+- Base: #500 `3edb5445034893f264e1771ccaf0368e90b25140`; isolated branch `fix/moonproof-canonical-ci-contract-20261117`, no edits to upstream branches.
+- `class-tour.test.mjs`: verify the canonical CSP-safe cockpit link in `index.html` and the task chooser plus contextual tutorial in `tasks.html`; retain the other interactive-screen tour checks and #460 Back-button checks.
+- `core-ready.test.mjs`: require `core/state.js` on functional screens; the non-stateful canonical navigation shell must instead provide its module and accessible fallback link.
+- `moon-preview.test.mjs`: require shared preview stylesheet on viewer pages, but validate navigation semantics on the non-rendering canonical shell.
+- Source inspection only: Node/TypeScript/Chromium GPU/noGPU, six viewport sizes, Go/Rust/Postgres/pgvector, accessibility, pins, Artemis, performance and Worker rollout/rollback **NOT EXECUTED**. CI state of previous #500/#501 SHAs includes failures. Release **NO-GO**. Preserve Heloísa visual design, Joel 3D renderer and PRELIMINARY/SYNTHETIC science labeling.

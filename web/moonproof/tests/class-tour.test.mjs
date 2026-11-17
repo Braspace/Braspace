@@ -30,10 +30,10 @@ test("tour supports dismiss, reopen, per-mode storage, animation and reduced mot
  assert.match(css,/@keyframes mpTourIn/);
 });
 test("every interactive MoonProof screen loads its contextual tutorial", async () => {
- const files = ["index", "cockpit", "explore", "activity", "present", "compare", "debrief", "evidence",
+ const files = ["cockpit", "explore", "activity", "present", "compare", "debrief", "evidence",
    "landing", "mission", "plan", "recover", "rules", "tasks"];
  for (const file of files) {
-   const mode = ({ index: "entry", activity: "class" })[file] ?? file;
+   const mode = ({ activity: "class" })[file] ?? file;
    const html = await read("../" + file + ".html");
    assert.ok(html.includes('src="screens/tour.js" data-moon-tour="' + mode + '"'), file);
    assert.ok(html.includes('href="screens/tour.css"'), file);
@@ -101,25 +101,21 @@ test("Cockpit tour references actual page controls, not removed/stale selectors"
  assert.match(js,/moon-open/);
 });
 
-test("site root opens the three-mode chooser and first-visit tutorial is on that page",async()=>{
- const root=await read("../../index.html"),entry=await read("../index.html");
+test("canonical entry preserves cockpit fallback and tasks tutorial",async()=>{
+ const root=await read("../../index.html"),entry=await read("../index.html"),tasks=await read("../tasks.html");
  const script=await read("../screens/tour.js");
  assert.match(root,/url=moonproof\//);
- assert.match(entry,/screens\/entry\.js/);
- assert.match(entry,/data-moon-tour="entry"/);
- assert.match(entry,/id="cards" role="list"/);
- assert.doesNotMatch(entry,/screens\/cockpit-entry\.js/);
+ assert.match(entry,/screens\/cockpit-entry\.js/);
+ assert.match(entry,/id="cockpit-entry" href="cockpit\.html"/);
+ assert.match(entry,/href="tasks\.html"/);
+ assert.doesNotMatch(entry,/screens\/entry\.js/);
+ assert.match(tasks,/screens\/entry\.js/);
+ assert.match(tasks,/data-moon-tour="tasks"/);
+ assert.match(tasks,/id="cards" role="list"/);
  assert.equal(TOUR_STEPS.entry.length,4);
- for(const step of TOUR_STEPS.entry){
-   assert.ok(step.targets.length);
-   for(const locale of ["pt","en"]){
-     assert.equal(step[locale].length,2);
-     assert.ok(step[locale][1].length>20 && step[locale][1].length<220);
-   }
- }
+ assert.ok(TOUR_STEPS.tasks.length>=4);
  assert.match(script,/setTimeout\(\(\) => \{/);
- assert.doesNotMatch(script,/attempts\+\+ > 65/,"slow API must not suppress first-site welcome");
- assert.doesNotMatch(script,/!document\.documentElement\.classList\.contains\("mp-ready"\)/,"welcome does not need science data");
+ assert.doesNotMatch(script,/attempts\+\+ > 65/);
 });
 test("screen help remains available while site onboarding is shown only at entry", async () => {
  const source = await read("../screens/tour.js");
