@@ -104,18 +104,18 @@ test("Cockpit tour references actual page controls, not removed/stale selectors"
 test("canonical entry preserves cockpit fallback and tasks tutorial",async()=>{
  const root=await read("../../index.html"),entry=await read("../index.html"),tasks=await read("../tasks.html");
  const script=await read("../screens/tour.js");
- assert.match(root,/url=moonproof\\//);
- assert.match(entry,/screens\\/cockpit-entry\\.js/);
- assert.match(entry,/id="cockpit-entry" href="cockpit\\.html"/);
- assert.match(entry,/href="tasks\\.html"/);
- assert.doesNotMatch(entry,/screens\\/entry\\.js/);
- assert.match(tasks,/screens\\/entry\\.js/);
+ assert.match(root,/url=moonproof\//);
+ assert.match(entry,/screens\/cockpit-entry\.js/);
+ assert.match(entry,/id="cockpit-entry" href="cockpit\.html"/);
+ assert.match(entry,/href="tasks\.html"/);
+ assert.doesNotMatch(entry,/screens\/entry\.js/);
+ assert.match(tasks,/screens\/entry\.js/);
  assert.match(tasks,/data-moon-tour="tasks"/);
  assert.match(tasks,/id="cards" role="list"/);
  assert.equal(TOUR_STEPS.entry.length,4);
  assert.ok(TOUR_STEPS.tasks.length>=4);
- assert.match(script,/setTimeout\\(\\(\\) => \\{/);
- assert.doesNotMatch(script,/attempts\\+\\+ > 65/);
+ assert.match(script,/setTimeout\(\(\) => \{/);
+ assert.doesNotMatch(script,/attempts\+\+ > 65/);
 });
 test("screen help remains available while site onboarding is shown only at entry", async () => {
  const source = await read("../screens/tour.js");
